@@ -1,0 +1,4 @@
+# TitanStream Docker Compose
+# Configured in Stage 6 (Infrastructure & CI/CD)
+version: '3.8'
+services: {}
