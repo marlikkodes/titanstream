@@ -288,7 +288,15 @@ export const MiningSpinner: React.FC = () => {
     const y = e.clientY - rect.top - rect.height / 2;
 
     const currentMultiplier = useMiningStore.getState().coolerMultiplier;
-    let tapPayout = 0.000001 * currentMultiplier * activeSpinner.payoutMultiplier;
+    const miningStoreState = useMiningStore.getState();
+
+    let tapPayout = 0.02;
+    if (!hasPurchasedMachine && isTrialActive()) {
+      const remainingCap = Math.max(0, 5.0 - miningStoreState.trialEarnings);
+      tapPayout = Math.min(0.02, remainingCap);
+    } else {
+      tapPayout = 0.01 * currentMultiplier * (activeSpinner.payoutMultiplier || 1.0);
+    }
 
     // Credit directly to the wallet store so the odometer display instantly reflects the tap
     const wallet = useWalletStore.getState();
@@ -316,7 +324,7 @@ export const MiningSpinner: React.FC = () => {
       vy: -Math.random() * 5 - 4,
       rotation: Math.random() * 360,
       rotSpeed: (Math.random() - 0.5) * 12,
-      text: `+${(Number(tapPayout) || 0).toFixed(8)} ${activeCurrency}`,
+      text: `+${(Number(tapPayout) || 0).toFixed(4)} ${activeCurrency}`,
     };
 
     setParticles((prev) => [...prev.slice(-12), newParticle]);
@@ -1151,8 +1159,21 @@ export const MiningSpinner: React.FC = () => {
         </button>
       </div>
 
-
-
+      {/* Live Stream Stats Panel below Spinner Wheel */}
+      <div className="w-full max-w-[320px] mt-4 grid grid-cols-3 gap-2 text-center text-xs font-mono">
+        <div className="bg-control-bg/70 border border-white/10 rounded-2xl p-2 flex flex-col items-center justify-center shadow-sm">
+          <span className="text-[9px] text-text-tertiary font-bold font-sans uppercase">Daily Taps</span>
+          <span className="font-extrabold text-text-primary text-xs mt-0.5">{tapsToday} / {dailyTapLimit}</span>
+        </div>
+        <div className="bg-control-bg/70 border border-white/10 rounded-2xl p-2 flex flex-col items-center justify-center shadow-sm">
+          <span className="text-[9px] text-text-tertiary font-bold font-sans uppercase">Output / Tap</span>
+          <span className="font-extrabold text-usdt-green text-xs mt-0.5">+₮0.0200</span>
+        </div>
+        <div className="bg-control-bg/70 border border-white/10 rounded-2xl p-2 flex flex-col items-center justify-center shadow-sm">
+          <span className="text-[9px] text-text-tertiary font-bold font-sans uppercase">Core Multiplier</span>
+          <span className="font-extrabold text-gold text-xs mt-0.5">×{coolerMultiplier.toFixed(1)}</span>
+        </div>
+      </div>
     </div>
   );
 };
