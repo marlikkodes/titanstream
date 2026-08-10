@@ -38,11 +38,11 @@ export class FinancialAdminService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly ledgerService: LedgerService,
-    private readonly balanceService: BalanceService,
-    private readonly assetRegistry: AssetRegistryService,
-    private readonly chartOfAccounts: ChartOfAccountsService,
-    private readonly withdrawalService: WithdrawalService,
+    @Inject(forwardRef(() => LedgerService)) private readonly ledgerService: LedgerService,
+    @Inject(forwardRef(() => BalanceService)) private readonly balanceService: BalanceService,
+    @Inject(forwardRef(() => AssetRegistryService)) private readonly assetRegistry: AssetRegistryService,
+    @Inject(forwardRef(() => ChartOfAccountsService)) private readonly chartOfAccounts: ChartOfAccountsService,
+    @Inject(forwardRef(() => WithdrawalService)) private readonly withdrawalService: WithdrawalService,
     private readonly auditService: OperationalAuditService,
     @Optional() @Inject(forwardRef(() => FinancialOrchestratorService)) private readonly orchestrator?: FinancialOrchestratorService,
   ) {}

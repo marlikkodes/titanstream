@@ -47,8 +47,10 @@ import { TreasuryModule } from '../treasury/treasury.module';
     ExchangeRateService,
   ],
   exports: [
-    FinancialAccountService,
+    AssetRegistryService,
     BalanceService,
+    ChartOfAccountsService,
+    FinancialAccountService,
     LedgerService,
     TransactionService,
     WithdrawalService,
