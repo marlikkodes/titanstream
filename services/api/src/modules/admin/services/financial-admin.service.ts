@@ -369,6 +369,7 @@ export class FinancialAdminService {
               operationType: FinancialOperationType.SYSTEM_ALLOCATION,
               assetCode,
               amount: amountStr,
+              idempotencyKey: ref,
               reference: ref,
               metadata: { adminId: admin.id, adminRole: admin.role, category, reason: cleanReason },
             },
@@ -384,10 +385,14 @@ export class FinancialAdminService {
         const op = await tx.financialOperation.create({
           data: {
             telegramUserId,
+            financialAccountId: finAccount.id,
+            assetCode,
+            amount: amountStr,
             operationType: FinancialOperationType.SYSTEM_ALLOCATION,
             status: 'COMPLETED',
             reference: ref,
             idempotencyKey: ref,
+            requestPayload: JSON.stringify({ adminId: admin.id, category, reason: cleanReason, adjustmentType: dto.adjustmentType }),
             metadata: { adminId: admin.id, adminRole: admin.role, category, reason: cleanReason, adjustmentType: dto.adjustmentType },
           },
         });

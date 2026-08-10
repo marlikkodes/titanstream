@@ -111,13 +111,13 @@ export class UserInvestigationService {
     const totalPages = Math.ceil(total / limit) || 1;
 
     const formattedItems = items.map((user: any) => {
-      const totalDeposits = user.settlementSessions
-        .filter((s) => s.sessionType === 'DEPOSIT' && s.status === 'COMPLETED')
-        .reduce((sum, s) => sum + Number(s.requestedAmount || 0), 0);
+      const totalDeposits = (user.settlementSessions || [])
+        .filter((s: any) => s.sessionType === 'DEPOSIT' && s.status === 'COMPLETED')
+        .reduce((sum: number, s: any) => sum + Number(s.requestedAmount || 0), 0);
 
-      const totalWithdrawals = user.settlementSessions
-        .filter((s) => s.sessionType === 'PAYOUT' && s.status === 'COMPLETED')
-        .reduce((sum, s) => sum + Number(s.requestedAmount || 0), 0);
+      const totalWithdrawals = (user.settlementSessions || [])
+        .filter((s: any) => s.sessionType === 'PAYOUT' && s.status === 'COMPLETED')
+        .reduce((sum: number, s: any) => sum + Number(s.requestedAmount || 0), 0);
 
       const flags: string[] = [];
       if (user.state === UserState.SUSPENDED_USER) flags.push('FROZEN');
@@ -193,13 +193,13 @@ export class UserInvestigationService {
       }),
     ]);
 
-    const totalDeposits = user.settlementSessions
-      .filter((s) => s.sessionType === 'DEPOSIT' && s.status === 'COMPLETED')
-      .reduce((sum, s) => sum + Number(s.requestedAmount || 0), 0);
+    const totalDeposits = (user.settlementSessions || [])
+      .filter((s: any) => s.sessionType === 'DEPOSIT' && s.status === 'COMPLETED')
+      .reduce((sum: number, s: any) => sum + Number(s.requestedAmount || 0), 0);
 
-    const totalWithdrawals = user.settlementSessions
-      .filter((s) => s.sessionType === 'PAYOUT' && s.status === 'COMPLETED')
-      .reduce((sum, s) => sum + Number(s.requestedAmount || 0), 0);
+    const totalWithdrawals = (user.settlementSessions || [])
+      .filter((s: any) => s.sessionType === 'PAYOUT' && s.status === 'COMPLETED')
+      .reduce((sum: number, s: any) => sum + Number(s.requestedAmount || 0), 0);
 
     return {
       id: user.telegramUserId.toString(),
