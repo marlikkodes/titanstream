@@ -21,6 +21,7 @@ import { AutomationModule } from './modules/automation/automation.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { TreasuryModule } from './modules/treasury/treasury.module';
 import { MiningModule } from './modules/mining/mining.module';
+import { PaymentOrderModule } from './modules/payment-order/payment-order.module';
 import { MachineModule } from './modules/machine/machine.module';
 import { GamesModule } from './modules/games/games.module';
 import { QueueModule } from './modules/queue/queue.module';
