@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { OperationalAuditService } from './operational-audit.service';
 import { EconomyEngineService } from '../../machine/services/economy-engine.service';
@@ -31,7 +31,7 @@ export class MachineAdminService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly economyEngine: EconomyEngineService,
+    @Inject(forwardRef(() => EconomyEngineService)) private readonly economyEngine: EconomyEngineService,
     private readonly auditService: OperationalAuditService,
   ) {}
 

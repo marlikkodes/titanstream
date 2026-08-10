@@ -54,10 +54,9 @@ if [ "$HAS_USERS_TABLE" = "false" ]; then
   npx prisma migrate resolve --applied 20260810130000_add_usdt_settlement_provider || true
   echo "Database bootstrap and migration resolution completed successfully."
 else
-  echo "Database already contains schema. Deploying migrations and syncing latest tables..."
+  echo "Database already contains schema. Resolving legacy migrations and syncing database schema..."
   npx prisma migrate resolve --applied 20240101000000_add_asset_license_system || true
-  npx prisma migrate deploy || true
-  npx prisma db push --skip-generate --accept-data-loss || true
+  npx prisma db push --accept-data-loss || true
 fi
 
 # Run main application
