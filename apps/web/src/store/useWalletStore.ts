@@ -224,6 +224,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       set({
         transactions: res.items || [],
         isLoadingTransactions: false,
+      });
     } catch (err: any) {
       console.warn('Transaction history fetch notice:', err?.message);
       set({ isLoadingTransactions: false });

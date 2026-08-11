@@ -203,7 +203,9 @@ export class ProviderRegistryService implements OnModuleInit {
       throw new BadRequestException('SETTLEMENT_PROVIDER_UNSUPPORTED_ASSET');
     }
     const countries = Array.isArray(provider.supportedCountries) ? provider.supportedCountries : [];
-    if (country && countries.length > 0 && !countries.includes(country)) throw new BadRequestException('SETTLEMENT_PROVIDER_UNSUPPORTED_COUNTRY');
+    if (country && country !== 'GLOBAL' && countries.length > 0 && !countries.includes(country) && !countries.includes('GLOBAL')) {
+      throw new BadRequestException('SETTLEMENT_PROVIDER_UNSUPPORTED_COUNTRY');
+    }
 
     const adapter = this.adapters.get(providerId);
     if (!adapter) throw new BadRequestException('SETTLEMENT_PROVIDER_NOT_REGISTERED');
@@ -229,7 +231,11 @@ export class ProviderRegistryService implements OnModuleInit {
         displayName,
         status: provider.providerId === SettlementProviderId.CRYPTOBOT ? SettlementProviderStatus.DISABLED : SettlementProviderStatus.ENABLED,
         supportedAssets: provider.manifest.supported_assets as Prisma.InputJsonValue,
-        supportedCountries: (provider.providerId === SettlementProviderId.CRYPTOBOT ? [] : ['KE', 'UG', 'US']) as Prisma.InputJsonValue,
+        supportedCountries: (provider.providerId === SettlementProviderId.CRYPTOBOT
+          ? []
+          : provider.providerId === SettlementProviderId.USDT
+          ? ['GLOBAL']
+          : ['KE', 'UG', 'US', 'GLOBAL', 'TZ', 'RW', 'GH', 'NG', 'ZA']) as Prisma.InputJsonValue,
         capabilityManifest: provider.manifest as unknown as Prisma.InputJsonValue,
         priority: provider.providerId === SettlementProviderId.CRYPTOBOT ? 99 : 10,
         config: { create: { configuration: {} } },

@@ -50,7 +50,26 @@ export const UsdtFunding: React.FC<UsdtFundingProps> = ({ onCancel }) => {
       hapticFeedback.notificationOccurred('success');
     } catch (err: any) {
       console.error('Failed to create USDT session:', err);
-      setError(err?.response?.data?.message || err?.message || 'Failed to initialize USDT deposit session');
+      const errMsg = err?.response?.data?.message || err?.message || '';
+
+      if (errMsg.includes('ACTIVE_SETTLEMENT_EXISTS')) {
+        try {
+          const history = await settlementService.getHistory();
+          const active = history.find((s) =>
+            ['CREATED', 'WAITING_FOR_PAYMENT', 'WAITING_PAYMENT', 'VERIFYING'].includes(s.status)
+          );
+          if (active) {
+            setSession(active);
+            setError(null);
+            hapticFeedback.notificationOccurred('success');
+            return;
+          }
+        } catch {
+          // fallback to display error
+        }
+      }
+
+      setError(errMsg || 'Failed to initialize USDT deposit session');
       hapticFeedback.notificationOccurred('error');
     } finally {
       setIsLoading(false);

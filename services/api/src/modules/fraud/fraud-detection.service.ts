@@ -3,7 +3,6 @@ import { PrismaService } from '../../database/prisma.service';
 import { ReferralGraphService } from '../growth/referral-graph.service';
 import { UserState } from '@prisma/client';
 
-@Injectable()
 export interface UserRiskEvaluation {
   score: number; // 0 - 100
   level: 'LOW' | 'MEDIUM' | 'ELEVATED' | 'HIGH' | 'CRITICAL';

@@ -1,5 +1,10 @@
 import { settlementService, type CreateSettlementPayload, type SettlementSessionView, type SettlementProviderItem } from './settlementService';
 
+// Export SettlementSession as type and runtime value object
+export type SettlementSession = SettlementSessionView;
+export const SettlementSession = {} as unknown as SettlementSessionView;
+export type { SettlementSessionView, SettlementProviderItem };
+
 // ─── Unified Funding Interface ───────────────────────────────────────────────
 // The frontend should only ever interact with this service.
 // Provider-specific complexity lives entirely behind the settlement layer.
@@ -44,7 +49,6 @@ export const fundingService = {
   /**
    * Create a new funding session.
    * Returns a provider-independent session with payment URL, reference, status.
-   * The frontend never needs to know which provider is being used.
    */
   async createSession(params: {
     provider: string;
@@ -58,13 +62,43 @@ export const fundingService = {
       provider: params.provider,
       asset: params.asset,
       requestedAmount: params.amount,
-      expectedCryptoAmount: params.amount, // For crypto providers, 1:1. For fiat, backend calculates.
+      expectedCryptoAmount: params.amount,
       exchangeRate: params.exchangeRate || '1.0',
       country: params.country,
       mobileMoneyNetwork: params.mobileMoneyNetwork,
     };
     const raw = await settlementService.createSession(payload);
     return toFundingSession(raw);
+  },
+
+  /**
+   * Helper method for Pesapal deposit session initialization
+   */
+  async createPesapalSession(params: {
+    amountUsdt: number;
+    country: string;
+    paymentMethod: 'CARD' | 'MOBILE_MONEY';
+    mobileMoneyNetwork?: 'MTN' | 'AIRTEL';
+    phoneNumber?: string;
+  }): Promise<{ session: SettlementSessionView }> {
+    const raw = await settlementService.createSession({
+      provider: 'PESAPAL',
+      paymentMethod: params.paymentMethod,
+      asset: 'USDT',
+      requestedAmount: params.amountUsdt.toString(),
+      expectedCryptoAmount: params.amountUsdt.toString(),
+      exchangeRate: '1.0',
+      country: params.country,
+      mobileMoneyNetwork: params.mobileMoneyNetwork,
+    });
+    return { session: raw };
+  },
+
+  /**
+   * Get current status of a settlement/funding session by ID.
+   */
+  async getSessionStatus(sessionId: string): Promise<SettlementSessionView> {
+    return await settlementService.getSession(sessionId);
   },
 
   /**

@@ -229,6 +229,7 @@ export class RewardService {
           amount: targetAmount,
           assetCode: 'USDT',
           operationType: 'SYSTEM_ALLOCATION' as any,
+          idempotencyKey: `surprise_${ref}`,
           reference: ref,
         });
       } catch (err: any) {

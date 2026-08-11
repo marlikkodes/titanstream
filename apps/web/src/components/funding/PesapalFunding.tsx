@@ -1,96 +1,125 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, ExternalLink, ShieldCheck, Clock, CheckCircle2, AlertCircle, ArrowLeft, XCircle, RefreshCw, AlertTriangle, Smartphone } from 'lucide-react';
-import { settlementService, type SettlementSessionView } from '../../services/settlementService';
-import { useTelegram } from '../../context/TelegramContext';
+import {
+  CreditCard,
+  Smartphone,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  ArrowLeft,
+  ShieldCheck,
+  RefreshCw,
+  ExternalLink,
+  XCircle,
+  AlertTriangle
+} from 'lucide-react';
+import { fundingService, type SettlementSession } from '../../services/fundingService';
+import { useCountryStore } from '../../store/useCountryStore';
 
 interface PesapalFundingProps {
-  paymentMethod?: 'MOBILE_MONEY' | 'CARD';
   onCancel: () => void;
 }
 
-export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 'MOBILE_MONEY', onCancel }) => {
+const hapticFeedback = {
+  impactOccurred: (_style: string) => {
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred(_style as any);
+    }
+  },
+};
+
+export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
+  const { userCountry } = useCountryStore();
+  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'MOBILE_MONEY'>(
+    userCountry === 'US' ? 'CARD' : 'MOBILE_MONEY'
+  );
   const [amountUsdt, setAmountUsdt] = useState<string>('50');
-  const [country, setCountry] = useState<string>('UG');
   const [paymentNetwork, setPaymentNetwork] = useState<'MTN' | 'AIRTEL'>('MTN');
   const [phoneNumber, setPhoneNumber] = useState<string>('');
-  const [session, setSession] = useState<SettlementSessionView | null>(null);
+  const [country, setCountry] = useState<string>(userCountry || 'UG');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<SettlementSession | null>(null);
 
-  const { hapticFeedback } = useTelegram();
+  // Sync country when changed from selector
+  useEffect(() => {
+    if (userCountry) {
+      setCountry(userCountry);
+      if (userCountry === 'US') {
+        setPaymentMethod('CARD');
+      }
+    }
+  }, [userCountry]);
+
+  // Session status polling hook
+  useEffect(() => {
+    if (!session?.settlementId || session.status === 'COMPLETED' || session.status === 'FAILED' || session.status === 'REJECTED') {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      try {
+        const updatedSession = await fundingService.getSessionStatus(session.settlementId);
+        setSession(updatedSession);
+      } catch (err) {
+        console.warn('Failed to poll settlement status:', err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [session?.settlementId, session?.status]);
 
   const handleCreateSession = async () => {
-    if (isLoading) return;
-
-    const amountNum = parseFloat(amountUsdt);
-    if (isNaN(amountNum) || amountNum <= 0) {
-      setError('Please enter a valid deposit amount.');
+    const numAmount = parseFloat(amountUsdt);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      setError('Please enter a valid deposit amount');
       return;
     }
 
     if (paymentMethod === 'MOBILE_MONEY' && !phoneNumber.trim()) {
-      setError('Please enter your mobile money phone number.');
+      setError('Please enter your mobile money phone number');
       return;
     }
 
     setIsLoading(true);
     setError(null);
-    hapticFeedback.impactOccurred('medium');
 
     try {
-      const res = await settlementService.createSession({
+      hapticFeedback.impactOccurred('medium');
+      const response = await fundingService.createPesapalSession({
+        amountUsdt: numAmount,
+        country: country || 'UG',
         paymentMethod,
-        asset: 'USDT',
-        requestedAmount: amountUsdt,
-        expectedCryptoAmount: amountUsdt,
-        exchangeRate: '1.0',
-        country,
-        mobileMoneyNetwork: paymentMethod === 'CARD' ? 'CARD' : paymentNetwork,
-        paymentNetwork: paymentMethod === 'CARD' ? 'CARD' : paymentNetwork,
-        phoneNumber,
+        mobileMoneyNetwork: paymentMethod === 'MOBILE_MONEY' ? paymentNetwork : undefined,
+        phoneNumber: paymentMethod === 'MOBILE_MONEY' ? phoneNumber : undefined,
       });
 
-      setSession(res);
-      hapticFeedback.notificationOccurred('success');
+      setSession(response.session);
     } catch (err: any) {
       console.error('Failed to create payment session:', err);
-      setError(err?.response?.data?.message || err?.message || 'Failed to initialize payment session');
-      hapticFeedback.notificationOccurred('error');
+      const errMsg = err?.response?.data?.message || err.message || '';
+
+      if (errMsg.includes('ACTIVE_SETTLEMENT_EXISTS')) {
+        try {
+          const history = await fundingService.getHistory();
+          const active = history.find((s) =>
+            ['CREATED', 'WAITING_FOR_PAYMENT', 'WAITING_PAYMENT', 'VERIFYING'].includes(s.status)
+          );
+          if (active) {
+            setSession(active as any);
+            setError(null);
+            return;
+          }
+        } catch {
+          // fallback to error display
+        }
+      }
+
+      setError(errMsg || 'Failed to initialize payment session');
     } finally {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (!session?.settlementId) return;
-
-    const terminalStates = ['COMPLETED', 'FAILED', 'REJECTED', 'CANCELLED', 'EXPIRED'];
-    if (terminalStates.includes(session.status)) return;
-
-    let polls = 0;
-    const maxPolls = 36;
-
-    const interval = setInterval(async () => {
-      polls++;
-      if (polls > maxPolls) {
-        clearInterval(interval);
-        return;
-      }
-      try {
-        const updated = await settlementService.getSession(session.settlementId);
-        setSession(updated);
-
-        if (terminalStates.includes(updated.status)) {
-          clearInterval(interval);
-        }
-      } catch (err) {
-        console.error('Polling error:', err);
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [session?.settlementId]);
 
   const isPendingApproval = session?.status === 'CREATED' && (session as any)?.requiresAdminApproval;
 
@@ -454,7 +483,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
                 </a>
               )}
             </div>
-          )
+          )}
         </motion.div>
       )}
     </div>
