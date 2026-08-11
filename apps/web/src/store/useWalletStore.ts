@@ -78,35 +78,27 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   isLoadingTransactions: false,
   error: null,
 
-  updateBalance: (updates) => set((state) => ({ ...state, ...updates })),
+  updateBalance: (updates) => {
+    set((state) => {
+      const next = { ...state, ...updates };
+      if (typeof updates.usdtBalance === 'number') {
+        import('./useQuestStore').then(({ useQuestStore }) => {
+          useQuestStore.getState().syncBalanceProgress(updates.usdtBalance!);
+        }).catch(() => undefined);
+      }
+      return next;
+    });
+  },
 
   accreditUserBalance: (amount, reason = 'Admin Wallet Accreditation') => {
-    const current = get().usdtBalance;
-    const newBal = Math.max(0, current + amount);
-    const newTx: TransactionRecord = {
-      id: `admin_credit_${Date.now()}`,
-      reference: `ACCREDIT-${Date.now().toString().slice(-6)}`,
-      amount: amount,
-      type: 'Admin Accreditation',
-      asset: 'USDT',
-      status: 'POSTED',
-      createdAt: new Date().toISOString(),
-    };
-
-    set((state) => ({
-      usdtBalance: newBal,
-      transactions: [newTx, ...state.transactions],
-    }));
-
-    useTreasuryStore.getState().adjustTreasuryStats('DEPOSIT', amount);
-
-    // Real-time User Notification Trigger
+    // Trigger notification and refetch authoritative balance from Balance Engine
     useUserNotificationStore.getState().addNotification({
       title: 'USDT Balance Accredited',
-      message: `+$${(Number(amount) || 0).toFixed(2)} USDT has been accredited to your wallet balance by admin (${reason}).`,
+      message: `+$${(Number(amount) || 0).toFixed(2)} USDT has been accredited to your wallet balance (${reason}).`,
       category: 'Deposit',
       actionTab: 'wallet',
     });
+    get().fetchBalanceFromEngine().catch(() => undefined);
   },
 
   /**

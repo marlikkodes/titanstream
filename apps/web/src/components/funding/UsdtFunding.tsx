@@ -23,6 +23,8 @@ export const UsdtFunding: React.FC<UsdtFundingProps> = ({ onCancel }) => {
   const requiredConfirmations = (session as any)?.requiredConfirmations || 19;
 
   const handleCreateSession = async () => {
+    if (isLoading) return;
+
     const amountNum = parseFloat(amountUsdt);
     if (isNaN(amountNum) || amountNum <= 0) {
       setError('Please enter a valid deposit amount.');

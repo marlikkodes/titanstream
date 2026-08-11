@@ -1288,6 +1288,7 @@ enum GrowthEventType {
   REFERRAL_COMPLETED
   LEVEL_UPGRADED
   REWARD_GRANTED
+  SURPRISE_REWARD_GRANTED
   WITHDRAWAL_REQUESTED
   ACCOUNT_MILESTONE_REACHED
 }
@@ -1409,7 +1410,7 @@ model ReferralEvent {
 
 model ReferralReward {
   id             String   @id @default(uuid()) @map("id")
-  relationshipId String   @map("relationship_id")
+  relationshipId String   @unique @map("relationship_id")
   rewardId       String   @unique @map("reward_id")
   createdAt      DateTime @default(now()) @map("created_at")
 

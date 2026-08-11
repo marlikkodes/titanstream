@@ -29,6 +29,7 @@ import { useMiningStore } from '../../store/useMiningStore';
 import { CurrencyDisplay } from '../../components/DualCurrencyDisplay';
 import { showToast } from '../../components/Toast';
 import { RewardHistorySection } from '../../components/rewards/RewardHistorySection';
+import { RewardQueue } from '../../components/rewards/RewardQueue';
 
 export const GrowthScreen: React.FC = () => {
   const { hasPurchasedMachine, baseSpeedGhs, unclaimedBalance } = useMiningStore();
@@ -78,13 +79,23 @@ export const GrowthScreen: React.FC = () => {
     return q.category.toLowerCase() === questCategory.toLowerCase();
   });
 
-  const handleQuestClaim = (quest: QuestItem) => {
+  const handleQuestClaim = async (quest: QuestItem) => {
     hapticFeedback.impactOccurred('medium');
-    updateBalance({ crystalsBalance: crystalsBalance + quest.rewardValue });
-    claimQuest(quest.id);
-    decrementBadge(quest.type);
-    useTreasuryStore.getState().adjustTrustScore(2);
-    showToast(`Claimed +${quest.rewardValue} Crystals & +2 Safety Score!`, 'success');
+    const { claimReward, fetchMissions } = useRewardQueueStore.getState();
+    const result = await claimReward(quest.id);
+
+    if (result.success) {
+      await Promise.all([
+        useWalletStore.getState().fetchBalanceFromEngine(),
+        useTreasuryStore.getState().fetchTreasuryState(),
+        fetchMissions(),
+      ]);
+      claimQuest(quest.id);
+      decrementBadge(quest.type);
+      showToast(`Claimed +${quest.rewardValue} ${quest.rewardType || 'Crystals'} & +2 Safety Score!`, 'success');
+    } else {
+      showToast(result.error || 'Claim failed on server. Please ensure requirements are satisfied.', 'error');
+    }
   };
 
   const handleQuestAction = (quest: QuestItem) => {
@@ -535,6 +546,9 @@ export const GrowthScreen: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* 1.5 Real Backend USDT Missions Queue */}
+              <RewardQueue />
 
               {/* 2. Quests Section */}
               <div className="glass-panel p-4.5 rounded-3xl border border-white/10 space-y-4">

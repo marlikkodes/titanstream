@@ -65,8 +65,16 @@ export const useReferralStore = create<ReferralState>((set) => ({
       const summary: ReferralSummary = await growthService.getReferrals();
       const boost = Number((1 + (summary.totalInvited || 0) * 0.02).toFixed(2));
 
+      const count = summary.totalInvited || 0;
+      try {
+        const { useQuestStore } = await import('./useQuestStore');
+        useQuestStore.getState().syncReferralProgress(count);
+      } catch (e) {
+        // ignore circular import guard
+      }
+
       set({
-        invitedCount: summary.totalInvited || 0,
+        invitedCount: count,
         computeBoost: boost,
         earnedUsdt: summary.totalEarnedUSDT || 0,
         earnedTon: 0,

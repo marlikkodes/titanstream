@@ -110,9 +110,183 @@ export class RewardService {
     });
   }
 
+  // ============================================================
+  // SURPRISE REWARD ENGINE (Platform-First & Controlled Budget)
+  // ============================================================
+
   /**
-   * Create an AVAILABLE reward record. Idempotent via the unique reference.
+   * Evaluates and disburses a server-authoritative surprise reward.
+   * Enforces daily USDT budget caps, emergency kill switch, tier probabilities,
+   * and diminishing returns on repeated daily triggers.
    */
+  async evaluateSurpriseReward(
+    telegramUserId: bigint,
+    triggerEvent: 'SETTLEMENT_COMPLETED' | 'RETURN_AFTER_INACTIVITY' | 'PROGRESSION_MILESTONE' | 'LOYALTY_SURPRISE',
+  ): Promise<{
+    granted: boolean;
+    tier: 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+    assetCode: 'USDT' | 'CRYSTALS';
+    amount: string;
+    reason: string;
+  } | null> {
+    // 1. Emergency Control Kill Switch Check
+    const emergencyState = await this.prisma.emergencyControlState.findUnique({
+      where: { id: 'SYSTEM_EMERGENCY_STATE' },
+    });
+    if (emergencyState?.rewardsPaused) {
+      this.logger.warn(`[SurpriseEngine] Surprise rewards bypassed for user ${telegramUserId}: Emergency rewards control is PAUSED`);
+      return null;
+    }
+
+    // 2. Calculate daily trigger count for Diminishing Returns Probability Decay
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+
+    const triggerCountToday = await this.prisma.growthEvent.count({
+      where: {
+        telegramUserId,
+        eventType: GrowthEventType.SURPRISE_REWARD_GRANTED,
+        createdAt: { gte: todayStart },
+      },
+    });
+
+    const decayMultiplier = Math.pow(0.5, triggerCountToday);
+
+    // 3. Server-side Tier Selection (PRNG)
+    const roll = Math.random() * 100;
+    let tier: 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY' = 'COMMON';
+    let targetAsset: 'USDT' | 'CRYSTALS' = 'CRYSTALS';
+    let targetAmount = '25';
+
+    if (roll < 0.5 * decayMultiplier) {
+      tier = 'LEGENDARY';
+      targetAsset = 'USDT';
+      targetAmount = '1.000000';
+    } else if (roll < (0.5 + 2.5) * decayMultiplier) {
+      tier = 'EPIC';
+      targetAsset = 'USDT';
+      targetAmount = '0.250000';
+    } else if (roll < (0.5 + 2.5 + 7.0) * decayMultiplier) {
+      tier = 'RARE';
+      targetAsset = 'USDT';
+      targetAmount = '0.100000';
+    } else if (roll < 0.5 + 2.5 + 7.0 + 20.0) {
+      tier = 'UNCOMMON';
+      targetAsset = 'CRYSTALS';
+      targetAmount = '100';
+    } else {
+      tier = 'COMMON';
+      targetAsset = 'CRYSTALS';
+      targetAmount = '25';
+    }
+
+    // 4. Daily USDT Budget Cap Verification ($2.00 / day global cap) with Atomic Transaction Isolation
+    const DAILY_USDT_BUDGET_CAP = 2.0;
+    const ref = `surprise_${triggerEvent.toLowerCase()}_${telegramUserId}_${Date.now()}`;
+    const reason = `Titan Drop (${tier}) triggered by ${triggerEvent}`;
+
+    if (targetAsset === 'USDT') {
+      await this.prisma.$transaction(async (tx) => {
+        const disbursedAggregate = await tx.reward.aggregate({
+          where: {
+            assetCode: 'USDT',
+            status: RewardStatus.CLAIMED,
+            processedAt: { gte: todayStart },
+          },
+          _sum: { amount: true },
+        });
+
+        const currentDisbursedToday = Number(disbursedAggregate._sum.amount || 0);
+        if (currentDisbursedToday + Number(targetAmount) > DAILY_USDT_BUDGET_CAP) {
+          this.logger.log(`[SurpriseEngine] Daily USDT Budget Cap reached ($${currentDisbursedToday.toFixed(2)} / $${DAILY_USDT_BUDGET_CAP}). Downgrading surprise drop to UNCOMMON Crystals.`);
+          tier = 'UNCOMMON';
+          targetAsset = 'CRYSTALS';
+          targetAmount = '100';
+        } else {
+          await tx.reward.create({
+            data: {
+              telegramUserId,
+              rewardType: RewardType.MILESTONE,
+              amount: targetAmount,
+              assetCode: 'USDT',
+              status: RewardStatus.CLAIMED,
+              reference: ref,
+              processedAt: new Date(),
+              metadata: { surpriseTier: tier, triggerEvent, reason },
+            },
+          });
+        }
+      }, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      });
+    }
+
+    // 5. Execute Reward Disbursement & Financial Orchestration
+    if (targetAsset === 'USDT') {
+      try {
+        await this.orchestrator.requestOperation({
+          telegramUserId,
+          amount: targetAmount,
+          assetCode: 'USDT',
+          operationType: 'SYSTEM_ALLOCATION' as any,
+          reference: ref,
+        });
+      } catch (err: any) {
+        this.logger.error(`[SurpriseEngine] Ledger operation failed for surprise reward ref ${ref}: ${err.message}`);
+      }
+    } else {
+      // Credit Crystals in CrystalAccount & log signed transaction
+      const amountInt = parseInt(targetAmount, 10);
+      try {
+        let account = await this.prisma.crystalAccount.findUnique({ where: { telegramUserId } });
+        if (!account) {
+          account = await this.prisma.crystalAccount.create({
+            data: { telegramUserId, balance: 0 },
+          });
+        }
+
+        const newBalance = account.balance + amountInt;
+        await this.prisma.crystalAccount.update({
+          where: { telegramUserId },
+          data: {
+            balance: newBalance,
+            lifetimeEarned: account.lifetimeEarned + amountInt,
+          },
+        });
+
+        await this.prisma.crystalTransaction.create({
+          data: {
+            telegramUserId,
+            accountId: account.id,
+            type: 'EVENT_BONUS',
+            amount: amountInt,
+            balanceAfter: newBalance,
+            reference: ref,
+            metadata: { surpriseTier: tier, triggerEvent, reason },
+          },
+        });
+      } catch (err: any) {
+        this.logger.warn(`[SurpriseEngine] Crystal credit transaction failed: ${err.message}`);
+      }
+    }
+
+    // 6. Log Growth Audit Event
+    await this.growthEventService.publish({
+      telegramUserId,
+      eventType: GrowthEventType.SURPRISE_REWARD_GRANTED,
+      payload: { tier, assetCode: targetAsset, amount: targetAmount, triggerEvent, reason },
+    });
+
+    this.logger.log(`[SurpriseEngine] Issued ${tier} surprise drop (+${targetAmount} ${targetAsset}) to user ${telegramUserId} for ${triggerEvent}`);
+
+    return {
+      granted: true,
+      tier,
+      assetCode: targetAsset,
+      amount: targetAmount,
+      reason,
+    };
+  }
   async createReward(data: {
     telegramUserId: bigint;
     rewardType: RewardType;
@@ -190,6 +364,13 @@ export class RewardService {
       label = 'Paying referral';
       unit = 'paying referral(s)';
       current = user?.payingReferrals ?? 0;
+    } else if (requirementType === 'REFERRAL_COUNT') {
+      const count = await this.prisma.referralRelationship.count({
+        where: { referrerId: telegramUserId },
+      });
+      label = 'Invited friend';
+      unit = 'friend(s)';
+      current = count;
     } else if (requirementType === 'SETTLEMENT_COUNT') {
       const count = await this.prisma.settlementSession.count({
         where: { telegramUserId, status: 'COMPLETED' },
@@ -214,6 +395,41 @@ export class RewardService {
       label = 'User level';
       unit = 'level';
       current = LEVEL_ORDER[tier] ?? 0;
+    } else if (requirementType === 'TAP_COUNT') {
+      const miningState = await this.prisma.userMiningState.findUnique({
+        where: { telegramUserId },
+        select: { lifetimePromotionalOutput: true, interactivePromotionalOutput: true },
+      });
+      label = 'Cooler tap';
+      unit = 'tap(s)';
+      current = Math.floor(Number(miningState?.interactivePromotionalOutput || miningState?.lifetimePromotionalOutput || 0) * 50);
+    } else if (requirementType === 'DAILY_LOGIN' || requirementType === 'DAILY_STREAK') {
+      const streakInfo = await this.achievementService.getClaimStreakInfo(telegramUserId);
+      label = 'Daily login streak';
+      unit = 'day(s)';
+      current = streakInfo.current || 1;
+    } else if (requirementType === 'BALANCE_ACCUMULATED') {
+      const volumeAggregate = await this.prisma.settlementSession.aggregate({
+        where: { telegramUserId, status: 'COMPLETED' },
+        _sum: { expectedCryptoAmount: true },
+      });
+      label = 'Accumulated volume';
+      unit = 'USDT';
+      current = Number(volumeAggregate._sum.expectedCryptoAmount || 0);
+    } else if (requirementType === 'GAME_SPINS') {
+      const spins = await this.prisma.achievement.findUnique({
+        where: { telegramUserId_code: { telegramUserId, code: 'GAME_SPINS' } },
+      });
+      label = 'Game spin';
+      unit = 'spin(s)';
+      current = spins?.progress ?? 0;
+    } else if (requirementType === 'GAME_SCORE') {
+      const score = await this.prisma.achievement.findUnique({
+        where: { telegramUserId_code: { telegramUserId, code: 'GAME_HOOPS' } },
+      });
+      label = 'Hoop score';
+      unit = 'point(s)';
+      current = score?.progress ?? 0;
     } else {
       label = params.label || 'Requirement';
       current = Number(params.current ?? 0);
@@ -704,7 +920,29 @@ export class RewardService {
         },
       });
 
-      // Notify preferred channels + reconcile achievement cabinet.
+      // Server-side Trust Profile Safety Score +2 increment (audit event & single claim increment)
+      try {
+        const profile = await this.prisma.userTrustProfile.findUnique({ where: { telegramUserId: reward.telegramUserId } });
+        if (profile) {
+          const newScore = Math.min(100, profile.trustScore + 2);
+          await this.prisma.userTrustProfile.update({
+            where: { telegramUserId: reward.telegramUserId },
+            data: { trustScore: newScore },
+          });
+          await this.prisma.trustEvent.create({
+            data: {
+              profileId: profile.id,
+              telegramUserId: reward.telegramUserId,
+              scoreDelta: 2,
+              newScore,
+              reason: `Reward Claim Bonus: ${reward.id}`,
+            },
+          });
+        }
+      } catch (err: any) {
+        this.logger.warn(`[RewardService] Safety score bump failed after claim ${reward.id}: ${err.message}`);
+      }
+
       try {
         await this.notificationService.sendNotification({
           telegramUserId: reward.telegramUserId,

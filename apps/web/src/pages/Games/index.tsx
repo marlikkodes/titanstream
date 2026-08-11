@@ -140,11 +140,10 @@ export const GamesScreen: React.FC = () => {
       store.loadHub();
       store.loadLeaderboard({ gameId: activeGame.gameId, period, scope });
       incrementCategoryProgress('Games', 1);
-      if (activeGame.code === 'ROULETTE') {
-        incrementProgress('q19', 1);
-        incrementProgress('q20', 1);
-      } else if (activeGame.code === 'HOOPS') {
-        incrementProgress('q21', 1);
+      if (activeGame.code === 'ROULETTE' || activeGame.gameId === 'crypto-roulette') {
+        useQuestStore.getState().trackGameSpin();
+      } else if (activeGame.code === 'HOOPS' || activeGame.gameId === 'hoop-masters') {
+        useQuestStore.getState().trackHoopScore(Math.max(1, endResult.score || 1));
       }
     }
   };

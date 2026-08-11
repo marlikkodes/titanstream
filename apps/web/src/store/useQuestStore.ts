@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 type QuestType = 'OURS' | 'PARTNER';
 type QuestStatus = 'IN_PROGRESS' | 'CLAIMABLE' | 'CLAIMED';
@@ -23,11 +24,20 @@ interface QuestState {
   quests: QuestItem[];
   activeTab: QuestType;
   activeCategory: string;
+  lastLoginDate: string | null;
+  loginStreak: number;
   setActiveTab: (tab: QuestType) => void;
   setActiveCategory: (category: string) => void;
   incrementProgress: (id: string, amount?: number) => void;
   incrementCategoryProgress: (category: string, amount?: number) => void;
   claimQuest: (id: string) => void;
+  syncReferralProgress: (invitedCount: number) => void;
+  syncMachinePowerProgress: (totalPower: number) => void;
+  syncBalanceProgress: (usdtBalance: number) => void;
+  checkDailyLoginStreak: () => void;
+  trackTapCount: (taps: number) => void;
+  trackGameSpin: () => void;
+  trackHoopScore: (hoops: number) => void;
 }
 
 const PLACEHOLDER_QUESTS: QuestItem[] = [
@@ -138,7 +148,7 @@ const PLACEHOLDER_QUESTS: QuestItem[] = [
     subtitle: 'Accumulate manual spinner cooler taps',
     rewardType: 'CRYSTALS',
     rewardValue: 5,
-    progress: 12,
+    progress: 0,
     target: 50,
     status: 'IN_PROGRESS',
   },
@@ -150,7 +160,7 @@ const PLACEHOLDER_QUESTS: QuestItem[] = [
     subtitle: 'Accumulate manual spinner cooler taps',
     rewardType: 'CRYSTALS',
     rewardValue: 60,
-    progress: 12,
+    progress: 0,
     target: 500,
     status: 'IN_PROGRESS',
   },
@@ -162,7 +172,7 @@ const PLACEHOLDER_QUESTS: QuestItem[] = [
     subtitle: 'Accumulate manual spinner cooler taps',
     rewardType: 'CRYSTALS',
     rewardValue: 400,
-    progress: 12,
+    progress: 0,
     target: 2500,
     status: 'IN_PROGRESS',
   },
@@ -203,8 +213,8 @@ const PLACEHOLDER_QUESTS: QuestItem[] = [
     subtitle: 'Increase your daily earning speed',
     rewardType: 'CRYSTALS',
     rewardValue: 25,
-    progress: 1,
-    target: 5,
+    progress: 0,
+    target: 50,
     status: 'IN_PROGRESS',
   },
   {
@@ -215,8 +225,8 @@ const PLACEHOLDER_QUESTS: QuestItem[] = [
     subtitle: 'Increase your daily earning speed',
     rewardType: 'CRYSTALS',
     rewardValue: 75,
-    progress: 1,
-    target: 10,
+    progress: 0,
+    target: 100,
     status: 'IN_PROGRESS',
   },
   {
@@ -227,8 +237,8 @@ const PLACEHOLDER_QUESTS: QuestItem[] = [
     subtitle: 'Increase your daily earning speed',
     rewardType: 'CRYSTALS',
     rewardValue: 500,
-    progress: 1,
-    target: 50,
+    progress: 0,
+    target: 500,
     status: 'IN_PROGRESS',
   },
   {
@@ -239,7 +249,7 @@ const PLACEHOLDER_QUESTS: QuestItem[] = [
     subtitle: 'Generate yield on your device',
     rewardType: 'CRYSTALS',
     rewardValue: 30,
-    progress: 0.2268,
+    progress: 0,
     target: 1,
     status: 'IN_PROGRESS',
   },
@@ -251,7 +261,7 @@ const PLACEHOLDER_QUESTS: QuestItem[] = [
     subtitle: 'Stream Tether on your device',
     rewardType: 'CRYSTALS',
     rewardValue: 400,
-    progress: 0.2268,
+    progress: 0,
     target: 10,
     status: 'IN_PROGRESS',
   },
@@ -351,35 +361,139 @@ const PLACEHOLDER_QUESTS: QuestItem[] = [
   },
 ];
 
-export const useQuestStore = create<QuestState>((set) => ({
-  quests: PLACEHOLDER_QUESTS,
-  activeTab: 'OURS',
-  activeCategory: 'All ours',
-  setActiveTab: (tab) => set({ activeTab: tab }),
-  setActiveCategory: (category) => set({ activeCategory: category }),
-  incrementProgress: (id, amount = 1) =>
-    set((state) => ({
-      quests: state.quests.map((q) => {
-        if (q.id !== id || q.status === 'CLAIMED' || q.status === 'CLAIMABLE') return q;
-        const newProgress = Math.min(q.target, q.progress + amount);
-        const newStatus = newProgress >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS';
-        return { ...q, progress: newProgress, status: newStatus as any };
-      }),
-    })),
-  incrementCategoryProgress: (category, amount = 1) =>
-    set((state) => ({
-      quests: state.quests.map((q) => {
-        if (q.category.toLowerCase() !== category.toLowerCase() || q.status === 'CLAIMED' || q.status === 'CLAIMABLE') return q;
-        const newProgress = Math.min(q.target, q.progress + amount);
-        const newStatus = newProgress >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS';
-        return { ...q, progress: newProgress, status: newStatus as any };
-      }),
-    })),
-  claimQuest: (id) =>
-    set((state) => ({
-      quests: state.quests.map((q) => {
-        if (q.id !== id) return q;
-        return { ...q, status: 'CLAIMED' };
-      }),
-    })),
-}));
+export const useQuestStore = create<QuestState>()(
+  persist(
+    (set, get) => ({
+      quests: PLACEHOLDER_QUESTS,
+      activeTab: 'OURS',
+      activeCategory: 'All ours',
+      lastLoginDate: null,
+      loginStreak: 1,
+      setActiveTab: (tab) => set({ activeTab: tab }),
+      setActiveCategory: (category) => set({ activeCategory: category }),
+      incrementProgress: (id, amount = 1) =>
+        set((state) => ({
+          quests: state.quests.map((q) => {
+            if (q.id !== id || q.status === 'CLAIMED') return q;
+            const newProgress = Math.min(q.target, q.progress + amount);
+            const newStatus = newProgress >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS';
+            return { ...q, progress: newProgress, status: newStatus as any };
+          }),
+        })),
+      incrementCategoryProgress: (category, amount = 1) =>
+        set((state) => ({
+          quests: state.quests.map((q) => {
+            if (q.category.toLowerCase() !== category.toLowerCase() || q.status === 'CLAIMED') return q;
+            const newProgress = Math.min(q.target, q.progress + amount);
+            const newStatus = newProgress >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS';
+            return { ...q, progress: newProgress, status: newStatus as any };
+          }),
+        })),
+      claimQuest: (id) =>
+        set((state) => ({
+          quests: state.quests.map((q) => {
+            if (q.id !== id) return q;
+            return { ...q, status: 'CLAIMED' };
+          }),
+        })),
+      syncReferralProgress: (invitedCount) =>
+        set((state) => ({
+          quests: state.quests.map((q) => {
+            if (q.category !== 'Friends' || q.status === 'CLAIMED') return q;
+            const newProgress = Math.min(q.target, invitedCount);
+            const newStatus = newProgress >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS';
+            return { ...q, progress: newProgress, status: newStatus as any };
+          }),
+        })),
+      syncMachinePowerProgress: (totalPower) =>
+        set((state) => ({
+          quests: state.quests.map((q) => {
+            if (q.id !== 'q14' && q.id !== 'q15' && q.id !== 'q16') return q;
+            if (q.status === 'CLAIMED') return q;
+            const newProgress = Math.min(q.target, totalPower);
+            const newStatus = newProgress >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS';
+            return { ...q, progress: newProgress, status: newStatus as any };
+          }),
+        })),
+      syncBalanceProgress: (usdtBalance) =>
+        set((state) => ({
+          quests: state.quests.map((q) => {
+            if (q.id !== 'q17' && q.id !== 'q18') return q;
+            if (q.status === 'CLAIMED') return q;
+            const newProgress = Math.min(q.target, Number(usdtBalance) || 0);
+            const newStatus = newProgress >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS';
+            return { ...q, progress: newProgress, status: newStatus as any };
+          }),
+        })),
+      checkDailyLoginStreak: () => {
+        const today = new Date().toISOString().split('T')[0];
+        const { lastLoginDate, loginStreak } = get();
+        if (lastLoginDate === today) return;
+
+        let newStreak = 1;
+        if (lastLoginDate) {
+          const prevDate = new Date(lastLoginDate);
+          const currentDate = new Date(today);
+          const diffDays = Math.round((currentDate.getTime() - prevDate.getTime()) / (1000 * 3600 * 24));
+          if (diffDays === 1) {
+            newStreak = loginStreak + 1;
+          }
+        }
+
+        set((state) => {
+          const updatedQuests = state.quests.map((q) => {
+            if (q.id === 'q1' && q.status !== 'CLAIMED') {
+              return { ...q, progress: 1, status: 'CLAIMABLE' as any };
+            }
+            if (q.id === 'q2' && q.status !== 'CLAIMED') {
+              const p = Math.min(q.target, newStreak);
+              return { ...q, progress: p, status: (p >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS') as any };
+            }
+            if (q.id === 'q3' && q.status !== 'CLAIMED') {
+              const p = Math.min(q.target, newStreak);
+              return { ...q, progress: p, status: (p >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS') as any };
+            }
+            return q;
+          });
+          return {
+            lastLoginDate: today,
+            loginStreak: newStreak,
+            quests: updatedQuests,
+          };
+        });
+      },
+      trackTapCount: (taps = 1) =>
+        set((state) => ({
+          quests: state.quests.map((q) => {
+            if (q.category !== 'Taps' || q.status === 'CLAIMED') return q;
+            const newProgress = Math.min(q.target, q.progress + taps);
+            const newStatus = newProgress >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS';
+            return { ...q, progress: newProgress, status: newStatus as any };
+          }),
+        })),
+      trackGameSpin: () =>
+        set((state) => ({
+          quests: state.quests.map((q) => {
+            if (q.id !== 'q19' && q.id !== 'q20') return q;
+            if (q.status === 'CLAIMED') return q;
+            const newProgress = Math.min(q.target, q.progress + 1);
+            const newStatus = newProgress >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS';
+            return { ...q, progress: newProgress, status: newStatus as any };
+          }),
+        })),
+      trackHoopScore: (hoops) =>
+        set((state) => ({
+          quests: state.quests.map((q) => {
+            if (q.id !== 'q21' || q.status === 'CLAIMED') return q;
+            const newProgress = Math.min(q.target, q.progress + hoops);
+            const newStatus = newProgress >= q.target ? 'CLAIMABLE' : 'IN_PROGRESS';
+            return { ...q, progress: newProgress, status: newStatus as any };
+          }),
+        })),
+    }),
+    {
+      name: 'titan_quest_store_v1',
+    },
+  ),
+);
+

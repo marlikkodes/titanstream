@@ -29,15 +29,29 @@ export const QuestsScreen: React.FC = () => {
     return q.category.toLowerCase() === activeCategory.toLowerCase();
   });
 
-  const handleClaim = (quest: QuestItem) => {
-    // 1. Credit Crystal Reward
-    updateBalance({ crystalsBalance: crystalsBalance + quest.rewardValue });
-    // 2. Mark quest as claimed in store
-    claimQuest(quest.id);
-    // 3. Decrement notification badge count
-    decrementBadge(quest.type);
+  const handleClaim = async (quest: QuestItem) => {
+    // Server-authoritative claim via Reward Queue / Growth API
+    const { claimReward, fetchMissions } = useRewardQueueStore.getState();
+    const result = await claimReward(quest.id);
 
-    showToast(`Claimed +${quest.rewardValue} Crystals from "${quest.title}"!`, 'success');
+    if (result.success) {
+      // Re-fetch authoritative wallet balance, trust score, and missions from server
+      await Promise.all([
+        useWalletStore.getState().fetchBalanceFromEngine(),
+        useTreasuryStore.getState().fetchTreasuryState(),
+        fetchMissions(),
+      ]);
+      claimQuest(quest.id);
+      decrementBadge(quest.type);
+
+      if ((window as any).Telegram?.WebApp?.HapticFeedback) {
+        (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+
+      showToast(`Claimed +${quest.rewardValue} ${quest.rewardType || 'Crystals'} from "${quest.title}"! (+2 Safety Score)`, 'success');
+    } else {
+      showToast(result.error || 'Claim failed on server. Please ensure requirements are satisfied.', 'error');
+    }
   };
 
   const handleAction = (quest: QuestItem) => {

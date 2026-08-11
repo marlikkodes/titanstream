@@ -150,6 +150,14 @@ export class ReferralService {
       throw new BadRequestException('Users cannot refer themselves');
     }
 
+    // Check circular referral (prevent A referring B, and B referring A)
+    const inverseRelationship = await this.prisma.referralRelationship.findFirst({
+      where: { referrerId: refereeId, refereeId: codeRecord.telegramUserId },
+    });
+    if (inverseRelationship) {
+      throw new BadRequestException('Circular referrals are prohibited');
+    }
+
     // Check if referee already has a referrer
     const existingRelationship = await this.prisma.referralRelationship.findUnique({
       where: { refereeId },
