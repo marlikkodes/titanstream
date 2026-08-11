@@ -90,6 +90,7 @@ export const fundingService = {
       exchangeRate: '1.0',
       country: params.country,
       mobileMoneyNetwork: params.mobileMoneyNetwork,
+      phoneNumber: params.phoneNumber,
     });
     return { session: raw };
   },

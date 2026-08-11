@@ -27,7 +27,7 @@ export class PesapalClient {
     }
     return this.environment === 'production'
       ? 'https://pay.pesapal.com/v3'
-      : 'https://cyb3r.pesapal.com/pesapalv3';
+      : 'https://cybqa.pesapal.com/pesapalv3';
   }
 
   private get consumerKey(): string {

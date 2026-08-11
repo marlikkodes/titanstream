@@ -50,7 +50,7 @@ export const UsdtFunding: React.FC<UsdtFundingProps> = ({ onCancel }) => {
       hapticFeedback.notificationOccurred('success');
     } catch (err: any) {
       console.error('Failed to create USDT session:', err);
-      const errMsg = err?.response?.data?.message || err?.message || '';
+      const errMsg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || '';
 
       if (errMsg.includes('ACTIVE_SETTLEMENT_EXISTS')) {
         try {

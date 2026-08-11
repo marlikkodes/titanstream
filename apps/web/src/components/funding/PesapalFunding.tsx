@@ -97,7 +97,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
       setSession(response.session);
     } catch (err: any) {
       console.error('Failed to create payment session:', err);
-      const errMsg = err?.response?.data?.message || err.message || '';
+      const errMsg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || '';
 
       if (errMsg.includes('ACTIVE_SETTLEMENT_EXISTS')) {
         try {

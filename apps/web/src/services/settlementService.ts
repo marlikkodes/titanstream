@@ -36,6 +36,7 @@ export interface CreateSettlementPayload {
   exchangeRate: string;
   country?: string;
   mobileMoneyNetwork?: string;
+  phoneNumber?: string;
 }
 
 export interface SettlementSessionView {

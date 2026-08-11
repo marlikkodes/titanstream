@@ -80,7 +80,7 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
       setActiveOrder(order);
       if (onSuccess) onSuccess(order);
     } catch (err: any) {
-      const message = err?.response?.data?.message || err?.message || 'Failed to initialize payment order';
+      const message = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || 'Failed to initialize payment order';
       setErrorMessage(message);
       hapticFeedback.notificationOccurred('error');
     } finally {

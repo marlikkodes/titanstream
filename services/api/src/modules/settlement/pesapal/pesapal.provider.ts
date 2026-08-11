@@ -388,7 +388,9 @@ export class PesapalProvider implements SettlementProvider {
     const orderPayload: PesapalOrderRequestPayload = {
       id: session.referenceCode,
       currency: session.country === 'KE' ? 'KES' : session.country === 'UG' ? 'UGX' : 'USD',
-      amount: Number(session.requestedAmount),
+      amount: session.country === 'US' || session.country === 'GLOBAL'
+        ? Number(session.requestedAmount)
+        : Math.round(Number(session.requestedAmount) * Number(session.exchangeRate)),
       description: `TitanStream Deposit (${session.asset})`,
       callback_url: callbackUrl,
       notification_id: ipnId,
