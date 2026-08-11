@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { PrismaService } from '../../database/prisma.service';
-import { OperationalAuditService } from '../admin/services/operational-audit.service';
+import { AuditService } from '../audit/audit.service';
 
 describe('UserService - deleteAccount', () => {
   let userService: UserService;
@@ -61,6 +61,7 @@ describe('UserService - deleteAccount', () => {
     };
 
     auditServiceMock = {
+      createWithClient: jest.fn().mockResolvedValue({}),
       create: jest.fn().mockResolvedValue({}),
     };
 
@@ -68,7 +69,7 @@ describe('UserService - deleteAccount', () => {
       providers: [
         UserService,
         { provide: PrismaService, useValue: prismaMock },
-        { provide: OperationalAuditService, useValue: auditServiceMock },
+        { provide: AuditService, useValue: auditServiceMock },
       ],
     }).compile();
 
@@ -79,6 +80,6 @@ describe('UserService - deleteAccount', () => {
     const res = await userService.deleteAccount(123456n);
     expect(res).toEqual({ success: true, message: 'Account deleted successfully' });
     expect(prismaMock.user.delete).toHaveBeenCalledWith({ where: { telegramUserId: 123456n } });
-    expect(auditServiceMock.create).toHaveBeenCalled();
+    expect(auditServiceMock.createWithClient).toHaveBeenCalled();
   });
 });

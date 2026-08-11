@@ -262,17 +262,21 @@ export class UserService {
       // 19. Delete admin notes
       await tx.adminNote.deleteMany({ where: { telegramUserId } });
 
-      // 20. Finally delete the user record
+      // 20. Create audit event for account deletion inside the transaction BEFORE deleting user
+      try {
+        await this.auditService.createWithClient(tx, {
+          telegramUserId,
+          eventType: AuditEventType.ACCOUNT_DELETED,
+          description: 'User account completely deleted',
+          metadata: { deletedAt: new Date().toISOString() },
+        });
+      } catch (err) {
+        // Ignore audit log error if any
+      }
+
+      // 21. Finally delete the user record
       await tx.user.delete({
         where: { telegramUserId },
-      });
-
-      // 21. Create audit event for account deletion
-      await this.auditService.create({
-        telegramUserId,
-        eventType: AuditEventType.ACCOUNT_DELETED,
-        description: 'User account completely deleted',
-        metadata: { deletedAt: new Date().toISOString() },
       });
 
       return { success: true, message: 'Account deleted successfully' };
