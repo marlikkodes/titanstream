@@ -26,7 +26,7 @@ import { UsdtModule } from './usdt/usdt.module';
 import { UsdtProvider } from './usdt/usdt.provider';
 
 @Module({
-  imports: [PrismaModule, FinancialOrchestrationModule, PesapalModule, UsdtModule],
+  imports: [PrismaModule, FinancialOrchestrationModule, CryptoBotModule, PesapalModule, UsdtModule],
   controllers: [OperatorController, SettlementController, OperationsPortalController, UniversalSettlementController],
   providers: [
     OperatorRepository,
