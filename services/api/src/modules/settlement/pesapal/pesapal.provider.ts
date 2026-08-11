@@ -95,7 +95,16 @@ export class PesapalProvider implements SettlementProvider {
           });
         }
       } catch (err: any) {
-        this.logger.warn(`[PesapalProvider] Polling status check failed for ${settlementId}: ${err?.message}`);
+        const isIntegrityFailure = err?.message?.includes('MISSING_PROVIDER_') || err?.message?.includes('PAYMENT_');
+        if (isIntegrityFailure) {
+          this.logger.warn(`[PesapalProvider] Payment integrity check failed for ${settlementId}: ${err?.message}. Holding in VERIFYING for reconciliation.`);
+          await this.prisma.settlementSession.update({
+            where: { id: settlementId },
+            data: { status: SettlementStatus.VERIFYING },
+          });
+        } else {
+          this.logger.warn(`[PesapalProvider] Polling status check failed for ${settlementId}: ${err?.message}`);
+        }
       }
     }
 
@@ -363,8 +372,36 @@ export class PesapalProvider implements SettlementProvider {
     const normalized = this.normalizeStatus(liveStatus);
 
     if (normalized === 'COMPLETED') {
-      this.verifyPaymentIntegrity(session, liveStatus);
-      return this.processVerifiedSuccess(session, liveStatus);
+      try {
+        this.verifyPaymentIntegrity(session, liveStatus);
+        return this.processVerifiedSuccess(session, liveStatus);
+      } catch (integrityErr: any) {
+        // Payment integrity check failed — hold in VERIFYING for reconciliation.
+        // Do NOT credit the user. Do NOT throw a 400 at Pesapal (would stop retries).
+        this.logger.error(
+          `[PesapalProvider] IPN payment integrity check failed for ${session.id}: ${integrityErr?.message}. ` +
+          `Holding in VERIFYING for reconciliation retry.`,
+        );
+        await this.prisma.settlementSession.update({
+          where: { id: session.id },
+          data: {
+            status: SettlementStatus.VERIFYING,
+            events: {
+              create: {
+                eventType: SettlementEventType.SettlementVerificationStarted,
+                actorType: 'SYSTEM',
+                actorId: 'PAYMENT_INTEGRITY_GUARD',
+                payload: {
+                  reason: integrityErr?.message,
+                  providerAmount: liveStatus.amount,
+                  providerCurrency: liveStatus.currency,
+                } as unknown as Prisma.InputJsonValue,
+              },
+            },
+          },
+        });
+        return this.toProviderIndependentView(await this.load(session.id));
+      }
     } else if (normalized === 'FAILED') {
       await this.prisma.settlementSession.update({
         where: { id: session.id },
@@ -477,14 +514,32 @@ export class PesapalProvider implements SettlementProvider {
   }
 
   /**
-   * DEFECT 2 FIX — Payment Integrity Verification
-   * Validates that the amount and currency reported by Pesapal match the locked
-   * financial snapshot in the session. This prevents crediting a user when the
-   * actual payment differs from the expected payment.
+   * PAYMENT INTEGRITY VERIFICATION — FAIL-CLOSED
    *
-   * Note: Pesapal's GetTransactionStatus response has optional `amount` and
-   * `currency` fields. When omitted, the check is skipped gracefully — we do
-   * NOT block legitimate payments when Pesapal omits these fields.
+   * Before any user credit, verify that the Pesapal-reported payment matches
+   * the locked financial snapshot in the session.
+   *
+   * FAIL-CLOSED POLICY:
+   * - Missing amount  → REJECT (transition to VERIFYING for reconciliation)
+   * - Missing currency → REJECT (transition to VERIFYING for reconciliation)
+   * - Amount mismatch  → REJECT (throw BadRequestException)
+   * - Currency mismatch → REJECT (throw BadRequestException)
+   *
+   * AMOUNT TOLERANCE:
+   * Currency-specific absolute tolerances based on the smallest transactable
+   * unit for each payment rail. Mobile money in East Africa transacts in
+   * whole currency units (no sub-unit fractions). We allow exactly 1 whole
+   * unit of tolerance to handle rounding at the payment provider boundary.
+   *
+   * UGX: ±1 UGX  (smallest unit; no fractional UGX exists)
+   * KES: ±1 KES  (mobile money rounds to whole shillings)
+   * USD: ±0.01   (1 cent tolerance for card processor rounding)
+   *
+   * This means:
+   * 185,000 UGX → 185,000 UGX = ACCEPT
+   * 185,000 UGX → 184,999 UGX = ACCEPT (within 1 UGX tolerance)
+   * 185,000 UGX → 184,000 UGX = REJECT (1,000 UGX difference)
+   * 185,000 UGX → 100,000 UGX = REJECT (material underpayment)
    */
   private verifyPaymentIntegrity(
     session: any,
@@ -497,34 +552,86 @@ export class PesapalProvider implements SettlementProvider {
           .mul(new Prisma.Decimal(session.exchangeRate.toString()))
           .toDecimalPlaces(0)
           .toNumber();
-    const expectedCurrency = metadata.paymentCurrency as string | undefined;
+    const expectedCurrency = (metadata.paymentCurrency as string | undefined)
+      || (session.country === 'KE' ? 'KES' : session.country === 'UG' ? 'UGX' : 'USD');
 
-    // Amount verification: 1% tolerance for provider rounding
-    if (liveStatus.amount != null && expectedAmount != null) {
-      const deviation = Math.abs(liveStatus.amount - expectedAmount) / expectedAmount;
-      if (deviation > 0.01) {
-        this.logger.error(
-          `[PesapalProvider] PAYMENT_AMOUNT_MISMATCH for session ${session.id}: ` +
-          `expected=${expectedAmount}, received=${liveStatus.amount}, deviation=${(deviation * 100).toFixed(2)}%`,
-        );
-        throw new BadRequestException(
-          `PAYMENT_AMOUNT_MISMATCH: expected=${expectedAmount}, received=${liveStatus.amount}`,
-        );
-      }
+    // ── FAIL-CLOSED: Require provider amount ───────────────────────────
+    if (liveStatus.amount == null || liveStatus.amount === undefined) {
+      this.logger.error(
+        `[PesapalProvider] MISSING_PROVIDER_AMOUNT for session ${session.id}: ` +
+        `Pesapal did not return payment amount. Cannot authorize credit.`,
+      );
+      throw new BadRequestException(
+        `MISSING_PROVIDER_AMOUNT: Provider did not return payment amount for session ${session.id}`,
+      );
     }
 
-    // Currency verification
-    if (liveStatus.currency && expectedCurrency) {
-      if (liveStatus.currency.toUpperCase() !== expectedCurrency.toUpperCase()) {
-        this.logger.error(
-          `[PesapalProvider] PAYMENT_CURRENCY_MISMATCH for session ${session.id}: ` +
-          `expected=${expectedCurrency}, received=${liveStatus.currency}`,
-        );
-        throw new BadRequestException(
-          `PAYMENT_CURRENCY_MISMATCH: expected=${expectedCurrency}, received=${liveStatus.currency}`,
-        );
-      }
+    // ── FAIL-CLOSED: Require provider currency ─────────────────────────
+    if (!liveStatus.currency) {
+      this.logger.error(
+        `[PesapalProvider] MISSING_PROVIDER_CURRENCY for session ${session.id}: ` +
+        `Pesapal did not return payment currency. Cannot authorize credit.`,
+      );
+      throw new BadRequestException(
+        `MISSING_PROVIDER_CURRENCY: Provider did not return payment currency for session ${session.id}`,
+      );
     }
+
+    // ── Currency verification (case-normalized, semantically exact) ────
+    if (liveStatus.currency.toUpperCase() !== expectedCurrency.toUpperCase()) {
+      this.logger.error(
+        `[PesapalProvider] PAYMENT_CURRENCY_MISMATCH for session ${session.id}: ` +
+        `expected=${expectedCurrency}, received=${liveStatus.currency}`,
+      );
+      throw new BadRequestException(
+        `PAYMENT_CURRENCY_MISMATCH: expected=${expectedCurrency}, received=${liveStatus.currency}`,
+      );
+    }
+
+    // ── Amount verification with currency-specific absolute tolerance ──
+    const absoluteTolerance = this.getAmountTolerance(expectedCurrency);
+    const amountDifference = Math.abs(liveStatus.amount - expectedAmount);
+
+    if (amountDifference > absoluteTolerance) {
+      this.logger.error(
+        `[PesapalProvider] PAYMENT_AMOUNT_MISMATCH for session ${session.id}: ` +
+        `expected=${expectedAmount} ${expectedCurrency}, received=${liveStatus.amount} ${liveStatus.currency}, ` +
+        `difference=${amountDifference}, tolerance=${absoluteTolerance}`,
+      );
+      throw new BadRequestException(
+        `PAYMENT_AMOUNT_MISMATCH: expected=${expectedAmount}, received=${liveStatus.amount}, ` +
+        `difference=${amountDifference} exceeds tolerance=${absoluteTolerance} ${expectedCurrency}`,
+      );
+    }
+  }
+
+  /**
+   * Currency-specific absolute amount tolerances.
+   *
+   * These tolerances account for rounding at the payment provider boundary:
+   * - UGX: 1 unit (Uganda Shilling has no fractional subunit)
+   * - KES: 1 unit (mobile money transacts in whole shillings)
+   * - TZS: 1 unit (Tanzania Shilling, no fractional subunit for MM)
+   * - NGN: 1 unit (whole Naira for mobile money)
+   * - GHS: 0.01 (Ghana Cedi has pesewa subunit)
+   * - USD: 0.01 (cent-level tolerance)
+   * - GBP: 0.01 (penny-level tolerance)
+   * - EUR: 0.01 (cent-level tolerance)
+   *
+   * Default for unknown currencies: 0 (exact match required).
+   */
+  private getAmountTolerance(currencyCode: string): number {
+    const tolerances: Record<string, number> = {
+      UGX: 1,
+      KES: 1,
+      TZS: 1,
+      NGN: 1,
+      GHS: 0.01,
+      USD: 0.01,
+      GBP: 0.01,
+      EUR: 0.01,
+    };
+    return tolerances[currencyCode.toUpperCase()] ?? 0;
   }
 
   /**

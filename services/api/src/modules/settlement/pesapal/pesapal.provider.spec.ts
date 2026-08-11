@@ -54,10 +54,11 @@ describe('PesapalProvider Unit Tests', () => {
       getIpnId: jest.fn().mockResolvedValue('ipn_uuid_123'),
     };
 
-    mockRiskService = {
-      // Updated to match the new risk service interface used by createSettlement
-      evaluateUserRisk: jest.fn().mockResolvedValue({ allowed: true, requiresManualReview: false }),
-      assertSessionCreationRisk: jest.fn().mockResolvedValue(undefined),
+    const mockExchangeRateService = {
+      getRate: jest.fn().mockResolvedValue({ baseRate: 130, appliedRate: 132.6, userRate: 132.6, source: 'coingecko' }),
+      lockRateForSettlement: jest.fn().mockResolvedValue({
+        baseRate: 130, appliedRate: 132.6, userRate: 132.6, rateTimestamp: new Date().toISOString(), source: 'coingecko',
+      }),
     };
 
     provider = new PesapalProvider(
@@ -66,6 +67,7 @@ describe('PesapalProvider Unit Tests', () => {
       mockOrchestrator,
       mockPesapalClient,
       mockRiskService,
+      mockExchangeRateService as any,
     );
   });
 

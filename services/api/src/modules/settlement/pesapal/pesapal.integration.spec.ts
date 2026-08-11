@@ -4,6 +4,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { FinancialOrchestratorService } from '../../financial-orchestration/financial-orchestrator.service';
 import { ProviderEventService } from '../provider-event.service';
 import { SettlementRiskService } from '../settlement-risk.service';
+import { ExchangeRateService } from '../../financial/exchange-rate.service';
 import { PesapalClient } from './pesapal.client';
 import { PesapalController } from './pesapal.controller';
 import { PesapalProvider } from './pesapal.provider';
@@ -63,6 +64,7 @@ describe('Pesapal End-to-End Integration Flow', () => {
         { provide: PesapalClient, useValue: mockPesapalClient },
         { provide: ProviderEventService, useValue: { emit: jest.fn().mockResolvedValue(true) } },
         { provide: SettlementRiskService, useValue: { evaluateUserRisk: jest.fn().mockResolvedValue({ allowed: true, requiresManualReview: false }), assertSessionCreationRisk: jest.fn().mockResolvedValue(undefined) } },
+        { provide: ExchangeRateService, useValue: { getRate: jest.fn().mockResolvedValue({ userRate: 1.0, source: 'coingecko' }), lockRateForSettlement: jest.fn().mockResolvedValue({ userRate: 1.0, source: 'coingecko' }) } },
       ],
     }).compile();
 
@@ -93,7 +95,7 @@ describe('Pesapal End-to-End Integration Flow', () => {
       country: 'KE',
       status: SettlementStatus.WAITING_FOR_PAYMENT,
       expiresAt: new Date(),
-      providerMetadata: { orderTrackingId: 'order_trk_e2e', redirectUrl: 'https://cyb3r.pesapal.com/pesapalv3/checkout' },
+      providerMetadata: { orderTrackingId: 'order_trk_e2e', redirectUrl: 'https://cyb3r.pesapal.com/pesapalv3/checkout', paymentAmount: 50, paymentCurrency: 'KES' },
     };
 
     mockPrisma.settlementSession.create.mockResolvedValue(fakeSession);
