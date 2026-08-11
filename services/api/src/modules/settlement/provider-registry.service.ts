@@ -185,6 +185,10 @@ export class ProviderRegistryService implements OnModuleInit {
   async getSession(telegramUserId: bigint, settlementId: string) {
     const session = await this.prisma.settlementSession.findFirst({ where: { id: settlementId, telegramUserId } });
     if (!session) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
+    const adapter = this.adapters.get(session.provider as SettlementProviderId);
+    if (adapter && typeof adapter.getSettlementStatus === 'function') {
+      return adapter.getSettlementStatus(settlementId);
+    }
     return this.toProviderIndependentView(session);
   }
 
@@ -252,18 +256,34 @@ export class ProviderRegistryService implements OnModuleInit {
   }
 
   private toProviderIndependentView(session: any) {
+    const adapter = this.adapters.get(session.provider as SettlementProviderId);
+    if (adapter && typeof adapter.toProviderIndependentView === 'function') {
+      return adapter.toProviderIndependentView(session);
+    }
+    const metadata = (session.providerMetadata || {}) as Record<string, any>;
     return {
       settlementId: session.id,
       provider: session.provider,
       reference: session.referenceCode,
+      referenceCode: session.referenceCode,
       asset: session.asset,
       requestedAmount: session.requestedAmount.toString(),
       expectedAssetAmount: session.expectedCryptoAmount.toString(),
+      expectedCryptoAmount: session.expectedCryptoAmount.toString(),
       exchangeRate: session.exchangeRate.toString(),
       status: session.status,
       expiresAt: session.expiresAt,
       createdAt: session.createdAt,
       updatedAt: session.updatedAt,
+      payUrl: metadata.redirectUrl || null,
+      paymentUrl: metadata.redirectUrl || null,
+      orderTrackingId: metadata.orderTrackingId || null,
+      requiresAdminApproval: metadata.requiresAdminApproval || false,
+      paymentMethod: metadata.paymentMethod || null,
+      mobileMoneyNetwork: metadata.mobileMoneyNetwork || session.mobileMoneyNetwork || null,
+      paymentCurrency: metadata.paymentCurrency || null,
+      paymentAmount: metadata.paymentAmount != null ? Number(metadata.paymentAmount) : null,
+      currencySymbol: metadata.currencySymbol || null,
     };
   }
 }

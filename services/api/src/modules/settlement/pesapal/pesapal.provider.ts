@@ -738,7 +738,7 @@ export class PesapalProvider implements SettlementProvider {
     return session;
   }
 
-  private toProviderIndependentView(session: any) {
+  toProviderIndependentView(session: any) {
     const metadata = (session.providerMetadata || {}) as Record<string, any>;
     return {
       settlementId: session.id,
@@ -754,9 +754,13 @@ export class PesapalProvider implements SettlementProvider {
       expiresAt: session.expiresAt,
       createdAt: session.createdAt,
       updatedAt: session.updatedAt,
-      payUrl: metadata.redirectUrl,
-      orderTrackingId: metadata.orderTrackingId,
+      payUrl: metadata.redirectUrl || null,
+      paymentUrl: metadata.redirectUrl || null,
+      orderTrackingId: metadata.orderTrackingId || null,
       requiresAdminApproval: metadata.requiresAdminApproval || false,
+      // ── Canonical payment method source of truth ──
+      paymentMethod: metadata.paymentMethod || (session.country === 'US' ? 'CARD' : 'MOBILE_MONEY'),
+      mobileMoneyNetwork: metadata.mobileMoneyNetwork || session.mobileMoneyNetwork || null,
       // ── Financial display data (safe for frontend, no secrets) ──
       paymentCurrency: metadata.paymentCurrency || null,
       paymentAmount: metadata.paymentAmount != null ? Number(metadata.paymentAmount) : null,

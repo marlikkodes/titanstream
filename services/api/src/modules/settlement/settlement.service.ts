@@ -54,7 +54,7 @@ export class SettlementService {
         asset: dto.asset,
         requestedAmount: new Prisma.Decimal(dto.requestedAmount),
         expectedCryptoAmount: new Prisma.Decimal(dto.expectedCryptoAmount),
-        exchangeRate: new Prisma.Decimal(dto.exchangeRate),
+        exchangeRate: new Prisma.Decimal(dto.exchangeRate || '1.0'),
         country: dto.country || 'GLOBAL',
         mobileMoneyNetwork: dto.mobileMoneyNetwork || 'GLOBAL',
         referenceCode,
