@@ -32,6 +32,15 @@ const COUNTRY_SPREADS: Record<string, CountrySpreadConfig> = {
 
 const CACHE_TTL_MS = 60_000; // 60 seconds
 
+/**
+ * DEFECT 4 FIX — Fallback Rate Deviation Threshold
+ * When using a fallback rate (CoinGecko unreachable), compare it against the
+ * last successfully fetched live rate. If the deviation exceeds this threshold,
+ * mark the source as 'fallback_deviated' for admin reconciliation visibility.
+ * We do NOT block settlements during API outages — we record the deviation.
+ */
+const FALLBACK_DEVIATION_THRESHOLD = 0.10; // 10%
+
 @Injectable()
 export class ExchangeRateService {
   private readonly logger = new Logger(ExchangeRateService.name);
@@ -122,6 +131,24 @@ export class ExchangeRateService {
       }
     } catch (err: any) {
       this.logger.warn(`CoinGecko rate fetch failed for ${currencyCode}: ${err?.message}. Using fallback rate.`);
+    }
+
+    // DEFECT 4 FIX — Fallback rate deviation detection
+    // When we're using the fallback rate (CoinGecko failed), compare against
+    // the last successfully cached live rate to detect dangerous drift.
+    if (source === 'fallback') {
+      const lastCached = this.cache.get(currencyCode);
+      if (lastCached && lastCached.source !== 'fallback' && lastCached.source !== 'fallback_deviated' && lastCached.baseRate > 0) {
+        const deviation = Math.abs(config.fallbackRate - lastCached.baseRate) / lastCached.baseRate;
+        if (deviation > FALLBACK_DEVIATION_THRESHOLD) {
+          this.logger.warn(
+            `[ExchangeRate] FALLBACK DEVIATION for ${currencyCode}: ` +
+            `fallback=${config.fallbackRate}, lastLive=${lastCached.baseRate}, ` +
+            `deviation=${(deviation * 100).toFixed(1)}%`,
+          );
+          source = 'fallback_deviated';
+        }
+      }
     }
 
     // Apply spread

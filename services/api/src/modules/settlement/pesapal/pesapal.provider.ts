@@ -80,6 +80,7 @@ export class PesapalProvider implements SettlementProvider {
         const normalized = this.normalizeStatus(liveStatus);
 
         if (normalized === 'COMPLETED') {
+          this.verifyPaymentIntegrity(session, liveStatus);
           return this.processVerifiedSuccess(session, liveStatus);
         } else if (normalized === 'FAILED') {
           await this.prisma.settlementSession.update({
@@ -144,8 +145,8 @@ export class PesapalProvider implements SettlementProvider {
     const lockedRate = await this.exchangeRateService.lockRateForSettlement(paymentCurrency);
     const authoritativeRate = lockedRate.userRate;
     const paymentAmount = paymentCurrency === 'USD'
-      ? Number(dto.requestedAmount)
-      : Math.round(Number(dto.requestedAmount) * authoritativeRate);
+      ? new Prisma.Decimal(dto.requestedAmount).toNumber()
+      : new Prisma.Decimal(dto.requestedAmount).mul(new Prisma.Decimal(authoritativeRate.toString())).toDecimalPlaces(0).toNumber();
 
     this.logger.log(
       `[PesapalProvider] Rate locked: ${dto.requestedAmount} USDT × ${authoritativeRate} = ${paymentAmount} ${paymentCurrency} (source=${lockedRate.source})`,
@@ -362,6 +363,7 @@ export class PesapalProvider implements SettlementProvider {
     const normalized = this.normalizeStatus(liveStatus);
 
     if (normalized === 'COMPLETED') {
+      this.verifyPaymentIntegrity(session, liveStatus);
       return this.processVerifiedSuccess(session, liveStatus);
     } else if (normalized === 'FAILED') {
       await this.prisma.settlementSession.update({
@@ -423,7 +425,7 @@ export class PesapalProvider implements SettlementProvider {
       || (session.country === 'KE' ? 'KES' : session.country === 'UG' ? 'UGX' : 'USD');
     const pesapalAmount = sessionMeta.paymentAmount != null
       ? Number(sessionMeta.paymentAmount)
-      : Math.round(Number(session.requestedAmount) * Number(session.exchangeRate));
+      : new Prisma.Decimal(session.requestedAmount.toString()).mul(new Prisma.Decimal(session.exchangeRate.toString())).toDecimalPlaces(0).toNumber();
 
     this.logger.log(
       `[PesapalProvider] Submitting order: ${pesapalAmount} ${pesapalCurrency} (ref=${session.referenceCode})`,
@@ -474,54 +476,128 @@ export class PesapalProvider implements SettlementProvider {
     return response;
   }
 
+  /**
+   * DEFECT 2 FIX — Payment Integrity Verification
+   * Validates that the amount and currency reported by Pesapal match the locked
+   * financial snapshot in the session. This prevents crediting a user when the
+   * actual payment differs from the expected payment.
+   *
+   * Note: Pesapal's GetTransactionStatus response has optional `amount` and
+   * `currency` fields. When omitted, the check is skipped gracefully — we do
+   * NOT block legitimate payments when Pesapal omits these fields.
+   */
+  private verifyPaymentIntegrity(
+    session: any,
+    liveStatus: PesapalTransactionStatusResponse,
+  ): void {
+    const metadata = (session.providerMetadata || {}) as Record<string, any>;
+    const expectedAmount = metadata.paymentAmount != null
+      ? Number(metadata.paymentAmount)
+      : new Prisma.Decimal(session.requestedAmount.toString())
+          .mul(new Prisma.Decimal(session.exchangeRate.toString()))
+          .toDecimalPlaces(0)
+          .toNumber();
+    const expectedCurrency = metadata.paymentCurrency as string | undefined;
+
+    // Amount verification: 1% tolerance for provider rounding
+    if (liveStatus.amount != null && expectedAmount != null) {
+      const deviation = Math.abs(liveStatus.amount - expectedAmount) / expectedAmount;
+      if (deviation > 0.01) {
+        this.logger.error(
+          `[PesapalProvider] PAYMENT_AMOUNT_MISMATCH for session ${session.id}: ` +
+          `expected=${expectedAmount}, received=${liveStatus.amount}, deviation=${(deviation * 100).toFixed(2)}%`,
+        );
+        throw new BadRequestException(
+          `PAYMENT_AMOUNT_MISMATCH: expected=${expectedAmount}, received=${liveStatus.amount}`,
+        );
+      }
+    }
+
+    // Currency verification
+    if (liveStatus.currency && expectedCurrency) {
+      if (liveStatus.currency.toUpperCase() !== expectedCurrency.toUpperCase()) {
+        this.logger.error(
+          `[PesapalProvider] PAYMENT_CURRENCY_MISMATCH for session ${session.id}: ` +
+          `expected=${expectedCurrency}, received=${liveStatus.currency}`,
+        );
+        throw new BadRequestException(
+          `PAYMENT_CURRENCY_MISMATCH: expected=${expectedCurrency}, received=${liveStatus.currency}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * DEFECT 1 FIX — Atomic Financial Settlement
+   * All three operations (status claim, event recording, ledger posting) execute
+   * inside a single Prisma $transaction. If ANY step fails, the entire
+   * transaction rolls back — including the COMPLETED status. This means the next
+   * IPN retry will re-attempt the full atomic posting.
+   *
+   * The FinancialOrchestratorService.requestOperation() accepts an optional
+   * `client` parameter that joins the caller's transaction instead of opening
+   * its own.
+   */
   private async processVerifiedSuccess(session: any, liveStatus: PesapalTransactionStatusResponse) {
     const settlementId = session.id;
     const reference = `pesapal_settlement_${settlementId}`;
 
-    const updated = await this.prisma.settlementSession.updateMany({
-      where: {
-        id: settlementId,
-        status: { not: SettlementStatus.COMPLETED },
-      },
-      data: {
-        status: SettlementStatus.COMPLETED,
-        completedAt: new Date(),
-        orchestratorReference: reference,
-      },
-    });
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Step 1: Atomic claim — only one concurrent IPN/poll succeeds
+      const updated = await tx.settlementSession.updateMany({
+        where: {
+          id: settlementId,
+          status: { not: SettlementStatus.COMPLETED },
+        },
+        data: {
+          status: SettlementStatus.COMPLETED,
+          completedAt: new Date(),
+          orchestratorReference: reference,
+        },
+      });
 
-    if (updated.count === 0) {
+      if (updated.count === 0) {
+        return null; // Already completed by another thread
+      }
+
+      // Step 2: Record completion event (inside same transaction)
+      await tx.settlementEvent.create({
+        data: {
+          settlementId,
+          eventType: SettlementEventType.SettlementCompleted,
+          actorType: 'PROVIDER',
+          actorId: this.providerId,
+          payload: { reference, liveStatus } as unknown as Prisma.InputJsonValue,
+        },
+      });
+
+      // Step 3: Ledger posting + balance credit (joins this transaction)
+      await this.orchestrator.requestOperation({
+        telegramUserId: session.telegramUserId,
+        operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+        assetCode: session.asset,
+        amount: session.expectedCryptoAmount.toString(),
+        idempotencyKey: reference,
+        reference,
+        metadata: {
+          source: 'pesapal_settlement',
+          settlementId,
+          provider: this.providerId,
+          orderTrackingId: liveStatus.order_tracking_id,
+          merchantReference: session.referenceCode,
+          amountFiat: session.requestedAmount.toString(),
+          currencyFiat: liveStatus.currency || session.country,
+        },
+      }, tx);
+
+      return updated;
+    }, { timeout: 15000, maxWait: 10000 });
+
+    if (result === null) {
       return this.toProviderIndependentView(await this.load(settlementId));
     }
 
-    await this.prisma.settlementEvent.create({
-      data: {
-        settlementId,
-        eventType: SettlementEventType.SettlementCompleted,
-        actorType: 'PROVIDER',
-        actorId: this.providerId,
-        payload: { reference, liveStatus } as unknown as Prisma.InputJsonValue,
-      },
-    });
-
-    await this.orchestrator.requestOperation({
-      telegramUserId: session.telegramUserId,
-      operationType: FinancialOperationType.SYSTEM_ALLOCATION,
-      assetCode: session.asset,
-      amount: session.expectedCryptoAmount.toString(),
-      idempotencyKey: reference,
-      reference,
-      metadata: {
-        source: 'pesapal_settlement',
-        settlementId,
-        provider: this.providerId,
-        orderTrackingId: liveStatus.order_tracking_id,
-        merchantReference: session.referenceCode,
-        amountFiat: session.requestedAmount.toString(),
-        currencyFiat: liveStatus.currency || session.country,
-      },
-    });
-
+    // Event emission is fire-and-forget, outside the transaction
     await this.emitSettlementEvent(settlementId, SettlementEventType.SettlementCompleted, { reference });
     return this.toProviderIndependentView(await this.load(settlementId));
   }
