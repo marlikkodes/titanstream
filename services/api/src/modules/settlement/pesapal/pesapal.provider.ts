@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { FinancialOrchestratorService } from '../../financial-orchestration/financial-orchestrator.service';
+import { ExchangeRateService } from '../../financial/exchange-rate.service';
 import { CreateSettlementSessionDto } from '../dto/create-settlement-session.dto';
 import { ProviderEventService } from '../provider-event.service';
 import { SettlementCapabilityManifest, SettlementProvider } from '../settlement-provider.interface';
@@ -46,6 +47,7 @@ export class PesapalProvider implements SettlementProvider {
     private readonly orchestrator: FinancialOrchestratorService,
     private readonly pesapalClient: PesapalClient,
     private readonly riskService: SettlementRiskService,
+    private readonly exchangeRateService: ExchangeRateService,
   ) {}
 
   getCapabilities(): SettlementCapabilityManifest {
@@ -133,6 +135,22 @@ export class PesapalProvider implements SettlementProvider {
 
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
+    // ── AUTHORITATIVE EXCHANGE RATE ──────────────────────────────────────────
+    // Backend owns the rate. Frontend-provided exchangeRate is IGNORED.
+    // ExchangeRateService provides live CoinGecko rates with spread, cached 60s.
+    const country = dto.country || 'UG';
+    const paymentCurrency = country === 'KE' ? 'KES' : country === 'UG' ? 'UGX' : 'USD';
+    const currencySymbol = country === 'KE' ? 'KSh' : country === 'UG' ? 'UGX' : '$';
+    const lockedRate = await this.exchangeRateService.lockRateForSettlement(paymentCurrency);
+    const authoritativeRate = lockedRate.userRate;
+    const paymentAmount = paymentCurrency === 'USD'
+      ? Number(dto.requestedAmount)
+      : Math.round(Number(dto.requestedAmount) * authoritativeRate);
+
+    this.logger.log(
+      `[PesapalProvider] Rate locked: ${dto.requestedAmount} USDT × ${authoritativeRate} = ${paymentAmount} ${paymentCurrency} (source=${lockedRate.source})`,
+    );
+
     const session = await this.prisma.settlementSession.create({
       data: {
         telegramUserId,
@@ -140,8 +158,8 @@ export class PesapalProvider implements SettlementProvider {
         asset: dto.asset,
         requestedAmount: new Prisma.Decimal(dto.requestedAmount),
         expectedCryptoAmount: new Prisma.Decimal(dto.expectedCryptoAmount),
-        exchangeRate: new Prisma.Decimal(dto.exchangeRate),
-        country: dto.country || 'UG',
+        exchangeRate: new Prisma.Decimal(authoritativeRate.toString()),
+        country,
         mobileMoneyNetwork: dto.paymentNetwork || dto.mobileMoneyNetwork || 'MOBILE_MONEY',
         referenceCode,
         status: initialStatus,
@@ -154,7 +172,16 @@ export class PesapalProvider implements SettlementProvider {
           riskCode: riskResult.riskCode || null,
           approvedAmount: dto.requestedAmount,
           approvedAsset: dto.asset,
-          approvedCountry: dto.country || 'KE',
+          approvedCountry: country,
+          // ── Financial snapshot locked at session creation ──
+          paymentCurrency,
+          paymentAmount,
+          currencySymbol,
+          exchangeRateUsed: authoritativeRate,
+          exchangeRateSource: lockedRate.source,
+          exchangeRateTimestamp: lockedRate.rateTimestamp,
+          exchangeRateBaseRate: lockedRate.baseRate,
+          exchangeRateAppliedRate: lockedRate.appliedRate,
         },
         events: {
           create: [
@@ -167,6 +194,9 @@ export class PesapalProvider implements SettlementProvider {
                 requiresAdminApproval,
                 amountUsd: expectedCryptoUsd,
                 riskCode: riskResult.riskCode || null,
+                paymentCurrency,
+                paymentAmount,
+                exchangeRate: authoritativeRate,
               },
             },
           ],
@@ -385,18 +415,30 @@ export class PesapalProvider implements SettlementProvider {
       `${process.env.APP_BASE_URL || 'https://tetherstream.internal'}/api/v1/settlement/pesapal/ipn`
     );
 
+    // ── Use the locked financial snapshot from session metadata ──────────
+    // The rate and amount were locked at session creation time.
+    // Do NOT recalculate here — use the exact values persisted in the session.
+    const sessionMeta = (session.providerMetadata || {}) as Record<string, any>;
+    const pesapalCurrency = sessionMeta.paymentCurrency
+      || (session.country === 'KE' ? 'KES' : session.country === 'UG' ? 'UGX' : 'USD');
+    const pesapalAmount = sessionMeta.paymentAmount != null
+      ? Number(sessionMeta.paymentAmount)
+      : Math.round(Number(session.requestedAmount) * Number(session.exchangeRate));
+
+    this.logger.log(
+      `[PesapalProvider] Submitting order: ${pesapalAmount} ${pesapalCurrency} (ref=${session.referenceCode})`,
+    );
+
     const orderPayload: PesapalOrderRequestPayload = {
       id: session.referenceCode,
-      currency: session.country === 'KE' ? 'KES' : session.country === 'UG' ? 'UGX' : 'USD',
-      amount: session.country === 'US' || session.country === 'GLOBAL'
-        ? Number(session.requestedAmount)
-        : Math.round(Number(session.requestedAmount) * Number(session.exchangeRate)),
+      currency: pesapalCurrency,
+      amount: pesapalAmount,
       description: `TitanStream Deposit (${session.asset})`,
       callback_url: callbackUrl,
       notification_id: ipnId,
       billing_address: {
         email_address: `user_${session.telegramUserId}@tetherstream.internal`,
-        phone_number: '0700000000',
+        phone_number: sessionMeta.phoneNumber || '0700000000',
         country_code: session.country || 'KE',
         first_name: 'Titan',
         last_name: 'User',
@@ -532,6 +574,12 @@ export class PesapalProvider implements SettlementProvider {
       payUrl: metadata.redirectUrl,
       orderTrackingId: metadata.orderTrackingId,
       requiresAdminApproval: metadata.requiresAdminApproval || false,
+      // ── Financial display data (safe for frontend, no secrets) ──
+      paymentCurrency: metadata.paymentCurrency || null,
+      paymentAmount: metadata.paymentAmount != null ? Number(metadata.paymentAmount) : null,
+      currencySymbol: metadata.currencySymbol || null,
+      exchangeRateSource: metadata.exchangeRateSource || null,
+      exchangeRateTimestamp: metadata.exchangeRateTimestamp || null,
     };
   }
 }

@@ -54,7 +54,6 @@ export const fundingService = {
     provider: string;
     asset: string;
     amount: string;
-    exchangeRate?: string;
     country?: string;
     mobileMoneyNetwork?: string;
   }): Promise<FundingSession> {
@@ -63,7 +62,6 @@ export const fundingService = {
       asset: params.asset,
       requestedAmount: params.amount,
       expectedCryptoAmount: params.amount,
-      exchangeRate: params.exchangeRate || '1.0',
       country: params.country,
       mobileMoneyNetwork: params.mobileMoneyNetwork,
     };
@@ -87,7 +85,6 @@ export const fundingService = {
       asset: 'USDT',
       requestedAmount: params.amountUsdt.toString(),
       expectedCryptoAmount: params.amountUsdt.toString(),
-      exchangeRate: '1.0',
       country: params.country,
       mobileMoneyNetwork: params.mobileMoneyNetwork,
       phoneNumber: params.phoneNumber,

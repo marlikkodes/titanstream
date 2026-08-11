@@ -14,6 +14,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { fundingService, type SettlementSession } from '../../services/fundingService';
+import { exchangeRateService } from '../../services/exchangeRateService';
 import { useCountryStore } from '../../store/useCountryStore';
 
 interface PesapalFundingProps {
@@ -26,6 +27,13 @@ const hapticFeedback = {
       window.Telegram.WebApp.HapticFeedback.impactOccurred(_style as any);
     }
   },
+};
+
+// Currency code/symbol lookup for formatting — NO financial exchange rates
+const CURRENCY_FORMAT: Record<string, { code: string; symbol: string }> = {
+  UG: { code: 'UGX', symbol: 'UGX' },
+  KE: { code: 'KES', symbol: 'KSh' },
+  US: { code: 'USD', symbol: '$' },
 };
 
 export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
@@ -41,13 +49,11 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<SettlementSession | null>(null);
 
-  const getCurrencyInfo = (countryCode: string) => {
-    if (countryCode === 'UG') return { code: 'UGX', symbol: 'UGX', rate: 3700 };
-    if (countryCode === 'KE') return { code: 'KES', symbol: 'KSh', rate: 130 };
-    return { code: 'USD', symbol: '$', rate: 1.0 };
-  };
+  // Live exchange rate from backend (display-only estimate prior to session creation)
+  const [liveRate, setLiveRate] = useState<number | null>(null);
+  const [rateLoading, setRateLoading] = useState(false);
 
-  const currInfo = getCurrencyInfo(country);
+  const currFormat = CURRENCY_FORMAT[country] || CURRENCY_FORMAT.US;
 
   // Sync country when changed from selector
   useEffect(() => {
@@ -58,6 +64,34 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
       }
     }
   }, [userCountry]);
+
+  // Fetch live backend rate for display estimate (pre-session creation)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchRate = async () => {
+      const code = currFormat.code;
+      if (code === 'USD') {
+        setLiveRate(1.0);
+        return;
+      }
+      setRateLoading(true);
+      try {
+        const rateObj = await exchangeRateService.getRate(code);
+        if (isMounted && rateObj?.userRate) {
+          setLiveRate(rateObj.userRate);
+        }
+      } catch (err) {
+        console.warn('[PesapalFunding] Failed to fetch live rate estimate:', err);
+      } finally {
+        if (isMounted) setRateLoading(false);
+      }
+    };
+
+    fetchRate();
+    return () => {
+      isMounted = false;
+    };
+  }, [country, currFormat.code]);
 
   // Session status polling hook
   useEffect(() => {
@@ -131,6 +165,21 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
 
   const isPendingApproval = session?.status === 'CREATED' && (session as any)?.requiresAdminApproval;
 
+  // Pre-session estimate calculations (display only)
+  const numInputUsdt = Number(amountUsdt) || 0;
+  const estimatedRate = liveRate || (currFormat.code === 'USD' ? 1.0 : null);
+  const estimatedFiatAmount = estimatedRate ? Math.round(numInputUsdt * estimatedRate) : null;
+
+  // Post-session locked values (authoritative backend financial snapshot)
+  const sessionPayCurrency = (session as any)?.paymentCurrency || currFormat.code;
+  const sessionPaySymbol = (session as any)?.currencySymbol || currFormat.symbol;
+  const sessionPayAmount = (session as any)?.paymentAmount != null
+    ? Number((session as any).paymentAmount)
+    : Math.round(Number(session?.requestedAmount || 0) * Number(session?.exchangeRate || 1));
+  const sessionExchangeRate = (session as any)?.exchangeRate
+    ? Number((session as any).exchangeRate).toLocaleString()
+    : null;
+
   return (
     <div className="space-y-4">
       {/* Top Header */}
@@ -165,14 +214,15 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
           <div className="p-4 rounded-2xl glass-panel border border-white/10 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-extrabold text-text-primary block">
-                Deposit Amount ({currInfo.code === 'USD' ? 'USDT' : `${currInfo.code}`})
+                Deposit Amount
               </label>
-              {currInfo.code !== 'USD' && (
+              {estimatedRate && currFormat.code !== 'USD' && (
                 <span className="text-[10px] font-mono text-usdt-green font-bold">
-                  1 USDT = {currInfo.symbol} {currInfo.rate.toLocaleString()}
+                  1 USDT = {currFormat.symbol} {estimatedRate.toLocaleString()}
                 </span>
               )}
             </div>
+
             <div className="relative">
               <input
                 type="number"
@@ -180,7 +230,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
                 step="any"
                 value={amountUsdt}
                 onChange={(e) => setAmountUsdt(e.target.value)}
-                placeholder="Enter amount in USDT"
+                placeholder="Enter amount"
                 className="w-full bg-control-bg border border-white/10 rounded-xl px-4 py-3 text-lg font-bold text-text-primary focus:outline-none focus:border-usdt-green transition-colors"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-usdt-green">
@@ -188,23 +238,30 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
               </span>
             </div>
 
-            {currInfo.code !== 'USD' && (
-              <div className="p-2.5 rounded-xl bg-usdt-green/10 border border-usdt-green/20 flex items-center justify-between text-xs">
-                <span className="text-text-tertiary">Payable in {currInfo.code}:</span>
-                <span className="font-extrabold text-usdt-green font-mono">
-                  {currInfo.symbol} {Math.round((Number(amountUsdt) || 0) * currInfo.rate).toLocaleString()} {currInfo.code}
-                </span>
+            {/* Clear Direction: You Pay vs You Receive */}
+            {currFormat.code !== 'USD' && (
+              <div className="p-3 rounded-xl bg-usdt-green/10 border border-usdt-green/20 space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-text-tertiary">You Pay:</span>
+                  <span className="font-extrabold text-usdt-green font-mono text-sm">
+                    {rateLoading
+                      ? 'Updating rate...'
+                      : estimatedFiatAmount != null
+                      ? `${currFormat.symbol} ${estimatedFiatAmount.toLocaleString()}`
+                      : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-text-tertiary">You Receive:</span>
+                  <span className="font-mono text-text-primary font-bold">{numInputUsdt} USDT</span>
+                </div>
               </div>
             )}
 
+            {/* Presets (25, 50, 100, 250, 500 USDT) */}
             <div className="grid grid-cols-3 gap-2 pt-1">
               {['25', '50', '100', '250', '500'].map((val) => {
-                const localVal = Math.round(Number(val) * currInfo.rate);
-                const displayVal = currInfo.code === 'USD'
-                  ? `$${val}`
-                  : currInfo.code === 'UGX'
-                  ? `UGX ${(localVal / 1000).toFixed(localVal >= 1000000 ? 1 : 0)}k`
-                  : `${currInfo.symbol} ${localVal.toLocaleString()}`;
+                const presetFiat = estimatedRate ? Math.round(Number(val) * estimatedRate) : null;
                 return (
                   <button
                     key={val}
@@ -213,14 +270,18 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
                       hapticFeedback.impactOccurred('light');
                       setAmountUsdt(val);
                     }}
-                    className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all border flex flex-col items-center justify-center ${
+                    className={`py-2 px-1 rounded-xl text-xs font-bold transition-all border flex flex-col items-center justify-center ${
                       amountUsdt === val
                         ? 'bg-usdt-green/20 text-usdt-green border-usdt-green/40'
                         : 'bg-white/5 text-text-tertiary border-white/5 hover:border-white/10'
                     }`}
                   >
-                    <span>{displayVal}</span>
-                    <span className="text-[9px] font-normal opacity-70">({val} USDT)</span>
+                    <span>{val} USDT</span>
+                    {currFormat.code !== 'USD' && (
+                      <span className="text-[9px] font-normal opacity-75 font-mono mt-0.5">
+                        {presetFiat ? `${currFormat.symbol} ${presetFiat.toLocaleString()}` : '—'}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -312,144 +373,68 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
             )}
           </div>
 
-          {/* Threshold Policy Info */}
-          <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-300">
-            <ShieldCheck size={16} className="shrink-0 mt-0.5" />
-            <span>
-              Transactions over $500 require Admin authorization prior to payment submission.
-            </span>
-          </div>
-
+          {/* Error Message */}
           {error && (
-            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2">
               <AlertCircle size={16} className="shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
+          {/* Submit Button */}
           <button
             onClick={handleCreateSession}
-            disabled={isLoading}
-            className="press-feedback w-full py-3.5 rounded-2xl bg-usdt-green text-black font-extrabold text-sm shadow-lg shadow-usdt-green/20 flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 transition-all"
+            disabled={isLoading || !amountUsdt || parseFloat(amountUsdt) <= 0}
+            className="press-feedback bg-gradient-to-r from-usdt-green to-[#00c853] text-app-bg font-extrabold text-sm py-3.5 rounded-2xl shadow-lg w-full flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,230,118,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isLoading ? (
-              <span>Initializing payment...</span>
-            ) : paymentMethod === 'CARD' ? (
               <>
-                <CreditCard size={18} /> Make Payment
+                <div className="w-4 h-4 border-2 border-app-bg border-t-transparent rounded-full animate-spin" />
+                <span>Creating Session...</span>
               </>
             ) : (
               <>
-                <Smartphone size={18} /> Make Payment
+                <CreditCard size={18} />
+                <span>Proceed to Checkout</span>
               </>
             )}
           </button>
         </div>
       ) : (
-        /* Active Session View */
+        /* Session View / Checkout Ready */
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4"
         >
           {isPendingApproval ? (
-            <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-center space-y-3">
+            <div className="p-5 rounded-3xl glass-panel border border-amber-500/30 space-y-4 text-center">
               <div className="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
                 <Clock size={24} className="animate-pulse" />
               </div>
+
               <div>
-                <h3 className="text-sm font-extrabold text-text-primary">Awaiting Admin Authorization</h3>
+                <h3 className="text-sm font-extrabold text-text-primary">Admin Authorization Required</h3>
                 <p className="text-xs text-text-tertiary mt-1">
-                  Your deposit of ${session.expectedAssetAmount || session.requestedAmount} USDT requires routine admin authorization before submission.
+                  Deposits exceeding security threshold require manual authorization before provider dispatch.
                 </p>
               </div>
-              <div className="text-[11px] font-mono text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full inline-block">
-                Reference: {session.reference || session.referenceCode}
+
+              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-left space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-text-tertiary">Amount:</span>
+                  <span className="font-extrabold text-text-primary font-mono">{session.requestedAmount} USDT</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-tertiary">Reference:</span>
+                  <span className="font-mono text-amber-400">{session.reference || session.referenceCode}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-tertiary">Status:</span>
+                  <span className="font-extrabold text-amber-400">PENDING_APPROVAL</span>
+                </div>
               </div>
-            </div>
-          ) : session.status === 'COMPLETED' ? (
-            <div className="p-5 rounded-3xl bg-usdt-green/10 border border-usdt-green/30 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-usdt-green/20 text-usdt-green flex items-center justify-center mx-auto">
-                <CheckCircle2 size={24} />
-              </div>
-              <div>
-                <h3 className="text-sm font-extrabold text-text-primary">Payment Complete!</h3>
-                <p className="text-xs text-text-tertiary mt-1">
-                  Your wallet has been credited with ${session.expectedAssetAmount} USDT via double-entry ledger.
-                </p>
-              </div>
-              <button
-                onClick={onCancel}
-                className="w-full py-3 rounded-xl bg-usdt-green text-black font-extrabold text-xs"
-              >
-                Done
-              </button>
-            </div>
-          ) : session.status === 'FAILED' ? (
-            <div className="p-5 rounded-3xl bg-rose-500/10 border border-rose-500/30 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
-                <XCircle size={24} />
-              </div>
-              <div>
-                <h3 className="text-sm font-extrabold text-text-primary">Payment Failed</h3>
-                <p className="text-xs text-text-tertiary mt-1">
-                  There was an issue processing your payment.
-                </p>
-              </div>
-              <button
-                onClick={() => setSession(null)}
-                className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-text-primary font-extrabold text-xs transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          ) : session.status === 'REJECTED' ? (
-            <div className="p-5 rounded-3xl bg-rose-500/10 border border-rose-500/30 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
-                <AlertTriangle size={24} />
-              </div>
-              <div>
-                <h3 className="text-sm font-extrabold text-text-primary">Payment Rejected</h3>
-                <p className="text-xs text-text-tertiary mt-1">
-                  This transaction was rejected by an administrator.
-                </p>
-              </div>
-              <button
-                onClick={() => setSession(null)}
-                className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-text-primary font-extrabold text-xs transition-colors"
-              >
-                Dismiss
-              </button>
-            </div>
-          ) : session.status === 'CANCELLED' ? (
-            <div className="p-5 rounded-3xl bg-gray-500/10 border border-gray-500/30 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-gray-500/20 text-gray-400 flex items-center justify-center mx-auto">
-                <XCircle size={24} />
-              </div>
-              <div>
-                <h3 className="text-sm font-extrabold text-text-primary">Payment Cancelled</h3>
-                <p className="text-xs text-text-tertiary mt-1">
-                  The payment session was cancelled.
-                </p>
-              </div>
-              <button
-                onClick={() => setSession(null)}
-                className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-text-primary font-extrabold text-xs transition-colors"
-              >
-                New Session
-              </button>
-            </div>
-          ) : session.status === 'EXPIRED' ? (
-            <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
-                <Clock size={24} />
-              </div>
-              <div>
-                <h3 className="text-sm font-extrabold text-text-primary">Session Expired</h3>
-                <p className="text-xs text-text-tertiary mt-1">
-                  This payment session has expired.
-                </p>
-              </div>
+
               <button
                 onClick={() => setSession(null)}
                 className="w-full py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 font-extrabold text-xs transition-colors"
@@ -494,24 +479,29 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
                 </p>
               </div>
 
-              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-left space-y-1.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Payment Amount:</span>
-                  <span className="font-extrabold text-usdt-green font-mono">
-                    {currInfo.code === 'USD'
-                      ? `$${session.requestedAmount} USDT`
-                      : `${currInfo.symbol} ${Math.round(Number(session.requestedAmount) * currInfo.rate).toLocaleString()} ${currInfo.code}`}
+              {/* Authoritative Session Snapshot Rendering */}
+              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-left space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-text-tertiary">You Pay:</span>
+                  <span className="font-extrabold text-usdt-green font-mono text-sm">
+                    {sessionPayCurrency === 'USD'
+                      ? `$${session.requestedAmount}`
+                      : `${sessionPaySymbol} ${sessionPayAmount.toLocaleString()}`}
                   </span>
                 </div>
-                {currInfo.code !== 'USD' && (
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-text-tertiary">Wallet Credit:</span>
-                    <span className="font-mono text-text-primary">{session.requestedAmount} USDT</span>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-text-tertiary">You Receive:</span>
+                  <span className="font-mono text-text-primary font-bold">{session.requestedAmount} USDT</span>
+                </div>
+                {sessionExchangeRate && sessionPayCurrency !== 'USD' && (
+                  <div className="flex justify-between items-center text-[11px] pt-1 border-t border-white/5">
+                    <span className="text-text-tertiary">Locked Rate:</span>
+                    <span className="font-mono text-text-secondary">1 USDT = {sessionPaySymbol} {sessionExchangeRate}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center text-[11px] pt-1 border-t border-white/5">
                   <span className="text-text-tertiary">Reference:</span>
-                  <span className="font-mono text-purple-400">{session.reference || session.referenceCode}</span>
+                  <span className="font-mono text-purple-400 font-bold">{session.reference || session.referenceCode}</span>
                 </div>
               </div>
 

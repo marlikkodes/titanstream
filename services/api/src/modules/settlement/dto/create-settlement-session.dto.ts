@@ -19,8 +19,9 @@ export class CreateSettlementSessionDto {
   expectedCryptoAmount!: string;
 
   @IsString()
+  @IsOptional()
   @Matches(/^\d+(\.\d+)?$/)
-  exchangeRate!: string;
+  exchangeRate?: string;
 
   @IsString()
   @IsOptional()
