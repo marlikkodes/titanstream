@@ -3,7 +3,7 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
 import { InitiateWithdrawalDto, WithdrawalService } from './withdrawal.service';
 
-@Controller('financial/withdrawals')
+@Controller(['financial/withdrawal', 'financial/withdrawals'])
 @UseGuards(AuthGuard)
 export class WithdrawalController {
   constructor(private readonly withdrawalService: WithdrawalService) {}
