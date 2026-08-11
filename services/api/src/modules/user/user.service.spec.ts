@@ -57,7 +57,6 @@ describe('UserService - deleteAccount', () => {
       readinessHistory: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       userStateTransition: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       adminNote: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
-      universalIdentity: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       user: { delete: jest.fn().mockResolvedValue({}) },
     };
 

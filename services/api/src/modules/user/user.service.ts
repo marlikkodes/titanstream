@@ -158,7 +158,7 @@ export class UserService {
       if (settlementSessions.length > 0) {
         const sessionIds = settlementSessions.map((s) => s.id);
         await tx.settlementEvent.deleteMany({
-          where: { settlementSessionId: { in: sessionIds } },
+          where: { settlementId: { in: sessionIds } },
         });
       }
 
@@ -259,9 +259,8 @@ export class UserService {
       await tx.readinessHistory.deleteMany({ where: { telegramUserId } });
       await tx.userStateTransition.deleteMany({ where: { telegramUserId } });
 
-      // 19. Delete admin notes & universal identity
+      // 19. Delete admin notes
       await tx.adminNote.deleteMany({ where: { telegramUserId } });
-      await tx.universalIdentity.deleteMany({ where: { telegramUserId } });
 
       // 20. Finally delete the user record
       await tx.user.delete({
