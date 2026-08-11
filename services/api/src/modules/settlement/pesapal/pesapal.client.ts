@@ -43,14 +43,15 @@ export class PesapalClient {
   }
 
   /**
-   * Fail closed if configuration environment is inconsistent or production mode attempted during Sandbox gate.
+   * Fail closed if configuration environment and base URL are inconsistent.
+   * Ensures sandbox mode uses cybqa sandbox URL and production mode uses pay.pesapal.com URL.
    */
-  private assertSandboxEnvironment() {
-    if (this.environment !== 'sandbox') {
-      throw new BadGatewayException('PESAPAL_ENVIRONMENT_FORBIDDEN: Only Sandbox environment is allowed during this phase.');
-    }
-    if (this.baseUrl.includes('pay.pesapal.com')) {
+  private assertValidEnvironment() {
+    if (this.environment === 'sandbox' && this.baseUrl.includes('pay.pesapal.com')) {
       throw new BadGatewayException('PESAPAL_ENVIRONMENT_MISMATCH: Production base URL detected while in Sandbox mode.');
+    }
+    if (this.environment === 'production' && this.baseUrl.includes('cybqa.pesapal.com')) {
+      throw new BadGatewayException('PESAPAL_ENVIRONMENT_MISMATCH: Sandbox base URL detected while in Production mode.');
     }
   }
 
@@ -78,7 +79,7 @@ export class PesapalClient {
    * Token is cached until 1 minute before expiry.
    */
   async getAuthToken(): Promise<string> {
-    this.assertSandboxEnvironment();
+    this.assertValidEnvironment();
 
     if (!this.isConfigured()) {
       this.logger.warn('[PesapalClient] Missing Pesapal consumer key or secret');
@@ -268,7 +269,7 @@ export class PesapalClient {
     }
 
     try {
-      this.assertSandboxEnvironment();
+      this.assertValidEnvironment();
     } catch {
       return {
         status: 'CONFIGURATION_ERROR',
