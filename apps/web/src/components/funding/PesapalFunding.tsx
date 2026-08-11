@@ -41,6 +41,14 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<SettlementSession | null>(null);
 
+  const getCurrencyInfo = (countryCode: string) => {
+    if (countryCode === 'UG') return { code: 'UGX', symbol: 'UGX', rate: 3700 };
+    if (countryCode === 'KE') return { code: 'KES', symbol: 'KSh', rate: 130 };
+    return { code: 'USD', symbol: '$', rate: 1.0 };
+  };
+
+  const currInfo = getCurrencyInfo(country);
+
   // Sync country when changed from selector
   useEffect(() => {
     if (userCountry) {
@@ -155,9 +163,16 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
         /* Form View */
         <div className="space-y-4">
           <div className="p-4 rounded-2xl glass-panel border border-white/10 space-y-3">
-            <label className="text-xs font-extrabold text-text-primary block">
-              Deposit Amount (USDT)
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-extrabold text-text-primary block">
+                Deposit Amount ({currInfo.code === 'USD' ? 'USDT' : `${currInfo.code}`})
+              </label>
+              {currInfo.code !== 'USD' && (
+                <span className="text-[10px] font-mono text-usdt-green font-bold">
+                  1 USDT = {currInfo.symbol} {currInfo.rate.toLocaleString()}
+                </span>
+              )}
+            </div>
             <div className="relative">
               <input
                 type="number"
@@ -165,7 +180,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
                 step="any"
                 value={amountUsdt}
                 onChange={(e) => setAmountUsdt(e.target.value)}
-                placeholder="Enter amount"
+                placeholder="Enter amount in USDT"
                 className="w-full bg-control-bg border border-white/10 rounded-xl px-4 py-3 text-lg font-bold text-text-primary focus:outline-none focus:border-usdt-green transition-colors"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-usdt-green">
@@ -173,24 +188,42 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
               </span>
             </div>
 
+            {currInfo.code !== 'USD' && (
+              <div className="p-2.5 rounded-xl bg-usdt-green/10 border border-usdt-green/20 flex items-center justify-between text-xs">
+                <span className="text-text-tertiary">Payable in {currInfo.code}:</span>
+                <span className="font-extrabold text-usdt-green font-mono">
+                  {currInfo.symbol} {Math.round((Number(amountUsdt) || 0) * currInfo.rate).toLocaleString()} {currInfo.code}
+                </span>
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-2 pt-1">
-              {['25', '50', '100', '250', '500'].map((val) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => {
-                    hapticFeedback.impactOccurred('light');
-                    setAmountUsdt(val);
-                  }}
-                  className={`py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                    amountUsdt === val
-                      ? 'bg-usdt-green/20 text-usdt-green border-usdt-green/40'
-                      : 'bg-white/5 text-text-tertiary border-white/5 hover:border-white/10'
-                  }`}
-                >
-                  ${val}
-                </button>
-              ))}
+              {['25', '50', '100', '250', '500'].map((val) => {
+                const localVal = Math.round(Number(val) * currInfo.rate);
+                const displayVal = currInfo.code === 'USD'
+                  ? `$${val}`
+                  : currInfo.code === 'UGX'
+                  ? `UGX ${(localVal / 1000).toFixed(localVal >= 1000000 ? 1 : 0)}k`
+                  : `${currInfo.symbol} ${localVal.toLocaleString()}`;
+                return (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => {
+                      hapticFeedback.impactOccurred('light');
+                      setAmountUsdt(val);
+                    }}
+                    className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all border flex flex-col items-center justify-center ${
+                      amountUsdt === val
+                        ? 'bg-usdt-green/20 text-usdt-green border-usdt-green/40'
+                        : 'bg-white/5 text-text-tertiary border-white/5 hover:border-white/10'
+                    }`}
+                  >
+                    <span>{displayVal}</span>
+                    <span className="text-[9px] font-normal opacity-70">({val} USDT)</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -463,9 +496,19 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
 
               <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-left space-y-1.5 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-text-tertiary">Amount:</span>
-                  <span className="font-extrabold text-text-primary">${session.requestedAmount} USDT</span>
+                  <span className="text-text-tertiary">Payment Amount:</span>
+                  <span className="font-extrabold text-usdt-green font-mono">
+                    {currInfo.code === 'USD'
+                      ? `$${session.requestedAmount} USDT`
+                      : `${currInfo.symbol} ${Math.round(Number(session.requestedAmount) * currInfo.rate).toLocaleString()} ${currInfo.code}`}
+                  </span>
                 </div>
+                {currInfo.code !== 'USD' && (
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-text-tertiary">Wallet Credit:</span>
+                    <span className="font-mono text-text-primary">{session.requestedAmount} USDT</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-text-tertiary">Reference:</span>
                   <span className="font-mono text-purple-400">{session.reference || session.referenceCode}</span>
