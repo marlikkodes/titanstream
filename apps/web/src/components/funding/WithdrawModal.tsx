@@ -53,6 +53,8 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
   ];
 
   const handleWithdraw = async () => {
+    if (isProcessing) return;
+
     const amountVal = parseFloat(withdrawAmount);
     if (!withdrawAmount || isNaN(amountVal) || amountVal <= 0) {
       setErrorMsg('Please enter a valid withdrawal amount.');

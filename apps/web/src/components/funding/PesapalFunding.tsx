@@ -21,6 +21,8 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
   const { hapticFeedback } = useTelegram();
 
   const handleCreateSession = async () => {
+    if (isLoading) return;
+
     const amountNum = parseFloat(amountUsdt);
     if (isNaN(amountNum) || amountNum <= 0) {
       setError('Please enter a valid deposit amount.');
