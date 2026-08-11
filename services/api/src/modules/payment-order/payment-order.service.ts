@@ -23,7 +23,7 @@ export interface CreatePaymentOrderDto {
   type: PaymentOrderType;
   amount: number; // in USDT or fiat equivalent
   currency?: string; // USDT, UGX, KES
-  paymentMethod?: 'MOBILE_MONEY' | 'CRYPTOBOT';
+  paymentMethod?: 'MOBILE_MONEY' | 'CARD' | 'USDT';
   network?: string; // MTN, AIRTEL
   country?: string; // UG, KE
   mobileNumber?: string;

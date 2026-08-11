@@ -196,7 +196,7 @@ export const SUPPORTED_COUNTRIES: CountryConfig[] = [
     currencySymbol: '$',
     exchangeRate: 1.0,
     numberFormat: { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-    mobilePaymentMethods: ['Pesapal Card', 'USDT TRC-20'],
+    mobilePaymentMethods: ['Card', 'USDT TRC-20'],
     depositLimits: { min: 10, max: 50000 },
     withdrawalLimits: { min: 5, max: 25000 },
     defaultLanguage: 'en',
@@ -206,7 +206,7 @@ export const SUPPORTED_COUNTRIES: CountryConfig[] = [
       walletBalance: '52.30 USDT ≈ $52.30',
       dailyReward: '0.42 USDT ≈ $0.42',
     },
-    settlementProviders: ['Pesapal Card', 'USDT TRC-20'],
+    settlementProviders: ['Card', 'USDT TRC-20'],
   },
 ];
 

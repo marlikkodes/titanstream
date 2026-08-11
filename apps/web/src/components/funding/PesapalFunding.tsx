@@ -11,7 +11,9 @@ interface PesapalFundingProps {
 
 export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 'MOBILE_MONEY', onCancel }) => {
   const [amountUsdt, setAmountUsdt] = useState<string>('50');
-  const [country, setCountry] = useState<string>('KE');
+  const [country, setCountry] = useState<string>('UG');
+  const [paymentNetwork, setPaymentNetwork] = useState<'MTN' | 'AIRTEL'>('MTN');
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [session, setSession] = useState<SettlementSessionView | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,28 +27,33 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
       return;
     }
 
+    if (paymentMethod === 'MOBILE_MONEY' && !phoneNumber.trim()) {
+      setError('Please enter your mobile money phone number.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     hapticFeedback.impactOccurred('medium');
 
     try {
-      // Exchange rate 1 USDT = 1 USD equivalent or live rate
       const res = await settlementService.createSession({
-        provider: 'PESAPAL',
         paymentMethod,
         asset: 'USDT',
         requestedAmount: amountUsdt,
         expectedCryptoAmount: amountUsdt,
         exchangeRate: '1.0',
         country,
-        mobileMoneyNetwork: paymentMethod === 'CARD' ? 'PESAPAL_CARD' : 'PESAPAL',
+        mobileMoneyNetwork: paymentMethod === 'CARD' ? 'CARD' : paymentNetwork,
+        paymentNetwork: paymentMethod === 'CARD' ? 'CARD' : paymentNetwork,
+        phoneNumber,
       });
 
       setSession(res);
       hapticFeedback.notificationOccurred('success');
     } catch (err: any) {
-      console.error('Failed to create Pesapal session:', err);
-      setError(err?.response?.data?.message || err?.message || 'Failed to initialize Pesapal session');
+      console.error('Failed to create payment session:', err);
+      setError(err?.response?.data?.message || err?.message || 'Failed to initialize payment session');
       hapticFeedback.notificationOccurred('error');
     } finally {
       setIsLoading(false);
@@ -103,11 +110,11 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
         <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center gap-1">
           {paymentMethod === 'CARD' ? (
             <>
-              <CreditCard size={12} /> Pesapal Card Gateway
+              <CreditCard size={12} /> Card Payment
             </>
           ) : (
             <>
-              <Smartphone size={12} /> Pesapal Mobile Money
+              <Smartphone size={12} /> Mobile Money
             </>
           )}
         </span>
@@ -156,6 +163,62 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
             </div>
           </div>
 
+          {/* Mobile Money Network Selection */}
+          {paymentMethod === 'MOBILE_MONEY' && (
+            <div className="space-y-3">
+              <label className="text-xs font-extrabold text-text-primary block">
+                Select Network
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    hapticFeedback.impactOccurred('light');
+                    setPaymentNetwork('MTN');
+                  }}
+                  className={`p-3 rounded-2xl border text-left flex items-center justify-between transition-all ${
+                    paymentNetwork === 'MTN'
+                      ? 'bg-amber-500/10 border-amber-500/40 text-amber-400 font-extrabold'
+                      : 'bg-white/5 border-white/10 text-text-tertiary hover:border-white/20'
+                  }`}
+                >
+                  <span className="text-xs">MTN Mobile Money</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">MTN</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    hapticFeedback.impactOccurred('light');
+                    setPaymentNetwork('AIRTEL');
+                  }}
+                  className={`p-3 rounded-2xl border text-left flex items-center justify-between transition-all ${
+                    paymentNetwork === 'AIRTEL'
+                      ? 'bg-rose-500/10 border-rose-500/40 text-rose-400 font-extrabold'
+                      : 'bg-white/5 border-white/10 text-text-tertiary hover:border-white/20'
+                  }`}
+                >
+                  <span className="text-xs">Airtel Money</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">AIRTEL</span>
+                </button>
+              </div>
+
+              {/* Phone Number Input */}
+              <div className="space-y-1 pt-1">
+                <label className="text-xs font-extrabold text-text-secondary block">
+                  Mobile Number
+                </label>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="+256 770 000 000"
+                  className="w-full bg-control-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm font-semibold text-text-primary focus:outline-none focus:border-usdt-green transition-colors"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Country Selection */}
           <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
             <span className="text-xs font-bold text-text-secondary">Country / Region</span>
@@ -164,8 +227,8 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
               onChange={(e) => setCountry(e.target.value)}
               className="bg-control-bg border border-white/10 rounded-lg px-3 py-1 text-xs font-extrabold text-text-primary focus:outline-none"
             >
-              <option value="KE">Kenya (KES)</option>
               <option value="UG">Uganda (UGX)</option>
+              <option value="KE">Kenya (KES)</option>
               <option value="US">International (USD)</option>
             </select>
           </div>
@@ -175,12 +238,12 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
             {paymentMethod === 'CARD' ? (
               <>
                 <CreditCard size={16} className="text-purple-400 shrink-0" />
-                <span>Pay securely with Visa or Mastercard via Pesapal</span>
+                <span>Pay securely with Visa or Mastercard</span>
               </>
             ) : (
               <>
                 <Smartphone size={16} className="text-usdt-green shrink-0" />
-                <span>Pay securely with Mobile Money (M-Pesa, MTN, Airtel) via Pesapal</span>
+                <span>Pay securely with Mobile Money ({paymentNetwork === 'MTN' ? 'MTN Mobile Money' : 'Airtel Money'})</span>
               </>
             )}
           </div>
@@ -206,14 +269,14 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
             className="press-feedback w-full py-3.5 rounded-2xl bg-usdt-green text-black font-extrabold text-sm shadow-lg shadow-usdt-green/20 flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 transition-all"
           >
             {isLoading ? (
-              <span>Initializing Pesapal...</span>
+              <span>Initializing payment...</span>
             ) : paymentMethod === 'CARD' ? (
               <>
-                <CreditCard size={18} /> Continue to Card Checkout
+                <CreditCard size={18} /> Make Payment
               </>
             ) : (
               <>
-                <Smartphone size={18} /> Continue to Mobile Money
+                <Smartphone size={18} /> Make Payment
               </>
             )}
           </button>
@@ -233,7 +296,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
               <div>
                 <h3 className="text-sm font-extrabold text-text-primary">Awaiting Admin Authorization</h3>
                 <p className="text-xs text-text-tertiary mt-1">
-                  Your deposit of ${session.expectedAssetAmount || session.requestedAmount} USDT requires routine admin approval before Pesapal submission.
+                  Your deposit of ${session.expectedAssetAmount || session.requestedAmount} USDT requires routine admin authorization before submission.
                 </p>
               </div>
               <div className="text-[11px] font-mono text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full inline-block">
@@ -351,7 +414,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
               <div>
                 <h3 className="text-sm font-extrabold text-text-primary">Payment in Progress</h3>
                 <p className="text-xs text-text-tertiary mt-1">
-                  Waiting for Pesapal confirmation. Polling for updates...
+                  Waiting for payment confirmation. Polling for updates...
                 </p>
               </div>
             </div>
@@ -361,9 +424,9 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
                 <CreditCard size={24} />
               </div>
               <div>
-                <h3 className="text-sm font-extrabold text-text-primary">Pesapal Checkout Ready</h3>
+                <h3 className="text-sm font-extrabold text-text-primary">Payment Checkout Ready</h3>
                 <p className="text-xs text-text-tertiary mt-1">
-                  Click below to open the secure Pesapal Sandbox payment page.
+                  Click below to complete your payment on the secure checkout page.
                 </p>
               </div>
 
@@ -385,7 +448,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
                   rel="noopener noreferrer"
                   className="press-feedback w-full py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/30"
                 >
-                  <ExternalLink size={16} /> Open Pesapal Checkout
+                  <ExternalLink size={16} /> Open Secure Checkout
                 </a>
               )}
             </div>

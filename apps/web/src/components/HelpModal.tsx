@@ -255,9 +255,9 @@ export const LEARNING_CENTER_FAQS: FAQItem[] = [
     category: 'Wallet',
     question: 'How do I add money and take money out?',
     paragraphs: [
-      'We support direct local Mobile Money options (M-Pesa, MTN Mobile Money, Airtel Money) as well as Telegram CryptoBot and USDT wallet addresses.',
-      'To add money: Go to your Wallet screen, tap "Add Money", choose Mobile Money or Telegram, enter the amount, and follow the simple on-screen prompt.',
-      'To take money out: Go to your Wallet or Withdraw screen, tap "Take Out Money", enter your phone number or wallet address, and confirm. Payouts are processed fast.'
+      'We support direct local Mobile Money options (Airtel Money, MTN Mobile Money), Card payments, and USDT wallet addresses.',
+      'To add money: Go to your Wallet screen, tap "Add Money", choose Mobile Money, Card, or USDT, enter the amount, and follow the simple on-screen prompt.',
+      'To take money out: Go to your Wallet or Withdraw screen, tap "Take Out Money", enter your USDT wallet address, and confirm. Payouts are processed fast.'
     ],
     nextTopicId: 'ref_why',
     nextTopicLabel: 'Next: Learn how Referrals work →',
@@ -292,7 +292,7 @@ export const LEARNING_CENTER_FAQS: FAQItem[] = [
     question: 'How do I buy a machine?',
     paragraphs: [
       'Buying a machine is quick and simple.',
-      'Go to the Machine Shop (Shop tab), browse the available machine catalog, and tap "Buy Machine" under your desired model. You can pay using your existing Wallet balance, local Mobile Money, or Telegram CryptoBot.'
+      'Go to the Machine Shop (Shop tab), browse the available machine catalog, and tap "Buy Machine" under your desired model. You can pay using your existing Wallet balance, Mobile Money, Card, or USDT.'
     ],
     nextTopicId: 'pay_failed',
     nextTopicLabel: 'What happens if a payment fails?',

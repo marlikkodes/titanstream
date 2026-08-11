@@ -112,6 +112,10 @@ export class PesapalProvider implements SettlementProvider {
    * not by a hardcoded threshold inside this provider.
    */
   async createSettlement(telegramUserId: bigint, dto: CreateSettlementSessionDto) {
+    if (dto.paymentMethod?.toUpperCase() === 'USDT') {
+      throw new BadRequestException('INVALID_SETTLEMENT_ROUTING: USDT payments must use the TRC-20 blockchain rail and cannot be processed via Pesapal.');
+    }
+
     const expectedCryptoUsd = Number(dto.expectedCryptoAmount);
 
     // Consult the centralized risk engine for both hard limits AND manual review requirements
@@ -137,8 +141,8 @@ export class PesapalProvider implements SettlementProvider {
         requestedAmount: new Prisma.Decimal(dto.requestedAmount),
         expectedCryptoAmount: new Prisma.Decimal(dto.expectedCryptoAmount),
         exchangeRate: new Prisma.Decimal(dto.exchangeRate),
-        country: dto.country || 'KE',
-        mobileMoneyNetwork: dto.mobileMoneyNetwork || 'PESAPAL',
+        country: dto.country || 'UG',
+        mobileMoneyNetwork: dto.paymentNetwork || dto.mobileMoneyNetwork || 'MOBILE_MONEY',
         referenceCode,
         status: initialStatus,
         expiresAt,

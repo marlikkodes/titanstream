@@ -23,12 +23,20 @@ export class CreateSettlementSessionDto {
   exchangeRate!: string;
 
   @IsString()
-  @IsNotEmpty()
-  country!: string;
+  @IsOptional()
+  country?: string;
 
   @IsString()
-  @IsNotEmpty()
-  mobileMoneyNetwork!: string;
+  @IsOptional()
+  mobileMoneyNetwork?: string;
+
+  @IsString()
+  @IsOptional()
+  paymentNetwork?: string;
+
+  @IsString()
+  @IsOptional()
+  phoneNumber?: string;
 
   @IsString()
   @IsOptional()

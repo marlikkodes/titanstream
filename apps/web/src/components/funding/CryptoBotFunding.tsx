@@ -15,7 +15,7 @@ export const CryptoBotFunding: React.FC<CryptoBotFundingProps> = ({ onCancel }) 
       </div>
       <h3 className="text-sm font-extrabold text-text-primary">CryptoBot Payment Retired</h3>
       <p className="text-xs text-text-tertiary">
-        CryptoBot payments have been decommissioned. Please use Pesapal Mobile Money or Card funding.
+        CryptoBot payments have been decommissioned. Please use Mobile Money or Card funding.
       </p>
       {onCancel && (
         <button

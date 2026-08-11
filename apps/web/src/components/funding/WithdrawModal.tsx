@@ -35,29 +35,21 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
 
   const withdrawMethods = [
     {
-      id: 'MOBILE_MONEY' as WithdrawMethod,
-      name: 'Mobile Money',
-      displayName: 'Mobile Money',
-      icon: <Smartphone size={22} className="text-usdt-green" />,
-      description: 'Withdraw to your mobile money account',
-      status: 'ENABLED'
-    },
-    {
-      id: 'MPESA' as WithdrawMethod,
-      name: 'M-Pesa',
-      displayName: 'M-Pesa',
-      icon: <Smartphone size={22} className="text-green-500" />,
-      description: 'Withdraw to your M-Pesa account',
-      status: 'ENABLED'
-    },
-    {
       id: 'USDT_ADDRESS' as WithdrawMethod,
       name: 'USDT Address',
       displayName: 'USDT Wallet Address',
-      icon: <Wallet size={22} className="text-purple-400" />,
-      description: 'Withdraw to your USDT wallet address',
+      icon: <Wallet size={22} className="text-usdt-green" />,
+      description: 'Withdraw directly to your USDT (TRC-20) wallet address',
       status: 'ENABLED'
-    }
+    },
+    {
+      id: 'MOBILE_MONEY' as WithdrawMethod,
+      name: 'Mobile Money',
+      displayName: 'Mobile Money',
+      icon: <Smartphone size={22} className="text-text-tertiary" />,
+      description: 'Fiat payouts via Mobile Money are currently unavailable',
+      status: 'DISABLED'
+    },
   ];
 
   const handleWithdraw = async () => {
@@ -94,9 +86,6 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
       }
       destination = phoneNumber;
       destinationType = 'MOBILE_MONEY';
-    } else if (selectedMethod === 'CRYPTOBOT') {
-      destination = 'Telegram @CryptoBot';
-      destinationType = 'CRYPTOBOT';
     }
 
     setIsProcessing(true);
@@ -192,12 +181,18 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                 {withdrawMethods.map((method) => (
                   <button
                     key={method.id}
+                    disabled={method.status === 'DISABLED'}
                     onClick={() => {
+                      if (method.status === 'DISABLED') return;
                       hapticFeedback.impactOccurred('medium');
                       setSelectedMethod(method.id);
                       setErrorMsg(null);
                     }}
-                    className="press-feedback w-full p-4 rounded-2xl glass-panel border border-white/10 hover:border-usdt-green/40 flex items-center justify-between transition-all group text-left"
+                    className={`press-feedback w-full p-4 rounded-2xl glass-panel border flex items-center justify-between transition-all group text-left ${
+                      method.status === 'DISABLED'
+                        ? 'opacity-60 border-white/5 cursor-not-allowed'
+                        : 'border-white/10 hover:border-usdt-green/40'
+                    }`}
                   >
                     <div className="flex items-center gap-3.5">
                       <div className="w-12 h-12 rounded-xl bg-control-bg border border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -209,8 +204,12 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                           <span className="text-sm font-extrabold text-text-primary group-hover:text-usdt-green transition-colors">
                             {method.displayName}
                           </span>
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-usdt-green/10 text-usdt-green border border-usdt-green/20">
-                            Instant
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                            method.status === 'DISABLED'
+                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                              : 'bg-usdt-green/10 text-usdt-green border-usdt-green/20'
+                          }`}>
+                            {method.status === 'DISABLED' ? 'Unavailable' : 'TRC-20'}
                           </span>
                         </div>
                         <p className="text-xs text-text-secondary mt-0.5">
@@ -292,15 +291,6 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                       placeholder="Enter your phone number"
                       className="w-full bg-control-bg text-text-primary text-sm font-mono rounded-xl px-3 py-3 border border-white/10 focus:border-usdt-green focus:outline-none"
                     />
-                  </div>
-                )}
-
-                {selectedMethod === 'CRYPTOBOT' && (
-                  <div className="bg-control-bg/30 border border-white/5 rounded-xl p-3">
-                    <div className="text-[10px] text-text-secondary flex items-center gap-2">
-                      <Bot size={14} className="text-sky-400" />
-                      <span>You'll receive a payment link from @CryptoBot</span>
-                    </div>
                   </div>
                 )}
 

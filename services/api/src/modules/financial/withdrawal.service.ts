@@ -35,6 +35,14 @@ export class WithdrawalService {
   async initiateWithdrawal(dto: InitiateWithdrawalDto, idempotencyKey?: string) {
     const asset = dto.asset || 'USDT';
 
+    // 0. Provider Capability Check: Block unsupported fiat withdrawal rails
+    const netUpper = (dto.network || '').toUpperCase();
+    if (netUpper === 'MOMO' || netUpper === 'MOBILE_MONEY' || netUpper === 'CARD' || netUpper === 'MTN' || netUpper === 'AIRTEL') {
+      throw new BadRequestException(
+        'UNSUPPORTED_WITHDRAWAL_RAIL: Fiat withdrawals via Mobile Money or Card are not currently supported by backend payment processors. Please withdraw using USDT TRC-20.',
+      );
+    }
+
     // 0. Operational Switch Enforcement
     if (this.opsEngine) {
       await this.opsEngine.assertOperationalModeAllowed('WITHDRAWAL', asset);
@@ -45,7 +53,6 @@ export class WithdrawalService {
 
     // 1. Risk & Limit Checks
     const riskEval = await this.riskService.evaluateWithdrawal(dto.telegramUserId, dto.amount);
-
 
     if (this.treasuryService) {
       const treasuryCheck = await this.treasuryService.checkWithdrawalSafety(dto.amount);
@@ -79,7 +86,7 @@ export class WithdrawalService {
       data: {
         telegramUserId: dto.telegramUserId,
         referenceCode: refCode,
-        provider: SettlementProviderId.CRYPTOBOT,
+        provider: SettlementProviderId.USDT,
         asset,
         requestedAmount: new Prisma.Decimal(dto.amount),
         expectedCryptoAmount: new Prisma.Decimal(dto.amount),

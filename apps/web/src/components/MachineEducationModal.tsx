@@ -39,7 +39,7 @@ export const MachineEducationModal: React.FC<MachineEducationModalProps> = ({ is
     {
       title: 'Payment Methods & Funding',
       icon: <HelpCircle size={36} className="text-green-400" />,
-      sentence: 'Add funds via Mobile Money (MTN, Airtel, M-Pesa) or CryptoBot directly in the Wallet tab. All transactions are secure and processed instantly. Once funded, you can purchase any machine tier immediately. Withdrawals are available anytime to your Mobile Money or crypto wallet.',
+      sentence: 'Add funds via Mobile Money, Card, or USDT directly in the Wallet tab. All transactions are secure and processed instantly. Once funded, you can purchase any machine tier immediately. Withdrawals are available anytime to your USDT wallet.',
     },
   ];
 

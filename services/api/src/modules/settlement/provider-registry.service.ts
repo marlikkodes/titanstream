@@ -144,7 +144,21 @@ export class ProviderRegistryService implements OnModuleInit {
   }
 
   async routeCreate(telegramUserId: bigint, dto: CreateSettlementSessionDto) {
-    const providerId = dto.provider || SettlementProviderId.PESAPAL;
+    let providerId = dto.provider;
+
+    // Strict Enforcement: USDT paymentMethod MUST ALWAYS use SettlementProviderId.USDT rail and NEVER Pesapal
+    if (dto.paymentMethod?.toUpperCase() === 'USDT') {
+      providerId = SettlementProviderId.USDT;
+    } else if (!providerId && dto.paymentMethod) {
+      const pm = dto.paymentMethod.toUpperCase();
+      if (pm === 'MOBILE_MONEY' || pm === 'CARD') {
+        providerId = SettlementProviderId.PESAPAL;
+      }
+    }
+    if (!providerId) {
+      providerId = SettlementProviderId.PESAPAL;
+    }
+
     if (providerId === SettlementProviderId.CRYPTOBOT || (dto.provider as string) === 'CRYPTOBOT') {
       throw new BadRequestException('UNSUPPORTED_PROVIDER: CryptoBot settlement has been retired');
     }

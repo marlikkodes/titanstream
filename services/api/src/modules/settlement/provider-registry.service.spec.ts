@@ -126,6 +126,81 @@ describe('ProviderRegistryService', () => {
     ).resolves.toEqual({ settlementId: 'set_psp_1' });
   });
 
+  it('routes MOBILE_MONEY and CARD paymentMethods to Pesapal provider', async () => {
+    prisma.settlementSession.findFirst.mockResolvedValue(null);
+    prisma.settlementProvider.findUnique.mockResolvedValue({
+      id: SettlementProviderId.PESAPAL,
+      status: SettlementProviderStatus.ENABLED,
+      supportedCountries: ['KE', 'UG', 'US'],
+      capabilityManifest: pesapalProvider.manifest,
+      health: { healthStatus: SettlementProviderHealthStatus.HEALTHY },
+    });
+    pesapalProvider.createSettlement.mockResolvedValue({ settlementId: 'set_momo_1' });
+
+    await expect(
+      service.routeCreate(123n, {
+        paymentMethod: 'MOBILE_MONEY',
+        paymentNetwork: 'AIRTEL',
+        asset: 'USDT',
+        requestedAmount: '50',
+        expectedCryptoAmount: '50',
+        exchangeRate: '1',
+        country: 'UG',
+      }),
+    ).resolves.toEqual({ settlementId: 'set_momo_1' });
+
+    expect(pesapalProvider.createSettlement).toHaveBeenCalledWith(
+      123n,
+      expect.objectContaining({ paymentMethod: 'MOBILE_MONEY', paymentNetwork: 'AIRTEL' }),
+    );
+  });
+
+  it('strictly routes USDT paymentMethod to USDT provider rail even if provider: PESAPAL is passed', async () => {
+    const usdtProvider = {
+      providerId: SettlementProviderId.USDT,
+      manifest: {
+        provider: SettlementProviderId.USDT,
+        supports_buy: true,
+        supports_sell: true,
+        supported_assets: ['USDT'],
+      },
+      createSettlement: jest.fn().mockResolvedValue({ settlementId: 'set_usdt_trc20' }),
+    };
+
+    const serviceWithUsdt = new ProviderRegistryService(
+      prisma as any,
+      operatorProvider as any,
+      cryptobotProvider as any,
+      undefined,
+      pesapalProvider as any,
+      usdtProvider as any,
+    );
+
+    prisma.settlementSession.findFirst.mockResolvedValue(null);
+    prisma.settlementProvider.findUnique.mockResolvedValue({
+      id: SettlementProviderId.USDT,
+      status: SettlementProviderStatus.ENABLED,
+      supportedCountries: [],
+      capabilityManifest: usdtProvider.manifest,
+      health: { healthStatus: SettlementProviderHealthStatus.HEALTHY },
+    });
+
+    // Attempt to force provider: PESAPAL with paymentMethod: 'USDT'
+    const res = await serviceWithUsdt.routeCreate(123n, {
+      provider: SettlementProviderId.PESAPAL,
+      paymentMethod: 'USDT',
+      asset: 'USDT',
+      requestedAmount: '100',
+      expectedCryptoAmount: '100',
+      exchangeRate: '1',
+      country: 'UG',
+    });
+
+    expect(res).toEqual({ settlementId: 'set_usdt_trc20' });
+    expect(usdtProvider.createSettlement).toHaveBeenCalled();
+    expect(pesapalProvider.createSettlement).not.toHaveBeenCalled();
+  });
+
   it('blocks a second active settlement for the same user and asset', async () => {
     prisma.settlementSession.findFirst.mockResolvedValue({ id: 'existing' });
 

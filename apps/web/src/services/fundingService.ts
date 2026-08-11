@@ -2,7 +2,6 @@ import { settlementService, type CreateSettlementPayload, type SettlementSession
 
 // ─── Unified Funding Interface ───────────────────────────────────────────────
 // The frontend should only ever interact with this service.
-// Whether the provider is CryptoBot, Merchant, or anything else is invisible.
 // Provider-specific complexity lives entirely behind the settlement layer.
 
 export interface FundingSession {

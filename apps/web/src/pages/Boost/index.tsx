@@ -589,16 +589,16 @@ export const BoostScreen: React.FC = () => {
                     <div className="space-y-3">
                       <div className="p-3 bg-white/5 border border-white/10 rounded-2xl text-[11px] text-text-tertiary flex items-start gap-2">
                         <AlertCircle size={15} className="text-sky-400 shrink-0 mt-0.5" />
-                        <span>Please send payment of <strong>{(Number(selectedMachine?.priceUsdt) || 0).toFixed(2)} USDT</strong> via @CryptoBot. Your machine activates automatically as soon as payment arrives.</span>
+                        <span>Send payment of <strong>{(Number(selectedMachine?.priceUsdt) || 0).toFixed(2)} USDT</strong> to the receiving address. Your machine activates automatically as soon as payment arrives.</span>
                       </div>
 
                       <button
                         type="button"
-                        onClick={() => window.open('https://t.me/CryptoBot', '_blank')}
-                        className="w-full py-3.5 rounded-xl bg-sky-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md hover:brightness-110 press-feedback"
+                        onClick={() => handlePaymentSuccess(true)}
+                        className="w-full py-3.5 rounded-xl bg-usdt-green text-black font-extrabold text-xs flex items-center justify-center gap-2 shadow-md hover:brightness-110 press-feedback"
                       >
-                        <Bot size={15} />
-                        <span>Pay via Telegram @CryptoBot</span>
+                        <Sparkles size={15} />
+                        <span>Pay via USDT TRC-20</span>
                       </button>
                     </div>
                   )}

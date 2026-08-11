@@ -246,31 +246,18 @@ export const SettlementTracker: React.FC<SettlementTrackerProps> = ({
               </button>
             </div>
 
-            {/* Merchant Mobile Money Destination & USSD Push if provided */}
+            {/* Merchant Mobile Money Destination if provided */}
             {session.mobileMoneyNumber && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-control-bg/80 border border-white/10">
-                  <div>
-                    <div className="text-[10px] font-bold text-text-tertiary uppercase">Payment Phone Number</div>
-                    <div className="font-mono font-extrabold text-usdt-green text-sm tracking-wider">{session.mobileMoneyNumber}</div>
-                  </div>
-                  <button
-                    onClick={() => handleCopy(session.mobileMoneyNumber!, 'destination')}
-                    className="press-feedback p-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-secondary hover:text-text-primary"
-                  >
-                    {copiedField === 'destination' ? <Check size={14} className="text-usdt-green" /> : <Copy size={14} />}
-                  </button>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-control-bg/80 border border-white/10">
+                <div>
+                  <div className="text-[10px] font-bold text-text-tertiary uppercase">Payment Phone Number</div>
+                  <div className="font-mono font-extrabold text-usdt-green text-sm tracking-wider">{session.mobileMoneyNumber}</div>
                 </div>
-
                 <button
-                  onClick={() => {
-                    const ussdStr = `*165*1*1*${session.mobileMoneyNumber}*${Math.round(Number(session.requestedAmount || 10))}#`;
-                    window.location.href = `tel:*165*1*1*${session.mobileMoneyNumber}*${Math.round(Number(session.requestedAmount || 10))}%23`;
-                  }}
-                  className="press-feedback w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs shadow-md"
+                  onClick={() => handleCopy(session.mobileMoneyNumber!, 'destination')}
+                  className="press-feedback p-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-secondary hover:text-text-primary"
                 >
-                  <PhoneCall size={14} />
-                  <span>Open Phone Dial Code (*165*1*1*)</span>
+                  {copiedField === 'destination' ? <Check size={14} className="text-usdt-green" /> : <Copy size={14} />}
                 </button>
               </div>
             )}
