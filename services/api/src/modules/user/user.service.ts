@@ -138,172 +138,137 @@ export class UserService {
   async deleteAccount(telegramUserId: bigint) {
     // Use a transaction to ensure all deletions happen atomically
     return this.prisma.$transaction(async (tx) => {
-      // 1. Delete financial operations and related data first (has Restrict relations)
-      await tx.financialOperation.deleteMany({
+      // 1. Delete MachineOutput records (child of UserMachine)
+      const userMachines = await tx.userMachine.findMany({
         where: { telegramUserId },
+        select: { id: true },
       });
+      if (userMachines.length > 0) {
+        const machineIds = userMachines.map((m) => m.id);
+        await tx.machineOutput.deleteMany({
+          where: { userMachineId: { in: machineIds } },
+        });
+      }
 
-      // 2. Delete settlement sessions (has Restrict relations)
-      await tx.settlementSession.deleteMany({
+      // 2. Delete SettlementEvent records (child of SettlementSession)
+      const settlementSessions = await tx.settlementSession.findMany({
         where: { telegramUserId },
+        select: { id: true },
       });
+      if (settlementSessions.length > 0) {
+        const sessionIds = settlementSessions.map((s) => s.id);
+        await tx.settlementEvent.deleteMany({
+          where: { settlementSessionId: { in: sessionIds } },
+        });
+      }
 
-      // 3. Delete financial account and all related financial data
+      // 3. Delete financial operations & idempotency records & domain events
+      await tx.financialOperation.deleteMany({ where: { telegramUserId } });
+      await tx.financialIdempotencyRecord.deleteMany({ where: { telegramUserId } });
+      await tx.financialDomainEvent.deleteMany({ where: { telegramUserId } });
+
+      // 4. Delete settlement sessions
+      await tx.settlementSession.deleteMany({ where: { telegramUserId } });
+
+      // 5. Delete financial account and transactions/ledger entries
       const financialAccount = await tx.financialAccount.findUnique({
         where: { telegramUserId },
       });
-
       if (financialAccount) {
-        // Delete transactions
         await tx.financialTransaction.deleteMany({
           where: { financialAccountId: financialAccount.id },
         });
-
-        // Delete ledger entries
         await tx.ledgerEntry.deleteMany({
           where: { financialAccountId: financialAccount.id },
         });
-
-        // Delete the financial account
         await tx.financialAccount.delete({
           where: { telegramUserId },
         });
       }
 
-      // 4. Delete user mining state
-      await tx.userMiningState.deleteMany({
-        where: { telegramUserId },
-      });
+      // 6. Delete AssetBalances & UserAssetLicenses
+      await tx.assetBalance.deleteMany({ where: { telegramUserId } });
+      await tx.userAssetLicense.deleteMany({ where: { telegramUserId } });
 
-      // 5. Delete user machines
-      await tx.userMachine.deleteMany({
-        where: { telegramUserId },
-      });
+      // 7. Delete mining state, fleet items, machines
+      await tx.userMiningState.deleteMany({ where: { telegramUserId } });
+      await tx.userMachineFleetItem.deleteMany({ where: { telegramUserId } });
+      await tx.userMachine.deleteMany({ where: { telegramUserId } });
 
-      // 6. Delete crystal account and transactions
+      // 8. Delete crystal account & transactions
       const crystalAccount = await tx.crystalAccount.findUnique({
         where: { telegramUserId },
       });
-
       if (crystalAccount) {
         await tx.crystalTransaction.deleteMany({
           where: { accountId: crystalAccount.id },
         });
-
         await tx.crystalAccount.delete({
           where: { telegramUserId },
         });
       }
+      await tx.crystalTransaction.deleteMany({ where: { telegramUserId } });
 
-      // 7. Delete game data
-      await tx.gameSession.deleteMany({
-        where: { telegramUserId },
-      });
+      // 9. Delete game data
+      await tx.gameSession.deleteMany({ where: { telegramUserId } });
+      await tx.gamePlayerStat.deleteMany({ where: { telegramUserId } });
+      await tx.gameRewardGrant.deleteMany({ where: { telegramUserId } });
+      await tx.gameChallengeCompletion.deleteMany({ where: { telegramUserId } });
+      await tx.gameProfile.deleteMany({ where: { telegramUserId } });
 
-      await tx.gamePlayerStat.deleteMany({
-        where: { telegramUserId },
-      });
+      // 10. Delete achievements & user achievements
+      await tx.achievement.deleteMany({ where: { telegramUserId } });
+      await tx.userAchievement.deleteMany({ where: { telegramUserId } });
 
-      await tx.gameRewardGrant.deleteMany({
-        where: { telegramUserId },
-      });
+      // 11. Delete product subscriptions & payment invoices
+      await tx.productSubscription.deleteMany({ where: { telegramUserId } });
+      await tx.paymentInvoice.deleteMany({ where: { telegramUserId } });
+      await tx.channelVerificationEvent.deleteMany({ where: { telegramUserId } });
 
-      await tx.gameChallengeCompletion.deleteMany({
-        where: { telegramUserId },
-      });
+      // 12. Delete referral relationships (both as referrer and referee)
+      await tx.referralRelationship.deleteMany({ where: { referrerId: telegramUserId } });
+      await tx.referralRelationship.deleteMany({ where: { refereeId: telegramUserId } });
+      await tx.referralCode.deleteMany({ where: { telegramUserId } });
+      await tx.referralQualificationHistory.deleteMany({ where: { telegramUserId } });
 
-      await tx.gameProfile.deleteMany({
-        where: { telegramUserId },
-      });
+      // 13. Delete growth data & rewards
+      await tx.reward.deleteMany({ where: { telegramUserId } });
+      await tx.growthEvent.deleteMany({ where: { telegramUserId } });
 
-      // 8. Delete achievements
-      await tx.achievement.deleteMany({
-        where: { telegramUserId },
-      });
+      // 14. Delete notification records & preferences
+      await tx.notificationRecord.deleteMany({ where: { telegramUserId } });
+      await tx.notificationPreference.deleteMany({ where: { telegramUserId } });
 
-      // 9. Delete product subscriptions
-      await tx.productSubscription.deleteMany({
-        where: { telegramUserId },
-      });
+      // 15. Delete user benefits & benefit history
+      await tx.userBenefit.deleteMany({ where: { telegramUserId } });
+      await tx.benefitHistory.deleteMany({ where: { telegramUserId } });
 
-      // 10. Delete payment invoices
-      await tx.paymentInvoice.deleteMany({
-        where: { telegramUserId },
-      });
+      // 16. Delete user level record
+      await tx.userLevelRecord.deleteMany({ where: { telegramUserId } });
 
-      // 11. Delete channel verification events
-      await tx.channelVerificationEvent.deleteMany({
-        where: { telegramUserId },
-      });
+      // 17. Delete trust profile & events
+      await tx.trustEvent.deleteMany({ where: { telegramUserId } });
+      await tx.userTrustProfile.deleteMany({ where: { telegramUserId } });
 
-      // 12. Delete referral relationships
-      await tx.referralRelationship.deleteMany({
-        where: { referrerId: telegramUserId },
-      });
+      // 18. Delete user preferences & consents & onboarding
+      await tx.userPreferences.deleteMany({ where: { telegramUserId } });
+      await tx.onboardingProgress.deleteMany({ where: { telegramUserId } });
+      await tx.educationCompletion.deleteMany({ where: { telegramUserId } });
+      await tx.userConsent.deleteMany({ where: { telegramUserId } });
+      await tx.readinessScore.deleteMany({ where: { telegramUserId } });
+      await tx.readinessHistory.deleteMany({ where: { telegramUserId } });
+      await tx.userStateTransition.deleteMany({ where: { telegramUserId } });
 
-      await tx.referralRelationship.deleteMany({
-        where: { refereeId: telegramUserId },
-      });
+      // 19. Delete admin notes & universal identity
+      await tx.adminNote.deleteMany({ where: { telegramUserId } });
+      await tx.universalIdentity.deleteMany({ where: { telegramUserId } });
 
-      await tx.referralCode.deleteMany({
-        where: { telegramUserId },
-      });
-
-      await tx.referralQualificationHistory.deleteMany({
-        where: { telegramUserId },
-      });
-
-      // 13. Delete rewards
-      await tx.reward.deleteMany({
-        where: { telegramUserId },
-      });
-
-      // 14. Delete growth events
-      await tx.growthEvent.deleteMany({
-        where: { telegramUserId },
-      });
-
-      // 15. Delete notifications
-      await tx.notificationRecord.deleteMany({
-        where: { telegramUserId },
-      });
-
-      await tx.notificationPreference.deleteMany({
-        where: { telegramUserId },
-      });
-
-      // 16. Delete user benefits
-      await tx.userBenefit.deleteMany({
-        where: { telegramUserId },
-      });
-
-      // 17. Delete user level record
-      await tx.userLevelRecord.deleteMany({
-        where: { telegramUserId },
-      });
-
-      // 18. Delete trust profile
-      await tx.userTrustProfile.deleteMany({
-        where: { telegramUserId },
-      });
-
-      // 19. Delete user preferences
-      await tx.userPreferences.deleteMany({
-        where: { telegramUserId },
-      });
-
-      // 20. Delete admin notes (only the user-related ones)
-      // Note: There are two AdminNote models - one with telegramUserId and one with targetType/targetId
-      // We can only delete the user-related ones that have telegramUserId
-      // The other admin notes are linked via UniversalIdentity and will be handled differently
-
-      // 21. Finally delete the user record
-      // This will cascade delete: onboardingProgress, educationCompletions, userConsents, auditEvents, readinessScores, readinessHistory, stateTransitions, identity (SetNull)
+      // 20. Finally delete the user record
       await tx.user.delete({
         where: { telegramUserId },
       });
 
-      // 22. Create audit event for account deletion
+      // 21. Create audit event for account deletion
       await this.auditService.create({
         telegramUserId,
         eventType: AuditEventType.ACCOUNT_DELETED,
