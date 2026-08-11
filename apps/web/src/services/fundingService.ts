@@ -100,6 +100,14 @@ export const fundingService = {
   },
 
   /**
+   * SANDBOX TESTING: Simulate instant payment completion and wallet credit.
+   */
+  async simulatePesapalPayment(sessionId: string): Promise<SettlementSessionView> {
+    const res = await api.post(`/settlement/pesapal/simulate-payment/${sessionId}`);
+    return res.data;
+  },
+
+  /**
    * Get current status of a funding session.
    * Use this for polling during payment confirmation.
    */

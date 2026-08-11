@@ -256,7 +256,7 @@ export class ProviderRegistryService implements OnModuleInit {
   }
 
   private toProviderIndependentView(session: any) {
-    const adapter = this.adapters.get(session.provider as SettlementProviderId);
+    const adapter = this.adapters.get(session.provider as SettlementProviderId) as any;
     if (adapter && typeof adapter.toProviderIndependentView === 'function') {
       return adapter.toProviderIndependentView(session);
     }

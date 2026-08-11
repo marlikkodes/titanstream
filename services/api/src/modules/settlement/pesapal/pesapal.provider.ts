@@ -225,10 +225,12 @@ export class PesapalProvider implements SettlementProvider {
       this.logger.log(`[PesapalProvider] Session ${session.id} requires admin approval (riskCode=${riskResult.riskCode}). Submission deferred.`);
     }
 
+    const reloaded = await this.load(session.id);
     return {
-      ...this.toProviderIndependentView(session),
-      payUrl,
-      orderTrackingId,
+      ...this.toProviderIndependentView(reloaded),
+      payUrl: payUrl || (reloaded.providerMetadata as any)?.redirectUrl || null,
+      paymentUrl: payUrl || (reloaded.providerMetadata as any)?.redirectUrl || null,
+      orderTrackingId: orderTrackingId || (reloaded.providerMetadata as any)?.orderTrackingId || null,
       requiresAdminApproval,
     };
   }
@@ -768,5 +770,35 @@ export class PesapalProvider implements SettlementProvider {
       exchangeRateSource: metadata.exchangeRateSource || null,
       exchangeRateTimestamp: metadata.exchangeRateTimestamp || null,
     };
+  }
+
+  /**
+   * SANDBOX SIMULATION: Instantly complete settlement and credit user balance.
+   */
+  async simulatePayment(settlementId: string) {
+    const session = await this.load(settlementId);
+    const metadata = (session.providerMetadata || {}) as Record<string, any>;
+
+    const payCurrency = metadata.paymentCurrency || (session.country === 'KE' ? 'KES' : session.country === 'UG' ? 'UGX' : 'USD');
+    const payAmount = metadata.paymentAmount != null
+      ? Number(metadata.paymentAmount)
+      : new Prisma.Decimal(session.requestedAmount.toString()).mul(new Prisma.Decimal(session.exchangeRate.toString())).toDecimalPlaces(0).toNumber();
+
+    const mockLiveStatus: PesapalTransactionStatusResponse = {
+      payment_method: 'SANDBOX_SIMULATOR',
+      amount: payAmount,
+      created_date: new Date().toISOString(),
+      confirmation_code: `SANDBOX_SIM_${Date.now()}`,
+      order_tracking_id: metadata.orderTrackingId || session.id,
+      payment_status_description: 'Completed',
+      message: 'Sandbox mock completion',
+      status_code: 1,
+      merchant_reference: session.referenceCode,
+      currency: payCurrency,
+      error: { code: undefined, message: undefined },
+      status: '200',
+    };
+
+    return this.processVerifiedSuccess(session, mockLiveStatus);
   }
 }

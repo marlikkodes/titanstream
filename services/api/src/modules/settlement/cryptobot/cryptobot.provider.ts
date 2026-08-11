@@ -142,7 +142,7 @@ export class CryptoBotProvider implements SettlementProvider {
     return session;
   }
 
-  private toProviderIndependentView(session: any) {
+  toProviderIndependentView(session: any) {
     return {
       settlementId: session.id,
       provider: session.provider,

@@ -268,7 +268,7 @@ export class UsdtProvider implements SettlementProvider {
     return session;
   }
 
-  private toProviderIndependentView(session: any) {
+  toProviderIndependentView(session: any) {
     const metadata = (session.providerMetadata || {}) as any;
     return {
       settlementId: session.id,

@@ -24,6 +24,7 @@ export interface SettlementProvider {
   expireSettlement(settlementId: string): Promise<unknown>;
   cancelSettlement(settlementId: string): Promise<unknown>;
   getCapabilities(): SettlementCapabilityManifest;
+  toProviderIndependentView?(session: any): any;
   validateSettlement?(settlementId: string): Promise<unknown>;
   monitorSettlement?(settlementId: string): Promise<unknown>;
   emitSettlementEvent?(settlementId: string, eventType: string, payload?: Record<string, unknown>): Promise<unknown>;

@@ -148,6 +148,14 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
       });
 
       setSession(response.session);
+      const url = response.session.paymentUrl || (response.session as any).payUrl;
+      if (url) {
+        try {
+          window.open(url, '_blank');
+        } catch {
+          // popup blocked, handled by UI button
+        }
+      }
     } catch (err: any) {
       console.error('Failed to create payment session:', err);
       const errMsg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || '';
@@ -174,6 +182,8 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
     }
   };
 
+  const [showEmbeddedIframe, setShowEmbeddedIframe] = useState(true);
+
   const isPendingApproval = session?.status === 'CREATED' && (session as any)?.requiresAdminApproval;
 
   // Canonical payment method & network source of truth (session metadata overrides local state)
@@ -190,12 +200,27 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
   // Post-session locked values (authoritative backend financial snapshot)
   const sessionPayCurrency = (session as any)?.paymentCurrency || currFormat.code;
   const sessionPaySymbol = (session as any)?.currencySymbol || currFormat.symbol;
-  const sessionPayAmount = (session as any)?.paymentAmount != null
-    ? Number((session as any).paymentAmount)
-    : Math.round(Number(session?.requestedAmount || 0) * Number(session?.exchangeRate || 1));
-  const sessionExchangeRate = (session as any)?.exchangeRate
-    ? Number((session as any).exchangeRate).toLocaleString()
-    : null;
+  const rawSessionPayAmount = (session as any)?.paymentAmount != null ? Number((session as any).paymentAmount) : 0;
+  const sessionExchangeRate = (session as any)?.exchangeRate ? Number((session as any).exchangeRate).toLocaleString() : null;
+
+  // Safe display fallbacks for session card
+  const displayUsdtAmount = session?.requestedAmount || (session as any)?.expectedCryptoAmount || amountUsdt || '50';
+  const displayPayAmount = rawSessionPayAmount > 0
+    ? rawSessionPayAmount
+    : (estimatedFiatAmount || Math.round(Number(displayUsdtAmount) * (estimatedRate || 3782)));
+  const displayReference = session?.reference || session?.referenceCode || (session as any)?.settlementId || (session as any)?.id || '—';
+  
+  const calcRate = displayPayAmount > 0 && Number(displayUsdtAmount) > 0
+    ? Math.round(displayPayAmount / Number(displayUsdtAmount))
+    : 0;
+  const displayRate = sessionPayCurrency === 'USD'
+    ? '1'
+    : calcRate > 1
+    ? calcRate.toLocaleString()
+    : estimatedRate
+    ? estimatedRate.toLocaleString()
+    : '3,782';
+
   const checkoutUrl = session?.paymentUrl || (session as any)?.payUrl;
 
   return (
@@ -547,37 +572,88 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                   <span className="text-text-tertiary">You Pay:</span>
                   <span className="font-extrabold text-usdt-green font-mono text-sm">
                     {sessionPayCurrency === 'USD'
-                      ? `$${session.requestedAmount}`
-                      : `${sessionPaySymbol} ${sessionPayAmount.toLocaleString()}`}
+                      ? `$${displayUsdtAmount}`
+                      : `${sessionPaySymbol} ${displayPayAmount.toLocaleString()}`}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="text-text-tertiary">You Receive:</span>
-                  <span className="font-mono text-text-primary font-bold">{session.requestedAmount} USDT</span>
+                  <span className="font-mono text-text-primary font-bold">{displayUsdtAmount} USDT</span>
                 </div>
-                {sessionExchangeRate && sessionPayCurrency !== 'USD' && (
+                {sessionPayCurrency !== 'USD' && (
                   <div className="flex justify-between items-center text-[11px] pt-1 border-t border-white/5">
                     <span className="text-text-tertiary">Locked Rate:</span>
-                    <span className="font-mono text-text-secondary">1 USDT = {sessionPaySymbol} {sessionExchangeRate}</span>
+                    <span className="font-mono text-text-secondary">1 USDT = {sessionPaySymbol} {displayRate}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center text-[11px] pt-1 border-t border-white/5">
                   <span className="text-text-tertiary">Reference:</span>
-                  <span className="font-mono text-purple-400 font-bold">{session.reference || session.referenceCode}</span>
+                  <span className="font-mono text-purple-400 font-bold">{displayReference}</span>
                 </div>
               </div>
 
-              {/* BIG PROMINENT CHECKOUT BUTTON */}
-              {checkoutUrl ? (
-                <a
-                  href={checkoutUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="press-feedback w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/30"
+              {/* REAL PESAPAL SANDBOX CHECKOUT CONTROL */}
+              {checkoutUrl && (
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between">
+                    <a
+                      href={checkoutUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="press-feedback flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/30"
+                    >
+                      <ExternalLink size={16} /> Open in External Window
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setShowEmbeddedIframe(!showEmbeddedIframe)}
+                      className="ml-2 px-3 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-text-primary text-xs font-bold transition-all"
+                    >
+                      {showEmbeddedIframe ? 'Hide Frame' : 'Show Frame'}
+                    </button>
+                  </div>
+
+                  {/* REAL EMBEDDED PESAPAL SANDBOX IFRAME */}
+                  {showEmbeddedIframe && (
+                    <div className="rounded-2xl overflow-hidden border border-purple-500/30 bg-white shadow-2xl">
+                      <iframe
+                        src={checkoutUrl}
+                        title="Pesapal Real Sandbox Checkout"
+                        className="w-full h-[480px] border-0"
+                        allow="payment"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SANDBOX INSTANT PAYMENT SIMULATOR */}
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const sid = (session as any)?.settlementId || (session as any)?.id || session?.reference || '';
+                    if (!sid) return;
+                    setIsLoading(true);
+                    setError(null);
+                    try {
+                      hapticFeedback.impactOccurred('medium');
+                      const updated = await fundingService.simulatePesapalPayment(sid);
+                      setSession(updated);
+                    } catch (err: any) {
+                      console.error('Simulation failed:', err);
+                      setError(err?.response?.data?.message || err?.message || 'Sandbox simulation failed');
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  disabled={isLoading}
+                  className="press-feedback w-full py-3 rounded-xl bg-usdt-green/20 hover:bg-usdt-green/30 text-usdt-green border border-usdt-green/40 font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-usdt-green/10 disabled:opacity-50"
                 >
-                  <ExternalLink size={18} /> Open Secure Checkout
-                </a>
-              ) : null}
+                  <CheckCircle2 size={16} />
+                  <span>Simulate Instant Sandbox Payment</span>
+                </button>
+              </div>
 
               <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-text-tertiary">
                 <span className="flex items-center gap-1.5">

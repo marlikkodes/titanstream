@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Logger, Query, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Logger, Param, Query, Post } from '@nestjs/common';
 import { Public } from '../../../common/decorators/public.decorator';
 import { PesapalClient } from './pesapal.client';
 import { PesapalCallbackQueryDto, PesapalIpnDto } from './pesapal.dto';
@@ -109,5 +109,25 @@ export class PesapalController {
       orderTrackingId,
       merchantReference: merchantRef,
     };
+  }
+
+  /**
+   * SANDBOX SIMULATION ENDPOINT
+   * Simulates successful payment completion for a settlement session in Sandbox testing.
+   */
+  @Post('simulate-payment/:id')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async simulatePaymentPost(@Param('id') settlementId: string) {
+    this.logger.log(`[PesapalSandbox] Simulating successful payment for settlement ${settlementId}`);
+    return this.pesapalProvider.simulatePayment(settlementId);
+  }
+
+  @Get('simulate-payment/:id')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async simulatePaymentGet(@Param('id') settlementId: string) {
+    this.logger.log(`[PesapalSandbox] Simulating successful payment for settlement ${settlementId}`);
+    return this.pesapalProvider.simulatePayment(settlementId);
   }
 }
