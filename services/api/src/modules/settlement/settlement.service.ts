@@ -38,8 +38,8 @@ export class SettlementService {
 
     await this.assertNoActiveSettlement(telegramUserId, dto.asset);
     const operator = await this.routing.selectOperator({
-      country: dto.country,
-      network: dto.mobileMoneyNetwork,
+      country: dto.country || 'GLOBAL',
+      network: dto.mobileMoneyNetwork || 'GLOBAL',
       asset: dto.asset,
       requestedAmount: dto.requestedAmount,
     });
@@ -55,8 +55,8 @@ export class SettlementService {
         requestedAmount: new Prisma.Decimal(dto.requestedAmount),
         expectedCryptoAmount: new Prisma.Decimal(dto.expectedCryptoAmount),
         exchangeRate: new Prisma.Decimal(dto.exchangeRate),
-        country: dto.country,
-        mobileMoneyNetwork: dto.mobileMoneyNetwork,
+        country: dto.country || 'GLOBAL',
+        mobileMoneyNetwork: dto.mobileMoneyNetwork || 'GLOBAL',
         referenceCode,
         status: SettlementStatus.WAITING_FOR_PAYMENT,
         expiresAt,
