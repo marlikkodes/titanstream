@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Logger, Param, Query, Post } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, HttpCode, HttpStatus, Logger, Param, Query, Post } from '@nestjs/common';
 import { Public } from '../../../common/decorators/public.decorator';
 import { PesapalClient } from './pesapal.client';
 import { PesapalCallbackQueryDto, PesapalIpnDto } from './pesapal.dto';
@@ -111,14 +111,13 @@ export class PesapalController {
     };
   }
 
-  /**
-   * SANDBOX SIMULATION ENDPOINT
-   * Simulates successful payment completion for a settlement session in Sandbox testing.
-   */
   @Post('simulate-payment/:id')
   @Public()
   @HttpCode(HttpStatus.OK)
   async simulatePaymentPost(@Param('id') settlementId: string) {
+    if (process.env.PESAPAL_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('SANDBOX_SIMULATOR_DISABLED: Developer simulation endpoint is strictly prohibited in production.');
+    }
     this.logger.log(`[PesapalSandbox] Simulating successful payment for settlement ${settlementId}`);
     return this.pesapalProvider.simulatePayment(settlementId);
   }
@@ -127,6 +126,9 @@ export class PesapalController {
   @Public()
   @HttpCode(HttpStatus.OK)
   async simulatePaymentGet(@Param('id') settlementId: string) {
+    if (process.env.PESAPAL_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('SANDBOX_SIMULATOR_DISABLED: Developer simulation endpoint is strictly prohibited in production.');
+    }
     this.logger.log(`[PesapalSandbox] Simulating successful payment for settlement ${settlementId}`);
     return this.pesapalProvider.simulatePayment(settlementId);
   }
