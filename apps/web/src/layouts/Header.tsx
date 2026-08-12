@@ -151,26 +151,6 @@ export const Header: React.FC = () => {
           <HelpCircle size={18} />
         </button>
 
-        {/* Crypto currency toggle — USDT/TON */}
-        <button
-          onClick={handleToggleCrypto}
-          className={`press-feedback w-9 h-9 rounded-full border flex flex-col items-center justify-center text-sm shadow-sm font-bold font-mono relative group transition-all ${
-            selectedCryptoCurrency === 'TON'
-              ? 'bg-purple-500/10 border-purple-500/30'
-              : 'bg-control-bg/70 border-white/10'
-          }`}
-          title={`Switch to ${selectedCryptoCurrency === 'USDT' ? 'TON' : 'USDT'}`}
-        >
-          <span className="text-[14px] leading-none">
-            {selectedCryptoCurrency === 'TON' ? '💎' : '₮'}
-          </span>
-          <span className={`text-[7px] font-extrabold leading-none -mt-0.5 ${
-            selectedCryptoCurrency === 'TON' ? 'text-purple-400' : 'text-text-tertiary'
-          }`}>
-            {selectedCryptoCurrency}
-          </span>
-        </button>
-
         {/* Currency preference toggle — shows flag of active currency */}
         {selectedCountry && selectedCountry.code !== 'US' && (
           <button

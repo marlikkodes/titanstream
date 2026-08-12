@@ -204,22 +204,22 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
   const sessionExchangeRate = (session as any)?.exchangeRate ? Number((session as any).exchangeRate).toLocaleString() : null;
 
   // Safe display fallbacks for session card
-  const displayUsdtAmount = session?.requestedAmount || (session as any)?.expectedCryptoAmount || amountUsdt || '50';
-  const displayPayAmount = rawSessionPayAmount > 0
-    ? rawSessionPayAmount
-    : (estimatedFiatAmount || Math.round(Number(displayUsdtAmount) * (estimatedRate || 3782)));
-  const displayReference = session?.reference || session?.referenceCode || (session as any)?.settlementId || (session as any)?.id || '—';
+  const displayUsdtAmount = session?.requestedAmount ? session.requestedAmount.toString() : (session as any)?.expectedCryptoAmount ? (session as any).expectedCryptoAmount.toString() : amountUsdt || '50';
   
-  const calcRate = displayPayAmount > 0 && Number(displayUsdtAmount) > 0
-    ? Math.round(displayPayAmount / Number(displayUsdtAmount))
-    : 0;
+  const numericUsdt = Number(displayUsdtAmount) || 50;
+  const lockedRateNum = (session as any)?.exchangeRate ? Number((session as any).exchangeRate) : (estimatedRate || 3782);
+
+  // If rawSessionPayAmount is set and reasonably matches numericUsdt * rate, use it; otherwise compute exact product
+  const computedPayAmount = Math.round(numericUsdt * lockedRateNum);
+  const displayPayAmount = (rawSessionPayAmount > 100 && sessionPayCurrency !== 'USD')
+    ? rawSessionPayAmount
+    : (sessionPayCurrency === 'USD' ? numericUsdt : computedPayAmount);
+
+  const displayReference = session?.reference || session?.referenceCode || (session as any)?.settlementId || (session as any)?.id || '—';
+
   const displayRate = sessionPayCurrency === 'USD'
     ? '1'
-    : calcRate > 1
-    ? calcRate.toLocaleString()
-    : estimatedRate
-    ? estimatedRate.toLocaleString()
-    : '3,782';
+    : lockedRateNum.toLocaleString();
 
   const checkoutUrl = session?.paymentUrl || (session as any)?.payUrl;
 
@@ -450,101 +450,118 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4"
         >
-          {session.status === 'COMPLETED' ? (
-            /* Success Celebration Card */
-            <div className="p-5 rounded-3xl glass-panel border border-usdt-green/30 space-y-4 text-center">
-              <div className="w-14 h-14 rounded-full bg-usdt-green/20 text-usdt-green flex items-center justify-center mx-auto">
-                <CheckCircle2 size={32} />
-              </div>
-              <div>
-                <h3 className="text-base font-extrabold text-text-primary">Deposit Successful!</h3>
-                <p className="text-xs text-text-tertiary mt-1">
-                  Your account has been credited with <span className="font-extrabold text-usdt-green font-mono">{session.requestedAmount} USDT</span>.
-                </p>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-left space-y-1.5 text-xs font-mono">
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Reference:</span>
-                  <span className="text-usdt-green font-bold">{session.reference || session.referenceCode}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Amount Credited:</span>
-                  <span className="text-text-primary font-bold">{session.requestedAmount} USDT</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Status:</span>
-                  <span className="text-usdt-green font-bold">COMPLETED</span>
-                </div>
-              </div>
-              <button
-                onClick={onCancel}
-                className="w-full py-3.5 rounded-2xl bg-usdt-green hover:bg-usdt-green/90 text-app-bg font-extrabold text-sm transition-all"
-              >
-                Done
-              </button>
-            </div>
-          ) : session.status === 'FAILED' || session.status === 'REJECTED' || session.status === 'CANCELLED' || session.status === 'EXPIRED' ? (
-            /* Failed / Cancelled Card */
-            <div className="p-5 rounded-3xl glass-panel border border-rose-500/30 space-y-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
-                <XCircle size={24} />
-              </div>
-              <div>
-                <h3 className="text-sm font-extrabold text-text-primary">
-                  {session.status === 'EXPIRED' ? 'Session Expired' : 'Payment Failed'}
-                </h3>
-                <p className="text-xs text-text-tertiary mt-1">
-                  {session.status === 'EXPIRED'
-                    ? 'This deposit session has expired. Please create a new session.'
-                    : 'The payment could not be processed or was rejected.'}
-                </p>
-              </div>
-              <button
-                onClick={() => setSession(null)}
-                className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-text-primary font-extrabold text-xs transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          ) : isPendingApproval ? (
-            /* Admin Authorization Card */
-            <div className="p-5 rounded-3xl glass-panel border border-amber-500/30 space-y-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
-                <Clock size={24} className="animate-pulse" />
-              </div>
+          {(() => {
+            const currentStatus = String(session?.status || '').toUpperCase();
+            const isCompleted = ['COMPLETED', 'POSTED', 'USDT_SENT', 'SUCCESS', 'PAID'].includes(currentStatus);
+            const isFailed = ['FAILED', 'REJECTED', 'CANCELLED', 'EXPIRED'].includes(currentStatus);
 
-              <div>
-                <h3 className="text-sm font-extrabold text-text-primary">Admin Authorization Required</h3>
-                <p className="text-xs text-text-tertiary mt-1">
-                  Deposits exceeding security threshold require manual authorization before provider dispatch.
-                </p>
-              </div>
+            if (isCompleted) {
+              return (
+                /* Success Celebration Card */
+                <div className="p-5 rounded-3xl glass-panel border border-usdt-green/30 space-y-4 text-center">
+                  <div className="w-14 h-14 rounded-full bg-usdt-green/20 text-usdt-green flex items-center justify-center mx-auto">
+                    <CheckCircle2 size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-text-primary">Deposit Successful!</h3>
+                    <p className="text-xs text-text-tertiary mt-1">
+                      Your account has been credited with <span className="font-extrabold text-usdt-green font-mono">{displayUsdtAmount} USDT</span>.
+                    </p>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-left space-y-1.5 text-xs font-mono">
+                    <div className="flex justify-between">
+                      <span className="text-text-tertiary">Reference:</span>
+                      <span className="text-usdt-green font-bold">{displayReference}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-text-tertiary">Amount Credited:</span>
+                      <span className="text-text-primary font-bold">{displayUsdtAmount} USDT</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-text-tertiary">Status:</span>
+                      <span className="text-usdt-green font-bold">COMPLETED</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onCancel}
+                    className="w-full py-3.5 rounded-2xl bg-usdt-green hover:bg-usdt-green/90 text-app-bg font-extrabold text-sm transition-all"
+                  >
+                    Done
+                  </button>
+                </div>
+              );
+            }
 
-              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-left space-y-1.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Amount:</span>
-                  <span className="font-extrabold text-text-primary font-mono">{session.requestedAmount} USDT</span>
+            if (isFailed) {
+              return (
+                /* Failed / Cancelled Card */
+                <div className="p-5 rounded-3xl glass-panel border border-rose-500/30 space-y-4 text-center">
+                  <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
+                    <XCircle size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-text-primary">
+                      {currentStatus === 'EXPIRED' ? 'Session Expired' : 'Payment Failed'}
+                    </h3>
+                    <p className="text-xs text-text-tertiary mt-1">
+                      {currentStatus === 'EXPIRED'
+                        ? 'This deposit session has expired. Please create a new session.'
+                        : 'The payment could not be processed or was rejected.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSession(null)}
+                    className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-text-primary font-extrabold text-xs transition-colors"
+                  >
+                    Try Again
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Reference:</span>
-                  <span className="font-mono text-amber-400">{session.reference || session.referenceCode}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Status:</span>
-                  <span className="font-extrabold text-amber-400">PENDING_APPROVAL</span>
-                </div>
-              </div>
+              );
+            }
 
-              <button
-                onClick={() => setSession(null)}
-                className="w-full py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 font-extrabold text-xs transition-colors"
-              >
-                Create New Session
-              </button>
-            </div>
-          ) : (
-            /* Active Checkout & Polling View (WAITING_FOR_PAYMENT / VERIFYING / CREATED) */
-            <div className="p-5 rounded-3xl glass-panel border border-white/10 space-y-4 text-center">
+            if (isPendingApproval) {
+              return (
+                /* Admin Authorization Card */
+                <div className="p-5 rounded-3xl glass-panel border border-amber-500/30 space-y-4 text-center">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+                    <Clock size={24} className="animate-pulse" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-extrabold text-text-primary">Admin Authorization Required</h3>
+                    <p className="text-xs text-text-tertiary mt-1">
+                      Deposits exceeding security threshold require manual authorization before provider dispatch.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-left space-y-1.5 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-text-tertiary">Amount:</span>
+                      <span className="font-extrabold text-text-primary font-mono">{displayUsdtAmount} USDT</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-text-tertiary">Reference:</span>
+                      <span className="font-mono text-amber-400">{displayReference}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-text-tertiary">Status:</span>
+                      <span className="font-extrabold text-amber-400">PENDING_APPROVAL</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setSession(null)}
+                    className="w-full py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 font-extrabold text-xs transition-colors"
+                  >
+                    Create New Session
+                  </button>
+                </div>
+              );
+            }
+
+            return (
+              /* Active Checkout & Polling View (WAITING_FOR_PAYMENT / VERIFYING / CREATED) */
+              <div className="p-5 rounded-3xl glass-panel border border-white/10 space-y-4 text-center">
               <div className="w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center mx-auto relative">
                 {session.status === 'VERIFYING' ? (
                   <ShieldCheck size={24} className="animate-pulse" />
@@ -557,12 +574,18 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-extrabold text-text-primary">
-                  {session.status === 'VERIFYING' ? 'Verifying Payment' : 'Payment Checkout Ready'}
+                  {session.status === 'VERIFYING'
+                    ? 'Verifying Payment'
+                    : activePaymentMethod === 'CARD'
+                    ? 'Pesapal Secure Card Checkout'
+                    : 'Pesapal Mobile Money Checkout'}
                 </h3>
                 <p className="text-xs text-text-tertiary mt-1">
                   {session.status === 'VERIFYING'
                     ? 'Payment received. Verifying transaction details with Pesapal...'
-                    : 'Click below to complete your payment on the secure Pesapal checkout page.'}
+                    : activePaymentMethod === 'CARD'
+                    ? 'Enter your Visa or Mastercard credentials below on Pesapal\'s secure checkout.'
+                    : 'Complete your payment on your mobile phone or using the Pesapal checkout below.'}
                 </p>
               </div>
 
@@ -602,7 +625,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                       rel="noopener noreferrer"
                       className="press-feedback flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/30"
                     >
-                      <ExternalLink size={16} /> Open in External Window
+                      <ExternalLink size={16} /> Open Checkout in New Tab
                     </a>
                     <button
                       type="button"
@@ -627,33 +650,44 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 </div>
               )}
 
-              {/* SANDBOX INSTANT PAYMENT SIMULATOR */}
-              <div className="pt-2 space-y-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const sid = (session as any)?.settlementId || (session as any)?.id || session?.reference || '';
-                    if (!sid) return;
-                    setIsLoading(true);
-                    setError(null);
-                    try {
-                      hapticFeedback.impactOccurred('medium');
-                      const updated = await fundingService.simulatePesapalPayment(sid);
-                      setSession(updated);
-                    } catch (err: any) {
-                      console.error('Simulation failed:', err);
-                      setError(err?.response?.data?.message || err?.message || 'Sandbox simulation failed');
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
-                  disabled={isLoading}
-                  className="press-feedback w-full py-3 rounded-xl bg-usdt-green/20 hover:bg-usdt-green/30 text-usdt-green border border-usdt-green/40 font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-usdt-green/10 disabled:opacity-50"
-                >
-                  <CheckCircle2 size={16} />
-                  <span>Simulate Instant Sandbox Payment</span>
-                </button>
-              </div>
+              {/* SANDBOX DEVELOPER INSTANT PAYMENT SIMULATOR */}
+              {process.env.NODE_ENV !== 'production' && (
+                <div className="pt-2 space-y-2 border-t border-white/5">
+                  <div className="text-[10px] text-text-tertiary text-left font-mono">
+                    Developer Sandbox Tool: Tests internal pipeline (bypasses Pesapal live server)
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const sid = (session as any)?.settlementId || (session as any)?.id || session?.referenceCode || session?.reference || '';
+                      if (!sid) return;
+                      setIsLoading(true);
+                      setError(null);
+                      try {
+                        hapticFeedback.impactOccurred('medium');
+                        const updated = await fundingService.simulatePesapalPayment(sid);
+                        setSession(updated);
+                        try {
+                          const walletStore = (await import('../../store/useWalletStore')).useWalletStore;
+                          walletStore.getState().fetchWalletBalances();
+                        } catch {
+                          // safe fallback
+                        }
+                      } catch (err: any) {
+                        console.error('Simulation failed:', err);
+                        setError(err?.response?.data?.message || err?.message || 'Sandbox simulation failed');
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                    disabled={isLoading}
+                    className="press-feedback w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-text-tertiary border border-white/10 font-bold text-[11px] flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  >
+                    <CheckCircle2 size={14} />
+                    <span>Developer: Simulate Internal Pipeline Test</span>
+                  </button>
+                </div>
+              )}
 
               <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-text-tertiary">
                 <span className="flex items-center gap-1.5">
@@ -668,7 +702,8 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 </button>
               </div>
             </div>
-          )}
+          );
+        })()}
         </motion.div>
       )}
     </div>
