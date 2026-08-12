@@ -616,14 +616,21 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
               {checkoutUrl && (
                 <div className="space-y-3 pt-1">
                   <div className="flex items-center justify-between">
-                    <a
-                      href={checkoutUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        hapticFeedback.impactOccurred('medium');
+                        const tg = (window as any).Telegram?.WebApp;
+                        if (tg?.openLink) {
+                          tg.openLink(checkoutUrl);
+                        } else {
+                          window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+                        }
+                      }}
                       className="press-feedback flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/30"
                     >
                       <ExternalLink size={16} /> Open Checkout in New Tab
-                    </a>
+                    </button>
                     <button
                       type="button"
                       onClick={() => setShowEmbeddedIframe(!showEmbeddedIframe)}
