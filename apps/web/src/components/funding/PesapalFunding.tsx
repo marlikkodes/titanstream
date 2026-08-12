@@ -129,9 +129,13 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
       return;
     }
 
-    if (paymentMethod === 'MOBILE_MONEY' && !phoneNumber.trim()) {
-      setError('Please enter your mobile money phone number');
-      return;
+    if (paymentMethod === 'MOBILE_MONEY') {
+      const cleanPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
+      const validUgPhone = /^(?:\+?256|0)[7]\d{8}$/.test(cleanPhone);
+      if (!cleanPhone || !validUgPhone) {
+        setError('Please enter a valid Uganda mobile money phone number (e.g. 0771234567 or 0701234567)');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -174,7 +178,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
     }
   };
 
-  const [showEmbeddedIframe, setShowEmbeddedIframe] = useState(true);
+  const [showEmbeddedIframe, setShowEmbeddedIframe] = useState(false);
 
   const isPendingApproval = session?.status === 'CREATED' && (session as any)?.requiresAdminApproval;
 
@@ -581,8 +585,8 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                   {session.status === 'VERIFYING'
                     ? 'Payment received. Verifying transaction details...'
                     : activePaymentMethod === 'CARD'
-                    ? 'Enter your Visa or Mastercard credentials below on the secure checkout.'
-                    : 'Complete your payment on your mobile phone or using the secure checkout below.'}
+                    ? 'Your secure checkout page is ready. Complete your payment on the secure portal below.'
+                    : 'Click Continue to Secure Checkout below to authorize your payment via Airtel Money or MTN Mobile Money.'}
                 </p>
               </div>
 
@@ -612,37 +616,38 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 </div>
               </div>
 
-              {/* SECURE CHECKOUT FRAME CONTROL */}
+              {/* SECURE CHECKOUT HANDOFF */}
               {checkoutUrl && (
                 <div className="space-y-3 pt-1">
-                  <div className="flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        hapticFeedback.impactOccurred('medium');
-                        const tg = (window as any).Telegram?.WebApp;
-                        if (tg?.openLink) {
-                          tg.openLink(checkoutUrl);
-                        } else {
-                          window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
-                        }
-                      }}
-                      className="press-feedback flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/30"
-                    >
-                      <ExternalLink size={16} /> Open Checkout in New Tab
-                    </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      hapticFeedback.impactOccurred('medium');
+                      const tg = (window as any).Telegram?.WebApp;
+                      if (tg?.openLink) {
+                        tg.openLink(checkoutUrl);
+                      } else {
+                        window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                    className="press-feedback w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/30"
+                  >
+                    <ExternalLink size={18} /> Continue to Secure Checkout
+                  </button>
+
+                  <div className="flex justify-center">
                     <button
                       type="button"
                       onClick={() => setShowEmbeddedIframe(!showEmbeddedIframe)}
-                      className="ml-2 px-3 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-text-primary text-xs font-bold transition-all"
+                      className="text-[11px] font-semibold text-text-tertiary hover:text-text-secondary transition-colors underline"
                     >
-                      {showEmbeddedIframe ? 'Hide Frame' : 'Show Frame'}
+                      {showEmbeddedIframe ? 'Hide Embedded Checkout Frame' : 'Show Embedded Checkout Frame (Fallback)'}
                     </button>
                   </div>
 
-                  {/* SECURE EMBEDDED CHECKOUT IFRAME */}
+                  {/* OPTIONAL EMBEDDED CHECKOUT IFRAME FALLBACK */}
                   {showEmbeddedIframe && (
-                    <div className="rounded-2xl overflow-hidden border border-purple-500/30 bg-white shadow-2xl">
+                    <div className="rounded-2xl overflow-hidden border border-purple-500/30 bg-white shadow-2xl mt-2">
                       <iframe
                         src={checkoutUrl}
                         title="Secure Card Checkout"

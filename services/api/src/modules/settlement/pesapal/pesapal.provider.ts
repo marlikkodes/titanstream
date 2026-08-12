@@ -466,8 +466,12 @@ export class PesapalProvider implements SettlementProvider {
       ? Number(sessionMeta.paymentAmount)
       : new Prisma.Decimal(session.requestedAmount.toString()).mul(new Prisma.Decimal(session.exchangeRate.toString())).toDecimalPlaces(0).toNumber();
 
+    const normalizedPhone = this.normalizePhoneNumber(sessionMeta.phoneNumber, session.country);
+
     this.logger.log(
-      `[PesapalProvider] Submitting order: ${pesapalAmount} ${pesapalCurrency} (ref=${session.referenceCode})`,
+      `[MOBILE_MONEY_REQUEST_SUBMITTED] Submitting order: ` +
+      `settlementId=${session.id}, referenceCode=${session.referenceCode}, ` +
+      `amount=${pesapalAmount} ${pesapalCurrency}, country=${session.country || 'UG'}`
     );
 
     const orderPayload: PesapalOrderRequestPayload = {
@@ -479,8 +483,8 @@ export class PesapalProvider implements SettlementProvider {
       notification_id: ipnId,
       billing_address: {
         email_address: `user_${session.telegramUserId}@tetherstream.internal`,
-        phone_number: sessionMeta.phoneNumber || '0700000000',
-        country_code: session.country || 'KE',
+        phone_number: normalizedPhone,
+        country_code: session.country || 'UG',
         first_name: 'Titan',
         last_name: 'User',
       },
@@ -636,6 +640,20 @@ export class PesapalProvider implements SettlementProvider {
     return tolerances[currencyCode.toUpperCase()] ?? 0;
   }
 
+  private normalizePhoneNumber(rawPhone?: string, countryCode?: string): string {
+    if (!rawPhone) return '0700000000';
+    const digits = rawPhone.replace(/[^\d]/g, '');
+    if (countryCode === 'UG' || digits.startsWith('256')) {
+      if (digits.startsWith('256') && digits.length === 12) {
+        return `0${digits.substring(3)}`;
+      }
+      if (digits.length === 9) {
+        return `0${digits}`;
+      }
+    }
+    return digits || '0700000000';
+  }
+
   /**
    * DEFECT 1 FIX — Atomic Financial Settlement
    * All three operations (status claim, event recording, ledger posting) execute
@@ -775,6 +793,7 @@ export class PesapalProvider implements SettlementProvider {
   /**
    * SANDBOX SIMULATION: Instantly complete settlement and credit user balance.
    */
+  async simulatePayment(settlementId: string) {
     if (process.env.PESAPAL_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
       throw new ForbiddenException('SANDBOX_SIMULATOR_DISABLED: Developer simulation endpoint is strictly prohibited in production.');
     }
