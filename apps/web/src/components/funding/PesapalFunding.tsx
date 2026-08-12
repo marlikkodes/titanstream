@@ -577,15 +577,15 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                   {session.status === 'VERIFYING'
                     ? 'Verifying Payment'
                     : activePaymentMethod === 'CARD'
-                    ? 'Pesapal Secure Card Checkout'
-                    : 'Pesapal Mobile Money Checkout'}
+                    ? 'Secure Card Checkout'
+                    : 'Mobile Money Payment'}
                 </h3>
                 <p className="text-xs text-text-tertiary mt-1">
                   {session.status === 'VERIFYING'
-                    ? 'Payment received. Verifying transaction details with Pesapal...'
+                    ? 'Payment received. Verifying transaction details...'
                     : activePaymentMethod === 'CARD'
-                    ? 'Enter your Visa or Mastercard credentials below on Pesapal\'s secure checkout.'
-                    : 'Complete your payment on your mobile phone or using the Pesapal checkout below.'}
+                    ? 'Enter your Visa or Mastercard credentials below on the secure checkout.'
+                    : 'Complete your payment on your mobile phone or using the secure checkout below.'}
                 </p>
               </div>
 
@@ -615,7 +615,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 </div>
               </div>
 
-              {/* REAL PESAPAL SANDBOX CHECKOUT CONTROL */}
+              {/* SECURE CHECKOUT FRAME CONTROL */}
               {checkoutUrl && (
                 <div className="space-y-3 pt-1">
                   <div className="flex items-center justify-between">
@@ -636,12 +636,12 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                     </button>
                   </div>
 
-                  {/* REAL EMBEDDED PESAPAL SANDBOX IFRAME */}
+                  {/* SECURE EMBEDDED CHECKOUT IFRAME */}
                   {showEmbeddedIframe && (
                     <div className="rounded-2xl overflow-hidden border border-purple-500/30 bg-white shadow-2xl">
                       <iframe
                         src={checkoutUrl}
-                        title="Pesapal Real Sandbox Checkout"
+                        title="Secure Card Checkout"
                         className="w-full h-[480px] border-0"
                         allow="payment"
                       />
@@ -654,7 +654,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
               {process.env.NODE_ENV !== 'production' && (
                 <div className="pt-2 space-y-2 border-t border-white/5">
                   <div className="text-[10px] text-text-tertiary text-left font-mono">
-                    Developer Sandbox Tool: Tests internal pipeline (bypasses Pesapal live server)
+                    Developer Sandbox Tool: Tests internal pipeline
                   </div>
                   <button
                     type="button"
