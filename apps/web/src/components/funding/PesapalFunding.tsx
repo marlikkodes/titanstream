@@ -148,14 +148,6 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
       });
 
       setSession(response.session);
-      const url = response.session.paymentUrl || (response.session as any).payUrl;
-      if (url) {
-        try {
-          window.open(url, '_blank');
-        } catch {
-          // popup blocked, handled by UI button
-        }
-      }
     } catch (err: any) {
       console.error('Failed to create payment session:', err);
       const errMsg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || '';
@@ -565,10 +557,15 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
               <div className="w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center mx-auto relative">
                 {session.status === 'VERIFYING' ? (
                   <ShieldCheck size={24} className="animate-pulse" />
+                ) : activePaymentMethod === 'CARD' ? (
+                  <>
+                    <CreditCard size={24} className="text-purple-400" />
+                    <span className="absolute top-0 right-0 w-3 h-3 bg-usdt-green rounded-full border-2 border-control-bg animate-ping"></span>
+                  </>
                 ) : (
                   <>
-                    <RefreshCw size={24} className="animate-spin" />
-                    <span className="absolute top-0 right-0 w-3 h-3 bg-usdt-green rounded-full border-2 border-control-bg animate-pulse"></span>
+                    <Smartphone size={24} className="text-usdt-green" />
+                    <span className="absolute top-0 right-0 w-3 h-3 bg-usdt-green rounded-full border-2 border-control-bg animate-ping"></span>
                   </>
                 )}
               </div>
