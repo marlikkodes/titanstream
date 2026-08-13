@@ -56,17 +56,32 @@ export class AutomationService implements OnModuleInit {
    * Auto-credits referrals and tracks campaigns.
    */
   private async handleSettlementCompleted(event: PlatformEvent) {
-    const { settlementId, telegramUserId, amount, asset } = event.payload;
+    const { settlementId, userId: rawUserId, telegramUserId, amount, asset } = event.payload;
     this.logger.log(`[Automation] Processing SettlementCompleted trigger for settlement ${settlementId}`);
+
+    const userKey = rawUserId || telegramUserId;
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await this.prisma.user.findUnique({ where: { id: userKey } });
+    } else if (telegramUserId) {
+      user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(telegramUserId) } });
+    }
+
+    const canonicalUserId = user?.id || (isUuid ? userKey : undefined);
+    const tgUserIdBig = user?.telegramUserId || (!isUuid && telegramUserId ? BigInt(telegramUserId) : BigInt(0));
 
     // Standard timeline integration: record domain event in audit trail
     await this.prisma.financialDomainEvent.create({
       data: {
         eventType: DomainEventType.BALANCE_CHANGED,
-        telegramUserId: BigInt(telegramUserId),
+        userId: canonicalUserId,
+        telegramUserId: tgUserIdBig,
         payload: JSON.parse(JSON.stringify({
           action: 'SETTLEMENT_COMPLETED',
           settlementId,
+          userId: canonicalUserId,
           amount,
           asset,
           correlationId: event.correlationId,
@@ -75,14 +90,16 @@ export class AutomationService implements OnModuleInit {
     });
 
     // Trigger growth domain event to evaluate referral eligibility, trust score, and rewards
-    if (this.growthEventService && telegramUserId) {
-      this.logger.log(`[Automation] Emitting SETTLEMENT_COMPLETED to GrowthEventService for user ${telegramUserId}`);
+    if (this.growthEventService && user) {
+      this.logger.log(`[Automation] Emitting SETTLEMENT_COMPLETED to GrowthEventService for user ${user.id}`);
       await this.growthEventService.publish({
-        telegramUserId: BigInt(telegramUserId),
+        userId: user.id,
+        telegramUserId: user.telegramUserId || undefined,
         eventType: GrowthEventType.SETTLEMENT_COMPLETED,
         payload: {
           settlementId,
-          telegramUserId: telegramUserId.toString(),
+          userId: user.id,
+          telegramUserId: user.telegramUserId ? user.telegramUserId.toString() : undefined,
           amount: amount?.toString(),
           asset: asset || 'USDT',
         },
@@ -95,17 +112,32 @@ export class AutomationService implements OnModuleInit {
    * Handle when a withdrawal is requested.
    */
   private async handleWithdrawalRequested(event: PlatformEvent) {
-    const { withdrawalId, telegramUserId, amount } = event.payload;
+    const { withdrawalId, userId: rawUserId, telegramUserId, amount } = event.payload;
     this.logger.log(`[Automation] Processing WithdrawalRequested trigger for withdrawal ${withdrawalId}`);
+
+    const userKey = rawUserId || telegramUserId;
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await this.prisma.user.findUnique({ where: { id: userKey } });
+    } else if (telegramUserId) {
+      user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(telegramUserId) } });
+    }
+
+    const canonicalUserId = user?.id || (isUuid ? userKey : undefined);
+    const tgUserIdBig = user?.telegramUserId || (!isUuid && telegramUserId ? BigInt(telegramUserId) : BigInt(0));
 
     // Create tracking timeline record
     await this.prisma.financialDomainEvent.create({
       data: {
         eventType: DomainEventType.LEDGER_POSTING_STARTED,
-        telegramUserId: BigInt(telegramUserId),
+        userId: canonicalUserId,
+        telegramUserId: tgUserIdBig,
         payload: JSON.parse(JSON.stringify({
           action: 'WITHDRAWAL_REQUESTED',
           withdrawalId,
+          userId: canonicalUserId,
           amount,
           correlationId: event.correlationId,
         })),
@@ -117,17 +149,32 @@ export class AutomationService implements OnModuleInit {
    * Handle when a withdrawal completes.
    */
   private async handleWithdrawalCompleted(event: PlatformEvent) {
-    const { withdrawalId, telegramUserId, amount } = event.payload;
+    const { withdrawalId, userId: rawUserId, telegramUserId, amount } = event.payload;
     this.logger.log(`[Automation] Processing WithdrawalCompleted trigger for withdrawal ${withdrawalId}`);
+
+    const userKey = rawUserId || telegramUserId;
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await this.prisma.user.findUnique({ where: { id: userKey } });
+    } else if (telegramUserId) {
+      user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(telegramUserId) } });
+    }
+
+    const canonicalUserId = user?.id || (isUuid ? userKey : undefined);
+    const tgUserIdBig = user?.telegramUserId || (!isUuid && telegramUserId ? BigInt(telegramUserId) : BigInt(0));
 
     // Finalize timeline record
     await this.prisma.financialDomainEvent.create({
       data: {
         eventType: DomainEventType.LEDGER_POSTING_COMPLETED,
-        telegramUserId: BigInt(telegramUserId),
+        userId: canonicalUserId,
+        telegramUserId: tgUserIdBig,
         payload: JSON.parse(JSON.stringify({
           action: 'WITHDRAWAL_COMPLETED',
           withdrawalId,
+          userId: canonicalUserId,
           amount,
           correlationId: event.correlationId,
         })),

@@ -384,17 +384,34 @@ export class AuthService {
     }
   }
 
-  async getProfile(telegramUserId: bigint) {
+  async getProfile(userKey: string | bigint) {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { telegramUserId },
-        include: {
-          onboardingProgress: true,
-          educationCompletions: true,
-          userConsents: true,
-          readinessScores: true,
-        },
-      });
+      const isUuid = typeof userKey === 'string' && userKey.includes('-');
+      let user: any = null;
+
+      if (isUuid) {
+        user = await this.prisma.user.findUnique({
+          where: { id: userKey as string },
+          include: {
+            onboardingProgress: true,
+            educationCompletions: true,
+            userConsents: true,
+            readinessScores: true,
+          },
+        });
+      } else {
+        const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+        user = await this.prisma.user.findUnique({
+          where: { telegramUserId },
+          include: {
+            onboardingProgress: true,
+            educationCompletions: true,
+            userConsents: true,
+            readinessScores: true,
+          },
+        });
+      }
+
       if (!user) throw new UnauthorizedException('USER_NOT_FOUND');
       return {
         user: this.sanitizeUser(user),
@@ -557,58 +574,28 @@ export class AuthService {
       data: { verified: true },
     });
 
-    // Resolve UniversalIdentity for WhatsApp channel
-    const identity = await this.identityService.resolveOrCreateIdentity({
+    // Authenticate / Register provider-neutrally via IdentityMasterEngine
+    const identityContext = await this.identityService.authenticate({
       provider: IdentityProvider.WHATSAPP,
       identifier: phone,
       displayName: `WhatsApp User (${phone.slice(-4)})`,
       metadata: { phone, verifiedAt: new Date().toISOString() },
     });
 
-    // Derive deterministic synthetic telegramUserId BigInt bridge for legacy table relations
-    const phoneDigitsOnly = phone.replace(/\D/g, '');
-    const syntheticTelegramId = BigInt(phoneDigitsOnly.slice(0, 15) || Date.now());
-
-    let user = await this.prisma.user.findFirst({
-      where: { OR: [{ identityId: identity.id }, { telegramUserId: syntheticTelegramId }] },
+    const user = await this.prisma.user.findUnique({
+      where: { id: identityContext.userId },
+      include: { onboardingProgress: true },
     });
 
-    let isNewUser = false;
     if (!user) {
-      user = await this.prisma.user.create({
-        data: {
-          telegramUserId: syntheticTelegramId,
-          identityId: identity.id,
-          firstName: 'WhatsApp',
-          lastName: 'User',
-          telegramUsername: `wa_${phoneDigitsOnly.slice(-6)}`,
-          state: UserState.READY,
-          lastActiveAt: new Date(),
-          lastLoginAt: new Date(),
-          lastActiveIp: ipAddress,
-          loginCount: 1,
-        },
-      });
-      isNewUser = true;
-      await this.ensureIdentityResources(syntheticTelegramId, traceId);
-    } else {
-      if (!user.identityId) {
-        user = await this.prisma.user.update({
-          where: { telegramUserId: user.telegramUserId },
-          data: { identityId: identity.id, lastActiveAt: new Date(), lastLoginAt: new Date() },
-        });
-      } else {
-        user = await this.prisma.user.update({
-          where: { telegramUserId: user.telegramUserId },
-          data: { lastActiveAt: new Date(), lastLoginAt: new Date() },
-        });
-      }
+      throw new UnauthorizedException('FAILED_TO_RESOLVE_USER');
     }
 
     const payload = {
-      sub: identity.id,
-      titanUserId: identity.id,
-      telegramUserId: Number(user.telegramUserId),
+      sub: user.id,
+      titanUserId: user.id,
+      userId: user.id,
+      telegramUserId: user.telegramUserId ? Number(user.telegramUserId) : undefined,
       provider: 'WHATSAPP',
       state: user.state,
       role: 'USER',
@@ -617,20 +604,20 @@ export class AuthService {
     const refreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || requiredEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret');
     const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refreshToken = this.jwtService.sign(
-      { sub: identity.id, telegramUserId: Number(user.telegramUserId), type: 'refresh' },
+      { sub: user.id, userId: user.id, telegramUserId: user.telegramUserId ? Number(user.telegramUserId) : undefined, type: 'refresh' },
       { expiresIn: '30d', secret: refreshSecret },
     );
 
     return {
       accessToken,
       refreshToken,
-      user: this.sanitizeUser({ ...user, identityId: identity.id }),
+      user: this.sanitizeUser(user),
       onboarding: {
-        currentStep: isNewUser ? 'welcome' : await this.getCurrentOnboardingStep(user.telegramUserId),
+        currentStep: user.onboardingProgress?.currentStep || 'welcome',
         isCompleted: user.state === UserState.ELIGIBLE_USER || user.state === UserState.ACTIVE_USER || user.state === UserState.READY,
       },
       readiness: { isReady: true, score: 100 },
-      isNewUser,
+      isNewUser: user.state === UserState.NEW,
       traceId,
     };
   }

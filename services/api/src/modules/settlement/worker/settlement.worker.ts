@@ -19,12 +19,13 @@ export class SettlementWorker {
   /**
    * Process queued settlement jobs with Stage 2 emergency switch assertions & idempotency.
    */
-  async processJob(job: QueueJobPayload<{ telegramUserId: bigint; dto: CreateSettlementSessionDto }>): Promise<{ success: boolean; session?: any }> {
+  async processJob(job: QueueJobPayload<{ userId?: string; telegramUserId?: bigint; dto: CreateSettlementSessionDto }>): Promise<{ success: boolean; session?: any }> {
     if (!job || !job.data) {
       throw new Error('INVALID_SETTLEMENT_JOB_PAYLOAD');
     }
 
-    const { telegramUserId, dto } = job.data;
+    const { userId, telegramUserId, dto } = job.data;
+    const userKey = userId || telegramUserId;
 
     // 1. Stage 2 Operational Switch Enforcement
     if (this.opsEngine) {
@@ -32,7 +33,7 @@ export class SettlementWorker {
     }
 
     try {
-      const session = await this.settlementService.createCustomerSession(BigInt(telegramUserId), dto);
+      const session = await this.settlementService.createCustomerSession(userKey as any, dto);
       await this.queueService.acknowledgeCompletion(job.jobId, 'settlements');
       this.logger.log(`[SettlementWorker] Processed settlement job ${job.jobId} (Reference: ${session.referenceCode})`);
       return { success: true, session };

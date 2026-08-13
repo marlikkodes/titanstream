@@ -25,17 +25,28 @@ export class OperatorIntelligenceService {
    * Calculate internal economic metrics for a specific operator.
    * STRICTLY BACKEND ONLY - NEVER EXPOSE TO PUBLIC CLIENT APIS.
    */
-  async getOperatorMetrics(telegramUserId: string): Promise<OperatorLifetimeValueMetrics> {
-    let bigIntUserId: bigint;
-    try {
-      bigIntUserId = BigInt(telegramUserId);
-    } catch {
-      bigIntUserId = BigInt(0);
+  async getOperatorMetrics(userKey: string): Promise<OperatorLifetimeValueMetrics> {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await this.prisma.user.findUnique({ where: { id: userKey } });
+    } else {
+      let bigIntUserId: bigint;
+      try {
+        bigIntUserId = BigInt(userKey);
+      } catch {
+        bigIntUserId = BigInt(0);
+      }
+      user = await this.prisma.user.findUnique({ where: { telegramUserId: bigIntUserId } });
     }
+
+    const userId = user?.id || (isUuid ? userKey : undefined);
+    const bigIntUserId = user?.telegramUserId || (!isUuid && /^\d+$/.test(userKey) ? BigInt(userKey) : BigInt(0));
 
     // 1. Calculate Direct Machine Purchases, Repowers & Upgrades
     const userMachines = await this.prisma.userMachine.findMany({
-      where: { telegramUserId: bigIntUserId },
+      where: { OR: [{ userId }, { telegramUserId: bigIntUserId }] },
     });
 
     let directPurchasesTotal = 0;
@@ -49,7 +60,10 @@ export class OperatorIntelligenceService {
 
     // 2. Settlement Activity & Processing Fees Paid
     const completedSettlements = await this.prisma.settlementSession.findMany({
-      where: { telegramUserId: bigIntUserId, status: SettlementStatus.COMPLETED },
+      where: {
+        OR: [{ userId }, { telegramUserId: bigIntUserId }],
+        status: SettlementStatus.COMPLETED,
+      },
     });
 
     let settlementVolume = 0;
@@ -60,7 +74,7 @@ export class OperatorIntelligenceService {
 
     // 3. Referral Network Revenue Contribution
     const referralRecord = await this.prisma.referralRelationship.findMany({
-      where: { referrerId: bigIntUserId },
+      where: { OR: [{ referrerUserId: userId }, { referrerId: bigIntUserId }] },
     });
     const referralCount = referralRecord.length;
     const nrs = referralCount * 50.0; // Average referral lifetime purchase baseline

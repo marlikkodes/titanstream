@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { AuthTelegramDto } from './dto/auth-telegram.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 
 import { WebAuthSessionService } from './web-auth-session.service';
 
@@ -75,8 +75,8 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @Get('profile')
   @ApiOperation({ summary: 'Get current user profile' })
-  async getProfile(@TelegramUserId() telegramUserId: bigint) {
-    return this.authService.getProfile(telegramUserId);
+  async getProfile(@CanonicalUserId() userId: string) {
+    return this.authService.getProfile(userId);
   }
 
   @Public()

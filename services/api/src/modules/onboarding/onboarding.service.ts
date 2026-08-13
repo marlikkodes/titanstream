@@ -33,53 +33,75 @@ export class OnboardingService {
     private readonly auditService: AuditService,
   ) {}
 
-  async getProgress(telegramUserId: bigint) {
-    const progress = await this.prisma.onboardingProgress.findUnique({
-      where: { telegramUserId },
-    });
+  async getProgress(userKey: string | bigint) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let progress: any = null;
+
+    if (isUuid) {
+      progress = await this.prisma.onboardingProgress.findFirst({
+        where: { userId: userKey as string },
+      });
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      progress = await this.prisma.onboardingProgress.findUnique({
+        where: { telegramUserId },
+      });
+    }
+
     if (!progress) {
       throw new NotFoundException('ONBOARDING_NOT_FOUND');
     }
     return progress;
   }
 
-  async startOnboarding(telegramUserId: bigint) {
-    const user = await this.prisma.user.findUnique({ where: { telegramUserId } });
-    if (!user) throw new NotFoundException('USER_NOT_FOUND');
-
+  async startOnboarding(userKey: string | bigint) {
+    const user = await this.getUser(userKey);
     const currentState = user.state as UserState;
     if (currentState !== UserState.AUTHENTICATED && currentState !== UserState.NEW) {
       throw new BadRequestException(`Cannot start onboarding from state ${currentState}`);
     }
 
-    await this.transitionState(telegramUserId, UserState.ONBOARDING_STARTED, 'User started onboarding');
+    await this.transitionState(user.id, UserState.ONBOARDING_STARTED, 'User started onboarding');
 
-    const progress = await this.prisma.onboardingProgress.upsert({
-      where: { telegramUserId },
-      create: {
-        telegramUserId,
-        currentStep: 'welcome',
-        stepsCompleted: [],
-      },
-      update: {
-        currentStep: 'welcome',
-        isCompleted: false,
-        completedAt: null,
-      },
+    let progress = await this.prisma.onboardingProgress.findFirst({
+      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
     });
 
-    await this.auditService.create({
-      telegramUserId,
-      eventType: AuditEventType.ONBOARDING_STARTED,
-      description: 'User started the onboarding flow',
-    });
+    if (progress) {
+      progress = await this.prisma.onboardingProgress.update({
+        where: { id: progress.id },
+        data: {
+          currentStep: 'welcome',
+          isCompleted: false,
+          completedAt: null,
+        },
+      });
+    } else {
+      progress = await this.prisma.onboardingProgress.create({
+        data: {
+          userId: user.id,
+          telegramUserId: user.telegramUserId || BigInt(0),
+          currentStep: 'welcome',
+          stepsCompleted: [],
+        },
+      });
+    }
+
+    if (user.telegramUserId) {
+      await this.auditService.create({
+        telegramUserId: user.telegramUserId,
+        eventType: AuditEventType.ONBOARDING_STARTED,
+        description: 'User started the onboarding flow',
+      });
+    }
 
     return progress;
   }
 
-  async completeStep(telegramUserId: bigint, step: string) {
-    const progress = await this.prisma.onboardingProgress.findUnique({
-      where: { telegramUserId },
+  async completeStep(userKey: string | bigint, step: string) {
+    const user = await this.getUser(userKey);
+    let progress = await this.prisma.onboardingProgress.findFirst({
+      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
     });
     if (!progress) throw new NotFoundException('ONBOARDING_NOT_FOUND');
 
@@ -89,55 +111,55 @@ export class OnboardingService {
     }
 
     const updatedProgress = await this.prisma.onboardingProgress.update({
-      where: { telegramUserId },
+      where: { id: progress.id },
       data: {
         currentStep: step,
         stepsCompleted: stepsCompleted,
       },
     });
 
-    await this.auditService.create({
-      telegramUserId,
-      eventType: AuditEventType.ONBOARDING_STEP_COMPLETED,
-      description: `Completed onboarding step: ${step}`,
-      metadata: { step, totalSteps: stepsCompleted.length },
-    });
+    if (user.telegramUserId) {
+      await this.auditService.create({
+        telegramUserId: user.telegramUserId,
+        eventType: AuditEventType.ONBOARDING_STEP_COMPLETED,
+        description: `Completed onboarding step: ${step}`,
+        metadata: { step, totalSteps: stepsCompleted.length },
+      });
+    }
 
     return updatedProgress;
   }
 
-  async transition(telegramUserId: bigint, newState: UserState, trigger = 'api', metadata: any = {}) {
-    const user = await this.prisma.user.findUnique({ where: { telegramUserId } });
-    if (!user) throw new NotFoundException('USER_NOT_FOUND');
-
+  async transition(userKey: string | bigint, newState: UserState, trigger = 'api', metadata: any = {}) {
+    const user = await this.getUser(userKey);
     const fromState = user.state as UserState;
     if (!this.allowedTransitions[fromState]?.includes(newState)) {
       throw new BadRequestException(`Invalid onboarding transition ${fromState} -> ${newState}`);
     }
 
-    await this.transitionState(telegramUserId, newState, trigger, metadata);
-    return this.getState(telegramUserId);
+    await this.transitionState(user.id, newState, trigger, metadata);
+    return this.getState(user.id);
   }
 
-  async resumeOnboarding(telegramUserId: bigint) {
-    const user = await this.prisma.user.findUnique({ where: { telegramUserId } });
-    if (!user) throw new NotFoundException('USER_NOT_FOUND');
-
+  async resumeOnboarding(userKey: string | bigint) {
+    const user = await this.getUser(userKey);
     const userState = user.state as UserState;
     if (userState === UserState.ONBOARDING_STALLED) {
-      const progress = await this.prisma.onboardingProgress.findUnique({
-        where: { telegramUserId },
+      const progress = await this.prisma.onboardingProgress.findFirst({
+        where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
       });
       if (!progress) throw new NotFoundException('ONBOARDING_NOT_FOUND');
 
-      await this.transitionState(telegramUserId, UserState.ONBOARDING_STARTED, 'Resumed from stalled');
+      await this.transitionState(user.id, UserState.ONBOARDING_STARTED, 'Resumed from stalled');
 
-      await this.auditService.create({
-        telegramUserId,
-        eventType: AuditEventType.ONBOARDING_RESUMED,
-        description: 'User resumed stalled onboarding',
-        metadata: { previousStep: progress.currentStep },
-      });
+      if (user.telegramUserId) {
+        await this.auditService.create({
+          telegramUserId: user.telegramUserId,
+          eventType: AuditEventType.ONBOARDING_RESUMED,
+          description: 'User resumed stalled onboarding',
+          metadata: { previousStep: progress.currentStep },
+        });
+      }
 
       return progress;
     }
@@ -145,16 +167,14 @@ export class OnboardingService {
     throw new BadRequestException(`Cannot resume onboarding from state ${userState}`);
   }
 
-  async getState(telegramUserId: bigint) {
-    const user = await this.prisma.user.findUnique({ where: { telegramUserId } });
-    if (!user) throw new NotFoundException('USER_NOT_FOUND');
-
-    const progress = await this.prisma.onboardingProgress.findUnique({
-      where: { telegramUserId },
+  async getState(userKey: string | bigint) {
+    const user = await this.getUser(userKey);
+    const progress = await this.prisma.onboardingProgress.findFirst({
+      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
     });
 
-    const remainingModules = await this.countRemainingModules(telegramUserId);
-    const consentsCompleted = await this.countConsentsCompleted(telegramUserId);
+    const remainingModules = await this.countRemainingModules(user);
+    const consentsCompleted = await this.countConsentsCompleted(user);
 
     return {
       state: user.state,
@@ -165,13 +185,28 @@ export class OnboardingService {
     };
   }
 
-  private async countRemainingModules(telegramUserId: bigint): Promise<number> {
+  private async getUser(userKey: string | bigint) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await this.prisma.user.findUnique({ where: { id: userKey as string } });
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+    }
+
+    if (!user) throw new NotFoundException('USER_NOT_FOUND');
+    return user;
+  }
+
+  private async countRemainingModules(user: any): Promise<number> {
     const totalModules = await this.prisma.educationModule.count({
       where: { isActive: true, mandatory: true },
     });
     const completedModules = await this.prisma.educationCompletion.count({
       where: {
-        telegramUserId,
+        OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }],
         status: 'COMPLETED',
         module: { mandatory: true },
       },
@@ -179,39 +214,41 @@ export class OnboardingService {
     return Math.max(0, totalModules - completedModules);
   }
 
-  private async countConsentsCompleted(telegramUserId: bigint): Promise<number> {
+  private async countConsentsCompleted(user: any): Promise<number> {
     return this.prisma.userConsent.count({
-      where: { telegramUserId, isActive: true },
+      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }], isActive: true },
     });
   }
 
-  private async transitionState(telegramUserId: bigint, newState: UserState, reason: string, metadata: any = {}) {
-    const user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+  private async transitionState(userId: string, newState: UserState, reason: string, metadata: any = {}) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
 
     const fromState = user.state as UserState;
 
     await this.prisma.user.update({
-      where: { telegramUserId },
+      where: { id: userId },
       data: { state: newState },
     });
 
-    await this.prisma.userStateTransition.create({
-      data: {
-        telegramUserId,
-        fromState,
-        toState: newState,
-        reason,
-        triggerEvent: reason,
-        metadata,
-      },
-    });
+    if (user.telegramUserId) {
+      await this.prisma.userStateTransition.create({
+        data: {
+          telegramUserId: user.telegramUserId,
+          fromState,
+          toState: newState,
+          reason,
+          triggerEvent: reason,
+          metadata,
+        },
+      });
 
-    await this.auditService.create({
-      telegramUserId,
-      eventType: AuditEventType.USER_STATE_CHANGED,
-      description: `State transition: ${fromState} -> ${newState}`,
-      metadata: { fromState, toState: newState, trigger: reason, ...metadata },
-    });
+      await this.auditService.create({
+        telegramUserId: user.telegramUserId,
+        eventType: AuditEventType.USER_STATE_CHANGED,
+        description: `State transition: ${fromState} -> ${newState}`,
+        metadata: { fromState, toState: newState, trigger: reason, ...metadata },
+      });
+    }
   }
 }

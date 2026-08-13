@@ -290,7 +290,7 @@ enum AssetLicenseType {
 
 model User {
   id               String    @id @default(uuid()) @map("id")
-  telegramUserId   BigInt    @unique @map("telegram_user_id")
+  telegramUserId   BigInt?   @unique @map("telegram_user_id")
   telegramUsername String?   @map("telegram_username")
   firstName        String    @map("first_name")
   lastName         String?   @map("last_name")
@@ -1382,6 +1382,8 @@ model ReferralRelationship {
   id             String         @id @default(uuid()) @map("id")
   referrerId     BigInt         @map("referrer_id")
   refereeId      BigInt         @unique @map("referee_id")
+  referrerUserId String?        @map("referrer_user_id")
+  refereeUserId  String?        @map("referee_user_id")
   referralCodeId String?        @map("referral_code_id")
   status         ReferralStatus @default(CREATED) @map("status")
   metadata       Json?          @map("metadata")
