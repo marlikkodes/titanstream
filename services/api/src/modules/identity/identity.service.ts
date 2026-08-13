@@ -83,4 +83,44 @@ export class IdentityService {
     if (!identity) throw new NotFoundException('UNIVERSAL_IDENTITY_NOT_FOUND');
     return identity;
   }
+
+  /**
+   * Resolves a Titan User by Universal Identity ID.
+   */
+  async resolveUserByIdentity(identityId: string) {
+    return this.prisma.user.findFirst({
+      where: { identityId },
+      include: {
+        financialAccount: true,
+        userPreferences: true,
+      },
+    });
+  }
+
+  /**
+   * Guarantees that a legacy user record has a bound Universal Identity and Telegram ChannelIdentity.
+   */
+  async ensureUserIdentityBinding(user: { id: string; telegramUserId: bigint; identityId?: string | null; firstName?: string }) {
+    if (user.identityId) {
+      const existing = await this.prisma.universalIdentity.findUnique({ where: { id: user.identityId } });
+      if (existing) return existing;
+    }
+
+    // Resolve or create Telegram channel identity
+    const identity = await this.resolveOrCreateIdentity({
+      provider: IdentityProvider.TELEGRAM,
+      identifier: user.telegramUserId.toString(),
+      displayName: user.firstName || `User_${user.telegramUserId}`,
+    });
+
+    // Update User record with identity binding if missing
+    if (!user.identityId || user.identityId !== identity.id) {
+      await this.prisma.user.update({
+        where: { telegramUserId: user.telegramUserId },
+        data: { identityId: identity.id },
+      });
+    }
+
+    return identity;
+  }
 }

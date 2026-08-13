@@ -45,11 +45,19 @@ export class AuthController {
   }
 
   @Public()
+  @Post('telegram-nonce')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate a random cryptographic nonce for Telegram login authentication' })
+  async getTelegramNonce() {
+    return { success: true, data: this.authService.createTelegramNonce() };
+  }
+
+  @Public()
   @Post('telegram-login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Authenticate via Telegram Web Login Widget' })
+  @ApiOperation({ summary: 'Authenticate via Telegram Login Library / Token' })
   @ApiResponse({ status: 200, description: 'Authentication successful' })
-  @ApiResponse({ status: 401, description: 'Invalid Telegram Web Login payload' })
+  @ApiResponse({ status: 401, description: 'Invalid Telegram authentication payload or nonce' })
   async authenticateWebLogin(@Body() payload: any, @Req() req: any) {
     const ipAddress = req.ip;
     const userAgent = req.headers['user-agent'];
@@ -69,5 +77,41 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   async getProfile(@TelegramUserId() telegramUserId: bigint) {
     return this.authService.getProfile(telegramUserId);
+  }
+
+  @Public()
+  @Post('whatsapp/request-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request a 6-digit WhatsApp OTP verification code' })
+  async requestWhatsAppOtp(@Body('phone') phone: string) {
+    return this.authService.requestWhatsAppOtp(phone);
+  }
+
+  @Public()
+  @Post('whatsapp/verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify WhatsApp OTP code and issue session tokens' })
+  async verifyWhatsAppOtp(@Body() body: { phone: string; code: string }, @Req() req: any) {
+    const ipAddress = req.ip;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.verifyWhatsAppOtp(body.phone, body.code, ipAddress, userAgent);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('step-up/challenge')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request high-assurance step-up re-authentication challenge' })
+  async requestStepUpChallenge(@Req() req: any) {
+    const userId = req.user.id || req.user.titanUserId || req.user.sub;
+    return this.authService.requestStepUpChallenge(userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('step-up/verify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify step-up challenge and obtain 5-minute X-StepUp-Token' })
+  async verifyStepUpChallenge(@Req() req: any, @Body('code') code: string) {
+    const userId = req.user.id || req.user.titanUserId || req.user.sub;
+    return this.authService.verifyStepUpChallenge(userId, code);
   }
 }

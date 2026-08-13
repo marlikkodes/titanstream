@@ -289,7 +289,8 @@ enum AssetLicenseType {
 }
 
 model User {
-  telegramUserId   BigInt    @id @map("telegram_user_id")
+  id               String    @id @default(uuid()) @map("id")
+  telegramUserId   BigInt    @unique @map("telegram_user_id")
   telegramUsername String?   @map("telegram_username")
   firstName        String    @map("first_name")
   lastName         String?   @map("last_name")
@@ -428,6 +429,7 @@ model Asset {
 model AssetBalance {
   id               String   @id @default(uuid()) @map("balance_id")
   telegramUserId   BigInt   @map("telegram_user_id")
+  userId           String?  @map("user_id")
   assetCode        String   @map("asset")
   availableBalance Decimal  @default(0) @map("available_balance") @db.Decimal(36, 18)
   lockedBalance    Decimal  @default(0) @map("locked_balance") @db.Decimal(36, 18)
@@ -438,9 +440,11 @@ model AssetBalance {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   asset Asset @relation(fields: [assetCode], references: [assetCode], onDelete: Restrict)
+  user  User? @relation("AssetBalanceByUserId", fields: [userId], references: [id], onDelete: Restrict)
 
   @@unique([telegramUserId, assetCode])
   @@index([telegramUserId])
+  @@index([userId])
   @@index([assetCode])
   @@map("asset_balances")
 }
@@ -448,17 +452,20 @@ model AssetBalance {
 model FinancialAccount {
   id             String                 @id @default(uuid()) @map("financial_account_id")
   telegramUserId BigInt                 @unique @map("telegram_user_id")
+  userId         String?                @map("user_id")
   status         FinancialAccountStatus @default(ACTIVE) @map("status")
   activatedAt    DateTime?              @map("activated_at")
   createdAt      DateTime               @default(now()) @map("created_at")
   updatedAt      DateTime               @updatedAt @map("updated_at")
 
   user          User                   @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
+  userByUserId  User?                  @relation("FinancialAccountByUserId", fields: [userId], references: [id], onDelete: Restrict)
   ledgerEntries LedgerEntry[]
   transactions  FinancialTransaction[]
   operations    FinancialOperation[]
 
   @@index([telegramUserId])
+  @@index([userId])
   @@index([status])
   @@map("financial_accounts")
 }

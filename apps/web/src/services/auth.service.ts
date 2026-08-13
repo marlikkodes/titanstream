@@ -96,6 +96,31 @@ export const authService = {
     };
   },
 
+  async requestWhatsAppOtp(phone: string): Promise<{ success: boolean; message: string }> {
+    const response = await api.post<ApiResponse<{ success: boolean; message: string }>>('/auth/whatsapp/request-otp', { phone });
+    return response.data.data || { success: true, message: 'If eligible, code was sent.' };
+  },
+
+  async verifyWhatsAppOtp(phone: string, code: string): Promise<SessionData> {
+    const traceId = createTraceId();
+    trace(traceId, 'whatsapp.otp_verify_sent', `phone=${phone}`);
+    const response = await api.post<ApiResponse<AuthResponse>>('/auth/whatsapp/verify-otp', { phone, code });
+    const data = unwrapAuthResponse(response, traceId, 'whatsapp.otp_verify');
+    const session = createSession(data, 'web');
+    session.provider = 'WHATSAPP';
+    return session;
+  },
+
+  async requestStepUpChallenge(): Promise<{ success: boolean; channel: string }> {
+    const response = await api.post<ApiResponse<{ success: boolean; channel: string }>>('/auth/step-up/challenge');
+    return response.data.data;
+  },
+
+  async verifyStepUpChallenge(code: string): Promise<{ stepUpToken: string; expiresAt: number }> {
+    const response = await api.post<ApiResponse<{ stepUpToken: string; expiresAt: number }>>('/auth/step-up/verify', { code });
+    return response.data.data;
+  },
+
   logout() {
     localStorage.removeItem('auth_token');
   },

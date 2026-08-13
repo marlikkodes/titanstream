@@ -45,12 +45,13 @@ async function bootstrap() {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
     if (isProduction()) {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
       res.setHeader(
         'Content-Security-Policy',
-        "default-src 'self'; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.telegram.org; frame-ancestors 'self' https://t.me https://web.telegram.org;"
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://telegram.org https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.telegram.org https://oauth.telegram.org; frame-ancestors 'self' https://t.me https://web.telegram.org;"
       );
     }
     next();
@@ -86,7 +87,7 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Telegram-Init-Data', 'crypto-pay-api-signature'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Telegram-Init-Data', 'X-StepUp-Token', 'x-stepup-token', 'crypto-pay-api-signature'],
   });
 
   const config = new DocumentBuilder()

@@ -28,6 +28,30 @@ export class UserService {
     private readonly auditService: AuditService,
   ) {}
 
+  async findById(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        financialAccount: true,
+        miningState: true,
+        userPreferences: true,
+        onboardingProgress: true,
+      },
+    });
+  }
+
+  async findByIdentityId(identityId: string) {
+    return this.prisma.user.findFirst({
+      where: { identityId },
+      include: {
+        financialAccount: true,
+        miningState: true,
+        userPreferences: true,
+        onboardingProgress: true,
+      },
+    });
+  }
+
   async findByTelegramUserId(telegramUserId: bigint) {
     return this.prisma.user.findUnique({
       where: { telegramUserId },

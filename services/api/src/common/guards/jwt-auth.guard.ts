@@ -31,19 +31,38 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const payload = this.jwtService.verify(token);
-      const telegramUserId = BigInt(payload.sub);
+      let user: any = null;
       let userState = payload.state || 'READY';
+
+      const subStr = String(payload.sub || '');
+      const isUuid = subStr.includes('-');
+
       try {
-        const user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+        if (isUuid) {
+          // Look up user by identityId (UniversalIdentity.id)
+          user = await this.prisma.user.findFirst({ where: { identityId: subStr } });
+        }
+        if (!user && (payload.telegramUserId || (!isUuid && subStr))) {
+          const rawId = payload.telegramUserId || subStr;
+          if (!isNaN(Number(rawId))) {
+            const telegramUserId = BigInt(rawId);
+            user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+          }
+        }
         if (user) userState = user.state;
       } catch (dbErr) {
         // Fallback user state on database connection lag/blip
       }
 
+      const canonicalTitanId = user?.identityId || (isUuid ? subStr : (payload.titanUserId || subStr));
+      const legacyTelegramUserId = user ? user.telegramUserId.toString() : (payload.telegramUserId ? String(payload.telegramUserId) : (!isUuid ? subStr : undefined));
+
       request.user = {
-        id: String(telegramUserId),
-        sub: String(telegramUserId),
-        telegramUserId: String(telegramUserId),
+        id: canonicalTitanId,
+        sub: canonicalTitanId,
+        titanUserId: canonicalTitanId,
+        telegramUserId: legacyTelegramUserId,
+        provider: payload.provider || 'TELEGRAM',
         state: userState,
         role: payload.role || 'USER',
       };

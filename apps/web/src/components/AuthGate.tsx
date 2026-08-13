@@ -54,111 +54,72 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const clearSession = useAuthStore((s) => s.clearSession);
 
   const authAttempted = useRef(false);
-  const widgetMounted = useRef(false);
-  const widgetContainerRef = useRef<HTMLDivElement>(null);
 
-  // ── Handle Telegram Login Widget callback (web only) ──────────────────────
-  const handleWebWidgetLogin = useCallback(async (widgetPayload: any) => {
-    const traceId = `web_${Date.now().toString(36)}`;
-    console.info(`[AUTH_GATE:${traceId}] web.widget_callback received id=${widgetPayload?.id}`);
+  // ── Modern Telegram Login Library authentication with server Nonce ────────
+  const handleTelegramLoginLibrary = useCallback(async () => {
+    const traceId = `tg_web_${Date.now().toString(36)}`;
+    console.info(`[AUTH_GATE:${traceId}] web.login_library_triggered`);
     setAuthLoading(true);
     setAuthError(null);
 
-    const timeoutId = setTimeout(() => {
-      setAuthLoading(false);
-      setAuthError('Request timed out. Please try again.');
-    }, AUTH_TIMEOUT_MS);
-
     try {
-      const res = await api.post('/auth/telegram-login', widgetPayload);
-      const body = res.data;
-      clearTimeout(timeoutId);
+      // 1. Fetch server-generated random nonce
+      const nonceRes = await api.post('/auth/telegram-nonce');
+      const nonce = nonceRes.data?.data?.nonce;
+      if (!nonce) throw new Error('Failed to generate authentication nonce.');
 
-      if (!body.success || !body.data) throw new Error(body.error?.message || 'Auth failed');
-      console.info(`[AUTH_GATE:${traceId}] web.auth.success userId=${body.data.user.telegramUserId}`);
-      setSession(buildSession(body.data, 'web'));
+      // 2. Ensure Telegram Login JS Library is loaded
+      if (!(window as any).Telegram?.Login) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://telegram.org/js/telegram-login.js?1';
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load Telegram Login JS Library'));
+          document.head.appendChild(script);
+        });
+      }
+
+      const tgLogin = (window as any).Telegram?.Login;
+      if (!tgLogin) throw new Error('Telegram Login JS library unavailable');
+
+      // 3. Trigger interactive Telegram Login popup authorization
+      tgLogin.auth(
+        {
+          bot_id: BOT_USERNAME,
+          request_access: 'write',
+          nonce: nonce,
+        },
+        async (user: any) => {
+          if (!user) {
+            setAuthLoading(false);
+            console.warn(`[AUTH_GATE:${traceId}] web.login_cancelled_by_user`);
+            return;
+          }
+
+          console.info(`[AUTH_GATE:${traceId}] web.login_callback_received id=${user.id}`);
+          try {
+            const res = await api.post('/auth/telegram-login', { ...user, nonce });
+            const body = res.data;
+
+            if (!body.success || !body.data) throw new Error(body.error?.message || 'Authentication failed');
+            console.info(`[AUTH_GATE:${traceId}] web.auth.success userId=${body.data.user.telegramUserId}`);
+            setSession(buildSession(body.data, 'web'));
+          } catch (backendErr: any) {
+            const msg = backendErr.response?.data?.error?.message || backendErr.message || 'Telegram verification failed';
+            console.error(`[AUTH_GATE:${traceId}] web.auth.failed reason=${msg}`);
+            setAuthLoading(false);
+            setAuthError(msg);
+          }
+        },
+      );
     } catch (err: any) {
-      clearTimeout(timeoutId);
-      const msg = err.response?.data?.error?.message || err.message || 'Telegram login failed';
-      console.error(`[AUTH_GATE:${traceId}] web.auth.failed reason=${msg}`);
+      const msg = err.response?.data?.error?.message || err.message || 'Telegram login initialization failed';
+      console.error(`[AUTH_GATE:${traceId}] web.init.failed reason=${msg}`);
       setAuthLoading(false);
       setAuthError(msg);
     }
   }, [setSession, setAuthLoading, setAuthError]);
-
-  // ── Mini App: auto-authenticate via initData ───────────────────────────────
-  const authenticateMiniApp = useCallback(async () => {
-    const currentAuthState = useAuthStore.getState();
-    if (currentAuthState.isAuthenticated && !currentAuthState.isSessionExpired()) {
-      console.info('[AUTH_GATE] mini_app.auth_skipped reason=already_authenticated');
-      return;
-    }
-
-    const tg = (window as any).Telegram?.WebApp;
-    const initData = tg?.initData;
-    const traceId = `tgapp_${Date.now().toString(36)}`;
-
-    console.info(`[AUTH_GATE:${traceId}] mini_app.auth_start initData.present=${!!initData} initData.length=${initData?.length ?? 0}`);
-
-    if (!initData) {
-      const msg = 'Telegram identity data unavailable. Please reopen via @titanstream_bot.';
-      console.error(`[AUTH_GATE:${traceId}] mini_app.auth_failed reason=no_init_data`);
-      setAuthError(msg);
-      setAuthLoading(false);
-      return;
-    }
-
-    setAuthLoading(true);
-    setAuthError(null);
-
-    const timeoutId = setTimeout(() => {
-      console.error(`[AUTH_GATE:${traceId}] mini_app.auth_failed reason=timeout_${AUTH_TIMEOUT_MS}ms`);
-      setAuthLoading(false);
-      setAuthError(`Could not reach TitanStream servers. Please check your connection and try again.`);
-    }, AUTH_TIMEOUT_MS);
-
-    try {
-      const res = await api.post('/auth/telegram', { initData });
-      const body = res.data;
-      clearTimeout(timeoutId);
-
-      if (!body.success || !body.data) throw new Error(body.error?.message || 'Unexpected server response');
-      console.info(`[AUTH_GATE:${traceId}] mini_app.auth.success userId=${body.data.user.telegramUserId} isNew=${body.data.isNewUser}`);
-      setSession(buildSession(body.data, 'telegram'));
-    } catch (err: any) {
-      clearTimeout(timeoutId);
-      const msg = err.response?.data?.error?.message || err.message || 'Authentication failed';
-      console.error(`[AUTH_GATE:${traceId}] mini_app.auth.failed reason=${msg}`);
-      setAuthLoading(false);
-      setAuthError(msg);
-    }
-  }, [setSession, setAuthLoading, setAuthError]);
-
-  // ── Mount Web Login Widget ─────────────────────────────────────────────────
-  const mountWidget = useCallback(() => {
-    if (widgetMounted.current || !widgetContainerRef.current) return;
-    widgetMounted.current = true;
-
-    // Register the global callback before injecting the script
-    (window as any).onTelegramAuth = (user: any) => handleWebWidgetLogin(user);
-
-    const container = widgetContainerRef.current;
-    container.innerHTML = '';
-
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.async = true;
-    script.setAttribute('data-telegram-login', BOT_USERNAME);
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-radius', '14');
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    script.setAttribute('data-request-access', 'write');
-    script.onerror = () => {
-      console.error('[AUTH_GATE] telegram_widget.script_load_failed');
-    };
-    container.appendChild(script);
-    console.info(`[AUTH_GATE] web.widget.mounted botUsername=${BOT_USERNAME}`);
-  }, [handleWebWidgetLogin]);
 
   const [webDeepLink, setWebDeepLink] = useState<string | null>(null);
   const [webSessionCode, setWebSessionCode] = useState<string | null>(null);
@@ -226,16 +187,9 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     }
   }, [isReady, isMiniApp, authenticateMiniApp]);
 
-  // Mount widget for web context after render
-  useEffect(() => {
-    if (!isReady || isMiniApp || isAuthenticated) return;
-    mountWidget();
-  }, [isReady, isMiniApp, isAuthenticated, mountWidget]);
-
   // ── Retry handler ──────────────────────────────────────────────────────────
   const handleRetry = () => {
     authAttempted.current = false;
-    widgetMounted.current = false;
     setAuthError(null);
     if (isMiniApp) {
       authenticateMiniApp();
@@ -301,20 +255,68 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </button>
         {!isMiniApp && (
           <button
-            onClick={() => { widgetMounted.current = false; setAuthError(null); setTimeout(mountWidget, 100); }}
+            onClick={() => setAuthError(null)}
             className="mt-4 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
-            Back to Telegram Login
+            Back to Sign In
           </button>
         )}
       </div>
     );
   }
 
-  // 5. Web — not authenticated, show Telegram login screen
+  const [authTab, setAuthTab] = useState<'telegram' | 'whatsapp'>('telegram');
+  const [waPhone, setWaPhone] = useState('');
+  const [waOtpCode, setWaOtpCode] = useState('');
+  const [waStep, setWaStep] = useState<'phone' | 'otp'>('phone');
+  const [waLoading, setWaLoading] = useState(false);
+  const [waError, setWaError] = useState<string | null>(null);
+  const [waMessage, setWaMessage] = useState<string | null>(null);
+
+  // ── WhatsApp OTP Handlers ───────────────────────────────────────────
+  const handleRequestWaOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waPhone || waPhone.trim().length < 8) {
+      setWaError('Please enter a valid phone number with country code.');
+      return;
+    }
+    setWaLoading(true);
+    setWaError(null);
+    try {
+      const res = await api.post('/auth/whatsapp/request-otp', { phone: waPhone });
+      setWaMessage(res.data?.message || 'If eligible, a 6-digit code has been dispatched to your WhatsApp.');
+      setWaStep('otp');
+    } catch (err: any) {
+      setWaError(err.response?.data?.error?.message || err.message || 'Failed to request OTP code.');
+    } finally {
+      setWaLoading(false);
+    }
+  };
+
+  const handleVerifyWaOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waOtpCode || waOtpCode.length < 6) {
+      setWaError('Please enter the 6-digit verification code.');
+      return;
+    }
+    setWaLoading(true);
+    setWaError(null);
+    try {
+      const res = await api.post('/auth/whatsapp/verify-otp', { phone: waPhone, code: waOtpCode });
+      const body = res.data;
+      if (!body.success || !body.data) throw new Error(body.error?.message || 'Verification failed');
+      setSession(buildSession(body.data, 'web'));
+    } catch (err: any) {
+      setWaError(err.response?.data?.error?.message || err.message || 'Invalid or expired OTP code.');
+    } finally {
+      setWaLoading(false);
+    }
+  };
+
+  // 5. Web — not authenticated, show Multi-Rail (Telegram + WhatsApp) login screen
   if (!isMiniApp) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#06070b] flex flex-col items-center select-none overflow-hidden">
+      <div className="fixed inset-0 z-50 bg-[#06070b] flex flex-col items-center select-none overflow-y-auto">
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <motion.div
@@ -324,7 +326,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
           />
         </div>
 
-        <div className="flex-[1.2]" />
+        <div className="flex-[0.8]" />
 
         {/* Logo + brand */}
         <motion.div
@@ -333,59 +335,152 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-10 flex flex-col items-center text-center px-8 max-w-sm"
         >
-          <div className="relative mb-8">
+          <div className="relative mb-6">
             <div className="absolute inset-0 rounded-[28px] bg-usdt-green/20 blur-2xl scale-150" />
-            <div className="relative w-[88px] h-[88px] rounded-[28px] bg-gradient-to-br from-usdt-green via-emerald-500 to-cyan-500 flex items-center justify-center shadow-2xl shadow-usdt-green/20 border border-white/20">
-              <span className="text-[40px] font-black text-white drop-shadow-md">₮</span>
+            <div className="relative w-[80px] h-[80px] rounded-[24px] bg-gradient-to-br from-usdt-green via-emerald-500 to-cyan-500 flex items-center justify-center shadow-2xl shadow-usdt-green/20 border border-white/20">
+              <span className="text-[36px] font-black text-white drop-shadow-md">₮</span>
             </div>
           </div>
-          <h1 className="text-[34px] font-black text-text-primary tracking-tight font-sans leading-none">TitanStream</h1>
-          <p className="text-[15px] text-text-secondary mt-3 font-semibold font-sans leading-snug">
-            Earn Daily Money<br />Automatically
+          <h1 className="text-[32px] font-black text-text-primary tracking-tight font-sans leading-none">TitanStream</h1>
+          <p className="text-[14px] text-text-secondary mt-2 font-semibold font-sans leading-snug">
+            Unified Multi-Rail Access
           </p>
         </motion.div>
 
         <div className="flex-1" />
 
-        {/* Telegram Deep Link Login */}
+        {/* Multi-Rail Channel Tabs & Form */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 w-full max-w-sm px-8 pb-10 flex flex-col items-center gap-4"
+          transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="relative z-10 w-full max-w-sm px-6 pb-8 flex flex-col items-center"
         >
-          {/* Primary Deep Link Button — Opens Telegram App to authorize web session */}
-          <button
-            onClick={() => {
-              const botUsername = (import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string) || 'titanstream_bot';
-              const targetUrl = webDeepLink || `https://t.me/${botUsername}`;
-              window.open(targetUrl, '_blank');
-              setIsWaitingForTelegramAuth(true);
-            }}
-            className="w-full py-4 px-6 rounded-2xl bg-[#2AABEE] hover:bg-[#229ED9] text-white font-extrabold text-base flex items-center justify-center gap-3 shadow-lg shadow-[#2AABEE]/25 transition-all active:scale-[0.98]"
-          >
-            <Send size={18} className="fill-current" />
-            <span>Sign in with Telegram</span>
-          </button>
-
-          {isWaitingForTelegramAuth && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 p-3 rounded-xl bg-[#2AABEE]/10 border border-[#2AABEE]/30 text-[#2AABEE] text-xs font-semibold w-full text-center justify-center"
+          {/* Tab Selector */}
+          <div className="w-full p-1 rounded-2xl bg-white/5 border border-white/10 flex items-center mb-5">
+            <button
+              onClick={() => { setAuthTab('telegram'); setWaError(null); }}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                authTab === 'telegram'
+                  ? 'bg-[#2AABEE] text-white shadow-md'
+                  : 'text-text-tertiary hover:text-white'
+              }`}
             >
-              <Loader2 size={14} className="animate-spin" />
-              <span>Waiting for Telegram sign in...</span>
-            </motion.div>
+              Telegram
+            </button>
+            <button
+              onClick={() => { setAuthTab('whatsapp'); setWaError(null); }}
+              className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                authTab === 'whatsapp'
+                  ? 'bg-[#25D366] text-white shadow-md'
+                  : 'text-text-tertiary hover:text-white'
+              }`}
+            >
+              WhatsApp
+            </button>
+          </div>
+
+          {/* Telegram Rail */}
+          {authTab === 'telegram' && (
+            <div className="w-full flex flex-col items-center gap-3">
+              {/* Primary Telegram Login Library Button */}
+              <button
+                onClick={handleTelegramLoginLibrary}
+                className="w-full py-4 px-6 rounded-2xl bg-[#2AABEE] hover:bg-[#229ED9] text-white font-extrabold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-[#2AABEE]/25 transition-all active:scale-[0.98]"
+              >
+                <Send size={18} className="fill-current" />
+                <span>Continue with Telegram</span>
+              </button>
+
+              {/* Secondary Deep Link Fallback */}
+              <button
+                onClick={() => {
+                  const targetUrl = webDeepLink || `https://t.me/${BOT_USERNAME}`;
+                  window.open(targetUrl, '_blank');
+                  setIsWaitingForTelegramAuth(true);
+                }}
+                className="w-full py-2.5 px-4 rounded-xl text-xs text-text-tertiary hover:text-white transition-colors"
+              >
+                Open in Telegram App (Deep Link)
+              </button>
+
+              {isWaitingForTelegramAuth && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-[#2AABEE]/10 border border-[#2AABEE]/30 text-[#2AABEE] text-xs font-semibold w-full text-center justify-center">
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Waiting for Telegram sign in...</span>
+                </div>
+              )}
+            </div>
           )}
 
-          <div className="flex items-center justify-center gap-2 text-[10px] text-text-tertiary font-medium mt-1">
+          {/* WhatsApp Rail */}
+          {authTab === 'whatsapp' && (
+            <div className="w-full flex flex-col items-center">
+              {waError && (
+                <div className="w-full p-3 mb-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium text-center">
+                  {waError}
+                </div>
+              )}
+
+              {waMessage && waStep === 'otp' && (
+                <div className="w-full p-3 mb-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium text-center">
+                  {waMessage}
+                </div>
+              )}
+
+              {waStep === 'phone' ? (
+                <form onSubmit={handleRequestWaOtp} className="w-full space-y-3">
+                  <input
+                    type="tel"
+                    value={waPhone}
+                    onChange={(e) => setWaPhone(e.target.value)}
+                    placeholder="+256 700 000 000"
+                    className="w-full px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white font-mono text-center text-sm focus:outline-none focus:border-[#25D366] transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    disabled={waLoading || !waPhone}
+                    className="w-full py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#25D366]/20 transition-all disabled:opacity-50 active:scale-[0.98]"
+                  >
+                    {waLoading ? <Loader2 size={16} className="animate-spin" /> : 'Send Verification Code'}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyWaOtp} className="w-full space-y-3">
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={waOtpCode}
+                    onChange={(e) => setWaOtpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="6-digit OTP code"
+                    className="w-full px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white font-mono text-center tracking-[0.3em] text-lg focus:outline-none focus:border-[#25D366] transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    disabled={waLoading || waOtpCode.length < 6}
+                    className="w-full py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#25D366]/20 transition-all disabled:opacity-50 active:scale-[0.98]"
+                  >
+                    {waLoading ? <Loader2 size={16} className="animate-spin" /> : 'Verify Code & Sign In'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setWaStep('phone'); setWaError(null); }}
+                    className="w-full text-xs text-text-tertiary hover:text-white transition-colors"
+                  >
+                    Change Phone Number
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center justify-center gap-2 text-[10px] text-text-tertiary font-medium mt-4">
             <ShieldCheck size={12} className="text-usdt-green/50" />
-            <span>Safe & Secure • No passwords needed</span>
+            <span>Safe & Secure • Passwordless Authentication</span>
           </div>
         </motion.div>
 
-        <div className="flex-1 max-h-[40px]" />
+        <div className="flex-1 max-h-[30px]" />
       </div>
     );
   }

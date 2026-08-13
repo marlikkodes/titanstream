@@ -26,6 +26,10 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
+  const stepUpToken = useAuthStore.getState().stepUpToken;
+  if (stepUpToken) {
+    config.headers['X-StepUp-Token'] = stepUpToken;
+  }
   return config;
 });
 
@@ -40,7 +44,14 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     const status = error.response?.status;
+    const errorCode = error.response?.data?.error?.code || error.response?.data?.code;
     const url = String(originalRequest?.url || '');
+
+    // Catch Step-Up required (403 STEP_UP_REQUIRED)
+    if (status === 403 && (errorCode === 'STEP_UP_REQUIRED' || errorCode === 'STEP_UP_EXPIRED')) {
+      console.warn('[API] Step-up authentication required for action:', url);
+      useAuthStore.getState().openStepUpModal();
+    }
 
     if (status !== 401 || originalRequest?._retry || url.includes('/auth/refresh') || url.includes('/auth/telegram')) {
       return Promise.reject(error);

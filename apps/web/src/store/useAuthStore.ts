@@ -4,6 +4,8 @@ import { persist } from 'zustand/middleware';
 export type PrimaryCurrency = 'USDT' | 'UGX';
 
 export interface AuthUser {
+  id?: string;
+  identityId?: string;
   telegramUserId: number;
   telegramUsername: string | null;
   firstName: string;
@@ -38,6 +40,7 @@ export interface SessionData {
   isNewUser: boolean;
   expiresAt: number;
   platform: 'telegram' | 'web';
+  provider?: 'TELEGRAM' | 'WHATSAPP';
 }
 
 interface AuthState {
@@ -50,6 +53,8 @@ interface AuthState {
   locationDetected: boolean;
   isAuthLoading: boolean;
   authError: string | null;
+  stepUpToken: string | null;
+  isStepUpModalOpen: boolean;
 
   setSession: (session: SessionData) => void;
   clearSession: () => void;
@@ -58,6 +63,9 @@ interface AuthState {
   updateTokens: (accessToken: string, refreshToken: string, expiresAt: number) => void;
   setAuthLoading: (loading: boolean) => void;
   setAuthError: (error: string | null) => void;
+  setStepUpToken: (token: string | null) => void;
+  openStepUpModal: () => void;
+  closeStepUpModal: () => void;
   markOnboardingComplete: () => void;
   markCountrySelected: () => void;
   setDetectedCountry: (code: string) => void;
@@ -78,6 +86,8 @@ export const useAuthStore = create<AuthState>()(
       locationDetected: false,
       isAuthLoading: false,
       authError: null,
+      stepUpToken: null,
+      isStepUpModalOpen: false,
 
       setSession: (session) => {
         localStorage.setItem('auth_token', session.accessToken);
@@ -102,6 +112,8 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           session: null,
           authError: null,
+          stepUpToken: null,
+          isStepUpModalOpen: false,
         });
       },
 
@@ -146,6 +158,18 @@ export const useAuthStore = create<AuthState>()(
 
       setAuthError: (error) => {
         set({ authError: error, isAuthLoading: false });
+      },
+
+      setStepUpToken: (token) => {
+        set({ stepUpToken: token, isStepUpModalOpen: false });
+      },
+
+      openStepUpModal: () => {
+        set({ isStepUpModalOpen: true });
+      },
+
+      closeStepUpModal: () => {
+        set({ isStepUpModalOpen: false });
       },
 
       markOnboardingComplete: () => {

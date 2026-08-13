@@ -55,6 +55,7 @@ import { MachineControlCenterPage } from './pages/admin/machines';
 import { OperationsHqPage } from './pages/admin/operations-hq';
 import { IntelligencePage } from './pages/admin/intelligence';
 import { ReadinessPage } from './pages/admin/readiness';
+import { StepUpModal } from './components/StepUpModal';
 
 // ─── Admin Routes (accessible without user auth) ─────────────────────────────
 
@@ -163,9 +164,10 @@ function MainApp() {
         </div>
       </div>
 
-      {/* Global Hardware Modals */}
+      {/* Global Hardware & Security Modals */}
       <MachineOwnersManualModal />
       <MachineCertificateModal />
+      <StepUpModal />
 
       {/* Profile Slide-Over Drawer */}
       <AnimatePresence>

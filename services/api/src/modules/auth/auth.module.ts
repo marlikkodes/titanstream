@@ -9,10 +9,12 @@ import { PrismaModule } from '../../database/prisma.module';
 import { requiredEnv } from '../../common/config/env.util';
 
 import { AuthVerificationService } from './auth-verification.service';
+import { IdentityModule } from '../identity/identity.module';
 
 @Module({
   imports: [
     PrismaModule,
+    IdentityModule,
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET || requiredEnv('JWT_SECRET', 'dev-jwt-secret'),

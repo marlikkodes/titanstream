@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Headers, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
+import { StepUpGuard } from '../../common/guards/step-up.guard';
+import { RequireStepUp } from '../../common/decorators/step-up.decorator';
 import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
 import { InitiateWithdrawalDto, WithdrawalService } from './withdrawal.service';
 
@@ -9,6 +11,8 @@ export class WithdrawalController {
   constructor(private readonly withdrawalService: WithdrawalService) {}
 
   @Post()
+  @UseGuards(StepUpGuard)
+  @RequireStepUp()
   async initiateWithdrawal(
     @TelegramUserId() telegramUserId: bigint,
     @Body() body: { amount: number; asset?: string; network: string; destinationAddress: string; country?: string; mobileMoneyNetwork?: string },
