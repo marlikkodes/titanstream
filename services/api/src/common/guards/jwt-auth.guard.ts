@@ -34,13 +34,13 @@ export class JwtAuthGuard implements CanActivate {
       let user: any = null;
       let userState = payload.state || 'READY';
 
-      const subStr = String(payload.sub || '');
+      const subStr = String(payload.sub || payload.userId || '');
       const isUuid = subStr.includes('-');
 
       try {
         if (isUuid) {
-          // Look up user by identityId (UniversalIdentity.id)
-          user = await this.prisma.user.findFirst({ where: { identityId: subStr } });
+          user = (await this.prisma.user.findUnique({ where: { id: subStr } })) ||
+                 (await this.prisma.user.findFirst({ where: { identityId: subStr } }));
         }
         if (!user && (payload.telegramUserId || (!isUuid && subStr))) {
           const rawId = payload.telegramUserId || subStr;
@@ -54,17 +54,34 @@ export class JwtAuthGuard implements CanActivate {
         // Fallback user state on database connection lag/blip
       }
 
-      const canonicalTitanId = user?.identityId || (isUuid ? subStr : (payload.titanUserId || subStr));
-      const legacyTelegramUserId = user ? user.telegramUserId.toString() : (payload.telegramUserId ? String(payload.telegramUserId) : (!isUuid ? subStr : undefined));
+      const canonicalUserId = user?.id || user?.identityId || (isUuid ? subStr : (payload.titanUserId || subStr));
+      const legacyTelegramUserId = user?.telegramUserId
+        ? user.telegramUserId.toString()
+        : payload.telegramUserId
+        ? String(payload.telegramUserId)
+        : !isUuid
+        ? subStr
+        : undefined;
 
-      request.user = {
-        id: canonicalTitanId,
-        sub: canonicalTitanId,
-        titanUserId: canonicalTitanId,
-        telegramUserId: legacyTelegramUserId,
-        provider: payload.provider || 'TELEGRAM',
-        state: userState,
+      const identityContext = {
+        userId: canonicalUserId,
+        universalIdentityId: user?.identityId || canonicalUserId,
+        channel: payload.provider || 'TELEGRAM',
+        channelIdentityId: payload.channelIdentityId || canonicalUserId,
+        providerSubject: payload.providerSubject || legacyTelegramUserId || canonicalUserId,
+        assuranceLevel: payload.assuranceLevel || 'HIGH',
         role: payload.role || 'USER',
+        userState,
+        telegramUserId: legacyTelegramUserId && /^\d+$/.test(legacyTelegramUserId) ? BigInt(legacyTelegramUserId) : undefined,
+      };
+
+      request.identity = identityContext;
+      request.user = {
+        ...identityContext,
+        id: canonicalUserId,
+        sub: canonicalUserId,
+        titanUserId: canonicalUserId,
+        telegramUserId: legacyTelegramUserId,
       };
       return true;
     } catch (error: any) {

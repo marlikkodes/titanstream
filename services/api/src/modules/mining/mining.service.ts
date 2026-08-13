@@ -40,11 +40,21 @@ export class MiningService {
     @Optional() @Inject(forwardRef(() => PlatformOperationsEngineService)) private readonly opsEngine?: PlatformOperationsEngineService,
   ) {}
 
-  private async loadFromDb(telegramUserId: string): Promise<UserMiningState | null> {
+  private async loadFromDb(userIdOrTelegramId: string): Promise<UserMiningState | null> {
     try {
-      const record = await this.prisma.userMiningState.findUnique({
-        where: { telegramUserId: BigInt(telegramUserId) },
-      });
+      const isUuid = userIdOrTelegramId.includes('-');
+      let record: any = null;
+
+      if (isUuid) {
+        record = await this.prisma.userMiningState.findFirst({
+          where: { userId: userIdOrTelegramId },
+        });
+      } else if (/^\d+$/.test(userIdOrTelegramId)) {
+        record = await this.prisma.userMiningState.findUnique({
+          where: { telegramUserId: BigInt(userIdOrTelegramId) },
+        });
+      }
+
       if (!record) return null;
       return {
         telegramUserId,

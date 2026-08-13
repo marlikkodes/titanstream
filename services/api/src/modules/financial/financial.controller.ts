@@ -1,7 +1,7 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 import { BalanceService } from './balance.service';
 import { FinancialAccountService } from './financial-account.service';
 import { LedgerService } from './ledger.service';
@@ -21,21 +21,21 @@ export class FinancialController {
 
   @Get('account')
   @ApiOperation({ summary: 'Get or create current user financial account' })
-  async getAccount(@TelegramUserId() telegramUserId: bigint) {
-    return this.accounts.getOrCreateForReadyUser(telegramUserId);
+  async getAccount(@CanonicalUserId() userId: string) {
+    return this.accounts.getOrCreateForReadyUser(userId);
   }
 
   @Get('balance')
   @ApiOperation({ summary: 'Get derived balances for current user' })
-  async getBalance(@TelegramUserId() telegramUserId: bigint) {
-    const account = await this.accounts.getOrCreateForReadyUser(telegramUserId);
-    return this.balances.getBalances(telegramUserId, account.id);
+  async getBalance(@CanonicalUserId() userId: string) {
+    const account = await this.accounts.getOrCreateForReadyUser(userId);
+    return this.balances.getBalances(userId as any, account.id);
   }
 
   @Get('transactions')
   @ApiOperation({ summary: 'Get current user transactions' })
-  async getTransactions(@TelegramUserId() telegramUserId: bigint, @Query() query: PaginationDto) {
-    const account = await this.accounts.getOrCreateForReadyUser(telegramUserId);
+  async getTransactions(@CanonicalUserId() userId: string, @Query() query: PaginationDto) {
+    const account = await this.accounts.getOrCreateForReadyUser(userId);
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;
     const items = await this.transactions.findForAccount(account.id, limit, offset);
@@ -44,8 +44,8 @@ export class FinancialController {
 
   @Get('ledger')
   @ApiOperation({ summary: 'Get current user ledger entries' })
-  async getLedger(@TelegramUserId() telegramUserId: bigint, @Query() query: PaginationDto) {
-    const account = await this.accounts.getOrCreateForReadyUser(telegramUserId);
+  async getLedger(@CanonicalUserId() userId: string, @Query() query: PaginationDto) {
+    const account = await this.accounts.getOrCreateForReadyUser(userId);
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;
     const items = await this.ledger.findForAccount(account.id, limit, offset);

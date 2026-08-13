@@ -5,6 +5,7 @@ import { IdentityProvider } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { TelegramAuthService } from './strategies/telegram-auth.service';
 import { IdentityService } from '../identity/identity.service';
+import { IdentityMasterEngineService } from '../identity/identity-master.service';
 import { UserState, AuditEventType } from '../../common/interfaces/user-state.enum';
 import { AuditService } from '../audit/audit.service';
 import { requiredEnv } from '../../common/config/env.util';
@@ -18,6 +19,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly telegramAuth: TelegramAuthService,
     private readonly identityService: IdentityService,
+    private readonly identityMasterEngine: IdentityMasterEngineService,
     private readonly auditService: AuditService,
   ) {}
 
@@ -169,200 +171,54 @@ export class AuthService {
 
   private async authenticateTelegramIdentity(parsed: any, provider: string, traceId: string, ipAddress?: string, userAgent?: string) {
     const { telegramUserId, firstName, lastName, username, languageCode, photoUrl, startParam } = parsed;
-    const telegramUserIdBig = BigInt(telegramUserId);
+    const identifierStr = String(telegramUserId);
 
-    let user: any = null;
-    let isNewUser = false;
-
+    let identityContext;
     try {
-      user = await this.prisma.user.findUnique({
-        where: { telegramUserId: telegramUserIdBig },
-      });
-
-      if (!user) {
-        this.logAuth(traceId, 'identity.user_lookup', `status=new telegramUserId=${telegramUserId}`);
-        user = await this.prisma.$transaction(async (tx) => {
-          const newUser = await tx.user.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              firstName,
-              lastName,
-              telegramUsername: username,
-              languageCode: languageCode || 'en',
-              photoUrl,
-              state: UserState.NEW,
-              lastActiveAt: new Date(),
-              lastLoginAt: new Date(),
-              lastActiveIp: ipAddress,
-              loginCount: 1,
-            },
-          });
-
-          await tx.onboardingProgress.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              currentStep: 'welcome',
-              stepsCompleted: [],
-            },
-          });
-
-          await tx.financialAccount.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              status: 'ACTIVE',
-              activatedAt: new Date(),
-            },
-          });
-
-          await tx.referralCode.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              code: await this.generateUniqueReferralCode(tx),
-              metadata: { generatedAt: new Date().toISOString() },
-            },
-          });
-
-          await tx.userTrustProfile.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              trustScore: 50,
-              completedSettlements: 0,
-              failedSettlements: 0,
-              successRate: 100.0,
-              accountAgeDays: 0,
-              verificationStatus: 'UNVERIFIED',
-            },
-          });
-
-          await tx.userLevelRecord.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              currentLevel: 'NEW',
-            },
-          });
-
-          await tx.notificationPreference.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              telegramEnabled: true,
-              inAppEnabled: true,
-              marketingEnabled: false,
-            },
-          });
-
-          await this.attachReferralIfPresent(tx, telegramUserIdBig, startParam, traceId);
-
-          await this.auditService.createWithClient(tx, {
-            telegramUserId: telegramUserIdBig,
-            eventType: AuditEventType.USER_CREATED,
-            description: `New user registered via ${provider}`,
-            ipAddress,
-            userAgent,
-            metadata: { provider, username, firstName, traceId },
-          });
-
-          return newUser;
-        });
-
-        isNewUser = true;
-      } else {
-        this.logAuth(traceId, 'identity.user_lookup', `status=existing telegramUserId=${telegramUserId}`);
-        const updateData: any = {
-          lastLoginAt: new Date(),
-          lastActiveAt: new Date(),
-          loginCount: { increment: 1 },
-        };
-        if (firstName !== undefined) updateData.firstName = firstName;
-        if (lastName !== undefined) updateData.lastName = lastName;
-        if (username !== undefined) updateData.telegramUsername = username;
-        if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
-        if (ipAddress) updateData.lastActiveIp = ipAddress;
-
-        user = await this.prisma.user.update({
-          where: { telegramUserId: telegramUserIdBig },
-          data: updateData,
-        });
-
-        await this.auditService.create({
-          telegramUserId: telegramUserIdBig,
-          eventType: AuditEventType.USER_AUTHENTICATED,
-          description: `User authenticated via ${provider}`,
-          ipAddress,
-          userAgent,
-          metadata: { provider, traceId },
-        });
-      }
-    } catch (dbError: any) {
-      this.logger.warn(`[AUTH_FALLBACK] Database operation failed: ${dbError.message}. Generating resilient session for user ${telegramUserId}`);
-      user = {
-        id: `fb_${telegramUserId}`,
-        telegramUserId: telegramUserIdBig,
-        firstName: firstName || 'Titan',
-        lastName: lastName || 'User',
-        telegramUsername: username || 'titanuser',
-        state: UserState.READY,
-        languageCode: languageCode || 'en',
-        photoUrl,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      isNewUser = false;
-    }
-
-    let isReady = true;
-    let readiness = { score: 100, isEligible: true, issues: [] };
-    try {
-      const res = await this.evaluateReadiness(telegramUserIdBig);
-      isReady = res.isReady;
-      readiness = res.readiness as any;
-      if (user.state === UserState.NEW) {
-        user = await this.transitionUserState(telegramUserIdBig, UserState.AUTHENTICATED, 'Auto-transition on auth');
-      }
-    } catch (err: any) {
-      this.logger.warn(`[AUTH_FALLBACK] Readiness/state transition skipped: ${err.message}`);
-    }
-
-    // Resolve UniversalIdentity (TitanUser.id)
-    let universalIdentityId = user?.identityId;
-    try {
-      const identity = await this.identityService.resolveOrCreateIdentity({
+      identityContext = await this.identityMasterEngine.authenticate({
         provider: IdentityProvider.TELEGRAM,
-        identifier: String(telegramUserId),
-        displayName: firstName ? `${firstName} ${lastName || ''}`.trim() : `Telegram_${telegramUserId}`,
+        identifier: identifierStr,
+        displayName: firstName ? `${firstName} ${lastName || ''}`.trim() : `Telegram_${identifierStr}`,
         avatarUrl: photoUrl,
-        metadata: { isAnchor: isNewUser || !user?.identityId, registeredAt: new Date().toISOString() },
+        ipAddress,
+        userAgent,
+        metadata: { traceId, username, startParam },
       });
-      universalIdentityId = identity.id;
-      if (user && user.identityId !== identity.id && typeof user.telegramUserId === 'bigint') {
-        await this.prisma.user.update({
-          where: { telegramUserId: telegramUserIdBig },
-          data: { identityId: identity.id },
-        });
-        user.identityId = identity.id;
-      }
-    } catch (identityErr: any) {
-      this.logger.warn(`[AUTH_IDENTITY] UniversalIdentity resolution notice: ${identityErr.message}`);
+    } catch (engineErr: any) {
+      this.logger.warn(`[AUTH_ENGINE] IdentityMasterEngine fallback for user ${identifierStr}: ${engineErr.message}`);
+      identityContext = {
+        userId: `fb_${identifierStr}`,
+        universalIdentityId: `fb_${identifierStr}`,
+        channel: IdentityProvider.TELEGRAM,
+        channelIdentityId: `fb_chan_${identifierStr}`,
+        providerSubject: identifierStr,
+        assuranceLevel: 'LOW' as const,
+        role: 'USER',
+        userState: UserState.READY,
+        telegramUserId: BigInt(identifierStr),
+      };
     }
-
-    const canonicalId = universalIdentityId || user.identityId || String(telegramUserId);
 
     const payload = {
-      sub: canonicalId,
-      titanUserId: canonicalId,
-      telegramUserId: Number(telegramUserId),
+      sub: identityContext.userId,
+      userId: identityContext.userId,
+      titanUserId: identityContext.userId,
+      telegramUserId: identityContext.telegramUserId ? Number(identityContext.telegramUserId) : Number(identifierStr),
       provider: 'TELEGRAM',
-      state: user.state,
-      role: 'USER',
+      channelIdentityId: identityContext.channelIdentityId,
+      providerSubject: identityContext.providerSubject,
+      state: identityContext.userState,
+      role: identityContext.role,
     };
 
     const refreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || requiredEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret');
     const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refreshToken = this.jwtService.sign(
-      { sub: canonicalId, telegramUserId: Number(telegramUserId), type: 'refresh' },
+      { sub: identityContext.userId, telegramUserId: payload.telegramUserId, type: 'refresh' },
       { expiresIn: '30d', secret: refreshSecret },
     );
 
-    this.logAuth(traceId, 'jwt.issued', `canonicalId=${canonicalId} telegramUserId=${telegramUserId}`);
+    this.logAuth(traceId, 'jwt.issued', `userId=${identityContext.userId} telegramUserId=${identifierStr}`);
     this.logAuth(traceId, 'auth.completed', `provider=${provider} isNewUser=${isNewUser}`);
 
     return {

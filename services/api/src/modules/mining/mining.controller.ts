@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { MiningService } from './mining.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 
 @ApiTags('Mining Engine')
 @Controller('mining')
@@ -12,28 +12,28 @@ export class MiningController {
 
   @Get('state')
   @ApiOperation({ summary: 'Get current user mining session state' })
-  async getMiningState(@TelegramUserId() telegramUserId: bigint) {
-    return this.service.getOrCreateSession(telegramUserId.toString());
+  async getMiningState(@CanonicalUserId() userId: string) {
+    return this.service.getOrCreateSession(userId);
   }
 
   @Post('tap')
   @ApiOperation({ summary: 'Tap the mining cooler to increase speed multiplier' })
-  async tapCooler(@TelegramUserId() telegramUserId: bigint) {
-    return this.service.tap(telegramUserId.toString());
+  async tapCooler(@CanonicalUserId() userId: string) {
+    return this.service.tap(userId);
   }
 
   @Post('toggle')
   @ApiOperation({ summary: 'Toggle active mining asset between USDT and TON' })
   async toggleCurrency(
-    @TelegramUserId() telegramUserId: bigint,
+    @CanonicalUserId() userId: string,
     @Body('currency') currency: 'USDT' | 'TON',
   ) {
-    return this.service.toggleCurrency(telegramUserId.toString(), currency);
+    return this.service.toggleCurrency(userId, currency);
   }
 
   @Post('claim')
   @ApiOperation({ summary: 'Claim and disburse accumulated mining yield to double-entry ledger' })
-  async claimRewards(@TelegramUserId() telegramUserId: bigint) {
-    return this.service.claim(telegramUserId.toString());
+  async claimRewards(@CanonicalUserId() userId: string) {
+    return this.service.claim(userId);
   }
 }

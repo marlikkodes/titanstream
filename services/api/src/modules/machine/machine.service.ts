@@ -188,20 +188,23 @@ export class MachineService {
     return this.catalog;
   }
 
-  async getUserMachines(telegramUserId: string): Promise<UserMachineAsset[]> {
-    let bigIntUserId: bigint;
-    try {
-      bigIntUserId = BigInt(telegramUserId);
-    } catch {
-      bigIntUserId = BigInt(0);
-    }
+  async getUserMachines(userIdOrTelegramId: string | bigint): Promise<UserMachineAsset[]> {
+    const userStr = String(userIdOrTelegramId);
+    const isUuid = userStr.includes('-');
 
     let records: any[] = [];
     try {
-      records = await this.prisma.userMachine.findMany({
-        where: { telegramUserId: bigIntUserId },
-        orderBy: { purchasedAt: 'desc' },
-      });
+      if (isUuid) {
+        records = await this.prisma.userMachine.findMany({
+          where: { userId: userStr },
+          orderBy: { purchasedAt: 'desc' },
+        });
+      } else if (/^\d+$/.test(userStr)) {
+        records = await this.prisma.userMachine.findMany({
+          where: { telegramUserId: BigInt(userStr) },
+          orderBy: { purchasedAt: 'desc' },
+        });
+      }
     } catch (err: any) {
       console.warn('[MachineService] user_machines table query error (falling back to baseline Titan Core):', err?.message);
       records = [];
