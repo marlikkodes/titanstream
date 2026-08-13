@@ -4,10 +4,15 @@ import {
   ConflictException,
   BadRequestException,
   ForbiddenException,
+  UnauthorizedException,
   Logger,
+  Optional,
+  Inject,
 } from '@nestjs/common';
 import { IdentityProvider, UserState, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditService } from '../audit/audit.service';
+import { AuditEventType } from '../../common/interfaces/user-state.enum';
 import {
   IdentityContext,
   ResolveByChannelDto,
@@ -21,12 +26,37 @@ import {
 export class IdentityMasterEngineService {
   private readonly logger = new Logger(IdentityMasterEngineService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly auditService?: AuditService,
+  ) {}
+
+  /**
+   * Deterministically normalizes channel identifiers (E.164 for WhatsApp/Phone, trimmed for Telegram).
+   */
+  normalizeIdentifier(provider: IdentityProvider, identifier: string): string {
+    if (!identifier) return '';
+
+    if (provider === IdentityProvider.WHATSAPP || provider === IdentityProvider.PHONE) {
+      let cleaned = identifier.replace(/[\s\-\(\)]/g, '');
+      if (cleaned.startsWith('0') && cleaned.length === 10) {
+        cleaned = '+256' + cleaned.substring(1);
+      } else if (cleaned.startsWith('256')) {
+        cleaned = '+' + cleaned;
+      } else if (!cleaned.startsWith('+') && /^\d+$/.test(cleaned)) {
+        cleaned = '+' + cleaned;
+      }
+      return cleaned;
+    }
+
+    return identifier.trim();
+  }
 
   /**
    * Resolves a ChannelIdentity, bound UniversalIdentity, and canonical Titan User.
    */
-  async resolveByChannel(provider: IdentityProvider, identifier: string) {
+  async resolveByChannel(provider: IdentityProvider, rawIdentifier: string) {
+    const identifier = this.normalizeIdentifier(provider, rawIdentifier);
     const channelIdentity = await this.prisma.channelIdentity.findUnique({
       where: {
         provider_identifier: {
@@ -62,7 +92,8 @@ export class IdentityMasterEngineService {
    * Race-safe, transactionally isolated registration of a new Titan Identity & User.
    */
   async register(dto: RegisterIdentityDto): Promise<IdentityContext> {
-    const existing = await this.resolveByChannel(dto.provider, dto.identifier);
+    const normalizedId = this.normalizeIdentifier(dto.provider, dto.identifier);
+    const existing = await this.resolveByChannel(dto.provider, normalizedId);
     if (existing && existing.user) {
       throw new ConflictException('IDENTITY_ALREADY_EXISTS');
     }
@@ -71,13 +102,13 @@ export class IdentityMasterEngineService {
       // 1. Create UniversalIdentity (id = UUID)
       const identity = await tx.universalIdentity.create({
         data: {
-          displayName: dto.displayName || dto.firstName || `${dto.provider}_${dto.identifier}`,
+          displayName: dto.displayName || dto.firstName || `${dto.provider}_${normalizedId}`,
           avatarUrl: dto.avatarUrl,
         },
       });
 
       const isTelegram = dto.provider === IdentityProvider.TELEGRAM;
-      const telegramUserIdBig = isTelegram && /^\d+$/.test(dto.identifier) ? BigInt(dto.identifier) : null;
+      const telegramUserIdBig = isTelegram && /^\d+$/.test(normalizedId) ? BigInt(normalizedId) : null;
 
       // 2. Create User (id = identity.id to guarantee User.id === UniversalIdentity.id)
       const user = await tx.user.create({
@@ -102,8 +133,8 @@ export class IdentityMasterEngineService {
         data: {
           identityId: identity.id,
           provider: dto.provider,
-          identifier: dto.identifier,
-          ...(isTelegram && dto.identifier && { telegramId: dto.identifier }),
+          identifier: normalizedId,
+          ...(isTelegram && normalizedId && { telegramId: normalizedId }),
           verified: true,
           metadata: dto.metadata || {},
         },
@@ -169,14 +200,23 @@ export class IdentityMasterEngineService {
         },
       });
 
-      this.logger.log(`Created new Titan Identity ${identity.id} via channel ${dto.provider}:${dto.identifier}`);
+      if (this.auditService) {
+        await this.auditService.createWithClient(tx, {
+          telegramUserId: telegramUserIdBig || undefined,
+          eventType: AuditEventType.USER_CREATED,
+          description: `Identity created via ${dto.provider}:${normalizedId}`,
+          metadata: { provider: dto.provider, identifier: normalizedId, userId: user.id },
+        });
+      }
+
+      this.logger.log(`Created new Titan Identity ${identity.id} via channel ${dto.provider}:${normalizedId}`);
 
       return {
         userId: user.id,
         universalIdentityId: identity.id,
         channel: dto.provider,
         channelIdentityId: channelIdentity.id,
-        providerSubject: dto.identifier,
+        providerSubject: normalizedId,
         assuranceLevel: isTelegram || dto.provider === IdentityProvider.WHATSAPP ? 'MEDIUM' : 'LOW',
         role: 'USER',
         userState: user.state,
@@ -189,12 +229,13 @@ export class IdentityMasterEngineService {
    * Authenticates or registers a channel credential and returns a canonical IdentityContext.
    */
   async authenticate(dto: AuthenticateIdentityDto): Promise<IdentityContext> {
-    const resolved = await this.resolveByChannel(dto.provider, dto.identifier);
+    const normalizedId = this.normalizeIdentifier(dto.provider, dto.identifier);
+    const resolved = await this.resolveByChannel(dto.provider, normalizedId);
 
     if (!resolved || !resolved.user) {
       return this.register({
         provider: dto.provider,
-        identifier: dto.identifier,
+        identifier: normalizedId,
         displayName: dto.displayName,
         avatarUrl: dto.avatarUrl,
         metadata: dto.metadata,
@@ -202,6 +243,15 @@ export class IdentityMasterEngineService {
     }
 
     const { user, identity, channelIdentity } = resolved;
+
+    // Enforce Identity Lifecycle States (Gate 9)
+    const BLOCKED_STATES: UserState[] = [UserState.SUSPENDED_USER, UserState.BANNED_USER, UserState.FROZEN, UserState.DELETED_USER];
+    if (BLOCKED_STATES.includes(user.state)) {
+      throw new UnauthorizedException({
+        code: user.state === UserState.FROZEN ? 'ACCOUNT_FROZEN' : 'ACCOUNT_SUSPENDED',
+        message: `Titan Identity ${user.id} access blocked due to account state: ${user.state}`,
+      });
+    }
 
     // Update login timestamp
     await this.prisma.user.update({
