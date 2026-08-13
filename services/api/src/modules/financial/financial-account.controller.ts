@@ -1,7 +1,7 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 import { FinancialAccountService } from './financial-account.service';
 
 @ApiTags('Financial Accounts')
@@ -12,7 +12,7 @@ export class FinancialAccountController {
 
   @Get('me')
   @ApiOperation({ summary: 'Get or create current user financial account' })
-  async getCurrent(@TelegramUserId() telegramUserId: bigint) {
-    return this.accounts.getOrCreateForReadyUser(telegramUserId);
+  async getCurrent(@CanonicalUserId() userId: string) {
+    return this.accounts.getOrCreateForReadyUser(userId);
   }
 }

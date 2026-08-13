@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 import { GameCatalogService } from './game-catalog.service';
 import { GameCrystalService } from './game-crystal.service';
 import { GameSessionService } from './game-session.service';
@@ -27,16 +27,16 @@ export class GamesController {
 
   @Get('catalog')
   @ApiOperation({ summary: 'Game catalog with costs, reward previews, personal bests, ranks and today\'s daily challenge' })
-  async getCatalog(@TelegramUserId() telegramUserId: bigint) {
+  async getCatalog(@CanonicalUserId() userId: string) {
     const games = await this.catalog.getEnabledGames();
     const activeEvents = await this.events.getActiveEventsView();
-    const balance = await this.crystals.getBalance(telegramUserId);
-    const playerStats = await this.profile.getPlayerStats(telegramUserId);
-    const dailyChallenge = await this.challenges.getTodayView(telegramUserId);
+    const balance = await this.crystals.getBalance(userId);
+    const playerStats = await this.profile.getPlayerStats(userId as any);
+    const dailyChallenge = await this.challenges.getTodayView(userId as any);
 
     const views = [];
     for (const game of games) {
-      const playsToday = await this.sessions.countPlaysToday(telegramUserId, game.gameId);
+      const playsToday = await this.sessions.countPlaysToday(userId as any, game.gameId);
       const stat = playerStats[game.gameId] as any;
       const personalBest = stat
         ? {
@@ -56,7 +56,7 @@ export class GamesController {
             lastPlayedAt: stat.lastPlayedAt,
           }
         : null;
-      const rank = stat ? await this.leaderboard.getPlayerRank(telegramUserId, game.gameId) : null;
+      const rank = stat ? await this.leaderboard.getPlayerRank(userId as any, game.gameId) : null;
       views.push(this.catalog.toView(game, playsToday, activeEvents.map((e) => e.code), personalBest, rank));
     }
 
@@ -70,32 +70,32 @@ export class GamesController {
 
   @Get('challenges')
   @ApiOperation({ summary: 'Today\'s daily challenge with progress and completion state' })
-  async getTodayChallenge(@TelegramUserId() telegramUserId: bigint) {
-    return { challenge: await this.challenges.getTodayView(telegramUserId) };
+  async getTodayChallenge(@CanonicalUserId() userId: string) {
+    return { challenge: await this.challenges.getTodayView(userId as any) };
   }
 
   @Get('grants')
   @ApiOperation({ summary: 'My non-currency reward grants (XP, boxes, boost tokens, event points)' })
-  async getGrants(@TelegramUserId() telegramUserId: bigint, @Query('limit') limit?: number, @Query('offset') offset?: number) {
-    return { items: await this.sessions.getGrants(telegramUserId, limit ?? 50, offset ?? 0) };
+  async getGrants(@CanonicalUserId() userId: string, @Query('limit') limit?: number, @Query('offset') offset?: number) {
+    return { items: await this.sessions.getGrants(userId as any, limit ?? 50, offset ?? 0) };
   }
 
   @Get('balance')
   @ApiOperation({ summary: 'Crystal balance and ledger totals' })
-  async getBalance(@TelegramUserId() telegramUserId: bigint) {
-    const account = await this.crystals.getAccount(telegramUserId);
+  async getBalance(@CanonicalUserId() userId: string) {
+    const account = await this.crystals.getAccount(userId);
     return {
       balance: account.balance,
       lifetimeEarned: account.lifetimeEarned,
       lifetimeSpent: account.lifetimeSpent,
-      telegramUserId: account.telegramUserId.toString(),
+      userId: account.userId || userId,
     };
   }
 
   @Get('transactions')
   @ApiOperation({ summary: 'Crystal ledger history (append-only, balance-after snapshots)' })
-  async getTransactions(@TelegramUserId() telegramUserId: bigint, @Query('limit') limit?: number, @Query('offset') offset?: number) {
-    const rows = await this.crystals.getTransactions(telegramUserId, limit ?? 50, offset ?? 0);
+  async getTransactions(@CanonicalUserId() userId: string, @Query('limit') limit?: number, @Query('offset') offset?: number) {
+    const rows = await this.crystals.getTransactions(userId, limit ?? 50, offset ?? 0);
     return {
       items: rows.map((t) => ({
         id: t.id,
@@ -111,49 +111,49 @@ export class GamesController {
 
   @Get('profile')
   @ApiOperation({ summary: 'Progression profile (best score, streaks, totals)' })
-  async getProfile(@TelegramUserId() telegramUserId: bigint) {
-    const profile = await this.profile.getProfile(telegramUserId);
-    const daily = await this.profile.getDailyLoginStatus(telegramUserId);
+  async getProfile(@CanonicalUserId() userId: string) {
+    const profile = await this.profile.getProfile(userId as any);
+    const daily = await this.profile.getDailyLoginStatus(userId as any);
     return { profile, dailyLogin: daily };
   }
 
   @Post('daily-login/claim')
   @ApiOperation({ summary: 'Claim daily login crystal grant (streak + machine bonuses)' })
-  async claimDailyLogin(@TelegramUserId() telegramUserId: bigint) {
-    return this.profile.claimDailyLogin(telegramUserId);
+  async claimDailyLogin(@CanonicalUserId() userId: string) {
+    return this.profile.claimDailyLogin(userId as any);
   }
 
   @Post(':gameId/session/start')
   @ApiOperation({ summary: 'Start a game session (deducts crystal entry cost, decides chance outcomes server-side)' })
-  async startSession(@TelegramUserId() telegramUserId: bigint, @Param('gameId') gameId: string) {
-    return this.sessions.startSession(telegramUserId, gameId);
+  async startSession(@CanonicalUserId() userId: string, @Param('gameId') gameId: string) {
+    return this.sessions.startSession(userId as any, gameId);
   }
 
   @Post(':gameId/session/:sessionId/end')
   @ApiOperation({ summary: 'Finish a session — server validates the score and issues rewards through the reward engine' })
   async endSession(
-    @TelegramUserId() telegramUserId: bigint,
+    @CanonicalUserId() userId: string,
     @Param('gameId') gameId: string,
     @Param('sessionId') sessionId: string,
     @Body() body: EndSessionDto,
   ) {
-    return this.sessions.endSession(telegramUserId, gameId, sessionId, body);
+    return this.sessions.endSession(userId as any, gameId, sessionId, body);
   }
 
   @Get('history')
   @ApiOperation({ summary: 'My recent game sessions' })
-  async getHistory(@TelegramUserId() telegramUserId: bigint, @Query('limit') limit?: number, @Query('offset') offset?: number) {
-    return { items: await this.sessions.getHistory(telegramUserId, limit ?? 30, offset ?? 0) };
+  async getHistory(@CanonicalUserId() userId: string, @Query('limit') limit?: number, @Query('offset') offset?: number) {
+    return { items: await this.sessions.getHistory(userId as any, limit ?? 30, offset ?? 0) };
   }
 
   @Get('leaderboard')
   @ApiOperation({ summary: 'Daily / weekly / all-time leaderboards, global or friends scope' })
   async getLeaderboard(
-    @TelegramUserId() telegramUserId: bigint,
+    @CanonicalUserId() userId: string,
     @Query() query: LeaderboardQueryDto,
   ) {
     return this.leaderboard.getLeaderboard(
-      telegramUserId,
+      userId as any,
       query.gameId,
       query.period ?? 'daily',
       query.scope ?? 'global',

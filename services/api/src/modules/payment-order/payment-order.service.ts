@@ -115,7 +115,8 @@ export class PaymentOrderService {
     return newCfg;
   }
 
-  async createOrder(telegramUserId: bigint, dto: CreatePaymentOrderDto) {
+  async createOrder(userKey: bigint | string, dto: CreatePaymentOrderDto) {
+    const userStr = String(userKey);
     const orderId = `po_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const reference = `ORD-${Date.now().toString().slice(-6)}`;
     const currency = dto.currency || 'USDT';
@@ -147,7 +148,8 @@ export class PaymentOrderService {
     const order = {
       id: orderId,
       reference,
-      telegramUserId: telegramUserId.toString(),
+      userId: userStr,
+      telegramUserId: userStr,
       type: dto.type,
       amount: usdtAmount,
       localAmount,
@@ -161,17 +163,16 @@ export class PaymentOrderService {
       receivingName: config.receivingName,
       ussdCode,
       telUri,
-      mobileNumber: dto.mobileNumber,
-      metadata: dto.metadata || {},
       expiresAt: expiresAt.toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      metadata: dto.metadata || {},
     };
 
     this.orders.set(orderId, order);
 
     await this.audit.create({
-      telegramUserId,
+      telegramUserId: BigInt(userStr),
       eventType: AuditEventType.TRANSACTION_CREATED,
       description: `Created ${dto.type} payment order ${reference}`,
       metadata: { orderId, reference, amount: usdtAmount, type: dto.type },
@@ -186,8 +187,9 @@ export class PaymentOrderService {
     return order;
   }
 
-  getUserOrders(telegramUserId: string) {
-    return Array.from(this.orders.values()).filter((o) => o.telegramUserId === telegramUserId);
+  getUserOrders(userKey: string | bigint) {
+    const userStr = String(userKey);
+    return Array.from(this.orders.values()).filter((o) => o.userId === userStr || o.telegramUserId === userStr);
   }
 
   getAllOrders() {

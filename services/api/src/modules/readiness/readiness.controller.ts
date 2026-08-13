@@ -2,7 +2,7 @@ import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ReadinessService } from './readiness.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 
 @ApiTags('Readiness')
 @Controller('readiness')
@@ -12,19 +12,19 @@ export class ReadinessController {
 
   @Get(['', 'status'])
   @ApiOperation({ summary: 'Get current readiness score and status' })
-  async getReadiness(@TelegramUserId() telegramUserId: bigint) {
-    return this.readinessService.getReadiness(telegramUserId);
+  async getReadiness(@CanonicalUserId() userId: string) {
+    return this.readinessService.getReadiness(userId);
   }
 
   @Post('calculate')
   @ApiOperation({ summary: 'Force recalculation of readiness score' })
-  async calculateReadiness(@TelegramUserId() telegramUserId: bigint) {
-    return this.readinessService.calculateReadiness(telegramUserId);
+  async calculateReadiness(@CanonicalUserId() userId: string) {
+    return this.readinessService.calculateReadiness(userId);
   }
 
   @Get('history')
   @ApiOperation({ summary: 'Get readiness score history' })
-  async getHistory(@TelegramUserId() telegramUserId: bigint) {
-    return this.readinessService.getReadinessHistory(telegramUserId);
+  async getHistory(@CanonicalUserId() userId: string) {
+    return this.readinessService.getReadinessHistory(userId);
   }
 }

@@ -50,27 +50,49 @@ export class TrustCenterService {
   /**
    * Generates passport and safety dashboard payload for a user.
    */
-  async getTrustCenterData(telegramUserId: bigint) {
-    // 1. Fetch user & level info
-    const user = await this.prisma.user.findUnique({
-      where: { telegramUserId },
-      include: {
-        trustProfile: {
-          include: {
-            trustEvents: {
-              orderBy: { createdAt: 'desc' },
-              take: 5,
+  async getTrustCenterData(userKey: bigint | string) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await this.prisma.user.findUnique({
+        where: { id: userKey as string },
+        include: {
+          trustProfile: {
+            include: {
+              trustEvents: {
+                orderBy: { createdAt: 'desc' },
+                take: 5,
+              },
             },
           },
+          userLevel: true,
+          userPreferences: true,
+          channelVerificationEvents: true,
         },
-        userLevel: true,
-        userPreferences: true,
-        channelVerificationEvents: true,
-      },
-    });
+      });
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      user = await this.prisma.user.findUnique({
+        where: { telegramUserId },
+        include: {
+          trustProfile: {
+            include: {
+              trustEvents: {
+                orderBy: { createdAt: 'desc' },
+                take: 5,
+              },
+            },
+          },
+          userLevel: true,
+          userPreferences: true,
+          channelVerificationEvents: true,
+        },
+      });
+    }
 
     if (!user) {
-      throw new Error(`User not found: ${telegramUserId}`);
+      throw new Error(`User not found: ${userKey}`);
     }
 
     // Initialize trust profile if not existing

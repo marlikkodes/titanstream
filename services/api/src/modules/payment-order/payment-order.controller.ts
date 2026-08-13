@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { PaymentOrderService, CreatePaymentOrderDto } from './payment-order.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 import { AdminAuthGuard } from '../admin/guards/admin-auth.guard';
 import { CurrentAdmin, AuthenticatedAdmin } from '../admin/decorators/current-admin.decorator';
 
@@ -24,10 +24,10 @@ export class PaymentOrderController {
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Create a new Payment Order (Deposit, Withdrawal, Machine Purchase)' })
   async createOrder(
-    @TelegramUserId() telegramUserId: bigint,
+    @CanonicalUserId() userId: string,
     @Body() dto: CreatePaymentOrderDto,
   ) {
-    const order = await this.service.createOrder(telegramUserId, dto);
+    const order = await this.service.createOrder(userId, dto);
     return {
       success: true,
       data: order,
@@ -37,10 +37,10 @@ export class PaymentOrderController {
   @Get('my')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get current user payment orders' })
-  getMyOrders(@TelegramUserId() telegramUserId: bigint) {
+  getMyOrders(@CanonicalUserId() userId: string) {
     return {
       success: true,
-      data: this.service.getUserOrders(telegramUserId.toString()),
+      data: this.service.getUserOrders(userId),
     };
   }
 

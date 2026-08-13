@@ -2,7 +2,7 @@ import { Controller, Get, Patch, Delete, Body, UseGuards } from '@nestjs/common'
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('Users')
@@ -13,28 +13,28 @@ export class UserController {
 
   @Get(['users/me', 'user/profile'])
   @ApiOperation({ summary: 'Get current user profile' })
-  async getProfile(@TelegramUserId() telegramUserId: bigint) {
-    return this.userService.getProfile(telegramUserId);
+  async getProfile(@CanonicalUserId() userId: string) {
+    return this.userService.getProfile(userId);
   }
 
   @Patch(['users/me', 'user/profile'])
   @ApiOperation({ summary: 'Update user profile' })
   async updateProfile(
-    @TelegramUserId() telegramUserId: bigint,
+    @CanonicalUserId() userId: string,
     @Body() dto: UpdateUserDto,
   ) {
-    return this.userService.updateProfile(telegramUserId, dto);
+    return this.userService.updateProfile(userId, dto);
   }
 
   @Get(['user/trust', 'user/trust-profile'])
   @ApiOperation({ summary: 'Get current user trust profile' })
-  async getTrustProfile(@TelegramUserId() telegramUserId: bigint) {
-    return this.userService.getTrustProfile(telegramUserId);
+  async getTrustProfile(@CanonicalUserId() userId: string) {
+    return this.userService.getTrustProfile(userId);
   }
 
   @Delete(['users/me', 'user/delete'])
   @ApiOperation({ summary: 'Delete user account completely' })
-  async deleteAccount(@TelegramUserId() telegramUserId: bigint) {
-    return this.userService.deleteAccount(telegramUserId);
+  async deleteAccount(@CanonicalUserId() userId: string) {
+    return this.userService.deleteAccount(userId);
   }
 }

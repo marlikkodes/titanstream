@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 import { NotificationService } from './notification.service';
 
 @ApiTags('Notifications')
@@ -12,11 +12,12 @@ export class NotificationController {
 
   @Get()
   @ApiOperation({ summary: 'Get in-app notifications for authenticated user' })
-  async getNotifications(@TelegramUserId() telegramUserId: bigint) {
-    const records = await this.service.getNotificationsForUser(telegramUserId);
+  async getNotifications(@CanonicalUserId() userId: string) {
+    const records = await this.service.getNotificationsForUser(userId);
     return records.map((r) => ({
       id: r.id,
-      telegramUserId: r.telegramUserId.toString(),
+      userId: r.userId || userId,
+      telegramUserId: r.telegramUserId ? r.telegramUserId.toString() : undefined,
       templateCode: r.templateCode,
       message: r.message,
       channel: r.channel,
@@ -28,13 +29,13 @@ export class NotificationController {
 
   @Post(':id/read')
   @ApiOperation({ summary: 'Mark specific notification as read' })
-  async markAsRead(@TelegramUserId() telegramUserId: bigint, @Param('id') id: string) {
-    return this.service.markAsRead(telegramUserId, id);
+  async markAsRead(@CanonicalUserId() userId: string, @Param('id') id: string) {
+    return this.service.markAsRead(userId, id);
   }
 
   @Post('read-all')
   @ApiOperation({ summary: 'Mark all unread notifications as read' })
-  async markAllAsRead(@TelegramUserId() telegramUserId: bigint) {
-    return this.service.markAllAsRead(telegramUserId);
+  async markAllAsRead(@CanonicalUserId() userId: string) {
+    return this.service.markAllAsRead(userId);
   }
 }

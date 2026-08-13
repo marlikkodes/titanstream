@@ -64,21 +64,35 @@ export class UserService {
     });
   }
 
-  async getProfile(telegramUserId: bigint) {
-    const user = await this.findByTelegramUserId(telegramUserId);
+  async getProfile(userKey: string | bigint) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await this.findById(userKey as string) || await this.findByIdentityId(userKey as string);
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      user = await this.findByTelegramUserId(telegramUserId);
+    }
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
     return user;
   }
 
-  async updateProfile(telegramUserId: bigint, dto: UpdateUserData) {
-    return this.updateUser(telegramUserId, dto);
+  async updateProfile(userKey: string | bigint, dto: UpdateUserData) {
+    const user = await this.getProfile(userKey);
+    return this.prisma.user.update({
+      where: { id: user.id },
+      data: dto as any,
+    });
   }
 
-  async getTrustProfile(telegramUserId: bigint) {
-    return this.prisma.userTrustProfile.findUnique({
-      where: { telegramUserId },
+  async getTrustProfile(userKey: string | bigint) {
+    const user = await this.getProfile(userKey);
+    return this.prisma.userTrustProfile.findFirst({
+      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
     });
   }
 
@@ -199,11 +213,9 @@ export class UserService {
     });
   }
 
-  async deleteAccount(telegramUserId: bigint) {
-    const user = await this.findByTelegramUserId(telegramUserId);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+  async deleteAccount(userKey: string | bigint) {
+    const user = await this.getProfile(userKey);
+    const telegramUserId = user.telegramUserId || BigInt(0);
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Delete MachineOutput records (child of UserMachine)

@@ -143,7 +143,20 @@ export class ProviderRegistryService implements OnModuleInit {
       }));
   }
 
-  async routeCreate(telegramUserId: bigint, dto: CreateSettlementSessionDto) {
+  async routeCreate(userKey: bigint | string, dto: CreateSettlementSessionDto) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await this.prisma.user.findUnique({ where: { id: userKey as string } });
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+    }
+
+    if (!user) throw new BadRequestException('USER_NOT_FOUND');
+    const telegramUserIdBig = user.telegramUserId || BigInt(0);
+
     let providerId = dto.provider;
 
     // Strict Enforcement: USDT paymentMethod MUST ALWAYS use SettlementProviderId.USDT rail and NEVER Pesapal
@@ -162,12 +175,12 @@ export class ProviderRegistryService implements OnModuleInit {
     if (providerId === SettlementProviderId.CRYPTOBOT || (dto.provider as string) === 'CRYPTOBOT') {
       throw new BadRequestException('UNSUPPORTED_PROVIDER: CryptoBot settlement has been retired');
     }
-    await this.assertNoActiveSettlement(telegramUserId, dto.asset);
-    if (this.riskService) {
-      await this.riskService.assertSessionCreationRisk(telegramUserId, Number(dto.expectedCryptoAmount));
+    await this.assertNoActiveSettlement(telegramUserIdBig, dto.asset);
+    if (this.riskService && telegramUserIdBig > 0) {
+      await this.riskService.assertSessionCreationRisk(telegramUserIdBig, Number(dto.expectedCryptoAmount));
     }
     const provider = await this.getEnabledAdapter(providerId, dto.asset, dto.country);
-    return provider.createSettlement(telegramUserId, dto);
+    return provider.createSettlement(telegramUserIdBig, dto);
   }
 
   async approve(providerId: SettlementProviderId, settlementId: string, context: Record<string, unknown> = {}) {
@@ -182,8 +195,17 @@ export class ProviderRegistryService implements OnModuleInit {
     return provider.cancelSettlement(settlementId);
   }
 
-  async getSession(telegramUserId: bigint, settlementId: string) {
-    const session = await this.prisma.settlementSession.findFirst({ where: { id: settlementId, telegramUserId } });
+  async getSession(userKey: bigint | string, settlementId: string) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let session: any = null;
+
+    if (isUuid) {
+      session = await this.prisma.settlementSession.findFirst({ where: { id: settlementId, userId: userKey as string } });
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      session = await this.prisma.settlementSession.findFirst({ where: { id: settlementId, telegramUserId } });
+    }
+
     if (!session) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
     const adapter = this.adapters.get(session.provider as SettlementProviderId);
     if (adapter && typeof adapter.getSettlementStatus === 'function') {
@@ -192,8 +214,17 @@ export class ProviderRegistryService implements OnModuleInit {
     return this.toProviderIndependentView(session);
   }
 
-  async history(telegramUserId: bigint) {
-    const sessions = await this.prisma.settlementSession.findMany({ where: { telegramUserId }, orderBy: { createdAt: 'desc' } });
+  async history(userKey: bigint | string) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let sessions: any[] = [];
+
+    if (isUuid) {
+      sessions = await this.prisma.settlementSession.findMany({ where: { userId: userKey as string }, orderBy: { createdAt: 'desc' } });
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      sessions = await this.prisma.settlementSession.findMany({ where: { telegramUserId }, orderBy: { createdAt: 'desc' } });
+    }
+
     return sessions.map((session) => this.toProviderIndependentView(session));
   }
 

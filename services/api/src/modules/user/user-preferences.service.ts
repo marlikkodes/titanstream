@@ -12,16 +12,29 @@ export class UserPreferencesService {
     private readonly auditService: AuditService,
   ) {}
 
-  async getPreferences(telegramUserId: bigint) {
-    let prefs = await this.prisma.userPreferences.findUnique({
-      where: { telegramUserId },
+  async getPreferences(userKey: bigint | string) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await this.prisma.user.findUnique({ where: { id: userKey as string } });
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+    }
+
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    let prefs = await this.prisma.userPreferences.findFirst({
+      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
     });
 
     if (!prefs) {
-      this.logger.log(`Initializing default preferences for user ${telegramUserId}`);
+      this.logger.log(`Initializing default preferences for user ${user.id}`);
       prefs = await this.prisma.userPreferences.create({
         data: {
-          telegramUserId,
+          userId: user.id,
+          telegramUserId: user.telegramUserId || BigInt(0),
           authenticationMethod: 'TELEGRAM',
           notificationChannel: 'TELEGRAM',
           preferredShareChannel: 'TELEGRAM',
@@ -31,7 +44,8 @@ export class UserPreferencesService {
     }
 
     return {
-      telegramUserId: Number(prefs.telegramUserId),
+      userId: prefs.userId || user.id,
+      telegramUserId: prefs.telegramUserId ? Number(prefs.telegramUserId) : undefined,
       authenticationMethod: prefs.authenticationMethod,
       notificationChannel: prefs.notificationChannel,
       preferredShareChannel: prefs.preferredShareChannel,
@@ -40,15 +54,28 @@ export class UserPreferencesService {
     };
   }
 
-  async updatePreferences(telegramUserId: bigint, data: { settings?: any; notificationChannel?: any }) {
-    let prefs = await this.prisma.userPreferences.findUnique({
-      where: { telegramUserId },
+  async updatePreferences(userKey: bigint | string, data: { settings?: any; notificationChannel?: any }) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await this.prisma.user.findUnique({ where: { id: userKey as string } });
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+    }
+
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    let prefs = await this.prisma.userPreferences.findFirst({
+      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
     });
 
     if (!prefs) {
       prefs = await this.prisma.userPreferences.create({
         data: {
-          telegramUserId,
+          userId: user.id,
+          telegramUserId: user.telegramUserId || BigInt(0),
           authenticationMethod: 'TELEGRAM',
           notificationChannel: data.notificationChannel || 'TELEGRAM',
           preferredShareChannel: 'TELEGRAM',
@@ -62,7 +89,7 @@ export class UserPreferencesService {
       };
 
       prefs = await this.prisma.userPreferences.update({
-        where: { telegramUserId },
+        where: { id: prefs.id },
         data: {
           ...(data.notificationChannel && { notificationChannel: data.notificationChannel }),
           settings: mergedSettings,
@@ -70,15 +97,18 @@ export class UserPreferencesService {
       });
     }
 
-    await this.auditService.create({
-      telegramUserId,
-      eventType: AuditEventType.USER_UPDATED,
-      description: 'User settings preferences synchronized with backend',
-      metadata: data,
-    });
+    if (user.telegramUserId) {
+      await this.auditService.create({
+        telegramUserId: user.telegramUserId,
+        eventType: AuditEventType.USER_UPDATED,
+        description: 'User settings preferences synchronized with backend',
+        metadata: data,
+      });
+    }
 
     return {
-      telegramUserId: Number(prefs.telegramUserId),
+      userId: prefs.userId || user.id,
+      telegramUserId: prefs.telegramUserId ? Number(prefs.telegramUserId) : undefined,
       authenticationMethod: prefs.authenticationMethod,
       notificationChannel: prefs.notificationChannel,
       preferredShareChannel: prefs.preferredShareChannel,

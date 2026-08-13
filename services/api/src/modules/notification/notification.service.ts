@@ -131,7 +131,16 @@ export class NotificationService implements OnModuleInit {
   /**
    * Get all active in-app notifications for a user.
    */
-  async getNotificationsForUser(telegramUserId: bigint) {
+  async getNotificationsForUser(userKey: bigint | string) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    if (isUuid) {
+      return this.prisma.notificationRecord.findMany({
+        where: { userId: userKey as string, channel: NotificationChannel.IN_APP },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
+    }
+    const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
     return this.prisma.notificationRecord.findMany({
       where: { telegramUserId, channel: NotificationChannel.IN_APP },
       orderBy: { createdAt: 'desc' },
@@ -142,7 +151,15 @@ export class NotificationService implements OnModuleInit {
   /**
    * Mark notification as read.
    */
-  async markAsRead(telegramUserId: bigint, id: string) {
+  async markAsRead(userKey: bigint | string, id: string) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    if (isUuid) {
+      return this.prisma.notificationRecord.updateMany({
+        where: { id, userId: userKey as string },
+        data: { status: 'READ' },
+      });
+    }
+    const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
     return this.prisma.notificationRecord.updateMany({
       where: { id, telegramUserId },
       data: { status: 'READ' },
@@ -152,7 +169,15 @@ export class NotificationService implements OnModuleInit {
   /**
    * Mark all notifications as read.
    */
-  async markAllAsRead(telegramUserId: bigint) {
+  async markAllAsRead(userKey: bigint | string) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    if (isUuid) {
+      return this.prisma.notificationRecord.updateMany({
+        where: { userId: userKey as string, status: 'UNREAD' },
+        data: { status: 'READ' },
+      });
+    }
+    const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
     return this.prisma.notificationRecord.updateMany({
       where: { telegramUserId, status: 'UNREAD' },
       data: { status: 'READ' },

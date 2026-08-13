@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, UseGuards, Query, Param } from '@nestjs/common';
 import { JwtAuthGuard as AuthGuard } from '../../common/guards/jwt-auth.guard';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 import { ReferralService } from './referral.service';
 import { ReferralGraphService } from './referral-graph.service';
 import { ReferralQualificationService } from './referral-qualification.service';
@@ -37,8 +37,8 @@ export class GrowthController {
    * Fetch passport, safety checks, timeline, active protection monitor and trust metrics.
    */
   @Get('trust-center')
-  async getTrustCenter(@TelegramUserId() telegramUserId: bigint) {
-    return this.trustCenterService.getTrustCenterData(telegramUserId);
+  async getTrustCenter(@CanonicalUserId() userId: string) {
+    return this.trustCenterService.getTrustCenterData(userId);
   }
 
   /**
@@ -46,14 +46,14 @@ export class GrowthController {
    * Production Growth Engine source of truth powered directly by Prisma queries.
    */
   @Get('dashboard')
-  async getGrowthDashboard(@TelegramUserId() telegramUserId: bigint) {
-    const levelSummary = await this.userLevelService.getUserLevelSummary(telegramUserId);
-    const referralSummary = await this.referralService.getUserReferralSummary(telegramUserId);
-    const rewards = await this.rewardService.getUserRewards(telegramUserId);
+  async getGrowthDashboard(@CanonicalUserId() userId: string) {
+    const levelSummary = await this.userLevelService.getUserLevelSummary(userId as any);
+    const referralSummary = await this.referralService.getUserReferralSummary(userId as any);
+    const rewards = await this.rewardService.getUserRewards(userId as any);
 
     // 1. Production count of completed settlements
     const completedSettlementsCount = await this.prisma.settlementSession.count({
-      where: { telegramUserId, status: 'COMPLETED' },
+      where: { userId, status: 'COMPLETED' },
     });
 
     // 2. Global verified transactions settled on system
@@ -156,14 +156,14 @@ export class GrowthController {
    * Comprehensive user trust profile, level status, benefits unlocked, and growth stats.
    */
   @Get('profile')
-  async getGrowthProfile(@TelegramUserId() telegramUserId: bigint) {
-    const levelSummary = await this.userLevelService.getUserLevelSummary(telegramUserId);
-    const referralSummary = await this.referralService.getUserReferralSummary(telegramUserId);
-    const rewards = await this.rewardService.getUserRewards(telegramUserId);
+  async getGrowthProfile(@CanonicalUserId() userId: string) {
+    const levelSummary = await this.userLevelService.getUserLevelSummary(userId as any);
+    const referralSummary = await this.referralService.getUserReferralSummary(userId as any);
+    const rewards = await this.rewardService.getUserRewards(userId as any);
 
     // Calculate total settlement volume
     const completedSettlements = await this.prisma.settlementSession.findMany({
-      where: { telegramUserId, status: 'COMPLETED' },
+      where: { userId, status: 'COMPLETED' },
       select: { expectedCryptoAmount: true },
     });
 
@@ -173,7 +173,7 @@ export class GrowthController {
     );
 
     return {
-      telegramUserId: telegramUserId.toString(),
+      userId,
       trustScore: levelSummary.trustProfile.trustScore,
       level: levelSummary.currentLevel,
       levelName: levelSummary.levelName,
@@ -198,8 +198,8 @@ export class GrowthController {
    * User referral dashboard data.
    */
   @Get('referrals')
-  async getReferralDashboard(@TelegramUserId() telegramUserId: bigint) {
-    return this.referralService.getUserReferralSummary(telegramUserId);
+  async getReferralDashboard(@CanonicalUserId() userId: string) {
+    return this.referralService.getUserReferralSummary(userId as any);
   }
 
   /**
@@ -207,8 +207,8 @@ export class GrowthController {
    * Get or initialize referral code.
    */
   @Post('referral/link')
-  async getReferralLink(@TelegramUserId() telegramUserId: bigint) {
-    return this.referralService.getOrCreateReferralCode(telegramUserId);
+  async getReferralLink(@CanonicalUserId() userId: string) {
+    return this.referralService.getOrCreateReferralCode(userId as any);
   }
 
   /**
@@ -216,11 +216,11 @@ export class GrowthController {
    * User rewards list.
    */
   @Get('rewards')
-  async getUserRewards(@TelegramUserId() telegramUserId: bigint) {
-    const rewards = await this.rewardService.getUserRewards(telegramUserId);
+  async getUserRewards(@CanonicalUserId() userId: string) {
+    const rewards = await this.rewardService.getUserRewards(userId as any);
     return rewards.map((r) => ({
       ...r,
-      telegramUserId: r.telegramUserId.toString(),
+      userId: r.userId || userId,
       amount: r.amount.toString(),
     }));
   }
@@ -230,8 +230,8 @@ export class GrowthController {
    * Real-time claim queue: active, eligible, unclaimed rewards.
    */
   @Get('rewards/available')
-  async getAvailableRewards(@TelegramUserId() telegramUserId: bigint) {
-    const queue = await this.rewardService.getAvailableRewards(telegramUserId);
+  async getAvailableRewards(@CanonicalUserId() userId: string) {
+    const queue = await this.rewardService.getAvailableRewards(userId as any);
     return { queue };
   }
 
@@ -241,8 +241,8 @@ export class GrowthController {
    * category, difficulty, progress and estimated remaining.
    */
   @Get('rewards/missions')
-  async getMissionQueue(@TelegramUserId() telegramUserId: bigint) {
-    const missions = await this.rewardService.getMissionQueue(telegramUserId);
+  async getMissionQueue(@CanonicalUserId() userId: string) {
+    const missions = await this.rewardService.getMissionQueue(userId as any);
     return { missions };
   }
 
@@ -251,8 +251,8 @@ export class GrowthController {
    * Claimed / expired rewards with transaction references.
    */
   @Get('rewards/history')
-  async getRewardHistory(@TelegramUserId() telegramUserId: bigint) {
-    const history = await this.rewardService.getRewardHistory(telegramUserId);
+  async getRewardHistory(@CanonicalUserId() userId: string) {
+    const history = await this.rewardService.getRewardHistory(userId as any);
     return { history };
   }
 
@@ -262,10 +262,10 @@ export class GrowthController {
    */
   @Get('rewards/:id')
   async getRewardDetail(
-    @TelegramUserId() telegramUserId: bigint,
+    @CanonicalUserId() userId: string,
     @Param('id') rewardId: string,
   ) {
-    return this.rewardService.getRewardDetail(telegramUserId, rewardId);
+    return this.rewardService.getRewardDetail(userId as any, rewardId);
   }
 
   /**
@@ -274,10 +274,10 @@ export class GrowthController {
    */
   @Post('rewards/:id/claim')
   async claimReward(
-    @TelegramUserId() telegramUserId: bigint,
+    @CanonicalUserId() userId: string,
     @Param('id') rewardId: string,
   ) {
-    const reward = await this.rewardService.claimReward(telegramUserId, rewardId);
+    const reward = await this.rewardService.claimReward(userId as any, rewardId);
     return { reward };
   }
 
@@ -287,8 +287,8 @@ export class GrowthController {
    * recent achievements, next best action and upcoming unlock.
    */
   @Get('progress')
-  async getProgressOverview(@TelegramUserId() telegramUserId: bigint) {
-    return this.progressService.getProgressOverview(telegramUserId);
+  async getProgressOverview(@CanonicalUserId() userId: string) {
+    return this.progressService.getProgressOverview(userId as any);
   }
 
   /**
@@ -296,8 +296,8 @@ export class GrowthController {
    * Achievement cabinet (all rows reconciled against real counters).
    */
   @Get('achievements')
-  async getAchievements(@TelegramUserId() telegramUserId: bigint) {
-    return this.achievementService.getUserAchievements(telegramUserId);
+  async getAchievements(@CanonicalUserId() userId: string) {
+    return this.achievementService.getUserAchievements(userId as any);
   }
 
   /**
@@ -305,8 +305,8 @@ export class GrowthController {
    * Full qualification status for withdrawal and discount access.
    */
   @Get('qualification')
-  async getQualificationStatus(@TelegramUserId() telegramUserId: bigint) {
-    return this.qualificationService.getFullQualificationStatus(telegramUserId);
+  async getQualificationStatus(@CanonicalUserId() userId: string) {
+    return this.qualificationService.getFullQualificationStatus(userId as any);
   }
 
   /**
@@ -314,8 +314,8 @@ export class GrowthController {
    * Withdrawal eligibility check.
    */
   @Get('qualification/withdrawal')
-  async getWithdrawalEligibility(@TelegramUserId() telegramUserId: bigint) {
-    return this.qualificationService.checkWithdrawalEligibility(telegramUserId);
+  async getWithdrawalEligibility(@CanonicalUserId() userId: string) {
+    return this.qualificationService.checkWithdrawalEligibility(userId as any);
   }
 
   /**
@@ -323,8 +323,8 @@ export class GrowthController {
    * Discount eligibility check.
    */
   @Get('qualification/discount')
-  async getDiscountEligibility(@TelegramUserId() telegramUserId: bigint) {
-    return this.discountService.getUserDiscountStatus(telegramUserId);
+  async getDiscountEligibility(@CanonicalUserId() userId: string) {
+    return this.discountService.getUserDiscountStatus(userId as any);
   }
 
   /**
@@ -332,8 +332,8 @@ export class GrowthController {
    * Referral tree for the current user.
    */
   @Get('graph/tree')
-  async getReferralTree(@TelegramUserId() telegramUserId: bigint) {
-    return this.referralGraphService.getReferralTree(telegramUserId);
+  async getReferralTree(@CanonicalUserId() userId: string) {
+    return this.referralGraphService.getReferralTree(userId as any);
   }
 
   /**
@@ -341,8 +341,8 @@ export class GrowthController {
    * Referral chain (upline) for the current user.
    */
   @Get('graph/chain')
-  async getReferralChain(@TelegramUserId() telegramUserId: bigint) {
-    return this.referralGraphService.getReferralChain(telegramUserId);
+  async getReferralChain(@CanonicalUserId() userId: string) {
+    return this.referralGraphService.getReferralChain(userId as any);
   }
 
   /**
@@ -350,8 +350,8 @@ export class GrowthController {
    * Downstream referral counts.
    */
   @Get('graph/downstream')
-  async getDownstreamCount(@TelegramUserId() telegramUserId: bigint) {
-    return this.referralGraphService.getDownstreamCount(telegramUserId);
+  async getDownstreamCount(@CanonicalUserId() userId: string) {
+    return this.referralGraphService.getDownstreamCount(userId as any);
   }
 
   /**
@@ -359,8 +359,8 @@ export class GrowthController {
    * Progression levels details.
    */
   @Get('levels')
-  async getUserLevels(@TelegramUserId() telegramUserId: bigint) {
-    return this.userLevelService.getUserLevelSummary(telegramUserId);
+  async getUserLevels(@CanonicalUserId() userId: string) {
+    return this.userLevelService.getUserLevelSummary(userId as any);
   }
 
   /**
@@ -369,18 +369,18 @@ export class GrowthController {
    */
   @Get('notifications')
   async getNotifications(
-    @TelegramUserId() telegramUserId: bigint,
+    @CanonicalUserId() userId: string,
     @Query('limit') limit?: string,
   ) {
     const parsedLimit = limit ? parseInt(limit, 10) : 20;
-    const records = await this.notificationService.getUserNotifications(telegramUserId, parsedLimit);
-    const preferences = await this.notificationService.getPreferences(telegramUserId);
+    const records = await this.notificationService.getUserNotifications(userId as any, parsedLimit);
+    const preferences = await this.notificationService.getPreferences(userId as any);
 
     return {
       preferences,
       notifications: records.map((n) => ({
         ...n,
-        telegramUserId: n.telegramUserId.toString(),
+        userId: n.userId || userId,
       })),
     };
   }
@@ -391,9 +391,9 @@ export class GrowthController {
    */
   @Post('notifications/preferences')
   async updateNotificationPreferences(
-    @TelegramUserId() telegramUserId: bigint,
+    @CanonicalUserId() userId: string,
     @Body() body: { telegramEnabled?: boolean; inAppEnabled?: boolean; marketingEnabled?: boolean },
   ) {
-    return this.notificationService.updatePreferences(telegramUserId, body);
+    return this.notificationService.updatePreferences(userId as any, body);
   }
 }

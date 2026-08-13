@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 import { CreateSettlementSessionDto } from './dto/create-settlement-session.dto';
 import { ProviderRegistryService } from './provider-registry.service';
 
@@ -15,13 +15,13 @@ export class UniversalSettlementController {
   }
 
   @Post('session')
-  create(@TelegramUserId() telegramUserId: bigint, @Body() dto: CreateSettlementSessionDto) {
-    return this.registry.routeCreate(telegramUserId, dto);
+  create(@CanonicalUserId() userId: string, @Body() dto: CreateSettlementSessionDto) {
+    return this.registry.routeCreate(userId, dto);
   }
 
   @Get(['session/:id', 'session/:settlementId'])
-  get(@TelegramUserId() telegramUserId: bigint, @Param('id') id: string, @Param('settlementId') settlementId: string) {
-    return this.registry.getSession(telegramUserId, id || settlementId);
+  get(@CanonicalUserId() userId: string, @Param('id') id: string, @Param('settlementId') settlementId: string) {
+    return this.registry.getSession(userId, id || settlementId);
   }
 
   @Post(['session/:id/cancel', 'session/:settlementId/cancel'])
@@ -30,7 +30,7 @@ export class UniversalSettlementController {
   }
 
   @Get('history')
-  history(@TelegramUserId() telegramUserId: bigint) {
-    return this.registry.history(telegramUserId);
+  history(@CanonicalUserId() userId: string) {
+    return this.registry.history(userId);
   }
 }

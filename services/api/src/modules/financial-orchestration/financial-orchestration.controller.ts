@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
+import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 import { PrismaService } from '../../database/prisma.service';
 import { PaginationDto } from '../financial/dto/pagination.dto';
 import { CreateFinancialOperationDto } from './dto/create-financial-operation.dto';
@@ -21,17 +21,18 @@ export class FinancialOrchestrationController {
 
   @Post('operations')
   @ApiOperation({ summary: 'Request a financial operation through the orchestrator' })
-  requestOperation(@TelegramUserId() telegramUserId: bigint, @Body() dto: CreateFinancialOperationDto) {
-    return this.orchestrator.requestOperation({ telegramUserId, ...dto });
+  requestOperation(@CanonicalUserId() userId: string, @Body() dto: CreateFinancialOperationDto) {
+    const telegramUserId = /^\d+$/.test(userId) ? BigInt(userId) : BigInt(0);
+    return this.orchestrator.requestOperation({ userId, telegramUserId, ...dto } as any);
   }
 
   @Get('operations')
   @ApiOperation({ summary: 'List current user financial operations' })
-  async listOperations(@TelegramUserId() telegramUserId: bigint, @Query() query: PaginationDto) {
+  async listOperations(@CanonicalUserId() userId: string, @Query() query: PaginationDto) {
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;
     const items = await this.prisma.financialOperation.findMany({
-      where: { telegramUserId },
+      where: { OR: [{ userId }, { telegramUserId: /^\d+$/.test(userId) ? BigInt(userId) : undefined }] },
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,

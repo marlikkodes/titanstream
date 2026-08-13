@@ -21,19 +21,35 @@ export class ReadinessService {
     private readonly auditService: AuditService,
   ) {}
 
-  async calculateReadiness(telegramUserId: bigint): Promise<ReadinessResult> {
-    const user = await this.prisma.user.findUnique({
-      where: { telegramUserId },
-      include: {
-        educationCompletions: { where: { status: 'COMPLETED' } },
-        userConsents: { where: { isActive: true } },
-        onboardingProgress: true,
-      },
-    });
+  async calculateReadiness(userKey: bigint | string): Promise<ReadinessResult> {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await this.prisma.user.findUnique({
+        where: { id: userKey as string },
+        include: {
+          educationCompletions: { where: { status: 'COMPLETED' } },
+          userConsents: { where: { isActive: true } },
+          onboardingProgress: true,
+        },
+      });
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      user = await this.prisma.user.findUnique({
+        where: { telegramUserId },
+        include: {
+          educationCompletions: { where: { status: 'COMPLETED' } },
+          userConsents: { where: { isActive: true } },
+          onboardingProgress: true,
+        },
+      });
+    }
+
     if (!user) throw new NotFoundException('USER_NOT_FOUND');
 
-    const educationScore = await this.calculateEducationScore(telegramUserId);
-    const trustScore = await this.calculateTrustScore(telegramUserId);
+    const educationScore = await this.calculateEducationScore(user.telegramUserId || user.id);
+    const trustScore = await this.calculateTrustScore(user.telegramUserId || user.id);
     const engagementScore = await this.calculateEngagementScore(user);
     const riskScore = await this.calculateRiskScore(user);
 
@@ -145,17 +161,37 @@ export class ReadinessService {
     return result;
   }
 
-  async getReadiness(telegramUserId: bigint) {
-    const score = await this.prisma.readinessScore.findUnique({
-      where: { telegramUserId },
-    });
+  async getReadiness(userKey: bigint | string) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let score: any = null;
+
+    if (isUuid) {
+      score = await this.prisma.readinessScore.findFirst({
+        where: { userId: userKey as string },
+      });
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      score = await this.prisma.readinessScore.findUnique({
+        where: { telegramUserId },
+      });
+    }
+
     if (!score) {
-      return this.calculateReadiness(telegramUserId);
+      return this.calculateReadiness(userKey);
     }
     return score;
   }
 
-  async getReadinessHistory(telegramUserId: bigint, limit = 20) {
+  async getReadinessHistory(userKey: bigint | string, limit = 20) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    if (isUuid) {
+      return this.prisma.readinessHistory.findMany({
+        where: { userId: userKey as string },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      });
+    }
+    const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
     return this.prisma.readinessHistory.findMany({
       where: { telegramUserId },
       orderBy: { createdAt: 'desc' },

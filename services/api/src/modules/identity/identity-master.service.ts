@@ -98,131 +98,152 @@ export class IdentityMasterEngineService {
       throw new ConflictException('IDENTITY_ALREADY_EXISTS');
     }
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 1. Create UniversalIdentity (id = UUID)
-      const identity = await tx.universalIdentity.create({
-        data: {
-          displayName: dto.displayName || dto.firstName || `${dto.provider}_${normalizedId}`,
-          avatarUrl: dto.avatarUrl,
-        },
-      });
-
-      const isTelegram = dto.provider === IdentityProvider.TELEGRAM;
-      const telegramUserIdBig = isTelegram && /^\d+$/.test(normalizedId) ? BigInt(normalizedId) : null;
-
-      // 2. Create User (id = identity.id to guarantee User.id === UniversalIdentity.id)
-      const user = await tx.user.create({
-        data: {
-          id: identity.id,
-          identityId: identity.id,
-          ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
-          firstName: dto.firstName || dto.displayName || `${dto.provider}_User`,
-          lastName: dto.lastName,
-          telegramUsername: dto.telegramUsername,
-          languageCode: dto.languageCode || 'en',
-          photoUrl: dto.avatarUrl,
-          state: UserState.NEW,
-          lastActiveAt: new Date(),
-          lastLoginAt: new Date(),
-          loginCount: 1,
-        },
-      });
-
-      // 3. Create bound ChannelIdentity
-      const channelIdentity = await tx.channelIdentity.create({
-        data: {
-          identityId: identity.id,
-          provider: dto.provider,
-          identifier: normalizedId,
-          ...(isTelegram && normalizedId && { telegramId: normalizedId }),
-          verified: true,
-          metadata: dto.metadata || {},
-        },
-      });
-
-      // 4. Initialize Domain Subsystems with userId = identity.id
-      await tx.financialAccount.create({
-        data: {
-          userId: user.id,
-          ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
-          status: 'ACTIVE',
-          activatedAt: new Date(),
-        },
-      });
-
-      await tx.onboardingProgress.create({
-        data: {
-          userId: user.id,
-          ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
-          currentStep: 'welcome',
-          stepsCompleted: [],
-        },
-      });
-
-      const refCodeStr = `TITAN_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      await tx.referralCode.create({
-        data: {
-          userId: user.id,
-          ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
-          code: refCodeStr,
-          metadata: { generatedAt: new Date().toISOString(), provider: dto.provider },
-        },
-      });
-
-      await tx.userTrustProfile.create({
-        data: {
-          userId: user.id,
-          ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
-          trustScore: 50,
-          completedSettlements: 0,
-          failedSettlements: 0,
-          successRate: 100.0,
-          accountAgeDays: 0,
-          verificationStatus: 'UNVERIFIED',
-        },
-      });
-
-      await tx.userLevelRecord.create({
-        data: {
-          userId: user.id,
-          ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
-          currentLevel: 'NEW',
-        },
-      });
-
-      await tx.notificationPreference.create({
-        data: {
-          userId: user.id,
-          ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
-          telegramEnabled: isTelegram,
-          inAppEnabled: true,
-          marketingEnabled: false,
-        },
-      });
-
-      if (this.auditService) {
-        await this.auditService.createWithClient(tx, {
-          telegramUserId: telegramUserIdBig || undefined,
-          eventType: AuditEventType.USER_CREATED,
-          description: `Identity created via ${dto.provider}:${normalizedId}`,
-          metadata: { provider: dto.provider, identifier: normalizedId, userId: user.id },
+    try {
+      return await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        // 1. Create UniversalIdentity (id = UUID)
+        const identity = await tx.universalIdentity.create({
+          data: {
+            displayName: dto.displayName || dto.firstName || `${dto.provider}_${normalizedId}`,
+            avatarUrl: dto.avatarUrl,
+          },
         });
+
+        const isTelegram = dto.provider === IdentityProvider.TELEGRAM;
+        const telegramUserIdBig = isTelegram && /^\d+$/.test(normalizedId) ? BigInt(normalizedId) : null;
+
+        // 2. Create User (id = identity.id to guarantee User.id === UniversalIdentity.id)
+        const user = await tx.user.create({
+          data: {
+            id: identity.id,
+            identityId: identity.id,
+            ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
+            firstName: dto.firstName || dto.displayName || `${dto.provider}_User`,
+            lastName: dto.lastName,
+            telegramUsername: dto.telegramUsername,
+            languageCode: dto.languageCode || 'en',
+            photoUrl: dto.avatarUrl,
+            state: UserState.NEW,
+            lastActiveAt: new Date(),
+            lastLoginAt: new Date(),
+            loginCount: 1,
+          },
+        });
+
+        // 3. Create bound ChannelIdentity
+        const channelIdentity = await tx.channelIdentity.create({
+          data: {
+            identityId: identity.id,
+            provider: dto.provider,
+            identifier: normalizedId,
+            ...(isTelegram && normalizedId && { telegramId: normalizedId }),
+            verified: true,
+            metadata: dto.metadata || {},
+          },
+        });
+
+        // 4. Initialize Domain Subsystems with userId = identity.id
+        await tx.financialAccount.create({
+          data: {
+            userId: user.id,
+            ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
+            status: 'ACTIVE',
+            activatedAt: new Date(),
+          },
+        });
+
+        await tx.onboardingProgress.create({
+          data: {
+            userId: user.id,
+            ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
+            currentStep: 'welcome',
+            stepsCompleted: [],
+          },
+        });
+
+        const refCodeStr = `TITAN_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        await tx.referralCode.create({
+          data: {
+            userId: user.id,
+            ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
+            code: refCodeStr,
+            metadata: { generatedAt: new Date().toISOString(), provider: dto.provider },
+          },
+        });
+
+        await tx.userTrustProfile.create({
+          data: {
+            userId: user.id,
+            ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
+            trustScore: 50,
+            completedSettlements: 0,
+            failedSettlements: 0,
+            successRate: 100.0,
+            accountAgeDays: 0,
+            verificationStatus: 'UNVERIFIED',
+          },
+        });
+
+        await tx.userLevelRecord.create({
+          data: {
+            userId: user.id,
+            ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
+            currentLevel: 'NEW',
+          },
+        });
+
+        await tx.notificationPreference.create({
+          data: {
+            userId: user.id,
+            ...(telegramUserIdBig && { telegramUserId: telegramUserIdBig }),
+            telegramEnabled: isTelegram,
+            inAppEnabled: true,
+            marketingEnabled: false,
+          },
+        });
+
+        if (this.auditService) {
+          await this.auditService.createWithClient(tx, {
+            telegramUserId: telegramUserIdBig || undefined,
+            eventType: AuditEventType.USER_CREATED,
+            description: `Identity created via ${dto.provider}:${normalizedId}`,
+            metadata: { provider: dto.provider, identifier: normalizedId, userId: user.id },
+          });
+        }
+
+        this.logger.log(`Created new Titan Identity ${identity.id} via channel ${dto.provider}:${normalizedId}`);
+
+        return {
+          userId: user.id,
+          universalIdentityId: identity.id,
+          channel: dto.provider,
+          channelIdentityId: channelIdentity.id,
+          providerSubject: normalizedId,
+          assuranceLevel: isTelegram || dto.provider === IdentityProvider.WHATSAPP ? 'MEDIUM' : 'LOW',
+          role: 'USER',
+          userState: user.state,
+          telegramUserId: telegramUserIdBig || undefined,
+        };
+      });
+    } catch (err: any) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        this.logger.warn(`Concurrent registration race detected for ${dto.provider}:${normalizedId}. Re-resolving existing identity.`);
+        const winner = await this.resolveByChannel(dto.provider, normalizedId);
+        if (winner && winner.user) {
+          return {
+            userId: winner.user.id,
+            universalIdentityId: winner.identity.id,
+            channel: dto.provider,
+            channelIdentityId: winner.channelIdentity.id,
+            providerSubject: normalizedId,
+            assuranceLevel: 'MEDIUM',
+            role: 'USER',
+            userState: winner.user.state,
+            telegramUserId: winner.user.telegramUserId ? winner.user.telegramUserId : undefined,
+          };
+        }
       }
-
-      this.logger.log(`Created new Titan Identity ${identity.id} via channel ${dto.provider}:${normalizedId}`);
-
-      return {
-        userId: user.id,
-        universalIdentityId: identity.id,
-        channel: dto.provider,
-        channelIdentityId: channelIdentity.id,
-        providerSubject: normalizedId,
-        assuranceLevel: isTelegram || dto.provider === IdentityProvider.WHATSAPP ? 'MEDIUM' : 'LOW',
-        role: 'USER',
-        userState: user.state,
-        telegramUserId: telegramUserIdBig || undefined,
-      };
-    });
+      throw err;
+    }
   }
 
   /**

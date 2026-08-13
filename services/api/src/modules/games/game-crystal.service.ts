@@ -19,33 +19,47 @@ export class GameCrystalService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getOrCreateAccount(
-    telegramUserId: bigint,
-    client: TxClient = this.prisma,
-  ) {
-    return client.crystalAccount.upsert({
-      where: { telegramUserId },
-      create: { telegramUserId },
-      update: {},
+  async getOrCreateAccount(userKey: bigint | string, client: TxClient = this.prisma) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await client.user.findUnique({ where: { id: userKey as string } });
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      user = await client.user.findUnique({ where: { telegramUserId } });
+    }
+
+    if (!user) throw new BadRequestException('USER_NOT_FOUND');
+
+    let existing = await client.crystalAccount.findFirst({
+      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
+    });
+
+    if (existing) return existing;
+
+    return client.crystalAccount.create({
+      data: {
+        userId: user.id,
+        telegramUserId: user.telegramUserId || BigInt(0),
+        balance: 100,
+      },
     });
   }
 
-  async getAccount(telegramUserId: bigint) {
-    const account = await this.prisma.crystalAccount.findUnique({
-      where: { telegramUserId },
-    });
-    if (account) return account;
-    return this.getOrCreateAccount(telegramUserId);
+  async getAccount(userKey: bigint | string) {
+    return this.getOrCreateAccount(userKey);
   }
 
-  async getBalance(telegramUserId: bigint): Promise<number> {
-    const account = await this.getAccount(telegramUserId);
+  async getBalance(userKey: bigint | string): Promise<number> {
+    const account = await this.getAccount(userKey);
     return account.balance;
   }
 
-  async getTransactions(telegramUserId: bigint, limit = 50, offset = 0) {
+  async getTransactions(userKey: bigint | string, limit = 50, offset = 0) {
+    const account = await this.getAccount(userKey);
     return this.prisma.crystalTransaction.findMany({
-      where: { telegramUserId },
+      where: { OR: [{ userId: account.userId }, { telegramUserId: account.telegramUserId }] },
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,

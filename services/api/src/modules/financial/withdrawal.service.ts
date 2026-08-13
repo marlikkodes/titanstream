@@ -300,16 +300,26 @@ export class WithdrawalService {
     return failed;
   }
 
-  async getUserWithdrawalHistory(telegramUserId: bigint, limit = 50, offset = 0) {
+  async getUserWithdrawalHistory(userKey: bigint | string, limit = 50, offset = 0) {
+    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let whereClause: any;
+
+    if (isUuid) {
+      whereClause = { userId: userKey as string };
+    } else {
+      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+      whereClause = { telegramUserId };
+    }
+
     const [items, total] = await Promise.all([
       this.prisma.settlementSession.findMany({
-        where: { telegramUserId },
+        where: whereClause,
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset,
       }),
       this.prisma.settlementSession.count({
-        where: { telegramUserId },
+        where: whereClause,
       }),
     ]);
 
