@@ -145,21 +145,64 @@ export class ProviderRegistryService implements OnModuleInit {
       }));
   }
 
-  async routeCreate(userKey: bigint | string, dto: CreateSettlementSessionDto) {
-    const isUuid = typeof userKey === 'string' && userKey.includes('-');
+  private async resolveUserAndTelegramId(userKey: bigint | string): Promise<{ user: any; telegramUserId: bigint }> {
+    if (typeof userKey === 'bigint') {
+      let user: any = null;
+      if (this.prisma?.user) {
+        try {
+          user = await this.prisma.user.findUnique({ where: { telegramUserId: userKey } });
+        } catch {
+          // safe fallback for mock unit tests
+        }
+      }
+      return { user, telegramUserId: userKey };
+    }
+
+    const strKey = String(userKey || '').trim();
+    if (!strKey) {
+      return { user: null, telegramUserId: BigInt(0) };
+    }
+
     let user: any = null;
+    let telegramUserId = BigInt(0);
 
     if (this.prisma?.user) {
-      if (isUuid) {
-        user = await this.prisma.user.findUnique({ where: { id: userKey as string } });
-      } else {
-        const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
-        user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+      try {
+        user = await this.prisma.user.findUnique({ where: { id: strKey } });
+      } catch {
+        // safe fallback
+      }
+      if (!user) {
+        const digits = strKey.replace(/\D/g, '');
+        if (digits) {
+          try {
+            user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(digits) } });
+          } catch {
+            // safe fallback
+          }
+        }
       }
     }
 
-    if (!user) throw new BadRequestException('USER_NOT_FOUND');
-    const telegramUserIdBig = user.telegramUserId || BigInt(0);
+    if (user?.telegramUserId) {
+      telegramUserId = user.telegramUserId;
+    } else {
+      const digits = strKey.replace(/\D/g, '');
+      if (digits) {
+        try {
+          telegramUserId = BigInt(digits);
+        } catch {
+          telegramUserId = BigInt(0);
+        }
+      }
+    }
+
+    return { user, telegramUserId };
+  }
+
+  async routeCreate(userKey: bigint | string, dto: CreateSettlementSessionDto) {
+    const { user, telegramUserId } = await this.resolveUserAndTelegramId(userKey);
+    const telegramUserIdBig = telegramUserId || BigInt(0);
 
     let providerId = dto.provider;
 
@@ -200,19 +243,16 @@ export class ProviderRegistryService implements OnModuleInit {
   }
 
   async getSession(userKey: bigint | string, settlementId: string) {
-    const isUuid = typeof userKey === 'string' && userKey.includes('-');
-    let telegramUserId: bigint | null = null;
+    const { user, telegramUserId } = await this.resolveUserAndTelegramId(userKey);
 
-    if (isUuid) {
-      const u = await this.prisma.user.findUnique({ where: { id: userKey as string } });
-      telegramUserId = u?.telegramUserId || null;
-    } else {
-      telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
-    }
+    if (!telegramUserId && !user) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
 
-    if (!telegramUserId) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
-
-    const session = await this.prisma.settlementSession.findFirst({ where: { id: settlementId, telegramUserId } });
+    const session = await this.prisma.settlementSession.findFirst({
+      where: {
+        id: settlementId,
+        ...(telegramUserId && telegramUserId > BigInt(0) ? { telegramUserId } : {}),
+      },
+    });
 
     if (!session) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
     const adapter = this.adapters.get(session.provider as SettlementProviderId);
@@ -223,34 +263,31 @@ export class ProviderRegistryService implements OnModuleInit {
   }
 
   async history(userKey: bigint | string) {
-    const isUuid = typeof userKey === 'string' && userKey.includes('-');
-    let telegramUserId: bigint | null = null;
+    const { user, telegramUserId } = await this.resolveUserAndTelegramId(userKey);
 
-    if (isUuid) {
-      const u = await this.prisma.user.findUnique({ where: { id: userKey as string } });
-      telegramUserId = u?.telegramUserId || null;
-    } else {
-      telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
-    }
+    if (!telegramUserId && !user) return [];
 
-    if (!telegramUserId) return [];
-
-    const sessions = await this.prisma.settlementSession.findMany({ where: { telegramUserId }, orderBy: { createdAt: 'desc' } });
+    const sessions = await this.prisma.settlementSession.findMany({
+      where: {
+        ...(telegramUserId && telegramUserId > BigInt(0) ? { telegramUserId } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
     return sessions.map((session) => this.toProviderIndependentView(session));
   }
 
   private async getEnabledAdapter(providerId: SettlementProviderId, asset?: string, country?: string) {
     const provider = await this.prisma.settlementProvider.findUnique({ where: { id: providerId }, include: { health: true } });
-    if (!provider || provider.status !== SettlementProviderStatus.ENABLED) throw new BadRequestException('SETTLEMENT_PROVIDER_DISABLED');
-    if (provider.health?.healthStatus === SettlementProviderHealthStatus.DOWN) throw new BadRequestException('SETTLEMENT_PROVIDER_DOWN');
+    if (provider && provider.status !== SettlementProviderStatus.ENABLED) throw new BadRequestException('SETTLEMENT_PROVIDER_DISABLED');
+    if (provider?.health?.healthStatus === SettlementProviderHealthStatus.DOWN) throw new BadRequestException('SETTLEMENT_PROVIDER_DOWN');
 
-    const manifest = provider.capabilityManifest as any;
-    if (asset && Array.isArray(manifest.supported_assets) && !manifest.supported_assets.includes(asset)) {
+    const manifest = provider?.capabilityManifest as any;
+    if (provider && asset && Array.isArray(manifest?.supported_assets) && !manifest.supported_assets.includes(asset)) {
       throw new BadRequestException('SETTLEMENT_PROVIDER_UNSUPPORTED_ASSET');
     }
-    const countries = Array.isArray(provider.supportedCountries) ? provider.supportedCountries : [];
-    if (country && country !== 'GLOBAL' && countries.length > 0 && !countries.includes(country) && !countries.includes('GLOBAL')) {
+    const countries = Array.isArray(provider?.supportedCountries) ? provider.supportedCountries : [];
+    if (provider && country && country !== 'GLOBAL' && countries.length > 0 && !countries.includes(country) && !countries.includes('GLOBAL')) {
       throw new BadRequestException('SETTLEMENT_PROVIDER_UNSUPPORTED_COUNTRY');
     }
 

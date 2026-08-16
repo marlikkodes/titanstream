@@ -18,6 +18,7 @@ describe('Pesapal End-to-End Integration Flow', () => {
 
   beforeEach(async () => {
     mockPrisma = {
+      $transaction: jest.fn().mockImplementation((cb) => cb(mockPrisma)),
       settlementSession: {
         create: jest.fn(),
         findUnique: jest.fn(),
@@ -83,7 +84,7 @@ describe('Pesapal End-to-End Integration Flow', () => {
       mobileMoneyNetwork: 'PESAPAL',
     };
 
-    const fakeSession = {
+    const fakeSessionInitial = {
       id: 'sess_e2e_1',
       telegramUserId,
       provider: SettlementProviderId.PESAPAL,
@@ -95,11 +96,17 @@ describe('Pesapal End-to-End Integration Flow', () => {
       country: 'KE',
       status: SettlementStatus.WAITING_FOR_PAYMENT,
       expiresAt: new Date(),
+      providerMetadata: {},
+    };
+
+    const fakeSessionWithOrder = {
+      ...fakeSessionInitial,
       providerMetadata: { orderTrackingId: 'order_trk_e2e', redirectUrl: 'https://cyb3r.pesapal.com/pesapalv3/checkout', paymentAmount: 50, paymentCurrency: 'KES' },
     };
 
-    mockPrisma.settlementSession.create.mockResolvedValue(fakeSession);
-    mockPrisma.settlementSession.update.mockResolvedValue(fakeSession);
+    mockPrisma.settlementSession.create.mockResolvedValue(fakeSessionInitial);
+    mockPrisma.settlementSession.update.mockResolvedValue(fakeSessionWithOrder);
+    mockPrisma.settlementSession.findUnique.mockResolvedValue(fakeSessionWithOrder);
 
     // Step 1: User creates settlement session
     const createdSession = await provider.createSettlement(telegramUserId, dto);
@@ -107,10 +114,10 @@ describe('Pesapal End-to-End Integration Flow', () => {
     expect(createdSession.orderTrackingId).toBe('order_trk_e2e');
 
     // Step 2: Pesapal sends IPN notification to Controller
-    mockPrisma.settlementSession.findFirst.mockResolvedValue(fakeSession);
+    mockPrisma.settlementSession.findFirst.mockResolvedValue(fakeSessionWithOrder);
     mockPrisma.settlementSession.updateMany.mockResolvedValue({ count: 1 });
     mockPrisma.settlementSession.findUnique.mockResolvedValue({
-      ...fakeSession,
+      ...fakeSessionWithOrder,
       status: SettlementStatus.COMPLETED,
     });
 
@@ -130,7 +137,8 @@ describe('Pesapal End-to-End Integration Flow', () => {
         operationType: 'SYSTEM_ALLOCATION',
         amount: '50',
         idempotencyKey: 'pesapal_settlement_sess_e2e_1',
-      })
+      }),
+      expect.anything(),
     );
   });
 });

@@ -63,6 +63,10 @@ export interface PesapalTransactionStatusResponse {
   confirmation_code?: string;
   order_tracking_id?: string;
   payment_status_description?: 'Completed' | 'Failed' | 'Pending' | 'Reversal' | string;
+  description?: string;
+  payment_account?: string;
+  call_back_url?: string;
+  payment_core_status?: string;
   status_code?: number; // 1 = COMPLETED, 2 = FAILED, 0 = PENDING, 3 = REVERSED
   merchant_reference?: string;
   currency?: string;

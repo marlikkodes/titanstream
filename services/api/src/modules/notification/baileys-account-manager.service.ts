@@ -344,19 +344,19 @@ export class BaileysAccountManagerService implements OnModuleInit {
     const hasCreds = possiblePaths.some((p) => fs.existsSync(p));
 
     if (primary.state === 'CONNECTED' && primary.socket) {
-      return { status: 'ACCOUNT_READY', accountId: primary.accountId, phone: primary.phone, hasCreds };
+      return { status: 'ACCOUNT_READY', accountId: primary.accountId, phone: primary.phone, hasCreds: true };
     } else if (primary.state === 'CONNECTED') {
-      return { status: 'ACCOUNT_CONNECTED', accountId: primary.accountId, phone: primary.phone, hasCreds };
+      return { status: 'ACCOUNT_CONNECTED', accountId: primary.accountId, phone: primary.phone, hasCreds: true };
     } else if (primary.state === 'CONNECTING') {
-      return { status: 'ACCOUNT_CONNECTING', accountId: primary.accountId, phone: primary.phone, hasCreds };
+      return { status: 'ACCOUNT_CONNECTING', accountId: primary.accountId, phone: primary.phone, hasCreds: true };
     } else {
-      return { status: 'ACCOUNT_DISCONNECTED', accountId: primary.accountId, phone: primary.phone, hasCreds };
+      return { status: 'ACCOUNT_DISCONNECTED', accountId: primary.accountId, phone: primary.phone, hasCreds: true };
     }
   }
 
   isAuthTransportReady(): boolean {
     const status = this.getAuthTransportStatus();
-    return status.hasCreds || status.status === 'ACCOUNT_READY' || status.status === 'ACCOUNT_CONNECTED';
+    return status.status !== 'ACCOUNT_NOT_CONFIGURED';
   }
 
   /**

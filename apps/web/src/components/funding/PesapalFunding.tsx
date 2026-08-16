@@ -114,6 +114,14 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
       try {
         const updatedSession = await fundingService.getSessionStatus(session.settlementId);
         setSession(updatedSession);
+        if (updatedSession.status === 'COMPLETED') {
+          try {
+            const walletStore = (await import('../../store/useWalletStore')).useWalletStore;
+            walletStore.getState().fetchWalletBalances();
+          } catch {
+            // safe fallback
+          }
+        }
       } catch (err) {
         console.warn('Failed to poll settlement status:', err);
       }
@@ -249,7 +257,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
 
       {!session ? (
         /* Form View */
-        <div className="space-y-4">
+        <div className="space-y-4 pb-6">
           <div className="p-4 rounded-2xl glass-panel border border-white/10 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-extrabold text-text-primary block">
@@ -397,17 +405,23 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
             </select>
           </div>
 
-          {/* Method Info */}
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2.5 text-xs text-text-tertiary">
+          {/* Method Info & Rail Copy */}
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3 text-xs text-text-tertiary">
             {activePaymentMethod === 'CARD' ? (
               <>
-                <CreditCard size={16} className="text-purple-400 shrink-0" />
-                <span>Pay securely with Visa or Mastercard</span>
+                <CreditCard size={18} className="text-purple-400 shrink-0" />
+                <div>
+                  <span className="font-extrabold text-text-primary block">Card Payment</span>
+                  <span className="text-[11px] text-text-tertiary">Pay securely with Visa or Mastercard</span>
+                </div>
               </>
             ) : (
               <>
-                <Smartphone size={16} className="text-usdt-green shrink-0" />
-                <span>Pay securely with Mobile Money ({activeNetwork === 'AIRTEL' ? 'Airtel Money' : 'MTN Mobile Money'})</span>
+                <Smartphone size={18} className="text-usdt-green shrink-0" />
+                <div>
+                  <span className="font-extrabold text-text-primary block">Mobile Money</span>
+                  <span className="text-[11px] text-text-tertiary">Pay with MTN or Airtel Mobile Money</span>
+                </div>
               </>
             )}
           </div>
@@ -429,12 +443,12 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
             {isLoading ? (
               <>
                 <div className="w-4 h-4 border-2 border-app-bg border-t-transparent rounded-full animate-spin" />
-                <span>Creating Session...</span>
+                <span>Preparing Secure Checkout...</span>
               </>
             ) : (
               <>
                 <CreditCard size={18} />
-                <span>Proceed to Checkout</span>
+                <span>{paymentMethod === 'CARD' ? 'Continue to Card Checkout' : 'Continue to Mobile Money Checkout'}</span>
               </>
             )}
           </button>
@@ -578,15 +592,15 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                   {session.status === 'VERIFYING'
                     ? 'Verifying Payment'
                     : activePaymentMethod === 'CARD'
-                    ? 'Secure Card Checkout'
-                    : 'Mobile Money Payment'}
+                    ? 'Card Checkout Ready'
+                    : 'Mobile Money Checkout Ready'}
                 </h3>
                 <p className="text-xs text-text-tertiary mt-1">
                   {session.status === 'VERIFYING'
                     ? 'Payment received. Verifying transaction details...'
                     : activePaymentMethod === 'CARD'
-                    ? 'Your secure checkout page is ready. Complete your payment on the secure portal below.'
-                    : 'Click Continue to Secure Checkout below to authorize your payment via Airtel Money or MTN Mobile Money.'}
+                    ? 'Your secure payment page is ready. Continue to enter your card details and authorize payment.'
+                    : 'Your secure payment page is ready. Continue to the secure payment page to select MTN or Airtel Mobile Money and authorize the payment on your phone.'}
                 </p>
               </div>
 

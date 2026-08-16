@@ -161,38 +161,42 @@ export class PesapalProvider implements SettlementProvider {
       `[PesapalProvider] Rate locked: ${dto.requestedAmount} USDT × ${authoritativeRate} = ${paymentAmount} ${paymentCurrency} (source=${lockedRate.source})`,
     );
 
+    const sessionData = {
+      telegramUserId,
+      provider: SettlementProviderId.PESAPAL,
+      asset: dto.asset,
+      requestedAmount: new Prisma.Decimal(dto.requestedAmount),
+      expectedCryptoAmount: new Prisma.Decimal(dto.expectedCryptoAmount),
+      exchangeRate: new Prisma.Decimal(authoritativeRate.toString()),
+      country,
+      mobileMoneyNetwork: dto.paymentNetwork || dto.mobileMoneyNetwork || 'MOBILE_MONEY',
+      referenceCode,
+      status: initialStatus,
+      expiresAt,
+      providerMetadata: {
+        provider: SettlementProviderId.PESAPAL,
+        paymentMethod: dto.paymentMethod || (dto.mobileMoneyNetwork?.includes('CARD') ? 'CARD' : 'MOBILE_MONEY'),
+        requiresAdminApproval,
+        expectedCryptoUsd,
+        riskCode: riskResult.riskCode || null,
+        approvedAmount: dto.requestedAmount,
+        approvedAsset: dto.asset,
+        approvedCountry: country,
+        // ── Financial snapshot locked at session creation ──
+        paymentCurrency,
+        paymentAmount,
+        currencySymbol,
+        exchangeRateUsed: authoritativeRate,
+        exchangeRateSource: lockedRate.source,
+        exchangeRateTimestamp: lockedRate.rateTimestamp,
+        exchangeRateBaseRate: lockedRate.baseRate,
+        exchangeRateAppliedRate: lockedRate.appliedRate,
+      },
+    };
+
     const session = await this.prisma.settlementSession.create({
       data: {
-        telegramUserId,
-        provider: SettlementProviderId.PESAPAL,
-        asset: dto.asset,
-        requestedAmount: new Prisma.Decimal(dto.requestedAmount),
-        expectedCryptoAmount: new Prisma.Decimal(dto.expectedCryptoAmount),
-        exchangeRate: new Prisma.Decimal(authoritativeRate.toString()),
-        country,
-        mobileMoneyNetwork: dto.paymentNetwork || dto.mobileMoneyNetwork || 'MOBILE_MONEY',
-        referenceCode,
-        status: initialStatus,
-        expiresAt,
-        providerMetadata: {
-          provider: SettlementProviderId.PESAPAL,
-          paymentMethod: dto.paymentMethod || (dto.mobileMoneyNetwork?.includes('CARD') ? 'CARD' : 'MOBILE_MONEY'),
-          requiresAdminApproval,
-          expectedCryptoUsd,
-          riskCode: riskResult.riskCode || null,
-          approvedAmount: dto.requestedAmount,
-          approvedAsset: dto.asset,
-          approvedCountry: country,
-          // ── Financial snapshot locked at session creation ──
-          paymentCurrency,
-          paymentAmount,
-          currencySymbol,
-          exchangeRateUsed: authoritativeRate,
-          exchangeRateSource: lockedRate.source,
-          exchangeRateTimestamp: lockedRate.rateTimestamp,
-          exchangeRateBaseRate: lockedRate.baseRate,
-          exchangeRateAppliedRate: lockedRate.appliedRate,
-        },
+        ...sessionData,
         events: {
           create: [
             {
@@ -226,6 +230,7 @@ export class PesapalProvider implements SettlementProvider {
     }
 
     const reloaded = await this.load(session.id);
+
     return {
       ...this.toProviderIndependentView(reloaded),
       payUrl: payUrl || (reloaded.providerMetadata as any)?.redirectUrl || null,
@@ -721,12 +726,19 @@ export class PesapalProvider implements SettlementProvider {
     }, { timeout: 15000, maxWait: 10000 });
 
     if (result === null) {
-      return this.toProviderIndependentView(await this.load(settlementId));
+      const currentSession = await this.load(settlementId);
+      return this.toProviderIndependentView(currentSession);
     }
 
     // Event emission is fire-and-forget, outside the transaction
-    await this.emitSettlementEvent(settlementId, SettlementEventType.SettlementCompleted, { reference });
-    return this.toProviderIndependentView(await this.load(settlementId));
+    try {
+      await this.emitSettlementEvent(settlementId, SettlementEventType.SettlementCompleted, { reference });
+    } catch (err) {
+      // Ignore
+    }
+
+    const finalSession = await this.load(settlementId);
+    return this.toProviderIndependentView(finalSession);
   }
 
   private async close(settlementId: string, status: SettlementStatus, eventType: SettlementEventType, payload: Record<string, unknown> = {}) {

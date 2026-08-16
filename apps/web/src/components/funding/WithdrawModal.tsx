@@ -122,13 +122,13 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 select-none overflow-y-auto">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 pb-24 sm:pb-8 select-none overflow-y-auto">
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-          className="w-full max-w-md bg-app-bg border border-white/10 rounded-3xl p-5 shadow-2xl max-h-[85vh] sm:max-h-[90vh] overflow-y-auto my-auto"
+          className="w-full max-w-md bg-app-bg border border-white/10 rounded-3xl p-4 sm:p-5 pb-6 shadow-2xl max-h-[80vh] sm:max-h-[88vh] overflow-y-auto my-auto"
         >
           {/* Top Bar */}
           <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
