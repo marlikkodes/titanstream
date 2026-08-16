@@ -13,7 +13,7 @@ export class ReadinessController {
   @Get(['', 'status'])
   @ApiOperation({ summary: 'Get current readiness score and status' })
   async getReadiness(@CanonicalUserId() userId: string) {
-    return this.readinessService.getReadiness(userId);
+    return this.readinessService.getReadinessScore(userId);
   }
 
   @Post('calculate')

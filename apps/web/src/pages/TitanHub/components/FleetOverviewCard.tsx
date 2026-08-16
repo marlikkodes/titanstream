@@ -21,12 +21,13 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
   const { userMachines, ownedTierCodes, baseSpeedGhs } = useMiningStore();
   const { ownerships } = useMachineOwnershipStore();
 
-  const totalMachinesCount = Math.max(1, ownedTierCodes.length);
-  const activeCount = Object.values(ownerships).filter((r) => r.status === 'RUNNING').length;
+  const safeOwnedTiers = Array.isArray(ownedTierCodes) ? ownedTierCodes : ['TS_TRIAL'];
+  const totalMachinesCount = Math.max(1, safeOwnedTiers.length);
+  const activeCount = Object.values(ownerships || {}).filter((r) => r?.status === 'RUNNING').length;
 
-  const machines = Object.values(ownerships);
+  const machines = Object.values(ownerships || {});
   const healthSum = machines.reduce((sum, machine) => {
-    switch (machine.status) {
+    switch (machine?.status) {
       case 'RUNNING':
       case 'PAUSED':
         return sum + 100;
@@ -93,7 +94,7 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
 
       {/* Selector pills for owned machines */}
       <div className="flex gap-2 items-center overflow-x-auto no-scrollbar pt-1">
-        {ownedTierCodes.map((tierCode) => {
+        {(Array.isArray(ownedTierCodes) ? ownedTierCodes : ['TS_TRIAL']).map((tierCode) => {
           const isSelected = selectedTierCode.toUpperCase() === tierCode.toUpperCase();
           const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === tierCode.toUpperCase()) || MACHINE_CATALOG[0];
           const rec = ownerships[tierCode.toUpperCase()];

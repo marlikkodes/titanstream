@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { growthService, type ReferralSummary } from '../services/growthService';
 import { useAuthStore } from './useAuthStore';
+import { generateReferralLink, extractReferralCode } from '../utils/referralUrl';
 
 interface ReferralItem {
   id: string;
@@ -25,6 +26,8 @@ interface ReferralState {
   earnedUsdt: number;
   earnedTon: number;
   referralLink: string;
+  webReferralLink: string;
+  telegramReferralLink: string;
   referralCode: string;
   referredBy: ReferredByInfo | null;
   referrals: ReferralItem[];
@@ -32,79 +35,127 @@ interface ReferralState {
   error: string | null;
 
   fetchReferrals: () => Promise<void>;
+  attachPendingReferral: () => Promise<void>;
   tickEarnings: (usdtDelta: number, tonDelta: number) => void;
 }
 
 const getFallbackReferralData = () => {
   const session = useAuthStore.getState().session;
-  const userId = session?.user?.telegramUserId || (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id || '1001';
-  const botUsername = (import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string) || 'titanstream_bot';
+  const rawId = session?.user?.telegramUserId || (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id || '1001';
+  const code = extractReferralCode(String(rawId));
+  const isTgApp = Boolean((window as any).Telegram?.WebApp?.initData);
+
+  const webLink = generateReferralLink(code, 'web');
+  const tgLink = generateReferralLink(code, 'telegram');
+
   return {
-    link: `https://t.me/${botUsername}?startapp=ref_${userId}`,
-    code: `ref_${userId}`,
+    code,
+    webLink,
+    tgLink,
+    primaryLink: isTgApp ? tgLink : webLink,
   };
 };
 
-export const useReferralStore = create<ReferralState>((set) => ({
-  invitedCount: 0,
-  computeBoost: 1.0,
-  earnedUsdt: 0,
-  earnedTon: 0,
-  referralLink: getFallbackReferralData().link,
-  referralCode: getFallbackReferralData().code,
-  referredBy: null,
-  referrals: [],
-  isLoading: false,
-  error: null,
+export const useReferralStore = create<ReferralState>((set, get) => {
+  const fallback = getFallbackReferralData();
 
-  fetchReferrals: async () => {
-    set({ isLoading: true, error: null });
-    const fallback = getFallbackReferralData();
+  return {
+    invitedCount: 0,
+    computeBoost: 1.0,
+    earnedUsdt: 0,
+    earnedTon: 0,
+    referralLink: fallback.primaryLink,
+    webReferralLink: fallback.webLink,
+    telegramReferralLink: fallback.tgLink,
+    referralCode: fallback.code,
+    referredBy: null,
+    referrals: [],
+    isLoading: false,
+    error: null,
 
-    try {
-      const summary: ReferralSummary = await growthService.getReferrals();
-      const boost = Number((1 + (summary.totalInvited || 0) * 0.02).toFixed(2));
+    fetchReferrals: async () => {
+      set({ isLoading: true, error: null });
+      const currentFallback = getFallbackReferralData();
 
-      const count = summary.totalInvited || 0;
       try {
-        const { useQuestStore } = await import('./useQuestStore');
-        useQuestStore.getState().syncReferralProgress(count);
-      } catch (e) {
-        // ignore circular import guard
+        const summary: ReferralSummary = await growthService.getReferrals();
+        const boost = Number((1 + (summary.totalInvited || 0) * 0.02).toFixed(2));
+
+        const count = summary.totalInvited || 0;
+        try {
+          const { useQuestStore } = await import('./useQuestStore');
+          useQuestStore.getState().syncReferralProgress(count);
+        } catch (e) {
+          // ignore circular import guard
+        }
+
+        const rawCode = summary.referralCode || currentFallback.code;
+        const cleanCode = extractReferralCode(rawCode);
+        const isTgApp = Boolean((window as any).Telegram?.WebApp?.initData);
+
+        const webLink = generateReferralLink(cleanCode, 'web');
+        const tgLink = generateReferralLink(cleanCode, 'telegram');
+        const primaryLink = isTgApp ? tgLink : webLink;
+
+        set({
+          invitedCount: count,
+          computeBoost: boost,
+          earnedUsdt: summary.totalEarnedUSDT || 0,
+          earnedTon: 0,
+          referralLink: primaryLink,
+          webReferralLink: webLink,
+          telegramReferralLink: tgLink,
+          referralCode: cleanCode,
+          referredBy: summary.referredBy || null,
+          referrals: (summary.referrals || []).map((r) => ({
+            id: r.id,
+            refereeId: r.refereeId,
+            refereeName: r.refereeName,
+            refereeUsername: r.refereeUsername,
+            status: r.status,
+            createdAt: r.createdAt,
+          })),
+          isLoading: false,
+        });
+
+        // Also trigger attach check if a pending referral exists in localStorage
+        get().attachPendingReferral();
+      } catch (err: any) {
+        console.warn('Failed to load referral data, using fallback link:', err?.message);
+        set({
+          referralLink: currentFallback.primaryLink,
+          webReferralLink: currentFallback.webLink,
+          telegramReferralLink: currentFallback.tgLink,
+          referralCode: currentFallback.code,
+          error: err?.message || 'Failed to load referral data',
+          isLoading: false,
+        });
       }
+    },
 
-      set({
-        invitedCount: count,
-        computeBoost: boost,
-        earnedUsdt: summary.totalEarnedUSDT || 0,
-        earnedTon: 0,
-        referralLink: summary.referralLink || fallback.link,
-        referralCode: summary.referralCode || fallback.code,
-        referredBy: summary.referredBy || null,
-        referrals: (summary.referrals || []).map((r) => ({
-          id: r.id,
-          refereeId: r.refereeId,
-          refereeName: r.refereeName,
-          refereeUsername: r.refereeUsername,
-          status: r.status,
-          createdAt: r.createdAt,
-        })),
-        isLoading: false,
-      });
-    } catch (err: any) {
-      console.warn('Failed to load referral data, using fallback link:', err?.message);
-      set({
-        referralLink: fallback.link,
-        referralCode: fallback.code,
-        error: err?.message || 'Failed to load referral data',
-        isLoading: false,
-      });
-    }
-  },
+    attachPendingReferral: async () => {
+      if (typeof window === 'undefined') return;
+      const pendingCode = localStorage.getItem('pending_referral_code') || sessionStorage.getItem('pending_referral_code');
+      if (!pendingCode) return;
 
-  tickEarnings: (usdtDelta, tonDelta) =>
-    set((state) => ({
-      earnedUsdt: state.earnedUsdt + usdtDelta,
-      earnedTon: state.earnedTon + tonDelta,
-    })),
-}));
+      try {
+        const cleanCode = extractReferralCode(pendingCode);
+        await growthService.attachReferral(cleanCode);
+        localStorage.removeItem('pending_referral_code');
+        sessionStorage.removeItem('pending_referral_code');
+        console.info(`[REFERRAL_ATTRIBUTION] Successfully attached referral code ${cleanCode}`);
+      } catch (err: any) {
+        console.warn('[REFERRAL_ATTRIBUTION] Referral attachment result:', err?.message || err);
+        // If already attached or invalid, clean up local key
+        localStorage.removeItem('pending_referral_code');
+        sessionStorage.removeItem('pending_referral_code');
+      }
+    },
+
+    tickEarnings: (usdtDelta, tonDelta) =>
+      set((state) => ({
+        earnedUsdt: state.earnedUsdt + usdtDelta,
+        earnedTon: state.earnedTon + tonDelta,
+      })),
+  };
+});

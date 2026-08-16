@@ -56,6 +56,7 @@ import { OperationsHqPage } from './pages/admin/operations-hq';
 import { IntelligencePage } from './pages/admin/intelligence';
 import { ReadinessPage } from './pages/admin/readiness';
 import { StepUpModal } from './components/StepUpModal';
+import { ReferralLanding } from './pages/ReferralLanding';
 
 // ─── Admin Routes (accessible without user auth) ─────────────────────────────
 
@@ -248,11 +249,22 @@ export function App() {
         }
       });
     }
-  }, [isAuthenticated, isCountrySet, setDetectedCountry, selectCountry, setCurrencyPreference, markCountrySelected]);
+  }, [isAuthenticated, isCountrySet]);
 
   // 1. Splash screen (always first)
   if (showSplash) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
+
+  // 1.5 Referral landing route (/ref/:code) - captured prior to auth gate
+  const isRefRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/ref/');
+  if (isRefRoute) {
+    return (
+      <Routes>
+        <Route path="/ref/:code" element={<ReferralLanding />} />
+        <Route path="*" element={<ReferralLanding />} />
+      </Routes>
+    );
   }
 
   // 2. Admin routes bypass AuthGate entirely (operator access)

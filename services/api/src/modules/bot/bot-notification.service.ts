@@ -270,4 +270,11 @@ export class BotNotificationService {
 
     return res.ok;
   }
+
+  async sendDirectMessage(telegramUserId: bigint, text: string): Promise<boolean> {
+    const res = await this.telegramClient.sendMessage(Number(telegramUserId), text, {
+      parse_mode: 'HTML',
+    });
+    return res.ok;
+  }
 }

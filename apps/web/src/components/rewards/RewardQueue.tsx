@@ -48,7 +48,8 @@ export const RewardQueue: React.FC<RewardQueueProps> = ({ compact = false }) => 
     useWalletStore.getState().fetchBalanceFromEngine();
   };
 
-  const claimableCount = missions.filter((m) => m.eligible).length;
+  const safeMissions = Array.isArray(missions) ? missions : [];
+  const claimableCount = safeMissions.filter((m) => m.eligible).length;
 
   return (
     <>
@@ -59,16 +60,16 @@ export const RewardQueue: React.FC<RewardQueueProps> = ({ compact = false }) => 
             <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">MISSIONS</h2>
           </div>
           <span className="text-[10px] font-mono font-bold text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-full">
-            {isLoading ? 'Syncing…' : `${claimableCount} ready · ${missions.length} total`}
+            {isLoading ? 'Syncing…' : `${claimableCount} ready · ${safeMissions.length} total`}
           </span>
         </div>
 
-        {isLoading && missions.length === 0 ? (
+        {isLoading && safeMissions.length === 0 ? (
           <div className="flex items-center justify-center gap-2 py-6 text-text-tertiary text-xs">
             <Loader2 size={14} className="animate-spin" />
             <span>Loading missions…</span>
           </div>
-        ) : missions.length === 0 ? (
+        ) : safeMissions.length === 0 ? (
           <div className="text-center py-6 px-4">
             <div className="text-2xl mb-2">🏗️</div>
             <div className="text-xs font-bold text-text-primary">No missions available right now</div>
@@ -79,7 +80,7 @@ export const RewardQueue: React.FC<RewardQueueProps> = ({ compact = false }) => 
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <AnimatePresence mode="popLayout">
-              {missions.map((mission, idx) => {
+              {safeMissions.map((mission, idx) => {
                 const pct = mission.progressPercent ?? (mission.requirement
                   ? Math.min(100, (mission.requirement.current / Math.max(1, mission.requirement.required)) * 100)
                   : 100);

@@ -24,6 +24,8 @@ export const FriendsScreen: React.FC = () => {
     computeBoost,
     earnedUsdt,
     referralLink,
+    webReferralLink,
+    telegramReferralLink,
     referralCode,
     referredBy,
     referrals,
@@ -35,16 +37,16 @@ export const FriendsScreen: React.FC = () => {
     fetchReferrals();
   }, [fetchReferrals]);
 
-  const linkToShare = referralLink || 'https://t.me/titanstream_bot?startapp=ref_1001';
+  const linkToShare = referralLink || webReferralLink;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(linkToShare);
-    showToast('Invite link copied to clipboard!', 'success');
+    showToast('Web referral link copied to clipboard!', 'success');
   };
 
   const handleShare = () => {
     const tg = window.Telegram?.WebApp;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(linkToShare)}&text=${encodeURIComponent('Join Titan Stream — earn money daily with easy mobile money payouts! 🚀')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(telegramReferralLink)}&text=${encodeURIComponent('Join Titan Stream — earn money daily with easy mobile money payouts! 🚀')}`;
     if (tg?.openTelegramLink) {
       tg.openTelegramLink(shareUrl);
     } else {

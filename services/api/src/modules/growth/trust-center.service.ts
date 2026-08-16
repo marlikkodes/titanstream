@@ -95,6 +95,8 @@ export class TrustCenterService {
       throw new Error(`User not found: ${userKey}`);
     }
 
+    const telegramUserId = user.telegramUserId;
+
     // Initialize trust profile if not existing
     let trustProfile = user.trustProfile;
     if (!trustProfile) {

@@ -289,8 +289,8 @@ enum AssetLicenseType {
 }
 
 model User {
-  id               String    @id @default(uuid()) @map("id")
-  telegramUserId   BigInt?   @unique @map("telegram_user_id")
+  telegramUserId   BigInt    @id @map("telegram_user_id")
+  id               String    @unique @default(uuid()) @map("id")
   telegramUsername String?   @map("telegram_username")
   firstName        String    @map("first_name")
   lastName         String?   @map("last_name")
@@ -353,6 +353,8 @@ model User {
   gameProfile               GameProfile?
   gamePlayerStats           GamePlayerStat[]
   gameRewardGrants          GameRewardGrant[]
+  financialAccountsByUserId FinancialAccount[] @relation("FinancialAccountByUserId")
+  assetBalancesByUserId     AssetBalance[]     @relation("AssetBalanceByUserId")
   gameChallengeCompletions  GameChallengeCompletion[]
   adminNotes                AdminNote[]
   assetLicenses             UserAssetLicense[]
@@ -1649,6 +1651,7 @@ model NotificationRecord {
   message        String              @map("message")
   channel        NotificationChannel @default(TELEGRAM) @map("channel")
   status         String              @default("SENT") @map("status")
+  idempotencyKey String?             @unique @map("idempotency_key")
   metadata       Json?               @map("metadata")
   createdAt      DateTime            @default(now()) @map("created_at")
 
@@ -1659,11 +1662,64 @@ model NotificationRecord {
   @@map("notifications")
 }
 
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  RETRYING
+}
+
+model NotificationOutbox {
+  id             String       @id @default(uuid()) @map("id")
+  eventId        String       @unique @map("event_id")
+  eventType      String       @map("event_type")
+  category       String       @default("INFORMATIONAL") @map("category")
+  priority       String       @default("NORMAL") @map("priority")
+  telegramUserId BigInt       @map("telegram_user_id")
+  correlationId  String?      @map("correlation_id")
+  payload        Json         @default("{}") @map("payload")
+  status         OutboxStatus @default(PENDING) @map("status")
+  attempts       Int          @default(0) @map("attempts")
+  maxAttempts    Int          @default(5) @map("max_attempts")
+  availableAt    DateTime     @default(now()) @map("available_at")
+  processedAt    DateTime?    @map("processed_at")
+  lastError      String?      @map("last_error")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@index([status, availableAt])
+  @@index([telegramUserId])
+  @@index([createdAt])
+  @@map("notification_outbox")
+}
+
+model BaileysAccount {
+  id              String    @id @default(uuid()) @map("id")
+  accountId       String    @unique @map("account_id")
+  phone           String    @unique @map("phone")
+  displayName     String    @map("display_name")
+  authFolder      String    @map("auth_folder")
+  state           String    @default("DISCONNECTED") @map("state")
+  healthState     String    @default("HEALTHY") @map("health_state")
+  isEnabled       Boolean   @default(true) @map("is_enabled")
+  isQuarantined   Boolean   @default(false) @map("is_quarantined")
+  pairingCode     String?   @map("pairing_code")
+  metrics         Json      @default("{}") @map("metrics")
+  lastConnectedAt DateTime? @map("last_connected_at")
+  lastMessageAt   DateTime? @map("last_message_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("baileys_accounts")
+}
+
 model NotificationPreference {
   id               String   @id @default(uuid()) @map("id")
   telegramUserId   BigInt   @unique @map("telegram_user_id")
   telegramEnabled  Boolean  @default(true) @map("telegram_enabled")
   inAppEnabled     Boolean  @default(true) @map("in_app_enabled")
+  whatsappEnabled  Boolean  @default(true) @map("whatsapp_enabled")
   marketingEnabled Boolean  @default(false) @map("marketing_enabled")
   eventPreferences Json     @default("{}") @map("event_preferences")
   createdAt        DateTime @default(now()) @map("created_at")

@@ -78,7 +78,9 @@ async function bootstrap() {
         cleanOrigin.endsWith('.tetherstream.app') ||
         cleanOrigin.endsWith('.titanstream.app') ||
         cleanOrigin.endsWith('.netlify.app') ||
-        cleanOrigin.endsWith('.railway.app')
+        cleanOrigin.endsWith('.railway.app') ||
+        cleanOrigin.endsWith('.ngrok-free.dev') ||
+        cleanOrigin.endsWith('.ngrok.io')
       ) {
         callback(null, true);
       } else {
@@ -87,7 +89,15 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Telegram-Init-Data', 'X-StepUp-Token', 'x-stepup-token', 'crypto-pay-api-signature'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Telegram-Init-Data',
+      'X-StepUp-Token',
+      'x-stepup-token',
+      'ngrok-skip-browser-warning',
+      'crypto-pay-api-signature',
+    ],
   });
 
   const config = new DocumentBuilder()
@@ -100,7 +110,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
   console.log(`TitanStream API running on port ${port} [v1.0.1]`);
   console.log(`Swagger docs at http://localhost:${port}/docs`);

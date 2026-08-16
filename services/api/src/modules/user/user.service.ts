@@ -92,7 +92,7 @@ export class UserService {
   async getTrustProfile(userKey: string | bigint) {
     const user = await this.getProfile(userKey);
     return this.prisma.userTrustProfile.findFirst({
-      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
+      where: { telegramUserId: user.telegramUserId || undefined },
     });
   }
 

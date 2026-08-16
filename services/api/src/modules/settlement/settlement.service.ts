@@ -20,6 +20,8 @@ const ACTIVE_STATUSES = [
   SettlementStatus.USDT_SENT,
 ];
 
+import { DurableOutboxService } from '../automation/durable-outbox.service';
+
 @Injectable()
 export class SettlementService {
   constructor(
@@ -29,6 +31,7 @@ export class SettlementService {
     private readonly orchestrator: FinancialOrchestratorService,
     private readonly eventBus: EventBusService,
     @Optional() @Inject(forwardRef(() => PlatformOperationsEngineService)) private readonly opsEngine?: PlatformOperationsEngineService,
+    @Optional() private readonly durableOutbox?: DurableOutboxService,
   ) {}
 
   async createCustomerSession(telegramUserId: bigint, dto: CreateSettlementSessionDto) {

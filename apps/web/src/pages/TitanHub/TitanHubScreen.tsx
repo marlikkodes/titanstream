@@ -21,6 +21,7 @@ import { MachineOwnersManualModal } from './components/MachineOwnersManualModal'
 import { MachineActivationModal } from './components/MachineActivationModal';
 import { MachineCertificateModal } from './components/MachineCertificateModal';
 import { FleetOverviewCard } from './components/FleetOverviewCard';
+import { formatCurrencyWithLocalFallback } from '../../store/useCountryStore';
 
 export const TitanHubScreen: React.FC = () => {
   const { fetchMiningState, fetchUserMachines, baseSpeedGhs, unclaimedBalance, isMachineOwned, isOverheated, coolerMultiplier, ownedTierCodes } = useMiningStore();
@@ -215,7 +216,7 @@ export const TitanHubScreen: React.FC = () => {
                 <CurrencyDisplay amount={unclaimedBalance} size="sm" showCurrencyLabel={true} /> Ready to Collect
               </div>
               <div className="text-[10px] text-text-tertiary">
-                Earned by your machines.
+                Min. collection: {formatCurrencyWithLocalFallback(3.0)} • Earned by your machines.
               </div>
             </div>
           </div>
@@ -493,7 +494,7 @@ export const TitanHubScreen: React.FC = () => {
       </motion.div>
 
       {/* SECTION 6: EVENTS */}
-      {events.length > 0 && (
+      {Array.isArray(events) && events.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}

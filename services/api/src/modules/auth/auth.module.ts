@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -10,11 +10,14 @@ import { requiredEnv } from '../../common/config/env.util';
 
 import { AuthVerificationService } from './auth-verification.service';
 import { IdentityModule } from '../identity/identity.module';
+import { NotificationModule } from '../notification/notification.module';
+import { WhatsappChallengeService } from './whatsapp-challenge.service';
 
 @Module({
   imports: [
     PrismaModule,
     IdentityModule,
+    forwardRef(() => NotificationModule),
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET || requiredEnv('JWT_SECRET', 'dev-jwt-secret'),
@@ -27,6 +30,7 @@ import { IdentityModule } from '../identity/identity.module';
     AuthService,
     WebAuthSessionService,
     AuthVerificationService,
+    WhatsappChallengeService,
     {
       provide: TelegramAuthService,
       useFactory: () => {
@@ -35,6 +39,6 @@ import { IdentityModule } from '../identity/identity.module';
       },
     },
   ],
-  exports: [AuthService, WebAuthSessionService, AuthVerificationService, JwtModule],
+  exports: [AuthService, WebAuthSessionService, AuthVerificationService, WhatsappChallengeService, JwtModule],
 })
 export class AuthModule {}

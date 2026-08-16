@@ -33,14 +33,13 @@ export class GameCrystalService {
     if (!user) throw new BadRequestException('USER_NOT_FOUND');
 
     let existing = await client.crystalAccount.findFirst({
-      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
+      where: { telegramUserId: user.telegramUserId || undefined },
     });
 
     if (existing) return existing;
 
     return client.crystalAccount.create({
       data: {
-        userId: user.id,
         telegramUserId: user.telegramUserId || BigInt(0),
         balance: 100,
       },
@@ -59,7 +58,7 @@ export class GameCrystalService {
   async getTransactions(userKey: bigint | string, limit = 50, offset = 0) {
     const account = await this.getAccount(userKey);
     return this.prisma.crystalTransaction.findMany({
-      where: { OR: [{ userId: account.userId }, { telegramUserId: account.telegramUserId }] },
+      where: { telegramUserId: account.telegramUserId },
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,

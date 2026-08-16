@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Query, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Query, Param, BadRequestException } from '@nestjs/common';
 import { JwtAuthGuard as AuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 import { ReferralService } from './referral.service';
@@ -42,18 +42,25 @@ export class GrowthController {
   }
 
   /**
-   * GET /growth/dashboard
-   * Production Growth Engine source of truth powered directly by Prisma queries.
+   * GET /growth/overview
+   * Consolidated growth metrics.
    */
-  @Get('dashboard')
-  async getGrowthDashboard(@CanonicalUserId() userId: string) {
+  @Get('overview')
+  async getOverview(@CanonicalUserId() userId: string) {
     const levelSummary = await this.userLevelService.getUserLevelSummary(userId as any);
     const referralSummary = await this.referralService.getUserReferralSummary(userId as any);
     const rewards = await this.rewardService.getUserRewards(userId as any);
 
+    const isUuid = userId.includes('-');
+    let telegramUserId: bigint | undefined = /^\d+$/.test(userId) ? BigInt(userId) : undefined;
+    if (isUuid) {
+      const u = await this.prisma.user.findUnique({ where: { id: userId } });
+      telegramUserId = u?.telegramUserId || undefined;
+    }
+
     // 1. Production count of completed settlements
     const completedSettlementsCount = await this.prisma.settlementSession.count({
-      where: { userId, status: 'COMPLETED' },
+      where: { telegramUserId, status: 'COMPLETED' },
     });
 
     // 2. Global verified transactions settled on system
@@ -76,7 +83,7 @@ export class GrowthController {
       take: 4,
     });
 
-    const realQueue = await this.rewardService.getAvailableRewards(telegramUserId);
+    const realQueue = await this.rewardService.getAvailableRewards(userId as any);
 
     const availableRewards = (realQueue.length > 0 ? realQueue : activeRules).map((item: any) => {
       const isClaimed = rewards.some(
@@ -161,9 +168,16 @@ export class GrowthController {
     const referralSummary = await this.referralService.getUserReferralSummary(userId as any);
     const rewards = await this.rewardService.getUserRewards(userId as any);
 
+    const isUuid = userId.includes('-');
+    let telegramUserId: bigint | undefined = /^\d+$/.test(userId) ? BigInt(userId) : undefined;
+    if (isUuid) {
+      const u = await this.prisma.user.findUnique({ where: { id: userId } });
+      telegramUserId = u?.telegramUserId || undefined;
+    }
+
     // Calculate total settlement volume
     const completedSettlements = await this.prisma.settlementSession.findMany({
-      where: { userId, status: 'COMPLETED' },
+      where: { telegramUserId, status: 'COMPLETED' },
       select: { expectedCryptoAmount: true },
     });
 
@@ -203,6 +217,21 @@ export class GrowthController {
   }
 
   /**
+   * POST /growth/referrals/attach
+   * Post-authentication web referral code attachment.
+   */
+  @Post('referrals/attach')
+  async attachReferral(
+    @CanonicalUserId() userId: string,
+    @Body('referralCode') referralCode: string,
+  ) {
+    if (!referralCode) {
+      throw new BadRequestException('referralCode is required');
+    }
+    return this.referralService.registerReferral(referralCode, userId as any);
+  }
+
+  /**
    * POST /growth/referral/link
    * Get or initialize referral code.
    */
@@ -218,9 +247,9 @@ export class GrowthController {
   @Get('rewards')
   async getUserRewards(@CanonicalUserId() userId: string) {
     const rewards = await this.rewardService.getUserRewards(userId as any);
-    return rewards.map((r) => ({
+    return rewards.map((r: any) => ({
       ...r,
-      userId: r.userId || userId,
+      userId,
       amount: r.amount.toString(),
     }));
   }
@@ -378,9 +407,9 @@ export class GrowthController {
 
     return {
       preferences,
-      notifications: records.map((n) => ({
+      notifications: records.map((n: any) => ({
         ...n,
-        userId: n.userId || userId,
+        userId,
       })),
     };
   }

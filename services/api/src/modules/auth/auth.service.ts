@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger, BadRequestException, Optional } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createHash, randomInt, timingSafeEqual } from 'crypto';
 import { IdentityProvider } from '@prisma/client';
@@ -9,6 +9,7 @@ import { IdentityMasterEngineService } from '../identity/identity-master.service
 import { UserState, AuditEventType } from '../../common/interfaces/user-state.enum';
 import { AuditService } from '../audit/audit.service';
 import { requiredEnv } from '../../common/config/env.util';
+import { BaileysService } from '../notification/baileys.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
     private readonly identityService: IdentityService,
     private readonly identityMasterEngine: IdentityMasterEngineService,
     private readonly auditService: AuditService,
+    @Optional() private readonly baileysService?: BaileysService,
   ) {}
 
   async authenticate(initData: string, ipAddress?: string, userAgent?: string) {
@@ -219,18 +221,16 @@ export class AuthService {
     );
 
     this.logAuth(traceId, 'jwt.issued', `userId=${identityContext.userId} telegramUserId=${identifierStr}`);
-    this.logAuth(traceId, 'auth.completed', `provider=${provider} isNewUser=${isNewUser}`);
+    this.logAuth(traceId, 'auth.completed', `provider=TELEGRAM`);
 
     return {
       accessToken,
       refreshToken,
-      user: this.sanitizeUser({ ...user, identityId: canonicalId }),
-      onboarding: {
-        currentStep: isNewUser ? 'welcome' : await this.getCurrentOnboardingStep(telegramUserIdBig),
-        isCompleted: user.state === UserState.ELIGIBLE_USER || user.state === UserState.ACTIVE_USER,
+      user: {
+        id: identityContext.userId,
+        identityId: identityContext.universalIdentityId,
+        state: identityContext.userState,
       },
-      readiness,
-      isNewUser,
       traceId,
     };
   }
@@ -386,12 +386,11 @@ export class AuthService {
 
   async getProfile(userKey: string | bigint) {
     try {
-      const isUuid = typeof userKey === 'string' && userKey.includes('-');
       let user: any = null;
 
-      if (isUuid) {
+      if (typeof userKey === 'string') {
         user = await this.prisma.user.findUnique({
-          where: { id: userKey as string },
+          where: { id: userKey },
           include: {
             onboardingProgress: true,
             educationCompletions: true,
@@ -399,10 +398,22 @@ export class AuthService {
             readinessScores: true,
           },
         });
-      } else {
-        const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+
+        if (!user && !isNaN(Number(userKey))) {
+          const telegramUserId = BigInt(userKey);
+          user = await this.prisma.user.findUnique({
+            where: { telegramUserId },
+            include: {
+              onboardingProgress: true,
+              educationCompletions: true,
+              userConsents: true,
+              readinessScores: true,
+            },
+          });
+        }
+      } else if (typeof userKey === 'bigint') {
         user = await this.prisma.user.findUnique({
-          where: { telegramUserId },
+          where: { telegramUserId: userKey },
           include: {
             onboardingProgress: true,
             educationCompletions: true,
@@ -424,7 +435,7 @@ export class AuthService {
       this.logger.warn(`[AUTH_FALLBACK] getProfile failed: ${err.message}`);
       return {
         user: {
-          telegramUserId: Number(telegramUserId),
+          telegramUserId: typeof userKey === 'bigint' ? Number(userKey) : undefined,
           telegramUsername: 'titanuser',
           firstName: 'Titan',
           lastName: 'User',
@@ -504,50 +515,92 @@ export class AuthService {
   }
 
   // ─── WhatsApp OTP Authentication ──────────────────────────────────────────
+  private inMemoryOtpMap = new Map<string, { otpHash: string; attempts: number; verified: boolean; expiresAt: Date; createdAt: Date }>();
 
   async requestWhatsAppOtp(phoneInput: string) {
     const traceId = this.createTraceId();
-    const phone = (phoneInput || '').replace(/[^\d+]/g, '');
+    const phone = this.identityMasterEngine.normalizeIdentifier(IdentityProvider.WHATSAPP, phoneInput);
     if (!phone || phone.length < 8) {
       throw new BadRequestException('INVALID_PHONE_NUMBER');
     }
 
     // Rate limiting: check recent active challenges in the last 1 minute
     const oneMinAgo = new Date(Date.now() - 60 * 1000);
-    const recent = await this.prisma.otpChallenge.findFirst({
-      where: { phone, createdAt: { gte: oneMinAgo } },
-    });
-    if (recent) {
-      return { success: true, message: 'If this number is eligible, a verification code will be sent.' };
+    try {
+      const recent = await this.prisma.otpChallenge.findFirst({
+        where: { phone, createdAt: { gte: oneMinAgo } },
+      });
+      if (recent) {
+        return { success: true, message: 'If this number is eligible, a verification code will be sent.' };
+      }
+    } catch {
+      const memRecent = this.inMemoryOtpMap.get(phone);
+      if (memRecent && memRecent.createdAt >= oneMinAgo && !memRecent.verified) {
+        return { success: true, message: 'If this number is eligible, a verification code will be sent.' };
+      }
     }
 
     // Generate cryptographically secure 6-digit OTP
     const code = String(randomInt(100000, 1000000));
     const otpHash = createHash('sha256').update(code).digest('hex');
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    await this.prisma.otpChallenge.create({
-      data: {
-        phone,
+    this.logger.log(`[DEV_WHATSAPP_OTP_CODE] OTP for ${phone}: ${code}`);
+
+    try {
+      await this.prisma.otpChallenge.create({
+        data: {
+          phone,
+          otpHash,
+          attempts: 0,
+          verified: false,
+          expiresAt,
+        },
+      });
+    } catch (dbErr: any) {
+      this.logger.warn(`[WHATSAPP_OTP:${traceId}] DB unreachable (${dbErr.message}). Storing OTP challenge in memory.`);
+      this.inMemoryOtpMap.set(phone, {
         otpHash,
         attempts: 0,
         verified: false,
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes TTL
-      },
-    });
+        expiresAt,
+        createdAt: new Date(),
+      });
+    }
 
-    this.logger.log(`[WHATSAPP_OTP:${traceId}] OTP generated for ${phone}. Code: ${code}`);
-    // Generic account enumeration prevention response
+    this.logger.log(`[WHATSAPP_OTP:${traceId}] OTP challenge created for ${phone}.`);
+
+    // Dispatch OTP over Baileys transport if available
+    if (this.baileysService) {
+      try {
+        await this.baileysService.sendOtpMessage(phone, code);
+      } catch (dispErr: any) {
+        this.logger.warn(`[WHATSAPP_OTP:${traceId}] Baileys dispatch issue: ${dispErr.message}`);
+      }
+    }
+
     return { success: true, message: 'If this number is eligible, a verification code will be sent.' };
   }
 
   async verifyWhatsAppOtp(phoneInput: string, code: string, ipAddress?: string, userAgent?: string) {
     const traceId = this.createTraceId();
-    const phone = (phoneInput || '').replace(/[^\d+]/g, '');
+    const phone = this.identityMasterEngine.normalizeIdentifier(IdentityProvider.WHATSAPP, phoneInput);
 
-    const challenge = await this.prisma.otpChallenge.findFirst({
-      where: { phone, verified: false, expiresAt: { gte: new Date() } },
-      orderBy: { createdAt: 'desc' },
-    });
+    let challenge: { id?: string; otpHash: string; attempts: number; verified: boolean; expiresAt: Date } | null = null;
+    let isMemory = false;
+
+    try {
+      challenge = await this.prisma.otpChallenge.findFirst({
+        where: { phone, verified: false, expiresAt: { gte: new Date() } },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch {
+      const mem = this.inMemoryOtpMap.get(phone);
+      if (mem && !mem.verified && mem.expiresAt >= new Date()) {
+        challenge = mem;
+        isMemory = true;
+      }
+    }
 
     if (!challenge) {
       throw new BadRequestException('INVALID_OR_EXPIRED_OTP');
@@ -561,34 +614,60 @@ export class AuthService {
     const isMatch = timingSafeEqual(Buffer.from(inputHash), Buffer.from(challenge.otpHash));
 
     if (!isMatch) {
-      await this.prisma.otpChallenge.update({
-        where: { id: challenge.id },
-        data: { attempts: { increment: 1 } },
-      });
+      if (!isMemory && challenge.id) {
+        try {
+          await this.prisma.otpChallenge.update({
+            where: { id: challenge.id },
+            data: { attempts: { increment: 1 } },
+          });
+        } catch {}
+      } else {
+        challenge.attempts += 1;
+      }
       throw new UnauthorizedException('INVALID_OTP');
     }
 
     // Mark challenge verified
-    await this.prisma.otpChallenge.update({
-      where: { id: challenge.id },
-      data: { verified: true },
-    });
+    if (!isMemory && challenge.id) {
+      try {
+        await this.prisma.otpChallenge.update({
+          where: { id: challenge.id },
+          data: { verified: true },
+        });
+      } catch {}
+    } else {
+      challenge.verified = true;
+    }
 
     // Authenticate / Register provider-neutrally via IdentityMasterEngine
-    const identityContext = await this.identityService.authenticate({
+    const identityContext = await this.identityMasterEngine.authenticate({
       provider: IdentityProvider.WHATSAPP,
       identifier: phone,
       displayName: `WhatsApp User (${phone.slice(-4)})`,
       metadata: { phone, verifiedAt: new Date().toISOString() },
+      ipAddress,
     });
 
-    const user = await this.prisma.user.findUnique({
+    let user: any = await this.prisma.user.findUnique({
       where: { id: identityContext.userId },
       include: { onboardingProgress: true },
-    });
+    }).catch(() => null);
 
     if (!user) {
-      throw new UnauthorizedException('FAILED_TO_RESOLVE_USER');
+      user = {
+        id: identityContext.userId,
+        identityId: identityContext.universalIdentityId,
+        telegramUserId: identityContext.telegramUserId,
+        firstName: `WhatsApp User (${phone.slice(-4)})`,
+        lastName: '',
+        telegramUsername: undefined,
+        photoUrl: undefined,
+        languageCode: 'en',
+        state: UserState.READY,
+        isReady: true,
+        createdAt: new Date(),
+        onboardingProgress: { currentStep: 'welcome', stepsCompleted: [] },
+      } as any;
     }
 
     const payload = {
@@ -616,9 +695,31 @@ export class AuthService {
         currentStep: user.onboardingProgress?.currentStep || 'welcome',
         isCompleted: user.state === UserState.ELIGIBLE_USER || user.state === UserState.ACTIVE_USER || user.state === UserState.READY,
       },
-      readiness: { isReady: true, score: 100 },
-      isNewUser: user.state === UserState.NEW,
-      traceId,
+    };
+  }
+
+  async createTokensForUser(userPayload: any) {
+    const payload = {
+      sub: userPayload.id,
+      titanUserId: userPayload.id,
+      userId: userPayload.id,
+      telegramUserId: userPayload.telegramUserId ? Number(userPayload.telegramUserId) : undefined,
+      provider: 'WHATSAPP',
+      state: userPayload.state || UserState.READY,
+      role: 'USER',
+    };
+
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || requiredEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret');
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refreshToken = this.jwtService.sign(
+      { sub: userPayload.id, userId: userPayload.id, telegramUserId: payload.telegramUserId, type: 'refresh' },
+      { expiresIn: '30d', secret: refreshSecret },
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      user: this.sanitizeUser(userPayload),
     };
   }
 
@@ -626,9 +727,8 @@ export class AuthService {
 
   async requestStepUpChallenge(userId: string) {
     const traceId = this.createTraceId();
-    const channel = await this.prisma.channelIdentity.findFirst({
-      where: { identityId: userId },
-    });
+    const context = await this.identityMasterEngine.getIdentityContext(userId);
+    const channel = context.channel;
 
     const code = String(randomInt(100000, 1000000));
     const otpHash = createHash('sha256').update(code).digest('hex');
@@ -643,8 +743,16 @@ export class AuthService {
       },
     });
 
-    this.logger.log(`[STEP_UP:${traceId}] Step-up challenge generated for user ${userId}. Code: ${code}`);
-    return { success: true, channel: channel?.provider || 'TELEGRAM', expiresAt: new Date(Date.now() + 300000) };
+    if (this.baileysService && (channel === IdentityProvider.WHATSAPP || channel === IdentityProvider.PHONE)) {
+      try {
+        await this.baileysService.sendOtpMessage(context.providerSubject, code);
+      } catch (err: any) {
+        this.logger.warn(`[STEP_UP:${traceId}] Failed to deliver step-up OTP via WhatsApp: ${err.message}`);
+      }
+    }
+
+    this.logger.log(`[STEP_UP:${traceId}] Step-up challenge generated for user ${userId}.`);
+    return { success: true, channel, expiresAt: new Date(Date.now() + 300000) };
   }
 
   async verifyStepUpChallenge(userId: string, code: string) {

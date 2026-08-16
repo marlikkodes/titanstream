@@ -59,12 +59,14 @@ export class GamesModule implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    try {
-      await this.catalogService.seedDefaults();
-      await this.eventService.seedDefaults();
-      await this.challengeService.seedDefaults();
-    } catch (err: any) {
-      this.logger.warn(`[GamesModule] Failed to seed game defaults: ${err?.message}`);
-    }
+    setImmediate(async () => {
+      try {
+        await this.catalogService.seedDefaults();
+        await this.eventService.seedDefaults();
+        await this.challengeService.seedDefaults();
+      } catch (err: any) {
+        this.logger.warn(`[GamesModule] Failed to seed game defaults: ${err?.message}`);
+      }
+    });
   }
 }

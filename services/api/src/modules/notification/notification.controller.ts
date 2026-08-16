@@ -14,7 +14,7 @@ export class NotificationController {
   @ApiOperation({ summary: 'Get in-app notifications for authenticated user' })
   async getNotifications(@CanonicalUserId() userId: string) {
     const records = await this.service.getNotificationsForUser(userId);
-    return records.map((r) => ({
+    return records.map((r: any) => ({
       id: r.id,
       userId: r.userId || userId,
       telegramUserId: r.telegramUserId ? r.telegramUserId.toString() : undefined,

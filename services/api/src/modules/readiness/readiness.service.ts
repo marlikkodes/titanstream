@@ -70,7 +70,7 @@ export class ReadinessService {
       'not_a_bank', 'rewards_not_guaranteed', 'may_lose_value',
       'withdrawal_terms', 'terms_of_service', 'restricted_jurisdiction',
     ];
-    const consentTypes = new Set(user.userConsents.map((c) => String(c.consentType)));
+    const consentTypes = new Set(user.userConsents.map((c: any) => String(c.consentType)));
     const allConsentsGiven = requiredConsentTypes.every((t) => consentTypes.has(t));
     if (allConsentsGiven) reasons.push('All required consents given');
     else barriers.push('Not all required consents have been recorded.');
@@ -88,7 +88,68 @@ export class ReadinessService {
 
     const isReady = barriers.length === 0 && overallScore >= 60;
 
-    const result: ReadinessResult = {
+    const telegramUserId = user.telegramUserId;
+    if (telegramUserId) {
+      await this.prisma.readinessScore.upsert({
+        where: { telegramUserId },
+        create: {
+          telegramUserId,
+          overallScore,
+          educationScore,
+          trustScore,
+          engagementScore,
+          riskScore,
+          isReady,
+          reasons,
+          barriers,
+          calculatedAt: new Date(),
+        },
+        update: {
+          overallScore,
+          educationScore,
+          trustScore,
+          engagementScore,
+          riskScore,
+          isReady,
+          reasons,
+          barriers,
+          calculatedAt: new Date(),
+        },
+      });
+
+      await this.prisma.readinessHistory.create({
+        data: {
+          telegramUserId,
+          overallScore,
+          educationScore,
+          trustScore,
+          engagementScore,
+          riskScore,
+          isReady,
+          reasons,
+          barriers,
+        },
+      });
+
+      await this.prisma.user.update({
+        where: { telegramUserId },
+        data: {
+          readinessScore: overallScore,
+          isReady,
+        },
+      });
+
+      await this.auditService.create({
+        telegramUserId,
+        eventType: isReady ? AuditEventType.USER_READY : AuditEventType.USER_NOT_READY,
+        description: isReady
+          ? `User is ready for platform actions (score: ${overallScore})`
+          : `User is not ready for platform actions (${barriers.length} barriers)`,
+        metadata: { overallScore, isReady, barriers, reasons },
+      });
+    }
+
+    return {
       overallScore,
       educationScore,
       trustScore,
@@ -98,83 +159,26 @@ export class ReadinessService {
       reasons,
       barriers,
     };
-
-    await this.prisma.readinessScore.upsert({
-      where: { telegramUserId },
-      create: {
-        telegramUserId,
-        overallScore,
-        educationScore,
-        trustScore,
-        engagementScore,
-        riskScore,
-        isReady,
-        reasons,
-        barriers,
-        calculatedAt: new Date(),
-      },
-      update: {
-        overallScore,
-        educationScore,
-        trustScore,
-        engagementScore,
-        riskScore,
-        isReady,
-        reasons,
-        barriers,
-        calculatedAt: new Date(),
-      },
-    });
-
-    await this.prisma.readinessHistory.create({
-      data: {
-        telegramUserId,
-        overallScore,
-        educationScore,
-        trustScore,
-        engagementScore,
-        riskScore,
-        isReady,
-        reasons,
-        barriers,
-      },
-    });
-
-    await this.prisma.user.update({
-      where: { telegramUserId },
-      data: {
-        readinessScore: overallScore,
-        isReady,
-      },
-    });
-
-    await this.auditService.create({
-      telegramUserId,
-      eventType: isReady ? AuditEventType.USER_READY : AuditEventType.USER_NOT_READY,
-      description: isReady
-        ? `User is ready for platform actions (score: ${overallScore})`
-        : `User is not ready (score: ${overallScore}). Barriers: ${barriers.join('; ')}`,
-      metadata: result,
-      source: 'readiness_service',
-    });
-
-    return result;
   }
 
-  async getReadiness(userKey: bigint | string) {
+  async getReadinessScore(userKey: bigint | string) {
     const isUuid = typeof userKey === 'string' && userKey.includes('-');
-    let score: any = null;
+    let telegramUserId: bigint | null = null;
 
     if (isUuid) {
-      score = await this.prisma.readinessScore.findFirst({
-        where: { userId: userKey as string },
-      });
+      const u = await this.prisma.user.findUnique({ where: { id: userKey as string } });
+      telegramUserId = u?.telegramUserId || null;
     } else {
-      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
-      score = await this.prisma.readinessScore.findUnique({
-        where: { telegramUserId },
-      });
+      telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
     }
+
+    if (!telegramUserId) {
+      return this.calculateReadiness(userKey);
+    }
+
+    const score = await this.prisma.readinessScore.findUnique({
+      where: { telegramUserId },
+    });
 
     if (!score) {
       return this.calculateReadiness(userKey);
@@ -184,14 +188,17 @@ export class ReadinessService {
 
   async getReadinessHistory(userKey: bigint | string, limit = 20) {
     const isUuid = typeof userKey === 'string' && userKey.includes('-');
+    let telegramUserId: bigint | null = null;
+
     if (isUuid) {
-      return this.prisma.readinessHistory.findMany({
-        where: { userId: userKey as string },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-      });
+      const u = await this.prisma.user.findUnique({ where: { id: userKey as string } });
+      telegramUserId = u?.telegramUserId || null;
+    } else {
+      telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
     }
-    const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+
+    if (!telegramUserId) return [];
+
     return this.prisma.readinessHistory.findMany({
       where: { telegramUserId },
       orderBy: { createdAt: 'desc' },

@@ -38,7 +38,9 @@ export class OperatorIntelligenceService {
       } catch {
         bigIntUserId = BigInt(0);
       }
-      user = await this.prisma.user.findUnique({ where: { telegramUserId: bigIntUserId } });
+      if (this.prisma?.user) {
+        user = await this.prisma.user.findUnique({ where: { telegramUserId: bigIntUserId } });
+      }
     }
 
     const userId = user?.id || (isUuid ? userKey : undefined);
@@ -46,7 +48,7 @@ export class OperatorIntelligenceService {
 
     // 1. Calculate Direct Machine Purchases, Repowers & Upgrades
     const userMachines = await this.prisma.userMachine.findMany({
-      where: { OR: [{ userId }, { telegramUserId: bigIntUserId }] },
+      where: { telegramUserId: bigIntUserId },
     });
 
     let directPurchasesTotal = 0;
@@ -61,7 +63,7 @@ export class OperatorIntelligenceService {
     // 2. Settlement Activity & Processing Fees Paid
     const completedSettlements = await this.prisma.settlementSession.findMany({
       where: {
-        OR: [{ userId }, { telegramUserId: bigIntUserId }],
+        telegramUserId: bigIntUserId,
         status: SettlementStatus.COMPLETED,
       },
     });
@@ -74,7 +76,7 @@ export class OperatorIntelligenceService {
 
     // 3. Referral Network Revenue Contribution
     const referralRecord = await this.prisma.referralRelationship.findMany({
-      where: { OR: [{ referrerUserId: userId }, { referrerId: bigIntUserId }] },
+      where: { referrerId: bigIntUserId },
     });
     const referralCount = referralRecord.length;
     const nrs = referralCount * 50.0; // Average referral lifetime purchase baseline
@@ -91,7 +93,7 @@ export class OperatorIntelligenceService {
     const tci = totalClaimedPayouts > 0 ? Math.round((rcs / totalClaimedPayouts) * 100) / 100 : 2.5;
 
     return {
-      telegramUserId,
+      telegramUserId: bigIntUserId,
       oltv,
       tci,
       nrs,

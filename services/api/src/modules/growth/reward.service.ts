@@ -37,6 +37,9 @@ const LEVEL_ORDER: Record<string, number> = {
   ELITE: 4,
 };
 
+import { EventBusService } from '../automation/event-bus.service';
+import { Optional } from '@nestjs/common';
+
 @Injectable()
 export class RewardService {
   private readonly logger = new Logger(RewardService.name);
@@ -48,6 +51,7 @@ export class RewardService {
     private readonly notificationService: GrowthNotificationService,
     private readonly achievementService: AchievementService,
     private readonly referralService: ReferralService,
+    @Optional() private readonly eventBus?: EventBusService,
   ) {}
 
   /**
@@ -326,6 +330,21 @@ export class RewardService {
     });
 
     this.logger.log(`[RewardService] Created AVAILABLE reward ${reward.id} (${data.amount} USDT) for user ${data.telegramUserId}`);
+
+    if (this.eventBus) {
+      this.eventBus.publish({
+        type: 'RewardAwarded',
+        correlationId: `corr_rwd_${reward.id}`,
+        actorId: data.telegramUserId.toString(),
+        payload: {
+          telegramUserId: data.telegramUserId.toString(),
+          amount: data.amount,
+          asset: 'USDT',
+          rewardType: data.rewardType,
+        },
+      });
+    }
+
     return reward;
   }
 

@@ -29,9 +29,11 @@ export const RewardHistorySection: React.FC = () => {
     fetchHistory();
   }, [fetchHistory]);
 
+  const safeHistory = Array.isArray(history) ? history : [];
+
   const filtered = useMemo(
-    () => (filter === 'ALL' ? history : history.filter((h) => h.status === filter)),
-    [history, filter],
+    () => (filter === 'ALL' ? safeHistory : safeHistory.filter((h) => h.status === filter)),
+    [safeHistory, filter],
   );
 
   const tabs: Array<{ key: HistoryFilter; label: string }> = [
@@ -47,8 +49,8 @@ export const RewardHistorySection: React.FC = () => {
           const active = filter === t.key;
           const count =
             t.key === 'ALL'
-              ? history.length
-              : history.filter((h) => h.status === t.key).length;
+              ? safeHistory.length
+              : safeHistory.filter((h) => h.status === t.key).length;
           return (
             <button
               key={t.key}
@@ -65,7 +67,7 @@ export const RewardHistorySection: React.FC = () => {
         })}
       </div>
 
-      {isLoading && history.length === 0 ? (
+      {isLoading && safeHistory.length === 0 ? (
         <div className="flex items-center justify-center gap-2 py-4 text-text-tertiary text-xs">
           <Loader2 size={13} className="animate-spin" />
           <span>Loading reward history…</span>
@@ -74,7 +76,7 @@ export const RewardHistorySection: React.FC = () => {
         <div className="text-center py-5">
           <Inbox size={18} className="text-text-tertiary mx-auto mb-1.5" />
           <div className="text-[11px] text-text-tertiary">
-            {history.length === 0
+            {safeHistory.length === 0
               ? 'No claimed rewards yet. Your completions will appear here.'
               : 'No records match this filter.'}
           </div>

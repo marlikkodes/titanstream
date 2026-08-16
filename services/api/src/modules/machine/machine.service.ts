@@ -195,10 +195,13 @@ export class MachineService {
     let records: any[] = [];
     try {
       if (isUuid) {
-        records = await this.prisma.userMachine.findMany({
-          where: { userId: userStr },
-          orderBy: { purchasedAt: 'desc' },
-        });
+        const u = await this.prisma.user.findUnique({ where: { id: userStr } });
+        if (u?.telegramUserId) {
+          records = await this.prisma.userMachine.findMany({
+            where: { telegramUserId: u.telegramUserId },
+            orderBy: { purchasedAt: 'desc' },
+          });
+        }
       } else if (/^\d+$/.test(userStr)) {
         records = await this.prisma.userMachine.findMany({
           where: { telegramUserId: BigInt(userStr) },
@@ -213,7 +216,7 @@ export class MachineService {
     const now = new Date();
     const trialMachine: UserMachineAsset = {
       id: 'mach_free_trial',
-      telegramUserId,
+      telegramUserId: (typeof userIdOrTelegramId === 'bigint' ? userIdOrTelegramId : BigInt(0)).toString(),
       tierCode: 'TS_TRIAL',
       name: 'Titan Core',
       purchasePrice: 0.0,

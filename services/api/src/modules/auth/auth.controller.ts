@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, UseGuards, HttpCode, HttpStatus, Inject, forwardRef } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { AuthTelegramDto } from './dto/auth-telegram.dto';
@@ -7,6 +7,8 @@ import { Public } from '../../common/decorators/public.decorator';
 import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 
 import { WebAuthSessionService } from './web-auth-session.service';
+import { WhatsappChallengeService } from './whatsapp-challenge.service';
+import { BaileysService } from '../notification/baileys.service';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -14,6 +16,9 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly webAuthSessionService: WebAuthSessionService,
+    private readonly whatsappChallengeService: WhatsappChallengeService,
+    @Inject(forwardRef(() => BaileysService))
+    private readonly baileysService: BaileysService,
   ) {}
 
   @Public()
@@ -77,6 +82,45 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   async getProfile(@CanonicalUserId() userId: string) {
     return this.authService.getProfile(userId);
+  }
+
+  @Public()
+  @Post('whatsapp/login-challenge')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Create a WhatsApp browser login challenge with QR/PIN and deep link' })
+  async createWhatsAppChallenge(@Req() req: any, @Body() body: any) {
+    const userAgent = req.headers['user-agent'] || 'Browser';
+    const info = body?.deviceInfo || userAgent;
+    return this.whatsappChallengeService.createChallenge(info);
+  }
+
+  @Public()
+  @Post('whatsapp/challenge-status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Poll status of a WhatsApp browser login challenge' })
+  async pollWhatsAppChallengeStatus(@Body() body: any) {
+    const challengeId = body?.challengeId;
+    return this.whatsappChallengeService.getChallengeStatus(challengeId);
+  }
+
+  @Public()
+  @Post('whatsapp/simulate-inbound')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Simulate an inbound WhatsApp message for dev/testing' })
+  async simulateInboundWhatsAppMessage(@Body() body: { senderPhone: string; text: string }) {
+    const handled = await this.whatsappChallengeService.handleInboundMessage(body.senderPhone, body.text);
+    return { success: true, data: { handled } };
+  }
+
+  @Public()
+  @Post('whatsapp/test-send')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a test WhatsApp message via Baileys and inspect socket result' })
+  async sendTestWhatsAppMessage(@Body() body: { phone: string; text?: string }) {
+    const targetPhone = body?.phone || '+18257320524';
+    const messageText = body?.text || 'Titan Stream 🚀 Test Outbound Message from Baileys Gateway!';
+    const result = await this.baileysService.sendTextMessage(targetPhone, messageText, 'HIGH');
+    return { success: true, data: result };
   }
 
   @Public()

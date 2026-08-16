@@ -76,8 +76,13 @@ export const HeroProgress: React.FC<HeroProgressProps> = ({ onRunMission }) => {
 
   if (!progress) return null;
 
-  const { level, streak, totals, nextBestAction, upcomingUnlock, recentAchievements } = progress;
-  const levelColor = TIER_COLORS[level.currentLevel] || 'text-usdt-green';
+  const level = progress.level || { currentLevel: 'NEW', levelName: 'Titan Novice', progressPercent: 0, criteria: [] };
+  const streak = progress.streak || { days: 0, best: 0 };
+  const totals = progress.totals || { totalClaimed: 0, totalEarned: 0, availableCount: 0, estimatedRemaining: 0 };
+  const { nextBestAction, upcomingUnlock, recentAchievements } = progress;
+
+  const currentLevelKey = level.currentLevel || 'NEW';
+  const levelColor = TIER_COLORS[currentLevelKey] || 'text-usdt-green';
 
   return (
     <motion.div
@@ -99,9 +104,9 @@ export const HeroProgress: React.FC<HeroProgressProps> = ({ onRunMission }) => {
               Titan Progress
             </div>
             <div className="text-base font-black text-text-primary mt-0.5 flex items-center gap-1.5">
-              <span className={levelColor}>{level.levelName}</span>
+              <span className={levelColor}>{level.levelName || 'Titan Miner'}</span>
               <span className="text-[10px] font-mono font-bold text-text-tertiary bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">
-                {level.currentLevel}
+                {level.currentLevel || 'NEW'}
               </span>
             </div>
           </div>
@@ -142,7 +147,7 @@ export const HeroProgress: React.FC<HeroProgressProps> = ({ onRunMission }) => {
             transition={{ duration: 0.8, ease: 'easeOut' }}
           />
         </div>
-        {level.nextLevel && (
+        {level.nextLevel && Array.isArray(level.criteria) && (
           <div className="mt-2 grid grid-cols-3 gap-1.5 text-[9px] font-semibold">
             {level.criteria.map((c) => (
               <div

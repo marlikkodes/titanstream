@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { financialService, type TransactionRecord } from '../services/financialService';
 import { settlementService, type SettlementSessionView } from '../services/settlementService';
 import { gamesService } from '../services/gamesService';
@@ -55,7 +56,9 @@ interface WalletState {
   cancelSession: (settlementId: string) => Promise<void>;
 }
 
-export const useWalletStore = create<WalletState>((set, get) => ({
+export const useWalletStore = create<WalletState>()(
+  persist(
+    (set, get) => ({
   // PRODUCTION: All balances start at zero. Populated from Balance Engine on mount.
   usdtBalance: 0,
   tonBalance: 0,
@@ -143,12 +146,14 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
       // Crystal balance lives in the Game Economy Service (own ledger)
       let crystalsVal = get().crystalsBalance;
-      if (typeof data.crystalsBalance === 'number') {
+      if (data && typeof data.crystalsBalance === 'number') {
         crystalsVal = data.crystalsBalance;
-      } else {
+      } else if (data) {
         try {
           const crystalData = await gamesService.getBalance();
-          crystalsVal = crystalData.balance;
+          if (crystalData && typeof crystalData.balance === 'number') {
+            crystalsVal = crystalData.balance;
+          }
         } catch (crystalErr) {
           // Game Economy offline — keep last known value
         }
@@ -216,7 +221,8 @@ export const useWalletStore = create<WalletState>((set, get) => ({
    * Fetch transactions from Ledger / Transaction Service (GET /financial/transactions)
    */
   fetchTransactions: async (limit = 20, offset = 0) => {
-    if (get().transactions.length === 0) {
+    const txs = Array.isArray(get().transactions) ? get().transactions : [];
+    if (txs.length === 0) {
       set({ isLoadingTransactions: true, error: null });
     }
     try {
@@ -274,4 +280,19 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       console.error('Failed to cancel session:', err);
     }
   },
-}));
+}),
+    {
+      name: 'wallet-storage',
+      partialize: (state) => ({
+        usdtBalance: state.usdtBalance,
+        tonBalance: state.tonBalance,
+        crystalsBalance: state.crystalsBalance,
+        referralEarnedUsdt: state.referralEarnedUsdt,
+        referralEarnedTon: state.referralEarnedTon,
+        lifetimeDeposits: state.lifetimeDeposits,
+        lifetimeWithdrawals: state.lifetimeWithdrawals,
+        activeMachines: state.activeMachines,
+      }),
+    }
+  )
+);

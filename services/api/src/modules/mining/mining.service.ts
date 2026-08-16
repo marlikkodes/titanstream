@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef, Optional } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, Optional, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
 import { FinancialOperationType, Prisma } from '@prisma/client';
@@ -42,22 +42,27 @@ export class MiningService {
 
   private async loadFromDb(userIdOrTelegramId: string): Promise<UserMiningState | null> {
     try {
-      const isUuid = userIdOrTelegramId.includes('-');
+      const cleanDigits = userIdOrTelegramId.replace(/\D/g, '');
       let record: any = null;
 
-      if (isUuid) {
+      if (userIdOrTelegramId.includes('-')) {
+        const u = await this.prisma.user.findUnique({ where: { id: userIdOrTelegramId } });
+        if (u?.telegramUserId) {
+          record = await this.prisma.userMiningState.findUnique({
+            where: { telegramUserId: u.telegramUserId },
+          });
+        }
+      }
+
+      if (!record && cleanDigits) {
         record = await this.prisma.userMiningState.findFirst({
-          where: { userId: userIdOrTelegramId },
-        });
-      } else if (/^\d+$/.test(userIdOrTelegramId)) {
-        record = await this.prisma.userMiningState.findUnique({
-          where: { telegramUserId: BigInt(userIdOrTelegramId) },
+          where: { telegramUserId: BigInt(cleanDigits) },
         });
       }
 
       if (!record) return null;
       return {
-        telegramUserId,
+        telegramUserId: userIdOrTelegramId,
         activeCurrency: record.activeCurrency as 'USDT' | 'TON',
         baseSpeedGhs: record.baseSpeedGhs.toNumber(),
         coolerMultiplier: record.coolerMultiplier.toNumber(),
@@ -82,10 +87,13 @@ export class MiningService {
    * claim's transaction so a failed write rolls the whole claim back.
    */
   private async persistSession(session: UserMiningState, client: Prisma.TransactionClient | PrismaService = this.prisma): Promise<void> {
+    const cleanDigits = session.telegramUserId.replace(/\D/g, '') || session.telegramUserId;
+    if (!cleanDigits || !/^\d+$/.test(cleanDigits)) return;
+
     await client.userMiningState.upsert({
-      where: { telegramUserId: BigInt(session.telegramUserId) },
+      where: { telegramUserId: BigInt(cleanDigits) },
       create: {
-        telegramUserId: BigInt(session.telegramUserId),
+        telegramUserId: BigInt(cleanDigits),
         activeCurrency: session.activeCurrency,
         baseSpeedGhs: session.baseSpeedGhs,
         coolerMultiplier: session.coolerMultiplier,
@@ -262,9 +270,10 @@ export class MiningService {
   }
 
   async getOrCreateSession(telegramUserId: string): Promise<UserMiningState> {
-    let session = this.sessions.get(telegramUserId);
+    const cleanId = telegramUserId.replace(/\D/g, '') || telegramUserId;
+    let session = this.sessions.get(telegramUserId) || this.sessions.get(cleanId);
     if (!session) {
-      session = (await this.loadFromDb(telegramUserId)) ?? undefined;
+      session = (await this.loadFromDb(telegramUserId)) ?? (await this.loadFromDb(cleanId)) ?? undefined;
     }
 
     // Sync speed dynamically with user's active machines from MachineService
@@ -289,10 +298,12 @@ export class MiningService {
         lastUpdatedAt: new Date(),
       };
       this.sessions.set(telegramUserId, session);
+      if (cleanId) this.sessions.set(cleanId, session);
     } else {
       session.baseSpeedGhs = baseSpeed;
       await this.accruePassiveYield(session);
       this.sessions.set(telegramUserId, session);
+      if (cleanId) this.sessions.set(cleanId, session);
     }
 
     session.tapYieldPerTap = await this.computeTapYield(session);
@@ -377,9 +388,13 @@ export class MiningService {
       await this.opsEngine.assertOperationalModeAllowed('CLAIM', session.activeCurrency);
     }
 
+    const MIN_CLAIM_THRESHOLD = 3.0;
     const claimAmount = session.unclaimedBalance;
-    if (claimAmount < 0.000001) {
-      return { success: false, amount: '0.00', session };
+    if (claimAmount < MIN_CLAIM_THRESHOLD) {
+      throw new BadRequestException({
+        code: 'MINIMUM_CLAIM_THRESHOLD',
+        message: `Minimum collection amount is $3.00 (Current balance: $${claimAmount.toFixed(4)}). Keep mining to reach $3.00.`,
+      });
     }
 
     const reference = `mining_claim_${telegramUserId}_${Date.now()}`;

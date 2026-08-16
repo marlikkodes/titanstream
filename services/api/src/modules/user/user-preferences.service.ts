@@ -26,14 +26,13 @@ export class UserPreferencesService {
     if (!user) throw new Error('USER_NOT_FOUND');
 
     let prefs = await this.prisma.userPreferences.findFirst({
-      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
+      where: { telegramUserId: user.telegramUserId || undefined },
     });
 
     if (!prefs) {
       this.logger.log(`Initializing default preferences for user ${user.id}`);
       prefs = await this.prisma.userPreferences.create({
         data: {
-          userId: user.id,
           telegramUserId: user.telegramUserId || BigInt(0),
           authenticationMethod: 'TELEGRAM',
           notificationChannel: 'TELEGRAM',
@@ -44,7 +43,7 @@ export class UserPreferencesService {
     }
 
     return {
-      userId: prefs.userId || user.id,
+      userId: user.id,
       telegramUserId: prefs.telegramUserId ? Number(prefs.telegramUserId) : undefined,
       authenticationMethod: prefs.authenticationMethod,
       notificationChannel: prefs.notificationChannel,
@@ -68,13 +67,12 @@ export class UserPreferencesService {
     if (!user) throw new Error('USER_NOT_FOUND');
 
     let prefs = await this.prisma.userPreferences.findFirst({
-      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
+      where: { telegramUserId: user.telegramUserId || undefined },
     });
 
     if (!prefs) {
       prefs = await this.prisma.userPreferences.create({
         data: {
-          userId: user.id,
           telegramUserId: user.telegramUserId || BigInt(0),
           authenticationMethod: 'TELEGRAM',
           notificationChannel: data.notificationChannel || 'TELEGRAM',
@@ -107,7 +105,7 @@ export class UserPreferencesService {
     }
 
     return {
-      userId: prefs.userId || user.id,
+      userId: user.id,
       telegramUserId: prefs.telegramUserId ? Number(prefs.telegramUserId) : undefined,
       authenticationMethod: prefs.authenticationMethod,
       notificationChannel: prefs.notificationChannel,

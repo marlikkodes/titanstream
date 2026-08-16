@@ -31,8 +31,14 @@ export class FinancialOrchestrationController {
   async listOperations(@CanonicalUserId() userId: string, @Query() query: PaginationDto) {
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;
+    const isUuid = userId.includes('-');
+    let telegramUserId: bigint | undefined = /^\d+$/.test(userId) ? BigInt(userId) : undefined;
+    if (isUuid) {
+      const u = await this.prisma.user.findUnique({ where: { id: userId } });
+      telegramUserId = u?.telegramUserId || undefined;
+    }
     const items = await this.prisma.financialOperation.findMany({
-      where: { OR: [{ userId }, { telegramUserId: /^\d+$/.test(userId) ? BigInt(userId) : undefined }] },
+      where: { telegramUserId },
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,

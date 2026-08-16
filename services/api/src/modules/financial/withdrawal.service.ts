@@ -7,6 +7,7 @@ import { WithdrawalRiskService } from './withdrawal-risk.service';
 import { EventBusService } from '../automation/event-bus.service';
 import { TreasuryService } from '../treasury/treasury.service';
 import { PlatformOperationsEngineService } from '../admin/services/platform-operations-engine.service';
+import { DurableOutboxService } from '../automation/durable-outbox.service';
 
 export interface InitiateWithdrawalDto {
   telegramUserId: bigint;
@@ -30,6 +31,7 @@ export class WithdrawalService {
     private readonly eventBus: EventBusService,
     @Optional() private readonly treasuryService?: TreasuryService,
     @Optional() @Inject(forwardRef(() => PlatformOperationsEngineService)) private readonly opsEngine?: PlatformOperationsEngineService,
+    @Optional() private readonly durableOutbox?: DurableOutboxService,
   ) {}
 
   async initiateWithdrawal(dto: InitiateWithdrawalDto, idempotencyKey?: string) {
@@ -294,6 +296,19 @@ export class WithdrawalService {
           telegramUserId: session.telegramUserId.toString(),
           amount: session.requestedAmount.toString(),
         },
+      },
+    });
+
+    // Emit WithdrawalRejected event
+    this.eventBus.publish({
+      type: 'WithdrawalRejected',
+      correlationId: `corr_wd_fail_${withdrawalId}`,
+      actorId: session.telegramUserId.toString(),
+      payload: {
+        withdrawalId,
+        telegramUserId: session.telegramUserId.toString(),
+        amount: session.requestedAmount.toString(),
+        reason,
       },
     });
 

@@ -55,10 +55,14 @@ import { ObservabilityIntelligenceEngineService } from './services/observability
 import { PlatformOperationsEngineService } from './services/platform-operations-engine.service';
 import { MachineAdminService } from './services/machine-admin.service';
 
+import { AdminWhatsappController } from './controllers/admin-whatsapp.controller';
+import { NotificationModule } from '../notification/notification.module';
+
 @Module({
   imports: [
     PrismaModule, 
     AuthModule,
+    forwardRef(() => NotificationModule),
     forwardRef(() => FinancialModule),
     forwardRef(() => TreasuryModule),
     forwardRef(() => PaymentOrderModule),
@@ -83,6 +87,7 @@ import { MachineAdminService } from './services/machine-admin.service';
     AdminOperationsController,
     CommandCenterConfigController,
     AdminManagementController,
+    AdminWhatsappController,
   ],
   providers: [
     AdminAuthGuard,

@@ -83,24 +83,39 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
   // Auto-claim the instant the requirement is met (fires exactly once).
   useEffect(() => {
     if (!isOpen || !liveMission || autoClaimed) return;
-    if (!liveMission.eligible || liveMission.status === 'CLAIM_PENDING') return;
+    if (!liveMission.eligible || liveMission.status === 'CLAIM_PENDING' || liveMission.status === 'CLAIMED') return;
     if (claimedForRef.current === liveMission.id) return;
 
     claimedForRef.current = liveMission.id;
     setAutoClaimed(true);
     hapticFeedback.notificationOccurred('success');
-    autoClaim(liveMission.id).then((res) => {
-      if (res.success && res.reward) {
-        showToast(`Mission complete — ${Number(res.reward?.amount)?.toFixed(2)} USDT claimed!`, 'success');
-        onClaimed({ ...liveMission, status: 'CLAIMED' });
-        onClose();
-      } else {
+    autoClaim(liveMission.id)
+      .then((res) => {
+        if (res.success && res.reward) {
+          showToast(`Mission complete — ${Number(res.reward?.amount)?.toFixed(2)} USDT claimed!`, 'success');
+          onClaimed({ ...liveMission, status: 'CLAIMED' });
+          onClose();
+        } else {
+          setAutoClaimed(false);
+          claimedForRef.current = null;
+          showToast(res.error || 'Auto-claim failed. Tap Claim to retry.', 'error');
+        }
+      })
+      .catch(() => {
         setAutoClaimed(false);
         claimedForRef.current = null;
-        showToast(res.error || 'Auto-claim failed. Tap Claim to retry.', 'error');
-      }
-    });
-  }, [isOpen, liveMission, autoClaimed, autoClaim, onClaimed, onClose, hapticFeedback]);
+      });
+  }, [
+    isOpen,
+    liveMission?.id,
+    liveMission?.eligible,
+    liveMission?.status,
+    autoClaimed,
+    autoClaim,
+    onClaimed,
+    onClose,
+    hapticFeedback,
+  ]);
 
   if (!isOpen || !liveMission) return null;
 

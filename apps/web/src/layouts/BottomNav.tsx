@@ -17,7 +17,7 @@ interface NavItem {
 export const BottomNav: React.FC = () => {
   const { activeTab, setActiveTab } = useNavigationStore();
   const claimableMissionsCount = useTreasuryStore(
-    (s) => s.missions.filter((m) => m.status === 'CLAIMABLE').length
+    (s) => (Array.isArray(s.missions) ? s.missions.filter((m) => m.status === 'CLAIMABLE').length : 0)
   );
 
   const navItems: NavItem[] = [

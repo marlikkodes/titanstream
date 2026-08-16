@@ -35,14 +35,13 @@ export class JwtAuthGuard implements CanActivate {
       let userState = payload.state || 'READY';
 
       const subStr = String(payload.sub || payload.userId || '');
-      const isUuid = subStr.includes('-');
 
       try {
-        if (isUuid) {
+        if (subStr) {
           user = (await this.prisma.user.findUnique({ where: { id: subStr } })) ||
                  (await this.prisma.user.findFirst({ where: { identityId: subStr } }));
         }
-        if (!user && (payload.telegramUserId || (!isUuid && subStr))) {
+        if (!user && (payload.telegramUserId || subStr)) {
           const rawId = payload.telegramUserId || subStr;
           if (!isNaN(Number(rawId))) {
             const telegramUserId = BigInt(rawId);
@@ -54,14 +53,12 @@ export class JwtAuthGuard implements CanActivate {
         // Fallback user state on database connection lag/blip
       }
 
-      const canonicalUserId = user?.id || user?.identityId || (isUuid ? subStr : (payload.titanUserId || subStr));
+      const canonicalUserId = user?.id || user?.identityId || subStr;
       const legacyTelegramUserId = user?.telegramUserId
         ? user.telegramUserId.toString()
         : payload.telegramUserId
         ? String(payload.telegramUserId)
-        : !isUuid
-        ? subStr
-        : undefined;
+        : subStr;
 
       const identityContext = {
         userId: canonicalUserId,

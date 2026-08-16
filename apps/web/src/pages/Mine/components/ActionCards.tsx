@@ -13,24 +13,7 @@ export const ActionCards: React.FC = () => {
 
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (safeUnclaimed < 0.000001) return;
-    const result = await claimMinedYield();
-    if (result.success) {
-      showToast(`Added +${safeUnclaimed.toFixed(4)} ${activeCurrency} to your wallet!`, 'success');
-    } else {
-      const err = result.error;
-      const response = err?.response;
-      const body = response?.data;
-      const backendError = body?.error?.message || body?.message || err?.message || 'Unknown error';
-
-      console.error('[CLAIM FAILURE DIAGNOSTICS]', {
-        httpStatus: response?.status,
-        responseBody: body,
-        backendError,
-      });
-
-      showToast('Could not collect earnings right now. Please try again.', 'error');
-    }
+    await claimMinedYield();
   };
 
   return (

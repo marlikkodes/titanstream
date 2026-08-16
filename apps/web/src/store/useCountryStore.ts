@@ -277,6 +277,29 @@ export const getMultiCurrencyYield = (usdtAmount: number): MultiCurrencyYield =>
   };
 };
 
+export const formatCurrencyWithLocalFallback = (usdtAmount: number, opts?: { showUsdtEquiv?: boolean }): string => {
+  const safeUsdt = Number(usdtAmount) || 0;
+  const preferLocal = useSettingsStore.getState().preferLocalCurrency;
+  const country = useCountryStore.getState().selectedCountry;
+
+  const isLocal = (preferLocal || !!country) && country && country.code !== 'US';
+
+  if (isLocal) {
+    const localVal = safeUsdt * (Number(country.exchangeRate) || 1);
+    const fmt = country.numberFormat && typeof country.numberFormat === 'object'
+      ? country.numberFormat
+      : { maximumFractionDigits: 0 };
+    const sym = country.currencySymbol ? `${country.currencySymbol} ` : '';
+    const localFormatted = `${sym}${localVal.toLocaleString(undefined, fmt)} ${country.currencyCode}`.trim();
+    if (opts?.showUsdtEquiv) {
+      return `${localFormatted} ($${safeUsdt.toFixed(2)} USDT)`;
+    }
+    return localFormatted;
+  }
+
+  return `$${safeUsdt.toFixed(2)} USDT`;
+};
+
 // ─── Store ───────────────────────────────────────────────────────────────────
 
 interface CountryState {
@@ -307,7 +330,8 @@ export const useCountryStore = create<CountryState>()(
         const safeUsdt = Number(usdtAmount) || 0;
         const preferLocal = useSettingsStore.getState().preferLocalCurrency;
         const { selectedCountry } = get();
-        if (!preferLocal || !selectedCountry || selectedCountry.code === 'US') {
+        const isLocal = (preferLocal || !!selectedCountry) && selectedCountry && selectedCountry.code !== 'US';
+        if (!isLocal || !selectedCountry) {
           return `$${safeUsdt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
         const localValue = safeUsdt * (Number(selectedCountry.exchangeRate) || 1);

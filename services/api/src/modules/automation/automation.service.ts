@@ -76,7 +76,6 @@ export class AutomationService implements OnModuleInit {
     await this.prisma.financialDomainEvent.create({
       data: {
         eventType: DomainEventType.BALANCE_CHANGED,
-        userId: canonicalUserId,
         telegramUserId: tgUserIdBig,
         payload: JSON.parse(JSON.stringify({
           action: 'SETTLEMENT_COMPLETED',
@@ -93,7 +92,6 @@ export class AutomationService implements OnModuleInit {
     if (this.growthEventService && user) {
       this.logger.log(`[Automation] Emitting SETTLEMENT_COMPLETED to GrowthEventService for user ${user.id}`);
       await this.growthEventService.publish({
-        userId: user.id,
         telegramUserId: user.telegramUserId || undefined,
         eventType: GrowthEventType.SETTLEMENT_COMPLETED,
         payload: {
@@ -132,7 +130,6 @@ export class AutomationService implements OnModuleInit {
     await this.prisma.financialDomainEvent.create({
       data: {
         eventType: DomainEventType.LEDGER_POSTING_STARTED,
-        userId: canonicalUserId,
         telegramUserId: tgUserIdBig,
         payload: JSON.parse(JSON.stringify({
           action: 'WITHDRAWAL_REQUESTED',
@@ -169,7 +166,6 @@ export class AutomationService implements OnModuleInit {
     await this.prisma.financialDomainEvent.create({
       data: {
         eventType: DomainEventType.LEDGER_POSTING_COMPLETED,
-        userId: canonicalUserId,
         telegramUserId: tgUserIdBig,
         payload: JSON.parse(JSON.stringify({
           action: 'WITHDRAWAL_COMPLETED',

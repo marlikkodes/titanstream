@@ -34,19 +34,10 @@ export class OnboardingService {
   ) {}
 
   async getProgress(userKey: string | bigint) {
-    const isUuid = typeof userKey === 'string' && userKey.includes('-');
-    let progress: any = null;
-
-    if (isUuid) {
-      progress = await this.prisma.onboardingProgress.findFirst({
-        where: { userId: userKey as string },
-      });
-    } else {
-      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
-      progress = await this.prisma.onboardingProgress.findUnique({
-        where: { telegramUserId },
-      });
-    }
+    const user = await this.getUser(userKey);
+    const progress = await this.prisma.onboardingProgress.findFirst({
+      where: { telegramUserId: user.telegramUserId || undefined },
+    });
 
     if (!progress) {
       throw new NotFoundException('ONBOARDING_NOT_FOUND');
@@ -64,7 +55,7 @@ export class OnboardingService {
     await this.transitionState(user.id, UserState.ONBOARDING_STARTED, 'User started onboarding');
 
     let progress = await this.prisma.onboardingProgress.findFirst({
-      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
+      where: { telegramUserId: user.telegramUserId || undefined },
     });
 
     if (progress) {
@@ -79,7 +70,6 @@ export class OnboardingService {
     } else {
       progress = await this.prisma.onboardingProgress.create({
         data: {
-          userId: user.id,
           telegramUserId: user.telegramUserId || BigInt(0),
           currentStep: 'welcome',
           stepsCompleted: [],
@@ -101,7 +91,7 @@ export class OnboardingService {
   async completeStep(userKey: string | bigint, step: string) {
     const user = await this.getUser(userKey);
     let progress = await this.prisma.onboardingProgress.findFirst({
-      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
+      where: { telegramUserId: user.telegramUserId || undefined },
     });
     if (!progress) throw new NotFoundException('ONBOARDING_NOT_FOUND');
 
@@ -146,7 +136,7 @@ export class OnboardingService {
     const userState = user.state as UserState;
     if (userState === UserState.ONBOARDING_STALLED) {
       const progress = await this.prisma.onboardingProgress.findFirst({
-        where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
+        where: { telegramUserId: user.telegramUserId || undefined },
       });
       if (!progress) throw new NotFoundException('ONBOARDING_NOT_FOUND');
 
@@ -170,7 +160,7 @@ export class OnboardingService {
   async getState(userKey: string | bigint) {
     const user = await this.getUser(userKey);
     const progress = await this.prisma.onboardingProgress.findFirst({
-      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }] },
+      where: { telegramUserId: user.telegramUserId || undefined },
     });
 
     const remainingModules = await this.countRemainingModules(user);
@@ -206,7 +196,7 @@ export class OnboardingService {
     });
     const completedModules = await this.prisma.educationCompletion.count({
       where: {
-        OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }],
+        telegramUserId: user.telegramUserId || undefined,
         status: 'COMPLETED',
         module: { mandatory: true },
       },
@@ -216,7 +206,7 @@ export class OnboardingService {
 
   private async countConsentsCompleted(user: any): Promise<number> {
     return this.prisma.userConsent.count({
-      where: { OR: [{ userId: user.id }, { telegramUserId: user.telegramUserId || undefined }], isActive: true },
+      where: { telegramUserId: user.telegramUserId || undefined, isActive: true },
     });
   }
 

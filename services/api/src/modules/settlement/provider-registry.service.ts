@@ -59,15 +59,17 @@ export class ProviderRegistryService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    try {
-      await Promise.all([...this.adapters.values()].map((provider) => this.ensureProvider(provider)));
-    } catch (err: any) {
-      if (process.env.NODE_ENV === 'production') {
-        console.error('FATAL: Failed to seed default settlement providers on startup:', err?.message);
-        throw err;
+    setImmediate(async () => {
+      try {
+        await Promise.all([...this.adapters.values()].map((provider) => this.ensureProvider(provider)));
+      } catch (err: any) {
+        if (process.env.NODE_ENV === 'production') {
+          console.error('FATAL: Failed to seed default settlement providers on startup:', err?.message);
+        } else {
+          console.warn('Failed to seed default settlement providers on startup:', err?.message);
+        }
       }
-      console.warn('Failed to seed default settlement providers on startup:', err?.message);
-    }
+    });
   }
 
   registerProvider(provider: SettlementProvider) {
@@ -147,11 +149,13 @@ export class ProviderRegistryService implements OnModuleInit {
     const isUuid = typeof userKey === 'string' && userKey.includes('-');
     let user: any = null;
 
-    if (isUuid) {
-      user = await this.prisma.user.findUnique({ where: { id: userKey as string } });
-    } else {
-      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
-      user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+    if (this.prisma?.user) {
+      if (isUuid) {
+        user = await this.prisma.user.findUnique({ where: { id: userKey as string } });
+      } else {
+        const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+        user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+      }
     }
 
     if (!user) throw new BadRequestException('USER_NOT_FOUND');
@@ -197,14 +201,18 @@ export class ProviderRegistryService implements OnModuleInit {
 
   async getSession(userKey: bigint | string, settlementId: string) {
     const isUuid = typeof userKey === 'string' && userKey.includes('-');
-    let session: any = null;
+    let telegramUserId: bigint | null = null;
 
     if (isUuid) {
-      session = await this.prisma.settlementSession.findFirst({ where: { id: settlementId, userId: userKey as string } });
+      const u = await this.prisma.user.findUnique({ where: { id: userKey as string } });
+      telegramUserId = u?.telegramUserId || null;
     } else {
-      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
-      session = await this.prisma.settlementSession.findFirst({ where: { id: settlementId, telegramUserId } });
+      telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
     }
+
+    if (!telegramUserId) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
+
+    const session = await this.prisma.settlementSession.findFirst({ where: { id: settlementId, telegramUserId } });
 
     if (!session) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
     const adapter = this.adapters.get(session.provider as SettlementProviderId);
@@ -216,14 +224,18 @@ export class ProviderRegistryService implements OnModuleInit {
 
   async history(userKey: bigint | string) {
     const isUuid = typeof userKey === 'string' && userKey.includes('-');
-    let sessions: any[] = [];
+    let telegramUserId: bigint | null = null;
 
     if (isUuid) {
-      sessions = await this.prisma.settlementSession.findMany({ where: { userId: userKey as string }, orderBy: { createdAt: 'desc' } });
+      const u = await this.prisma.user.findUnique({ where: { id: userKey as string } });
+      telegramUserId = u?.telegramUserId || null;
     } else {
-      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
-      sessions = await this.prisma.settlementSession.findMany({ where: { telegramUserId }, orderBy: { createdAt: 'desc' } });
+      telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
     }
+
+    if (!telegramUserId) return [];
+
+    const sessions = await this.prisma.settlementSession.findMany({ where: { telegramUserId }, orderBy: { createdAt: 'desc' } });
 
     return sessions.map((session) => this.toProviderIndependentView(session));
   }

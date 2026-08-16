@@ -88,7 +88,7 @@ export class GamesController {
       balance: account.balance,
       lifetimeEarned: account.lifetimeEarned,
       lifetimeSpent: account.lifetimeSpent,
-      userId: account.userId || userId,
+      userId,
     };
   }
 

@@ -2,22 +2,30 @@ import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
 const getBaseURL = () => {
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      return `${window.location.origin}/api/v1`;
+    }
+  }
   const envUrl = import.meta.env.VITE_API_BASE_URL;
-  if (envUrl && envUrl.startsWith('https://') && !envUrl.includes('titanstream-production.up.railway.app')) {
+  if (envUrl && (envUrl.startsWith('http://') || envUrl.startsWith('https://')) && !envUrl.includes('titanstream-production.up.railway.app')) {
     return envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/$/, '')}/api/v1`;
   }
-  return 'https://tetherstream-production-e99c.up.railway.app/api/v1';
+  return 'http://localhost:3001/api/v1';
 };
 
 export const api = axios.create({
   baseURL: getBaseURL(),
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   },
 });
 
 api.interceptors.request.use((config) => {
+  config.headers['ngrok-skip-browser-warning'] = 'true';
   const initData = window.Telegram?.WebApp?.initData;
   if (initData) {
     config.headers['X-Telegram-Init-Data'] = initData;

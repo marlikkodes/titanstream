@@ -28,6 +28,8 @@ import { QueueModule } from './modules/queue/queue.module';
 import { AssetLicenseModule } from './modules/asset-license/asset-license.module';
 import { FraudModule } from './modules/fraud/fraud.module';
 
+import { ConversationalModule } from './modules/conversational/conversational.module';
+
 @Module({
   imports: [
     PrismaModule,
@@ -35,6 +37,7 @@ import { FraudModule } from './modules/fraud/fraud.module';
     AuthModule,
     AutomationModule,
     NotificationModule,
+    ConversationalModule,
     TreasuryModule,
     UserModule,
     OnboardingModule,

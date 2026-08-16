@@ -20,7 +20,8 @@ export const AchievementsCabinet: React.FC = () => {
   }, [fetchAchievements]);
 
   // Sort achievements: achieved first, then by tier, then by progress
-  const sortedAchievements = [...achievements].sort((a, b) => {
+  const safeAchievements = Array.isArray(achievements) ? achievements : [];
+  const sortedAchievements = [...safeAchievements].sort((a, b) => {
     if (a.achieved !== b.achieved) {
       return a.achieved ? -1 : 1;
     }
@@ -65,7 +66,7 @@ export const AchievementsCabinet: React.FC = () => {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
           >
-            {isLoading && achievements.length === 0 ? (
+            {isLoading && safeAchievements.length === 0 ? (
               <div className="flex items-center justify-center gap-2 py-5 text-text-tertiary text-xs">
                 <Loader2 size={13} className="animate-spin" /> Loading cabinet…
               </div>

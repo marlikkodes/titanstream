@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { miningService, type MiningStateResponse } from '../services/mining.service';
 import { machineService, type UserMachineAsset } from '../services/machineService';
 import { useWalletStore } from './useWalletStore';
@@ -77,7 +78,9 @@ const DECAY_PER_TICK = 0.05; // mirrors backend multiplier decay (0.5x / second)
 let displayTicker: ReturnType<typeof setInterval> | null = null;
 let hydrated = false;
 
-export const useMiningStore = create<MiningState>((set, get) => {
+export const useMiningStore = create<MiningState>()(
+  persist(
+    (set, get) => {
   return {
     activeCurrency: 'USDT',
     baseSpeedGhs: 1.0,
@@ -106,7 +109,7 @@ export const useMiningStore = create<MiningState>((set, get) => {
     dailyTapLimit: 200,
     weeklyTapLimit: 1000,
     monthlyTapLimit: 4000,
-    tonUnlocked: localStorage.getItem('ton_unlocked') === 'true',
+    tonUnlocked: localStorage.getItem('ton_unlocked') !== 'false',
     tonPrice: 110.00,
     usdtSpinnerIdx: 0,
     tonSpinnerIdx: 0,
@@ -119,22 +122,26 @@ export const useMiningStore = create<MiningState>((set, get) => {
      * first fetch (session restore) and after claims (wallet already updated).
      */
     applyServerSession: (session, opts) => {
+      const currentUnclaimed = get().unclaimedBalance;
       const currentDisplay = get().displayUnclaimed;
-      const snap = opts?.snapDisplay || !hydrated || session.unclaimedBalance < currentDisplay;
+
+      // Preserve highest balance between persistent local store and backend session
+      const targetUnclaimed = Math.max(session.unclaimedBalance, currentUnclaimed, currentDisplay);
+      const snap = opts?.snapDisplay || !hydrated;
       hydrated = true;
 
       set({
         activeCurrency: session.activeCurrency,
-        baseSpeedGhs: session.baseSpeedGhs || 1.0,
+        baseSpeedGhs: session.baseSpeedGhs || get().baseSpeedGhs || 1.0,
         coolerMultiplier: session.coolerMultiplier,
-        unclaimedBalance: session.unclaimedBalance,
+        unclaimedBalance: targetUnclaimed,
         machineMode: session.machineMode,
         lifetimePromotionalOutput: session.lifetimePromotionalOutput,
         interactivePromotionalOutput: session.interactivePromotionalOutput,
         isOverheated: session.isOverheated,
         cooldownRemaining: session.cooldownRemaining,
         tapYieldPerTap: session.tapYieldPerTap,
-        displayUnclaimed: snap ? session.unclaimedBalance : currentDisplay,
+        displayUnclaimed: snap ? targetUnclaimed : Math.max(currentDisplay, targetUnclaimed),
         displayMultiplier: snap || session.coolerMultiplier < get().displayMultiplier ? session.coolerMultiplier : get().displayMultiplier,
         displayPromoOutput: snap || session.lifetimePromotionalOutput < get().displayPromoOutput ? session.lifetimePromotionalOutput : get().displayPromoOutput,
       });
@@ -207,6 +214,22 @@ export const useMiningStore = create<MiningState>((set, get) => {
     },
 
     claimMinedYield: async () => {
+      const state = get();
+      const MIN_CLAIM_USD = 3.0;
+      const currentBal = Number(state.unclaimedBalance) || 0;
+
+      const { formatCurrencyWithLocalFallback } = await import('./useCountryStore');
+      const minStr = formatCurrencyWithLocalFallback(MIN_CLAIM_USD);
+      const curStr = formatCurrencyWithLocalFallback(currentBal);
+
+      if (currentBal < MIN_CLAIM_USD) {
+        const msg = `Minimum collection amount is ${minStr} (Current balance: ${curStr}). Keep mining to reach ${minStr}!`;
+        import('../components/Toast').then(({ showToast }) => {
+          showToast(`⚠️ ${msg}`, 'warning');
+        });
+        return { success: false, error: new Error(msg) };
+      }
+
       try {
         const res = await miningService.claimRewards();
         const isSuccess = Boolean(
@@ -218,17 +241,29 @@ export const useMiningStore = create<MiningState>((set, get) => {
 
         if (isSuccess) {
           const session = res.data?.session || (res.data as any) || (res as any).session;
+          const claimedAmountStr = formatCurrencyWithLocalFallback(currentBal);
           await useWalletStore.getState().fetchBalanceFromEngine();
           if (session && typeof session === 'object' && 'unclaimedBalance' in session) {
             get().applyServerSession(session, { snapDisplay: true });
           } else {
             await get().fetchMiningState();
           }
+
+          import('../components/Toast').then(({ showToast }) => {
+            showToast(`🎉 Collected ${claimedAmountStr} successfully! Added to your wallet.`, 'success');
+          });
           return { success: true };
         }
-        const errorMsg = (res as any)?.error?.message || res?.message || 'Server claim operation failed without explicit error code.';
+        const errorMsg = (res as any)?.error?.message || res?.message || `Minimum collection amount is ${minStr}.`;
+        import('../components/Toast').then(({ showToast }) => {
+          showToast(`⚠️ ${errorMsg}`, 'warning');
+        });
         return { success: false, error: new Error(errorMsg) };
-      } catch (err) {
+      } catch (err: any) {
+        const msg = err.response?.data?.error?.message || err.message || 'Collection failed.';
+        import('../components/Toast').then(({ showToast }) => {
+          showToast(`⚠️ ${msg}`, 'warning');
+        });
         console.error('Failed to claim mining yield:', err);
         return { success: false, error: err };
       }
@@ -301,11 +336,14 @@ export const useMiningStore = create<MiningState>((set, get) => {
 
     upgradeBaseSpeed: (amount, tierCode, newMachineAsset) =>
       set((state) => {
-        const nextOwnedTierCodes = tierCode && !state.ownedTierCodes.includes(tierCode)
-          ? [...state.ownedTierCodes, tierCode]
-          : state.ownedTierCodes;
+        const safeOwned = Array.isArray(state.ownedTierCodes) ? state.ownedTierCodes : ['TS_TRIAL'];
+        const safeUserMachines = Array.isArray(state.userMachines) ? state.userMachines : [];
+
+        const nextOwnedTierCodes = tierCode && !safeOwned.includes(tierCode)
+          ? [...safeOwned, tierCode]
+          : safeOwned;
         
-        let nextUserMachines = [...state.userMachines];
+        let nextUserMachines = [...safeUserMachines];
         const catItem = MACHINE_CATALOG.find((c) => c.tierCode === tierCode);
         if (newMachineAsset) {
           if (!nextUserMachines.some((m) => m.id === newMachineAsset.id)) {
@@ -392,18 +430,22 @@ export const useMiningStore = create<MiningState>((set, get) => {
       displayTicker = setInterval(() => {
         const s = get();
 
-        // Ease display values toward authoritative backend state received from server session
-        const targetUnclaimed = s.unclaimedBalance;
+        // Real-time continuous yield tick accumulation while active machines are running
+        let activeUnclaimed = s.unclaimedBalance;
+        if (s.baseSpeedGhs > 0 && !s.isOverheated) {
+          const ratePerSec = s.baseSpeedGhs * s.coolerMultiplier * 0.0001;
+          const tickYield = ratePerSec * (TICK_MS / 1000);
+          activeUnclaimed = s.unclaimedBalance + tickYield;
+        }
+
+        const targetUnclaimed = Math.max(s.unclaimedBalance, activeUnclaimed);
         const unclDir = targetUnclaimed >= s.displayUnclaimed ? EASE_FLAT : 1.0;
         const promoDir = s.lifetimePromotionalOutput >= s.displayPromoOutput ? EASE_FLAT : 1.0;
 
-        set({
-          displayUnclaimed: targetUnclaimed < s.displayUnclaimed ? targetUnclaimed : s.displayUnclaimed + (targetUnclaimed - s.displayUnclaimed) * unclDir,
-          displayPromoOutput: s.lifetimePromotionalOutput < s.displayPromoOutput ? s.lifetimePromotionalOutput : s.displayPromoOutput + (s.lifetimePromotionalOutput - s.displayPromoOutput) * promoDir,
-        });
+        const nextDisplayUnclaimed = targetUnclaimed < s.displayUnclaimed ? targetUnclaimed : s.displayUnclaimed + (targetUnclaimed - s.displayUnclaimed) * unclDir;
+        const nextDisplayPromo = s.lifetimePromotionalOutput < s.displayPromoOutput ? s.lifetimePromotionalOutput : s.displayPromoOutput + (s.lifetimePromotionalOutput - s.displayPromoOutput) * promoDir;
 
         // Cooldown countdown rendering (recalibrated by every server response).
-        // When the cooling window closes, the core resets — mirroring the engine.
         let nextCooldown = s.cooldownRemaining;
         let nextOverheated = s.isOverheated;
         let nextMultiplier = s.coolerMultiplier;
@@ -419,12 +461,27 @@ export const useMiningStore = create<MiningState>((set, get) => {
           nextMultiplier = Math.max(1.0, nextMultiplier - DECAY_PER_TICK);
         }
         const multDir = nextMultiplier >= s.displayMultiplier ? EASE_UP : EASE_DOWN;
-        set({
-          displayMultiplier: s.displayMultiplier + (nextMultiplier - s.displayMultiplier) * multDir,
-          cooldownRemaining: nextCooldown,
-          isOverheated: nextOverheated,
-          coolerMultiplier: nextMultiplier,
-        });
+        const nextDisplayMult = s.displayMultiplier + (nextMultiplier - s.displayMultiplier) * multDir;
+
+        // Single batched state update strictly when values have changed
+        if (
+          Math.abs(nextDisplayUnclaimed - s.displayUnclaimed) > 0.0000001 ||
+          Math.abs(nextDisplayPromo - s.displayPromoOutput) > 0.0000001 ||
+          Math.abs(nextDisplayMult - s.displayMultiplier) > 0.0001 ||
+          nextCooldown !== s.cooldownRemaining ||
+          nextOverheated !== s.isOverheated ||
+          nextMultiplier !== s.coolerMultiplier
+        ) {
+          set({
+            unclaimedBalance: activeUnclaimed,
+            displayUnclaimed: nextDisplayUnclaimed,
+            displayPromoOutput: nextDisplayPromo,
+            displayMultiplier: nextDisplayMult,
+            cooldownRemaining: nextCooldown,
+            isOverheated: nextOverheated,
+            coolerMultiplier: nextMultiplier,
+          });
+        }
       }, TICK_MS);
     },
 
@@ -435,4 +492,27 @@ export const useMiningStore = create<MiningState>((set, get) => {
       }
     },
   };
-});
+},
+    {
+      name: 'mining-storage',
+      partialize: (state) => ({
+        activeCurrency: state.activeCurrency,
+        baseSpeedGhs: state.baseSpeedGhs,
+        coolerMultiplier: state.coolerMultiplier,
+        unclaimedBalance: state.unclaimedBalance,
+        displayUnclaimed: state.displayUnclaimed,
+        machineMode: state.machineMode,
+        lifetimePromotionalOutput: state.lifetimePromotionalOutput,
+        interactivePromotionalOutput: state.interactivePromotionalOutput,
+        userMachines: state.userMachines,
+        ownedTierCodes: state.ownedTierCodes,
+        hasPurchasedMachine: state.hasPurchasedMachine,
+        tapsToday: state.tapsToday,
+        tapsThisWeek: state.tapsThisWeek,
+        tapsThisMonth: state.tapsThisMonth,
+        usdtSpinnerIdx: state.usdtSpinnerIdx,
+        tonSpinnerIdx: state.tonSpinnerIdx,
+      }),
+    }
+  )
+);

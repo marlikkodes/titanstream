@@ -41,6 +41,13 @@ export class EventBusService {
   }
 
   /**
+   * Returns complete event stream.
+   */
+  get stream(): Observable<PlatformEvent> {
+    return this.bus.asObservable();
+  }
+
+  /**
    * Listen to all events on the bus.
    */
   all(): Observable<PlatformEvent> {
