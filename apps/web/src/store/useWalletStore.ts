@@ -83,6 +83,15 @@ export const useWalletStore = create<WalletState>()(
 
   updateBalance: (updates) => {
     set((state) => {
+      let changed = false;
+      for (const key in updates) {
+        if ((state as any)[key] !== (updates as any)[key]) {
+          changed = true;
+          break;
+        }
+      }
+      if (!changed) return state;
+
       const next = { ...state, ...updates };
       if (typeof updates.usdtBalance === 'number') {
         import('./useQuestStore').then(({ useQuestStore }) => {

@@ -8,14 +8,10 @@ import { ActionCards } from './components/ActionCards';
 import { useMiningStore } from '../../store/useMiningStore';
 import { useWalletStore } from '../../store/useWalletStore';
 
-export const MineScreen: React.FC = () => {
-  const { fetchMiningState } = useMiningStore();
-  const { fetchBalanceFromEngine } = useWalletStore();
-
   useEffect(() => {
-    fetchMiningState();
-    fetchBalanceFromEngine();
-  }, [fetchMiningState, fetchBalanceFromEngine]);
+    useMiningStore.getState().fetchMiningState();
+    useWalletStore.getState().fetchBalanceFromEngine();
+  }, []);
 
   return (
     <div className="flex flex-col min-h-full animate-fade-in">

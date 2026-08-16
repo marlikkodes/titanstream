@@ -35,20 +35,17 @@ export const WalletScreen: React.FC = () => {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
-  const {
-    usdtBalance,
-    pendingSettlements,
-    transactions,
-    isLoadingBalance,
-    fetchBalanceFromEngine,
-    fetchSettlementHistory,
-    fetchTransactions,
-    lifetimeDeposits,
-    lifetimeWithdrawals,
-    activeMachines,
-  } = useWalletStore();
+  const usdtBalance = useWalletStore((s) => s.usdtBalance);
+  const pendingSettlements = useWalletStore((s) => s.pendingSettlements);
+  const transactions = useWalletStore((s) => s.transactions);
+  const isLoadingBalance = useWalletStore((s) => s.isLoadingBalance);
+  const lifetimeDeposits = useWalletStore((s) => s.lifetimeDeposits);
+  const lifetimeWithdrawals = useWalletStore((s) => s.lifetimeWithdrawals);
+  const activeMachines = useWalletStore((s) => s.activeMachines);
 
-  const { fetchUserMachines, baseSpeedGhs, unclaimedBalance } = useMiningStore();
+  const unclaimedBalance = useMiningStore((s) => s.unclaimedBalance);
+  const baseSpeedGhs = useMiningStore((s) => s.baseSpeedGhs);
+
   const { setActiveTab } = useNavigationStore();
   const { hapticFeedback, user } = useTelegram();
   const { selectedCountry, getLocalAmount } = useCountryStore();
@@ -57,18 +54,18 @@ export const WalletScreen: React.FC = () => {
   const isLocalPreferred = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
 
   useEffect(() => {
-    fetchBalanceFromEngine();
-    fetchSettlementHistory();
-    fetchTransactions(5, 0);
-    fetchUserMachines();
-  }, [fetchBalanceFromEngine, fetchSettlementHistory, fetchTransactions, fetchUserMachines]);
+    useWalletStore.getState().fetchBalanceFromEngine();
+    useWalletStore.getState().fetchSettlementHistory();
+    useWalletStore.getState().fetchTransactions(5, 0);
+    useMiningStore.getState().fetchUserMachines();
+  }, []);
 
   const handleRefresh = () => {
     hapticFeedback.impactOccurred('light');
-    fetchBalanceFromEngine();
-    fetchSettlementHistory();
-    fetchTransactions(5, 0);
-    fetchUserMachines();
+    useWalletStore.getState().fetchBalanceFromEngine();
+    useWalletStore.getState().fetchSettlementHistory();
+    useWalletStore.getState().fetchTransactions(5, 0);
+    useMiningStore.getState().fetchUserMachines();
   };
 
   if (isLoadingBalance && usdtBalance === 0) {
