@@ -41,9 +41,10 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
   paymentMethod: initialPaymentMethod,
   onCancel,
 }) => {
-  const { userCountry } = useCountryStore();
+  const selectedCountry = useCountryStore((s) => s.selectedCountry);
+  const userCountryCode = selectedCountry?.code || 'UG';
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'MOBILE_MONEY'>(
-    initialPaymentMethod || (userCountry === 'US' ? 'CARD' : 'MOBILE_MONEY')
+    initialPaymentMethod || (userCountryCode === 'US' ? 'CARD' : 'MOBILE_MONEY')
   );
 
   // Sync initialPaymentMethod prop changes (e.g. user toggling CARD <-> MOBILE_MONEY in parent)
@@ -55,7 +56,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
   const [amountUsdt, setAmountUsdt] = useState<string>('50');
   const [paymentNetwork, setPaymentNetwork] = useState<'MTN' | 'AIRTEL'>('MTN');
   const [phoneNumber, setPhoneNumber] = useState<string>('');
-  const [country, setCountry] = useState<string>(userCountry || 'UG');
+  const [country, setCountry] = useState<string>(userCountryCode);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<SettlementSession | null>(null);
@@ -68,19 +69,19 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
 
   // Sync country when changed from selector
   useEffect(() => {
-    if (userCountry) {
-      setCountry(userCountry);
-      if (userCountry === 'US') {
+    if (userCountryCode) {
+      setCountry(userCountryCode);
+      if (userCountryCode === 'US') {
         setPaymentMethod('CARD');
       }
     }
-  }, [userCountry]);
+  }, [userCountryCode]);
 
   // Fetch live backend rate for display estimate (pre-session creation)
   useEffect(() => {
     let isMounted = true;
     const fetchRate = async () => {
-      const code = currFormat.code;
+      const code = (CURRENCY_FORMAT[country] || CURRENCY_FORMAT.US).code;
       if (code === 'USD') {
         setLiveRate(1.0);
         return;
@@ -102,7 +103,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [country, currFormat.code]);
+  }, [country]);
 
   // Session status polling hook
   useEffect(() => {
@@ -117,7 +118,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
         if (updatedSession.status === 'COMPLETED') {
           try {
             const walletStore = (await import('../../store/useWalletStore')).useWalletStore;
-            walletStore.getState().fetchWalletBalances();
+            walletStore.getState().fetchBalanceFromEngine();
           } catch {
             // safe fallback
           }
@@ -692,7 +693,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                         setSession(updated);
                         try {
                           const walletStore = (await import('../../store/useWalletStore')).useWalletStore;
-                          walletStore.getState().fetchWalletBalances();
+                          walletStore.getState().fetchBalanceFromEngine();
                         } catch {
                           // safe fallback
                         }
