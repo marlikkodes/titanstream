@@ -163,9 +163,26 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
       setSession(response.session);
     } catch (err: any) {
       console.error('Failed to create payment session:', err);
-      const errMsg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || '';
+      const rawMsg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || '';
 
-      if (errMsg.includes('ACTIVE_SETTLEMENT_EXISTS')) {
+      if (rawMsg.includes('TOKEN_EXPIRED') || rawMsg.includes('jwt expired')) {
+        try {
+          const retryRes = await fundingService.createPesapalSession({
+            amountUsdt: numAmount,
+            country: country || 'UG',
+            paymentMethod,
+            mobileMoneyNetwork: paymentMethod === 'MOBILE_MONEY' ? paymentNetwork : undefined,
+            phoneNumber: paymentMethod === 'MOBILE_MONEY' ? phoneNumber : undefined,
+          });
+          setSession(retryRes.session);
+          setError(null);
+          return;
+        } catch (retryErr: any) {
+          console.error('Retry after token refresh failed:', retryErr);
+        }
+      }
+
+      if (rawMsg.includes('ACTIVE_SETTLEMENT_EXISTS')) {
         try {
           const history = await fundingService.getHistory();
           const active = history.find((s) =>
@@ -181,7 +198,11 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
         }
       }
 
-      setError(errMsg || 'Failed to initialize payment session');
+      const userFriendlyMsg = (rawMsg.includes('TOKEN_EXPIRED') || rawMsg.includes('jwt expired'))
+        ? 'Session expired. Please try again.'
+        : rawMsg;
+
+      setError(userFriendlyMsg || 'Failed to initialize payment session');
     } finally {
       setIsLoading(false);
     }
