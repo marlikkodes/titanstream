@@ -8,6 +8,7 @@ import { ActionCards } from './components/ActionCards';
 import { useMiningStore } from '../../store/useMiningStore';
 import { useWalletStore } from '../../store/useWalletStore';
 
+export const MineScreen: React.FC = () => {
   useEffect(() => {
     useMiningStore.getState().fetchMiningState();
     useWalletStore.getState().fetchBalanceFromEngine();
