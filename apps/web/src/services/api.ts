@@ -88,11 +88,7 @@ api.interceptors.response.use(
       originalRequest.headers.Authorization = `Bearer ${body.data.accessToken}`;
       return api(originalRequest);
     } catch (refreshError: any) {
-      // Only clear session if token refresh endpoint explicitly returns 401 Unauthorized
-      if (refreshError.response?.status === 401) {
-        console.warn('[API] Refresh token expired or revoked. Resetting session.');
-        useAuthStore.getState().clearSession();
-      }
+      console.warn('[API] Token refresh notice:', refreshError?.message || 'Token refresh unavailable');
       return Promise.reject(refreshError);
     }
   },

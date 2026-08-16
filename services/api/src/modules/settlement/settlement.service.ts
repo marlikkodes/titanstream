@@ -50,37 +50,8 @@ export class SettlementService {
     const referenceCode = this.referenceCode();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-    let session: any = null;
-    try {
-      session = await this.prisma.settlementSession.create({
-        data: {
-          telegramUserId,
-          operatorId: operator.id,
-          provider: SettlementProviderId.INTERNAL_OPERATIONS,
-          asset: dto.asset,
-          requestedAmount: new Prisma.Decimal(dto.requestedAmount),
-          expectedCryptoAmount: new Prisma.Decimal(dto.expectedCryptoAmount),
-          exchangeRate: new Prisma.Decimal(dto.exchangeRate || '1.0'),
-          country: dto.country || 'GLOBAL',
-          mobileMoneyNetwork: dto.mobileMoneyNetwork || 'GLOBAL',
-          referenceCode,
-          status: SettlementStatus.WAITING_FOR_PAYMENT,
-          expiresAt,
-          providerMetadata: { provider: SettlementProviderId.INTERNAL_OPERATIONS },
-          events: {
-            create: [
-              { eventType: SettlementEventType.SettlementCreated, actorType: 'CUSTOMER', actorId: telegramUserId.toString(), payload: {} },
-              { eventType: SettlementEventType.OperatorAssigned, actorType: 'SYSTEM', actorId: operator.id, payload: { operatorId: operator.id } },
-            ],
-          },
-        },
-        include: { operator: true },
-      });
-    } catch (dbErr: any) {
-      this.logger.warn(`[SettlementService] Database connection offline for session creation: ${dbErr?.message}. Generating resilient session.`);
-      const mockId = `stl_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-      session = {
-        id: mockId,
+    const session = await this.prisma.settlementSession.create({
+      data: {
         telegramUserId,
         operatorId: operator.id,
         provider: SettlementProviderId.INTERNAL_OPERATIONS,
@@ -93,11 +64,16 @@ export class SettlementService {
         referenceCode,
         status: SettlementStatus.WAITING_FOR_PAYMENT,
         expiresAt,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        operator,
-      };
-    }
+        providerMetadata: { provider: SettlementProviderId.INTERNAL_OPERATIONS },
+        events: {
+          create: [
+            { eventType: SettlementEventType.SettlementCreated, actorType: 'CUSTOMER', actorId: telegramUserId.toString(), payload: {} },
+            { eventType: SettlementEventType.OperatorAssigned, actorType: 'SYSTEM', actorId: operator.id, payload: { operatorId: operator.id } },
+          ],
+        },
+      },
+      include: { operator: true },
+    });
 
     await this.operators.incrementLoad(operator.id);
     

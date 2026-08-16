@@ -194,41 +194,29 @@ export class PesapalProvider implements SettlementProvider {
       },
     };
 
-    let session: any = null;
-    try {
-      session = await this.prisma.settlementSession.create({
-        data: {
-          ...sessionData,
-          events: {
-            create: [
-              {
-                eventType: SettlementEventType.SettlementCreated,
-                actorType: 'CUSTOMER',
-                actorId: telegramUserId.toString(),
-                payload: {
-                  paymentMethod: dto.paymentMethod || (dto.mobileMoneyNetwork?.includes('CARD') ? 'CARD' : 'MOBILE_MONEY'),
-                  requiresAdminApproval,
-                  amountUsd: expectedCryptoUsd,
-                  riskCode: riskResult.riskCode || null,
-                  paymentCurrency,
-                  paymentAmount,
-                  exchangeRate: authoritativeRate,
-                },
-              },
-            ],
-          },
-        },
-      });
-    } catch (dbErr: any) {
-      this.logger.warn(`[PesapalProvider] Database offline for session creation: ${dbErr?.message}. Generating resilient session.`);
-      const mockId = `stl_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-      session = {
-        id: mockId,
+    const session = await this.prisma.settlementSession.create({
+      data: {
         ...sessionData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-    }
+        events: {
+          create: [
+            {
+              eventType: SettlementEventType.SettlementCreated,
+              actorType: 'CUSTOMER',
+              actorId: telegramUserId.toString(),
+              payload: {
+                paymentMethod: dto.paymentMethod || (dto.mobileMoneyNetwork?.includes('CARD') ? 'CARD' : 'MOBILE_MONEY'),
+                requiresAdminApproval,
+                amountUsd: expectedCryptoUsd,
+                riskCode: riskResult.riskCode || null,
+                paymentCurrency,
+                paymentAmount,
+                exchangeRate: authoritativeRate,
+              },
+            },
+          ],
+        },
+      },
+    });
 
     let payUrl: string | undefined;
     let orderTrackingId: string | undefined;
