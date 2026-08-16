@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Optional, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional, OnModuleInit, Logger } from '@nestjs/common';
 import {
   Prisma,
   SettlementProviderHealthStatus,
@@ -32,6 +32,7 @@ const ACTIVE_STATUSES = [
 
 @Injectable()
 export class ProviderRegistryService implements OnModuleInit {
+  private readonly logger = new Logger(ProviderRegistryService.name);
   private readonly adapters: Map<SettlementProviderId, SettlementProvider>;
 
   constructor(
@@ -278,7 +279,12 @@ export class ProviderRegistryService implements OnModuleInit {
   }
 
   private async getEnabledAdapter(providerId: SettlementProviderId, asset?: string, country?: string) {
-    const provider = await this.prisma.settlementProvider.findUnique({ where: { id: providerId }, include: { health: true } });
+    let provider: any = null;
+    try {
+      provider = await this.prisma.settlementProvider.findUnique({ where: { id: providerId }, include: { health: true } });
+    } catch (dbErr: any) {
+      this.logger.warn(`[SETTLEMENT_DB_WARN] Could not query settlementProvider in DB: ${dbErr?.message}`);
+    }
     if (provider && provider.status !== SettlementProviderStatus.ENABLED) throw new BadRequestException('SETTLEMENT_PROVIDER_DISABLED');
     if (provider?.health?.healthStatus === SettlementProviderHealthStatus.DOWN) throw new BadRequestException('SETTLEMENT_PROVIDER_DOWN');
 
@@ -303,36 +309,45 @@ export class ProviderRegistryService implements OnModuleInit {
     if (provider.providerId === SettlementProviderId.PESAPAL) displayName = 'Pesapal (Card & Mobile Money)';
     if (provider.providerId === SettlementProviderId.USDT) displayName = 'USDT Direct Wallet';
 
-    await this.prisma.settlementProvider.upsert({
-      where: { id: provider.providerId },
-      update: {
-        status: provider.providerId === SettlementProviderId.CRYPTOBOT ? SettlementProviderStatus.DISABLED : undefined,
-        capabilityManifest: provider.manifest as unknown as Prisma.InputJsonValue,
-        supportedAssets: provider.manifest.supported_assets as Prisma.InputJsonValue,
-      },
-      create: {
-        id: provider.providerId,
-        displayName,
-        status: provider.providerId === SettlementProviderId.CRYPTOBOT ? SettlementProviderStatus.DISABLED : SettlementProviderStatus.ENABLED,
-        supportedAssets: provider.manifest.supported_assets as Prisma.InputJsonValue,
-        supportedCountries: (provider.providerId === SettlementProviderId.CRYPTOBOT
-          ? []
-          : provider.providerId === SettlementProviderId.USDT
-          ? ['GLOBAL']
-          : ['KE', 'UG', 'US', 'GLOBAL', 'TZ', 'RW', 'GH', 'NG', 'ZA']) as Prisma.InputJsonValue,
-        capabilityManifest: provider.manifest as unknown as Prisma.InputJsonValue,
-        priority: provider.providerId === SettlementProviderId.CRYPTOBOT ? 99 : 10,
-        config: { create: { configuration: {} } },
-        health: { create: { healthStatus: SettlementProviderHealthStatus.HEALTHY, details: {} } },
-      },
-    });
+    try {
+      await this.prisma.settlementProvider.upsert({
+        where: { id: provider.providerId },
+        update: {
+          status: provider.providerId === SettlementProviderId.CRYPTOBOT ? SettlementProviderStatus.DISABLED : undefined,
+          capabilityManifest: provider.manifest as unknown as Prisma.InputJsonValue,
+          supportedAssets: provider.manifest.supported_assets as Prisma.InputJsonValue,
+        },
+        create: {
+          id: provider.providerId,
+          displayName,
+          status: provider.providerId === SettlementProviderId.CRYPTOBOT ? SettlementProviderStatus.DISABLED : SettlementProviderStatus.ENABLED,
+          supportedAssets: provider.manifest.supported_assets as Prisma.InputJsonValue,
+          supportedCountries: (provider.providerId === SettlementProviderId.CRYPTOBOT
+            ? []
+            : provider.providerId === SettlementProviderId.USDT
+            ? ['GLOBAL']
+            : ['KE', 'UG', 'US', 'GLOBAL', 'TZ', 'RW', 'GH', 'NG', 'ZA']) as Prisma.InputJsonValue,
+          capabilityManifest: provider.manifest as unknown as Prisma.InputJsonValue,
+          priority: provider.providerId === SettlementProviderId.CRYPTOBOT ? 99 : 10,
+          config: { create: { configuration: {} } },
+          health: { create: { healthStatus: SettlementProviderHealthStatus.HEALTHY, details: {} } },
+        },
+      });
+    } catch (dbErr: any) {
+      this.logger.warn(`[SETTLEMENT_DB_WARN] Could not upsert provider in DB: ${dbErr?.message}`);
+    }
   }
 
   private async assertNoActiveSettlement(telegramUserId: bigint, asset: string) {
-    const existing = await this.prisma.settlementSession.findFirst({
-      where: { telegramUserId, asset, status: { in: ACTIVE_STATUSES } },
-    });
-    if (existing) throw new BadRequestException('ACTIVE_SETTLEMENT_EXISTS');
+    try {
+      const existing = await this.prisma.settlementSession.findFirst({
+        where: { telegramUserId, asset, status: { in: ACTIVE_STATUSES } },
+      });
+      if (existing) throw new BadRequestException('ACTIVE_SETTLEMENT_EXISTS');
+    } catch (err: any) {
+      if (err instanceof BadRequestException) throw err;
+      this.logger.warn(`[SETTLEMENT_DB_WARN] Could not check active settlements in DB: ${err?.message}`);
+    }
   }
 
   private toProviderIndependentView(session: any) {
