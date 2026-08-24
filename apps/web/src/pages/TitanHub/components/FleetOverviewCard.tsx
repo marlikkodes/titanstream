@@ -22,10 +22,12 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
   onOpenHowItWorks,
   onOpenHealthModal,
 }) => {
-  const { ownedTierCodes, getActiveHashSpeed } = useMiningStore();
+  const ownedTierCodes = useMiningStore((s) => s.ownedTierCodes);
+  const isPaused = useMiningStore((s) => s.isPaused);
+  const activeSpeedGhs = useMiningStore((s) => s.activeSpeedGhs);
   const { ownerships } = useMachineOwnershipStore();
 
-  const activeSpeed = getActiveHashSpeed();
+  const activeSpeed = isPaused ? 0 : activeSpeedGhs;
 
   // Active controls drawer tier state (null = collapsed, tierCode = expanded)
   const [activeControlsTier, setActiveControlsTier] = useState<string | null>(null);

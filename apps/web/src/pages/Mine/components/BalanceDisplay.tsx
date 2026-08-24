@@ -5,12 +5,16 @@ import { useCountryStore } from '../../../store/useCountryStore';
 import { formatAdaptiveCounter } from '../../../utils/format';
 
 export const BalanceDisplay: React.FC = () => {
-  const { activeCurrency, getActiveHashSpeed, displayMultiplier, displayUnclaimed } = useMiningStore();
+  const activeCurrency = useMiningStore((s) => s.activeCurrency);
+  const displayMultiplier = useMiningStore((s) => s.displayMultiplier);
+  const displayUnclaimed = useMiningStore((s) => s.displayUnclaimed);
+  const isPaused = useMiningStore((s) => s.isPaused);
+  const activeSpeedGhs = useMiningStore((s) => s.activeSpeedGhs);
+
   const { preferLocalCurrency } = useSettingsStore();
   const { selectedCountry } = useCountryStore();
 
-  const activeSpeed = getActiveHashSpeed();
-  const isPaused = activeSpeed <= 0;
+  const activeSpeed = isPaused ? 0 : activeSpeedGhs;
 
   const currentDisplay = Math.max(0, Number(displayUnclaimed) || 0);
   const isUsdt = activeCurrency === 'USDT';

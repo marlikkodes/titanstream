@@ -225,6 +225,13 @@ export const useMachineOwnershipStore = create<MachineOwnershipState>()(
           },
         }));
 
+        try {
+          const { useMiningStore } = require('./useMiningStore');
+          useMiningStore.getState().syncMachineStatus();
+        } catch (e) {
+          // ignore fallback
+        }
+
         machineService.toggleMachineControl(existing.machineId, status.toLowerCase() as any).catch(() => {});
       },
 

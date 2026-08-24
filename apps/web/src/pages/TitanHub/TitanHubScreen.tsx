@@ -113,11 +113,11 @@ export const TitanHubScreen: React.FC = () => {
   const isSelectedPaused = activeRecord?.status === 'PAUSED';
 
   useEffect(() => {
-    const activeSpeed = useMiningStore.getState().getActiveHashSpeed();
+    const { isPaused, activeGhs } = useMiningStore.getState().syncMachineStatus();
 
     updateMachineStatus(
       isOverheated ? 'OVERHEATED' : isSelectedPaused ? 'PAUSED' : 'RUNNING',
-      activeSpeed * 10,
+      activeGhs * 10,
       coolerMultiplier,
       isOverheated ? 85 : isSelectedPaused ? 30 : 45
     );

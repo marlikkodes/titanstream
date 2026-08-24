@@ -141,8 +141,7 @@ export const MiningSpinner = React.memo(() => {
   const upgradeLimits = useMiningStore((s) => s.upgradeLimits);
   const ownedTierCodes = useMiningStore((s) => s.ownedTierCodes);
   const userMachines = useMiningStore((s) => s.userMachines);
-  const getActiveHashSpeed = useMiningStore((s) => s.getActiveHashSpeed);
-  const isPaused = getActiveHashSpeed() <= 0;
+  const isPaused = useMiningStore((s) => s.isPaused);
 
   const { setActiveTab } = useNavigationStore();
 

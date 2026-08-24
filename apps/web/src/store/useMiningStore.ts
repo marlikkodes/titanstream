@@ -65,6 +65,10 @@ export interface MiningState {
   unlockTON: () => void;
   isMiningLocked: () => boolean;
   getActiveHashSpeed: () => number;
+  isPaused: boolean;
+  activeSpeedGhs: number;
+  machineStatusVersion: number;
+  syncMachineStatus: () => { isPaused: boolean; activeGhs: number };
 }
 
 const MIN_BOOST_USDT = [0, 5.0, 25.0, 130.0, 550.0, 1500.0];
@@ -102,6 +106,10 @@ export const useMiningStore = create<MiningState>()(
     displayUnclaimed: 0.0,
     displayMultiplier: 1.0,
     displayPromoOutput: 0.0,
+
+    isPaused: false,
+    activeSpeedGhs: 1.0,
+    machineStatusVersion: Date.now(),
 
     isActive: true,
     tapsToday: 0,
@@ -432,6 +440,36 @@ export const useMiningStore = create<MiningState>()(
       return !s.isMachineOwned(targetTier);
     },
 
+    syncMachineStatus: () => {
+      const s = get();
+      try {
+        const { useMachineOwnershipStore } = require('./useMachineOwnershipStore');
+        const ownerships = useMachineOwnershipStore.getState().ownerships || {};
+        const safeOwned = Array.isArray(s.ownedTierCodes) ? s.ownedTierCodes : ['TS_TRIAL'];
+        let activeGhs = 0;
+
+        for (const tierCode of safeOwned) {
+          const rec = ownerships[tierCode.toUpperCase()];
+          const status = rec?.status || 'RUNNING';
+          if (status === 'RUNNING') {
+            const catItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === tierCode.toUpperCase());
+            activeGhs += catItem?.capacityGhs || (tierCode === 'TS_TRIAL' ? 1.0 : 0);
+          }
+        }
+
+        const isPaused = activeGhs <= 0;
+        set({
+          isPaused,
+          activeSpeedGhs: activeGhs,
+          machineStatusVersion: Date.now(),
+        });
+
+        return { isPaused, activeGhs };
+      } catch (e) {
+        return { isPaused: false, activeGhs: s.baseSpeedGhs || 1.0 };
+      }
+    },
+
     getActiveHashSpeed: () => {
       const s = get();
       try {
@@ -447,6 +485,10 @@ export const useMiningStore = create<MiningState>()(
             const catItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === tierCode.toUpperCase());
             activeGhs += catItem?.capacityGhs || (tierCode === 'TS_TRIAL' ? 1.0 : 0);
           }
+        }
+        const isPaused = activeGhs <= 0;
+        if (s.isPaused !== isPaused || s.activeSpeedGhs !== activeGhs) {
+          set({ isPaused, activeSpeedGhs: activeGhs, machineStatusVersion: Date.now() });
         }
         return activeGhs;
       } catch (e) {
