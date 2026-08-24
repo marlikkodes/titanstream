@@ -20,6 +20,7 @@ import { MachineControlCenter } from './components/MachineControlCenter';
 import { MachineOwnersManualModal } from './components/MachineOwnersManualModal';
 import { MachineActivationModal } from './components/MachineActivationModal';
 import { MachineCertificateModal } from './components/MachineCertificateModal';
+import { MachineHealthModal } from './components/MachineHealthModal';
 import { FleetOverviewCard } from './components/FleetOverviewCard';
 import { formatCurrencyWithLocalFallback } from '../../store/useCountryStore';
 
@@ -43,6 +44,7 @@ export const TitanHubScreen: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(titanState.syncStatus !== 'COMPLETE');
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showShopSection, setShowShopSection] = useState(false);
+  const [showHealthModal, setShowHealthModal] = useState(false);
   const [selectedTierCode, setSelectedTierCode] = useState<string>('TS_TRIAL');
 
   const syncSteps = [
@@ -263,6 +265,7 @@ export const TitanHubScreen: React.FC = () => {
       <MachineControlCenter
         activeTierCode={selectedTierCode}
         onOpenShop={() => setShowShopSection(true)}
+        onOpenHealthModal={() => setShowHealthModal(true)}
       />
 
       {/* QUICK ACTIONS ROW */}
@@ -585,6 +588,11 @@ export const TitanHubScreen: React.FC = () => {
       <MachineOwnersManualModal />
       <MachineActivationModal />
       <MachineCertificateModal />
+      <MachineHealthModal
+        isOpen={showHealthModal}
+        onClose={() => setShowHealthModal(false)}
+        tierCode={selectedTierCode}
+      />
       <MachineEducationModal
         isOpen={showEducationModal}
         onClose={() => {

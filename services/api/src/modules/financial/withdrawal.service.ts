@@ -93,6 +93,14 @@ export class WithdrawalService {
       );
     }
 
+    // Check Referral Qualification Guardrail (5 Qualified Referrals)
+    const qualifiedCount = user.qualifiedReferrals || 0;
+    if (qualifiedCount < 5) {
+      throw new BadRequestException(
+        `REFERRAL_THRESHOLD_NOT_MET: Withdrawal locked. You must have at least 5 qualified referrals to enable payouts (${qualifiedCount}/5).`,
+      );
+    }
+
     let verifiedRecipient = '';
     let mmNetwork = dto.mobileMoneyNetwork || dto.network;
 
