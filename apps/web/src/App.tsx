@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
@@ -16,23 +16,32 @@ import { RewardsScreen } from './pages/Rewards/RewardsScreen';
 import { ProfileScreen } from './pages/Profile/ProfileScreen';
 import { MachineOwnersManualModal } from './pages/TitanHub/components/MachineOwnersManualModal';
 import { MachineCertificateModal } from './pages/TitanHub/components/MachineCertificateModal';
-import { OverviewPage } from './pages/admin/overview';
-import { OrdersPage } from './pages/admin/orders';
-import { OperationsPage } from './pages/admin/operations';
-import { LiquidityPage } from './pages/admin/liquidity';
-import { TreasuryPage } from './pages/admin/treasury';
-import { PaymentRailsPage } from './pages/admin/payment-rails';
-import { WithdrawalsPage } from './pages/admin/withdrawals';
-import { UsersPage } from './pages/admin/users';
-import { RiskPage } from './pages/admin/risk';
-import { AutomationPage } from './pages/admin/automation';
-import { RevenuePage } from './pages/admin/revenue';
-import { NotificationsPage } from './pages/admin/notifications';
-import { AuditPage } from './pages/admin/audit';
-import { HealthPage } from './pages/admin/health';
-import { SettingsPage } from './pages/admin/settings';
-import { AdminSupportPage } from './pages/admin/support';
-import { GamesAdminPage } from './pages/admin/games';
+import { DestinationLoader } from './components/DestinationLoader';
+
+// Lazy-loaded Admin Pages (Code-split out of initial JS bundle)
+const OverviewPage = lazy(() => import('./pages/admin/overview').then((m) => ({ default: m.OverviewPage })));
+const OrdersPage = lazy(() => import('./pages/admin/orders').then((m) => ({ default: m.OrdersPage })));
+const OperationsPage = lazy(() => import('./pages/admin/operations').then((m) => ({ default: m.OperationsPage })));
+const OperationsHqPage = lazy(() => import('./pages/admin/operations-hq').then((m) => ({ default: m.OperationsHqPage })));
+const IntelligencePage = lazy(() => import('./pages/admin/intelligence').then((m) => ({ default: m.IntelligencePage })));
+const ReadinessPage = lazy(() => import('./pages/admin/readiness').then((m) => ({ default: m.ReadinessPage })));
+const LiquidityPage = lazy(() => import('./pages/admin/liquidity').then((m) => ({ default: m.LiquidityPage })));
+const TreasuryPage = lazy(() => import('./pages/admin/treasury').then((m) => ({ default: m.TreasuryPage })));
+const FinancialControlCenterPage = lazy(() => import('./pages/admin/financial').then((m) => ({ default: m.FinancialControlCenterPage })));
+const MachineControlCenterPage = lazy(() => import('./pages/admin/machines').then((m) => ({ default: m.MachineControlCenterPage })));
+const PaymentRailsPage = lazy(() => import('./pages/admin/payment-rails').then((m) => ({ default: m.PaymentRailsPage })));
+const WithdrawalsPage = lazy(() => import('./pages/admin/withdrawals').then((m) => ({ default: m.WithdrawalsPage })));
+const UsersPage = lazy(() => import('./pages/admin/users').then((m) => ({ default: m.UsersPage })));
+const AdminSupportPage = lazy(() => import('./pages/admin/support').then((m) => ({ default: m.AdminSupportPage })));
+const GamesAdminPage = lazy(() => import('./pages/admin/games').then((m) => ({ default: m.GamesAdminPage })));
+const RiskPage = lazy(() => import('./pages/admin/risk').then((m) => ({ default: m.RiskPage })));
+const AutomationPage = lazy(() => import('./pages/admin/automation').then((m) => ({ default: m.AutomationPage })));
+const RevenuePage = lazy(() => import('./pages/admin/revenue').then((m) => ({ default: m.RevenuePage })));
+const NotificationsPage = lazy(() => import('./pages/admin/notifications').then((m) => ({ default: m.NotificationsPage })));
+const AuditPage = lazy(() => import('./pages/admin/audit').then((m) => ({ default: m.AuditPage })));
+const HealthPage = lazy(() => import('./pages/admin/health').then((m) => ({ default: m.HealthPage })));
+const SettingsPage = lazy(() => import('./pages/admin/settings').then((m) => ({ default: m.SettingsPage })));
+
 import { useNavigationStore } from './store/useNavigationStore';
 import { useMissionRunnerStore } from './store/useMissionRunnerStore';
 import { useMiningStore } from './store/useMiningStore';
@@ -50,11 +59,6 @@ import { AuthGate } from './components/AuthGate';
 import { OnboardingOverlay } from './components/OnboardingOverlay';
 import { CountrySelector } from './components/CountrySelector';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { FinancialControlCenterPage } from './pages/admin/financial';
-import { MachineControlCenterPage } from './pages/admin/machines';
-import { OperationsHqPage } from './pages/admin/operations-hq';
-import { IntelligencePage } from './pages/admin/intelligence';
-import { ReadinessPage } from './pages/admin/readiness';
 import { StepUpModal } from './components/StepUpModal';
 import { ReferralLanding } from './pages/ReferralLanding';
 
@@ -62,32 +66,34 @@ import { ReferralLanding } from './pages/ReferralLanding';
 
 function AdminRoutes() {
   return (
-    <Routes>
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<OverviewPage />} />
-        <Route path="orders" element={<OrdersPage />} />
-        <Route path="operations" element={<OperationsPage />} />
-        <Route path="operations-hq" element={<OperationsHqPage />} />
-        <Route path="intelligence" element={<IntelligencePage />} />
-        <Route path="readiness" element={<ReadinessPage />} />
-        <Route path="liquidity" element={<LiquidityPage />} />
-        <Route path="treasury" element={<TreasuryPage />} />
-        <Route path="financial" element={<FinancialControlCenterPage />} />
-        <Route path="machines" element={<MachineControlCenterPage />} />
-        <Route path="payment-rails" element={<PaymentRailsPage />} />
-        <Route path="withdrawals" element={<WithdrawalsPage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="support" element={<AdminSupportPage />} />
-        <Route path="games" element={<GamesAdminPage />} />
-        <Route path="risk" element={<RiskPage />} />
-        <Route path="automation" element={<AutomationPage />} />
-        <Route path="revenue" element={<RevenuePage />} />
-        <Route path="notifications" element={<NotificationsPage />} />
-        <Route path="audit" element={<AuditPage />} />
-        <Route path="health" element={<HealthPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
-    </Routes>
+    <Suspense fallback={<DestinationLoader destination="wallet" />}>
+      <Routes>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<OverviewPage />} />
+          <Route path="orders" element={<OrdersPage />} />
+          <Route path="operations" element={<OperationsPage />} />
+          <Route path="operations-hq" element={<OperationsHqPage />} />
+          <Route path="intelligence" element={<IntelligencePage />} />
+          <Route path="readiness" element={<ReadinessPage />} />
+          <Route path="liquidity" element={<LiquidityPage />} />
+          <Route path="treasury" element={<TreasuryPage />} />
+          <Route path="financial" element={<FinancialControlCenterPage />} />
+          <Route path="machines" element={<MachineControlCenterPage />} />
+          <Route path="payment-rails" element={<PaymentRailsPage />} />
+          <Route path="withdrawals" element={<WithdrawalsPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="support" element={<AdminSupportPage />} />
+          <Route path="games" element={<GamesAdminPage />} />
+          <Route path="risk" element={<RiskPage />} />
+          <Route path="automation" element={<AutomationPage />} />
+          <Route path="revenue" element={<RevenuePage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="audit" element={<AuditPage />} />
+          <Route path="health" element={<HealthPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 }
 
@@ -297,26 +303,7 @@ export function App() {
         ) : (
           /* 6. Fully authenticated, onboarded, country set → full app */
           <Routes>
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<OverviewPage />} />
-              <Route path="orders" element={<OrdersPage />} />
-              <Route path="operations" element={<OperationsPage />} />
-              <Route path="liquidity" element={<LiquidityPage />} />
-              <Route path="treasury" element={<TreasuryPage />} />
-              <Route path="financial" element={<FinancialControlCenterPage />} />
-              <Route path="payment-rails" element={<PaymentRailsPage />} />
-              <Route path="withdrawals" element={<WithdrawalsPage />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="support" element={<AdminSupportPage />} />
-              <Route path="games" element={<GamesAdminPage />} />
-              <Route path="risk" element={<RiskPage />} />
-              <Route path="automation" element={<AutomationPage />} />
-              <Route path="revenue" element={<RevenuePage />} />
-              <Route path="notifications" element={<NotificationsPage />} />
-              <Route path="audit" element={<AuditPage />} />
-              <Route path="health" element={<HealthPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
+            <Route path="/admin/*" element={<AdminRoutes />} />
             <Route path="*" element={<MainApp />} />
           </Routes>
         )}

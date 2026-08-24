@@ -228,13 +228,21 @@ export const handleSessionExpiry = () => {
 };
 
 export const detectUserCountry = async (): Promise<string | null> => {
+  if (typeof window !== 'undefined') {
+    const cached = localStorage.getItem('titan_cached_country_code');
+    if (cached) return cached;
+  }
+
   try {
     const response = await fetch('https://ipapi.co/json/', {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(3000),
     });
     if (response.ok) {
       const data = await response.json();
       if (data.country_code) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('titan_cached_country_code', data.country_code);
+        }
         return data.country_code;
       }
     }
@@ -244,11 +252,14 @@ export const detectUserCountry = async (): Promise<string | null> => {
 
   try {
     const response = await fetch('http://ip-api.com/json/?fields=countryCode', {
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(2000),
     });
     if (response.ok) {
       const data = await response.json();
       if (data.countryCode) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('titan_cached_country_code', data.countryCode);
+        }
         return data.countryCode;
       }
     }

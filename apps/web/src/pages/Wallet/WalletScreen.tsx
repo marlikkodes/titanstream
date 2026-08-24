@@ -69,11 +69,13 @@ export const WalletScreen: React.FC = () => {
   const hasFetchedBalanceOnce = useWalletStore((s) => s.hasFetchedBalanceOnce);
 
   useEffect(() => {
-    useWalletStore.getState().fetchBalanceFromEngine();
+    if (!hasFetchedBalanceOnce) {
+      useWalletStore.getState().fetchBalanceFromEngine();
+    }
     useWalletStore.getState().fetchSettlementHistory();
     useWalletStore.getState().fetchTransactions(5, 0);
     useMiningStore.getState().fetchUserMachines();
-  }, []);
+  }, [hasFetchedBalanceOnce]);
 
   const handleRefresh = () => {
     hapticFeedback.impactOccurred('light');
