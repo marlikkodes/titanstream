@@ -4,12 +4,14 @@ import { Cpu, Zap, Activity, PlusCircle, HelpCircle, ShieldCheck } from 'lucide-
 import { useMiningStore } from '../../../store/useMiningStore';
 import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
 import { MACHINE_CATALOG } from '../../../data/machines';
+import { MachineControlCenter } from './MachineControlCenter';
 
 interface FleetOverviewCardProps {
   onOpenShop: () => void;
   onSelectTier: (tierCode: string) => void;
   selectedTierCode: string;
   onOpenHowItWorks?: () => void;
+  onOpenHealthModal?: () => void;
 }
 
 export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
@@ -17,6 +19,7 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
   onSelectTier,
   selectedTierCode,
   onOpenHowItWorks,
+  onOpenHealthModal,
 }) => {
   const { ownedTierCodes, baseSpeedGhs } = useMiningStore();
   const { ownerships } = useMachineOwnershipStore();
@@ -112,12 +115,12 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
         </div>
       </div>
 
-      {/* PROMINENT MACHINE SELECTOR CARDS (EQUAL VISIBILITY WITH METRICS) */}
+      {/* PROMINENT MACHINE SELECTOR CARDS */}
       <div>
         <div className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider mb-2">
           Select Active Hardware Node
         </div>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5 mb-3">
           {(Array.isArray(ownedTierCodes) ? ownedTierCodes : ['TS_TRIAL']).map((tierCode) => {
             const isSelected = selectedTierCode.toUpperCase() === tierCode.toUpperCase();
             const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === tierCode.toUpperCase()) || MACHINE_CATALOG[0];
@@ -189,6 +192,13 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
             <span className="text-[9px] text-text-tertiary">Expand Fleet</span>
           </button>
         </div>
+
+        {/* INTEGRATED MACHINE CONTROLS (Tapping machine card reveals control actions directly inside container) */}
+        <MachineControlCenter
+          activeTierCode={selectedTierCode}
+          onOpenShop={onOpenShop}
+          onOpenHealthModal={onOpenHealthModal}
+        />
       </div>
     </motion.div>
   );

@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, RotateCw, Edit3, BookOpen, Award, Activity, Check, X, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Play, Pause, RotateCw, Edit3, BookOpen, Award, Activity, Check, X, RefreshCw } from 'lucide-react';
 import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
 import { MACHINE_CATALOG } from '../../../data/machines';
 import { showToast } from '../../../components/Toast';
@@ -81,9 +81,11 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
+      key={activeTierCode}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="web3-card rounded-2xl p-4 border border-white/10 relative overflow-hidden flex flex-col gap-3"
+      transition={{ duration: 0.2 }}
+      className="bg-black/40 border border-white/10 rounded-2xl p-3.5 relative overflow-hidden flex flex-col gap-3 mt-1"
     >
       {/* Subtle mood backlight based on running state */}
       <div
@@ -92,8 +94,8 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
         }`}
       />
 
-      {/* MACHINE NAME & STATUS HEADER */}
-      <div className="relative flex items-center justify-between pb-3 border-b border-white/10">
+      {/* MACHINE ACTION DRAWER HEADER */}
+      <div className="relative flex items-center justify-between pb-2.5 border-b border-white/10">
         <div>
           <div className="flex items-center gap-2">
             {isEditingName ? (
@@ -102,27 +104,27 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
                   type="text"
                   value={nicknameInput}
                   onChange={(e) => setNicknameInput(e.target.value)}
-                  className="bg-black/40 border border-usdt-green/50 text-text-primary font-black text-sm px-2 py-0.5 rounded-md focus:outline-none"
+                  className="bg-black/60 border border-usdt-green/50 text-text-primary font-black text-xs px-2 py-0.5 rounded-md focus:outline-none"
                   autoFocus
                 />
                 <button
                   onClick={handleSaveName}
                   className="p-1 text-usdt-green hover:bg-usdt-green/10 rounded-md"
                 >
-                  <Check size={14} />
+                  <Check size={13} />
                 </button>
                 <button
                   onClick={() => setIsEditingName(false)}
                   className="p-1 text-text-tertiary hover:bg-white/10 rounded-md"
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               </div>
             ) : (
               <>
-                <h3 className="text-sm font-black text-text-primary tracking-wide flex items-center gap-1.5">
-                  {record.nickname}
-                </h3>
+                <h4 className="text-xs font-black text-text-primary tracking-wide flex items-center gap-1.5">
+                  {record.nickname} Actions
+                </h4>
                 <button
                   onClick={() => {
                     setNicknameInput(record.nickname);
@@ -131,7 +133,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
                   className="text-text-tertiary hover:text-usdt-green p-0.5 rounded transition-colors"
                   title="Rename machine"
                 >
-                  <Edit3 size={13} />
+                  <Edit3 size={12} />
                 </button>
               </>
             )}
@@ -162,11 +164,11 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="p-3 bg-usdt-green/10 border border-usdt-green/30 rounded-xl space-y-1.5"
+          className="p-2.5 bg-usdt-green/10 border border-usdt-green/30 rounded-xl space-y-1.5"
         >
           <div className="flex items-center justify-between text-xs font-mono font-bold text-usdt-green">
             <span className="flex items-center gap-1.5">
-              <RefreshCw size={14} className="animate-spin text-usdt-green" />
+              <RefreshCw size={13} className="animate-spin text-usdt-green" />
               {rebootSteps[rebootStep]}
             </span>
             <span>{Math.round(((rebootStep + 1) / rebootSteps.length) * 100)}%</span>
@@ -186,7 +188,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
           <button
             onClick={() => handleToggleState('PAUSED')}
             disabled={isRebooting}
-            className="py-2.5 px-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-amber-500/25 disabled:opacity-50 transition-colors press-feedback"
+            className="py-2 px-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-amber-500/25 disabled:opacity-50 transition-colors press-feedback"
           >
             <Pause size={14} />
             Pause
@@ -195,7 +197,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
           <button
             onClick={() => handleToggleState('RUNNING')}
             disabled={isRebooting}
-            className="py-2.5 px-3 rounded-xl bg-usdt-green/15 border border-usdt-green/30 text-usdt-green font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-usdt-green/25 disabled:opacity-50 transition-colors press-feedback"
+            className="py-2 px-3 rounded-xl bg-usdt-green/15 border border-usdt-green/30 text-usdt-green font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-usdt-green/25 disabled:opacity-50 transition-colors press-feedback"
           >
             <Play size={14} />
             Start
@@ -205,7 +207,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
         <button
           onClick={handleRestart}
           disabled={isRebooting}
-          className="py-2.5 px-3 rounded-xl bg-white/5 border border-white/10 text-text-secondary font-extrabold text-xs flex items-center justify-center gap-1.5 hover:border-white/20 hover:text-text-primary disabled:opacity-50 transition-colors press-feedback"
+          className="py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-text-secondary font-extrabold text-xs flex items-center justify-center gap-1.5 hover:border-white/20 hover:text-text-primary disabled:opacity-50 transition-colors press-feedback"
         >
           <RotateCw size={14} className={isRebooting ? 'animate-spin text-usdt-green' : ''} />
           Restart
@@ -214,7 +216,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
         <button
           onClick={onOpenHealthModal}
           disabled={isRebooting}
-          className="py-2.5 px-3 rounded-xl bg-usdt-green/10 border border-usdt-green/25 text-usdt-green font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-usdt-green/20 disabled:opacity-50 transition-colors press-feedback"
+          className="py-2 px-3 rounded-xl bg-usdt-green/10 border border-usdt-green/25 text-usdt-green font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-usdt-green/20 disabled:opacity-50 transition-colors press-feedback"
         >
           <Activity size={14} />
           Health

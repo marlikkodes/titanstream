@@ -231,40 +231,12 @@ export const TitanHubScreen: React.FC = () => {
         </motion.div>
       )}
 
-      {/* SECTION 2: FLEET OVERVIEW & MACHINE SELECTOR */}
+      {/* SECTION 2: FLEET OVERVIEW & INTEGRATED MACHINE CONTROLS */}
       <FleetOverviewCard
         onOpenShop={() => openShop()}
         onSelectTier={(tier) => setSelectedTierCode(tier)}
         selectedTierCode={selectedTierCode}
         onOpenHowItWorks={() => setShowEducationModal(true)}
-      />
-
-      {/* DYNAMIC PRIORITY: Paused Machine Alert Elevates Machine Controls */}
-      {activeRecord?.status === 'PAUSED' && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={18} />
-            <span className="text-xs font-black">
-              {activeRecord.nickname} is paused. Start it to continue earning.
-            </span>
-          </div>
-          <button
-            onClick={() => useMachineOwnershipStore.getState().setMachineStatus(selectedTierCode, 'RUNNING')}
-            className="py-1 px-3 rounded-xl bg-amber-500 text-app-bg font-black text-xs press-feedback"
-          >
-            Resume
-          </button>
-        </motion.div>
-      )}
-
-      {/* SECTION 3: OPERATIONAL MACHINE CONTROLS */}
-      <MachineControlCenter
-        activeTierCode={selectedTierCode}
-        onOpenShop={() => openShop()}
         onOpenHealthModal={() => setShowHealthModal(true)}
       />
 
