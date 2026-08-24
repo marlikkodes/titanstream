@@ -1,6 +1,7 @@
 import type React from 'react';
-import { motion } from 'framer-motion';
-import { Cpu, Zap, Activity, PlusCircle, HelpCircle, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Cpu, Zap, Activity, PlusCircle, HelpCircle, ShieldCheck, ChevronDown, ChevronUp, Sliders } from 'lucide-react';
 import { useMiningStore } from '../../../store/useMiningStore';
 import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
 import { MACHINE_CATALOG } from '../../../data/machines';
@@ -24,6 +25,9 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
   const { ownedTierCodes, baseSpeedGhs } = useMiningStore();
   const { ownerships } = useMachineOwnershipStore();
 
+  // Active controls drawer tier state (null = collapsed, tierCode = expanded)
+  const [activeControlsTier, setActiveControlsTier] = useState<string | null>(null);
+
   const safeOwnedTiers = Array.isArray(ownedTierCodes) ? ownedTierCodes : ['TS_TRIAL'];
   const totalMachinesCount = Math.max(1, safeOwnedTiers.length);
   const activeCount = Object.values(ownerships || {}).filter((r) => r?.status === 'RUNNING').length;
@@ -44,6 +48,17 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
     }
   }, 0);
   const fleetHealth = machines.length > 0 ? (healthSum / machines.length).toFixed(1) : '100.0';
+
+  const handleMachineTap = (tierCode: string) => {
+    onSelectTier(tierCode);
+    if (activeControlsTier === tierCode) {
+      // Toggle collapse if tapping currently open machine
+      setActiveControlsTier(null);
+    } else {
+      // Expand controls for tapped machine
+      setActiveControlsTier(tierCode);
+    }
+  };
 
   return (
     <motion.div
@@ -76,7 +91,7 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
         </div>
       </div>
 
-      {/* SUMMARY METRIC BAR (Equal height & visibility balanced with machines) */}
+      {/* SUMMARY METRIC BAR */}
       <div className="grid grid-cols-3 gap-2 bg-control-bg/40 p-2 rounded-xl border border-white/5">
         <div className="flex items-center gap-2 px-2 py-1">
           <div className="w-7 h-7 rounded-lg bg-usdt-green/15 text-usdt-green flex items-center justify-center shrink-0">
@@ -117,12 +132,16 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
 
       {/* PROMINENT MACHINE SELECTOR CARDS */}
       <div>
-        <div className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider mb-2">
-          Select Active Hardware Node
+        <div className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider mb-2 flex items-center justify-between">
+          <span>Tap Machine for Controls</span>
+          {activeControlsTier && (
+            <span className="text-[9px] text-usdt-green font-mono">Controls Active</span>
+          )}
         </div>
-        <div className="grid grid-cols-2 gap-2.5 mb-3">
+        <div className="grid grid-cols-2 gap-2.5">
           {(Array.isArray(ownedTierCodes) ? ownedTierCodes : ['TS_TRIAL']).map((tierCode) => {
             const isSelected = selectedTierCode.toUpperCase() === tierCode.toUpperCase();
+            const isControlsOpen = activeControlsTier?.toUpperCase() === tierCode.toUpperCase();
             const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === tierCode.toUpperCase()) || MACHINE_CATALOG[0];
             const rec = ownerships[tierCode.toUpperCase()];
             const displayName = rec?.nickname || catalogItem.name;
@@ -131,22 +150,24 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
             return (
               <button
                 key={tierCode}
-                onClick={() => onSelectTier(tierCode)}
+                onClick={() => handleMachineTap(tierCode)}
                 className={`p-3 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all press-feedback relative overflow-hidden ${
-                  isSelected
-                    ? 'bg-gradient-to-br from-usdt-green/20 via-[#0f171e] to-card-bg border-usdt-green text-text-primary shadow-lg shadow-usdt-green/20 ring-1 ring-usdt-green/50'
+                  isControlsOpen
+                    ? 'bg-gradient-to-br from-usdt-green/25 via-[#0f171e] to-card-bg border-usdt-green text-text-primary shadow-lg shadow-usdt-green/20 ring-1 ring-usdt-green/50'
+                    : isSelected
+                    ? 'bg-white/10 border-usdt-green/60 text-text-primary'
                     : 'bg-white/5 border-white/10 text-text-secondary hover:border-white/20 hover:bg-white/10'
                 }`}
               >
                 {/* Active Indicator Top Highlight */}
-                {isSelected && (
+                {isControlsOpen && (
                   <div className="absolute top-0 right-0 left-0 h-0.5 bg-gradient-to-r from-transparent via-usdt-green to-transparent" />
                 )}
 
                 <div className="flex items-start justify-between gap-1">
                   <div className="flex items-center gap-2">
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${
-                      isSelected ? 'bg-usdt-green text-app-bg' : 'bg-white/10 text-text-tertiary'
+                      isControlsOpen ? 'bg-usdt-green text-app-bg' : 'bg-white/10 text-text-tertiary'
                     }`}>
                       ⚡
                     </div>
@@ -167,13 +188,15 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
                     {catalogItem.capacityGhs || 10} GH/s
                   </span>
 
-                  <span className={`text-[9px] font-mono font-black uppercase px-1.5 py-0.2 rounded flex items-center gap-1 border ${
-                    isRunning
+                  <span className={`text-[9px] font-mono font-black uppercase px-1.5 py-0.5 rounded flex items-center gap-1 border ${
+                    isControlsOpen
+                      ? 'text-usdt-green bg-usdt-green/20 border-usdt-green/40'
+                      : isRunning
                       ? 'text-usdt-green bg-usdt-green/10 border-usdt-green/20'
                       : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
                   }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${isRunning ? 'bg-usdt-green animate-pulse' : 'bg-amber-400'}`} />
-                    {rec?.status || 'RUNNING'}
+                    <Sliders size={9} />
+                    {isControlsOpen ? 'Open' : rec?.status || 'RUNNING'}
                   </span>
                 </div>
               </button>
@@ -193,12 +216,23 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
           </button>
         </div>
 
-        {/* INTEGRATED MACHINE CONTROLS (Tapping machine card reveals control actions directly inside container) */}
-        <MachineControlCenter
-          activeTierCode={selectedTierCode}
-          onOpenShop={onOpenShop}
-          onOpenHealthModal={onOpenHealthModal}
-        />
+        {/* CONTROLS DRAWER: ONLY APPEARS WHEN A PARTICULAR MACHINE IS TAPPED */}
+        <AnimatePresence>
+          {activeControlsTier && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, marginTop: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginTop: 10 }}
+              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+              className="overflow-hidden"
+            >
+              <MachineControlCenter
+                activeTierCode={activeControlsTier}
+                onOpenShop={onOpenShop}
+                onOpenHealthModal={onOpenHealthModal}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
