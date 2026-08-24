@@ -98,19 +98,21 @@ export class WithdrawalService {
 
     if (isMobileMoney) {
       mmNetwork = dto.mobileMoneyNetwork || (netUpper === 'AIRTEL' ? 'AIRTEL' : 'MTN');
-      // If user has no phone number on record yet, set initial registered phone
-      if (!user.phoneNumber && dto.destinationAddress) {
+      // If user has no withdrawal phone or registered phone on record yet, set initial configured phone
+      if (!user.withdrawalPhoneNumber && !user.phoneNumber && dto.destinationAddress) {
+        const initialPhone = this.normalizeUgandaPhone(dto.destinationAddress.trim());
         await this.prisma.user.update({
           where: { telegramUserId: dto.telegramUserId },
-          data: { phoneNumber: dto.destinationAddress.trim(), phoneVerified: true, phoneVerifiedAt: new Date() },
+          data: {
+            withdrawalPhoneNumber: initialPhone,
+            withdrawalPhoneVerified: true,
+            withdrawalPhoneVerifiedAt: new Date(),
+          },
         });
-        verifiedRecipient = dto.destinationAddress.trim();
-      } else if (user.phoneNumber) {
-        // Authoritative lock: ignore client recipient, resolve server-side phone
-        verifiedRecipient = user.phoneNumber;
-      } else {
-        throw new BadRequestException('UNVERIFIED_PHONE_NUMBER: Please register your mobile money phone number before requesting a withdrawal.');
+        user.withdrawalPhoneNumber = initialPhone;
       }
+
+      verifiedRecipient = this.resolveMobileMoneyWithdrawalNumber(user);
     } else {
       // USDT TRC-20 Recipient Lock
       if (netUpper !== 'TRC20' && netUpper !== 'TRON' && netUpper !== 'USDT') {
@@ -572,6 +574,47 @@ export class WithdrawalService {
         this.logger.error(`[WITHDRAWAL_EXPIRATION_ERR] Failed expiring session ${session.id}: ${err.message}`);
       }
     }
+  }
+
+  public normalizeUgandaPhone(raw: string): string {
+    const cleaned = (raw || '').replace(/\D/g, '');
+    if (!cleaned) return raw;
+    if (cleaned.startsWith('256') && cleaned.length === 12) {
+      return '0' + cleaned.substring(3);
+    }
+    if (cleaned.length === 9 && cleaned.startsWith('7')) {
+      return '0' + cleaned;
+    }
+    if (cleaned.length === 10 && cleaned.startsWith('07')) {
+      return cleaned;
+    }
+    return cleaned;
+  }
+
+  public resolveMobileMoneyWithdrawalNumber(user: any): string {
+    // Priority 1: User's explicitly configured Mobile Money Withdrawal Number
+    if (user.withdrawalPhoneNumber && user.withdrawalPhoneNumber.trim().length >= 8) {
+      return this.normalizeUgandaPhone(user.withdrawalPhoneNumber.trim());
+    }
+
+    // Priority 2: User's registered WhatsApp number
+    if (user.phoneNumber && user.phoneNumber.trim().length >= 8) {
+      return this.normalizeUgandaPhone(user.phoneNumber.trim());
+    }
+
+    if (user.channelIdentities && user.channelIdentities.length > 0) {
+      const waChan = user.channelIdentities.find(
+        (c: any) => c.channel === 'WHATSAPP' || c.channelType === 'WHATSAPP' || (c.address && (c.address.startsWith('256') || c.address.startsWith('07'))),
+      );
+      if (waChan && waChan.address && waChan.address.length >= 8) {
+        return this.normalizeUgandaPhone(waChan.address);
+      }
+    }
+
+    // Priority 3: Fail closed
+    throw new BadRequestException(
+      'MOBILE_MONEY_NUMBER_REQUIRED: Please configure a Mobile Money Withdrawal Number in Settings → Withdrawals or connect your WhatsApp account.',
+    );
   }
 
   async getUserWithdrawalHistory(userKey: bigint | string, limit = 50, offset = 0) {

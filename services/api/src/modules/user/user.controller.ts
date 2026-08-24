@@ -50,6 +50,16 @@ export class UserController {
     return this.userService.updateVerifiedUsdtAddress(userId, body.address);
   }
 
+  @Post('users/me/withdrawal-phone')
+  @ApiOperation({ summary: 'Update explicit Mobile Money Withdrawal Number' })
+  async updateWithdrawalPhone(
+    @CanonicalUserId() userId: string,
+    @Body() body: { withdrawalPhoneNumber: string; phoneNumber?: string },
+  ) {
+    const raw = body.withdrawalPhoneNumber || body.phoneNumber || '';
+    return this.userService.updateWithdrawalPhoneNumber(userId, raw);
+  }
+
   @Delete(['users/me', 'user/delete'])
   @ApiOperation({ summary: 'Delete user account completely' })
   async deleteAccount(@CanonicalUserId() userId: string) {

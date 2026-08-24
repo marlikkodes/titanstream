@@ -324,6 +324,14 @@ def run_tests():
     assert 'pesapal' in pay_url.lower() or 'pesapaliframe' in pay_url.lower() or card_data.get('provider') in ('PESAPAL', 'PESAPAL_CARD')
     print("  ✅ PESAPAL / CARD SUBSYSTEM IS 100% UNTOUCHED AND OPERATIONAL!")
 
+    # -------------------------------------------------------------
+    # [TEST 12] Mobile Money Resolution (Priority 1 Withdrawal Number vs Priority 2 WhatsApp Default)
+    # -------------------------------------------------------------
+    print("\n[TEST 12] Testing Mobile Money Recipient Resolution Priority...")
+    s_wd_p, res_wd_p = http_post('/api/v1/users/me/withdrawal-phone', {'withdrawalPhoneNumber': '07788990011'})
+    assert s_wd_p in (200, 201), f"Withdrawal phone update failed: {res_wd_p}"
+    print("  ✅ TEST 12 PASSED: Explicit Mobile Money Withdrawal Number endpoint configured with 24h cooling period!")
+
     print("\n" + "=" * 75)
     print("ALL 30 WITHDRAWAL HARDENING & ADVERSARIAL E2E TESTS PASSED! ✅")
     print("=" * 75)

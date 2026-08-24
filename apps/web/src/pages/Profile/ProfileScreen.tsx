@@ -95,6 +95,31 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
   const commissionDate = new Date(createdAt).toISOString().split('T')[0];
   const serialNumber = `SN-PASS-${telegramUserId.toString().slice(-6)}`;
 
+  const [withdrawalPhone, setWithdrawalPhone] = useState(settings.withdrawalPhoneNumber || '');
+  const [isSavingPhone, setIsSavingPhone] = useState(false);
+
+  const handleSaveWithdrawalPhone = async () => {
+    if (!withdrawalPhone || withdrawalPhone.trim().length < 8) {
+      showToast('Please enter a valid phone number', 'error');
+      return;
+    }
+    setIsSavingPhone(true);
+    try {
+      await fetch('/api/v1/users/me/withdrawal-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ withdrawalPhoneNumber: withdrawalPhone.trim() }),
+      });
+      settings.updateSetting('withdrawalPhoneNumber', withdrawalPhone.trim());
+      hapticFeedback.notificationOccurred('success');
+      showToast('Mobile Money Withdrawal Number saved! 24h cooling period activated.', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to save withdrawal number', 'error');
+    } finally {
+      setIsSavingPhone(false);
+    }
+  };
+
   // Save changes to display name and whatsapp
   const handleSaveAccountProfile = () => {
     settings.updateSetting('displayName', displayNameInput.trim());
@@ -418,6 +443,46 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
                 className="w-full py-2 bg-gold text-app-bg font-extrabold rounded-xl mt-3 shadow-md press-feedback"
               >
                 Save Details
+              </button>
+            </div>
+          </div>
+
+          {/* Group: Mobile Money Withdrawal Settings */}
+          <div className="web3-card rounded-2xl p-4 border border-usdt-green/30 bg-usdt-green/5 space-y-3">
+            <h3 className="text-xs font-black uppercase text-usdt-green font-mono flex items-center gap-1.5 border-b border-white/10 pb-2">
+              <Smartphone size={14} /> Mobile Money Withdrawal Settings
+            </h3>
+
+            <div className="space-y-2.5 text-xs">
+              <div>
+                <label className="font-extrabold text-text-primary block mb-1">
+                  Mobile Money Withdrawal Number
+                </label>
+                <input
+                  type="tel"
+                  value={withdrawalPhone}
+                  onChange={(e) => setWithdrawalPhone(e.target.value)}
+                  placeholder="077 XXX XXXX"
+                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-text-primary font-mono focus:border-usdt-green focus:outline-none"
+                />
+                <p className="text-[10px] text-text-secondary mt-1">
+                  <em>This is the number Titan Stream will send Mobile Money withdrawals to.</em>
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] text-text-tertiary">
+                <strong>If you don't add a separate withdrawal number, your WhatsApp number will be used automatically.</strong>
+                <div className="mt-1 text-amber-400 font-bold">
+                  Note: Updating this number activates a 24-hour security cooling period for withdrawals.
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveWithdrawalPhone}
+                disabled={isSavingPhone}
+                className="w-full py-2 bg-usdt-green text-app-bg font-extrabold rounded-xl shadow-md press-feedback disabled:opacity-50"
+              >
+                {isSavingPhone ? 'Saving...' : 'Save Mobile Money Withdrawal Number'}
               </button>
             </div>
           </div>

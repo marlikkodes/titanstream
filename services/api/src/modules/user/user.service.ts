@@ -484,4 +484,38 @@ export class UserService {
 
     return this.serializeUser(user);
   }
+
+  async updateWithdrawalPhoneNumber(userIdOrTelegramId: string | bigint, rawPhone: string) {
+    const cleaned = (rawPhone || '').trim().replace(/\s+/g, '');
+    if (!cleaned || cleaned.length < 8) {
+      throw new ConflictException('INVALID_PHONE_NUMBER');
+    }
+    const coolingUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const where: any = typeof userIdOrTelegramId === 'bigint' || (typeof userIdOrTelegramId === 'string' && /^\d+$/.test(userIdOrTelegramId))
+      ? { telegramUserId: BigInt(userIdOrTelegramId) }
+      : { id: userIdOrTelegramId as string };
+
+    const user = await this.prisma.user.update({
+      where,
+      data: {
+        withdrawalPhoneNumber: cleaned,
+        withdrawalPhoneVerified: true,
+        withdrawalPhoneVerifiedAt: new Date(),
+        recipientCoolingUntil: coolingUntil,
+      },
+    });
+
+    try {
+      await this.auditService.create({
+        telegramUserId: user.telegramUserId,
+        eventType: AuditEventType.USER_UPDATED,
+        description: 'Mobile Money Withdrawal Number updated (24h cooling period activated)',
+        metadata: { withdrawalPhoneNumber: cleaned, recipientCoolingUntil: coolingUntil.toISOString() },
+      });
+    } catch {
+      // ignore
+    }
+
+    return this.serializeUser(user);
+  }
 }

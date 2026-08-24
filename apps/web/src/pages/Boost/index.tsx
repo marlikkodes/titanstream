@@ -39,6 +39,7 @@ export const BoostScreen: React.FC = () => {
 
   // Onboarding education modal state
   const [showEducationModal, setShowEducationModal] = useState(false);
+  const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
 
   // Payment & Commissioning states
   const [selectedMachine, setSelectedMachine] = useState<FrontendMachineModel | null>(null);
@@ -389,6 +390,15 @@ export const BoostScreen: React.FC = () => {
         onClose={() => setShowEducationModal(false)}
       />
 
+      {/* Canonical Wallet Funding Module Modal */}
+      <FundingModal
+        isOpen={isFundingModalOpen}
+        onClose={() => {
+          setIsFundingModalOpen(false);
+          fetchBalanceFromEngine();
+        }}
+      />
+
       {/* DYNAMIC CHECKOUT & MACHINE DETAILS MODAL */}
       <AnimatePresence>
         {showCheckout && selectedMachine && (
@@ -517,14 +527,18 @@ export const BoostScreen: React.FC = () => {
                   ) : (
                     <div className="space-y-2">
                       <button
-                        onClick={() => setCheckoutStep('TOPUP')}
+                        type="button"
+                        onClick={() => {
+                          hapticFeedback.impactOccurred('medium');
+                          setIsFundingModalOpen(true);
+                        }}
                         className="w-full py-3.5 rounded-2xl bg-amber-500 text-app-bg font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 hover:brightness-110 press-feedback"
                       >
                         <Smartphone size={16} />
                         <span>Top Up Wallet (${(selectedMachine.priceUsdt - usdtBalance).toFixed(2)} Needed)</span>
                       </button>
                       <span className="text-[10px] text-text-tertiary text-center block">
-                        Deposit funds via Mobile Money or USDT to complete purchase from your wallet balance.
+                        Deposit funds via Mobile Money, Card, or USDT to complete purchase from your wallet balance.
                       </span>
                     </div>
                   )}
@@ -533,7 +547,7 @@ export const BoostScreen: React.FC = () => {
 
               {/* STEP 2: TOP-UP WALLET FALLBACK */}
               {checkoutStep === 'TOPUP' && (
-                <div className="space-y-4">
+                <div className="space-y-4 font-sans">
                   <div className="p-4 rounded-2xl bg-[#090b11]/80 border border-white/10 space-y-2 text-center">
                     <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block">
                       Wallet Top-Up Needed
@@ -542,97 +556,27 @@ export const BoostScreen: React.FC = () => {
                       ${(selectedMachine.priceUsdt - usdtBalance).toFixed(2)} USDT
                     </span>
                     <span className="text-xs text-text-secondary block">
-                      Deposit to top up your internal wallet balance and activate <strong>{selectedMachine.name}</strong>.
+                      Deposit to top up your internal wallet balance using standard platform deposit rails (Mobile Money, Card, or USDT).
                     </span>
                   </div>
 
-                  {/* Payment Method Selector for TopUp */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentProvider('MOBILE_MONEY')}
-                      className={`p-3 rounded-xl border text-center transition-all ${
-                        paymentProvider === 'MOBILE_MONEY'
-                          ? 'bg-usdt-green/15 border-usdt-green text-usdt-green'
-                          : 'bg-white/5 border-white/10 text-text-tertiary'
-                      }`}
-                    >
-                      <Smartphone size={18} className="mx-auto mb-1" />
-                      <span className="text-xs font-black block">Mobile Money</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setPaymentProvider('USDT')}
-                      className={`p-3 rounded-xl border text-center transition-all ${
-                        paymentProvider === 'USDT'
-                          ? 'bg-sky-500/15 border-sky-400 text-sky-300'
-                          : 'bg-white/5 border-white/10 text-text-tertiary'
-                      }`}
-                    >
-                      <Sparkles size={18} className="mx-auto mb-1" />
-                      <span className="text-xs font-black block">USDT (TRC-20)</span>
-                    </button>
-                  </div>
-
-                  {paymentProvider === 'MOBILE_MONEY' ? (
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-text-tertiary uppercase">Network</label>
-                          <select
-                            value={mnoNetwork}
-                            onChange={(e) => setMnoNetwork(e.target.value)}
-                            className="bg-control-bg border border-white/10 rounded-xl p-2.5 text-xs text-text-primary focus:outline-none focus:border-usdt-green"
-                          >
-                            <option value="MTN Momo">MTN Momo</option>
-                            <option value="Airtel Money">Airtel Money</option>
-                            <option value="M-Pesa">M-Pesa</option>
-                          </select>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-text-tertiary uppercase">Phone Number</label>
-                          <input
-                            type="text"
-                            value={phoneNo}
-                            onChange={(e) => setPhoneNo(e.target.value)}
-                            className="bg-control-bg border border-white/10 rounded-xl p-2.5 text-xs text-text-primary focus:outline-none focus:border-usdt-green"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handlePaymentSuccess(true)}
-                        className="w-full py-3.5 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 press-feedback"
-                      >
-                        <Smartphone size={15} />
-                        <span>Send Top-Up Prompt & Purchase</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="p-3 bg-white/5 border border-white/10 rounded-2xl text-[11px] text-text-tertiary flex items-start gap-2">
-                        <AlertCircle size={15} className="text-sky-400 shrink-0 mt-0.5" />
-                        <span>Deposit <strong>${selectedMachine.priceUsdt.toFixed(2)} USDT</strong> to your wallet address to complete purchase.</span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handlePaymentSuccess(true)}
-                        className="w-full py-3.5 rounded-xl bg-usdt-green text-black font-extrabold text-xs flex items-center justify-center gap-2 shadow-md hover:brightness-110 press-feedback"
-                      >
-                        <Sparkles size={15} />
-                        <span>Complete Deposit & Purchase</span>
-                      </button>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      hapticFeedback.impactOccurred('medium');
+                      setIsFundingModalOpen(true);
+                    }}
+                    className="w-full py-3.5 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 press-feedback"
+                  >
+                    <Smartphone size={15} />
+                    <span>Open Wallet Top-Up Module</span>
+                  </button>
 
                   <button
                     onClick={() => setCheckoutStep('SELECT')}
                     className="w-full text-center text-xs text-text-tertiary hover:text-text-primary pt-2 block"
                   >
-                    ← Back to Wallet Purchase
+                    ← Back to Machine Details
                   </button>
                 </div>
               )}

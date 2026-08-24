@@ -40,6 +40,7 @@ export interface SettingsState {
   // Account
   displayName: string;
   avatarUrl: string;
+  withdrawalPhoneNumber: string;
   timeZone: string;
   dateFormat: 'YYYY-MM-DD' | 'DD/MM/YYYY';
 
@@ -153,6 +154,7 @@ export const useSettingsStore = create<SettingsState>()(
       // ─── NEW USER-SPECIFIC SETTINGS DEFAULTS ───
       displayName: '',
       avatarUrl: '',
+      withdrawalPhoneNumber: '',
       timeZone: 'UTC',
       dateFormat: 'YYYY-MM-DD',
 

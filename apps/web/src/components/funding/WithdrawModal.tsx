@@ -351,16 +351,21 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
 
                     {selectedMethod === 'MOBILE_MONEY' && (
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-text-tertiary uppercase">Phone Number ({momoNetwork})</label>
+                        <label className="text-[10px] font-bold text-text-tertiary uppercase">Mobile Money Withdrawal Number ({momoNetwork})</label>
                         <input
                           type="tel"
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value)}
-                          placeholder="e.g. 0771234567"
+                          placeholder="e.g. 077 XXX XXXX"
                           className="w-full bg-control-bg text-text-primary text-sm font-mono rounded-xl px-3 py-3 border border-white/10 focus:border-usdt-green focus:outline-none"
                         />
-                        <div className="text-[10px] text-text-tertiary">
-                          Payout will be sent directly to this {momoNetwork} Mobile Money line.
+                        <div className="p-2.5 rounded-xl bg-usdt-green/10 border border-usdt-green/20 text-[11px] text-text-secondary space-y-1">
+                          <div className="font-bold text-usdt-green">
+                            Withdrawal will be sent to: {phoneNumber || 'Default WhatsApp / Withdrawal Number'}
+                          </div>
+                          <div className="text-[10px] text-text-tertiary">
+                            If you don't add a separate withdrawal number, your WhatsApp number will be used automatically.
+                          </div>
                         </div>
                       </div>
                     )}
