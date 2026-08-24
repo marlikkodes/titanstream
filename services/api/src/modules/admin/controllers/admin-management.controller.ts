@@ -17,22 +17,23 @@ export class AdminManagementController {
   @Get('admins')
   @Permissions(AdminPermission.USER_VIEW)
   @ApiOperation({ summary: 'List all authenticated admin users' })
-  getAdmins() {
+  async getAdmins() {
+    const data = await this.service.getAdminAccounts();
     return {
       success: true,
-      data: this.service.getAdminAccounts(),
+      data,
     };
   }
 
   @Post('invite')
   @Permissions(AdminPermission.ADMIN_MANAGE)
   @ApiOperation({ summary: 'Invite a new Admin user by telegram_user_id' })
-  inviteAdmin(
+  async inviteAdmin(
     @Body('telegramUserId') telegramUserId: string,
     @Body('name') name: string,
     @Body('role') role: AdminRole,
   ) {
-    const admin = this.service.inviteAdmin({ telegramUserId, name, role });
+    const admin = await this.service.inviteAdmin({ telegramUserId, name, role });
     return {
       success: true,
       data: admin,
@@ -42,7 +43,7 @@ export class AdminManagementController {
   @Post(':id/role')
   @Permissions(AdminPermission.ADMIN_MANAGE)
   @ApiOperation({ summary: 'Update an admin user role and permissions' })
-  updateAdminRole(
+  async updateAdminRole(
     @CurrentAdmin() currentAdmin: AuthenticatedAdmin,
     @Param('id') id: string,
     @Body('role') role: AdminRole,
@@ -50,7 +51,7 @@ export class AdminManagementController {
     if (currentAdmin.id === id) {
       throw new ForbiddenException('Cannot modify your own administrative role');
     }
-    const admin = this.service.updateAdminRole(id, role);
+    const admin = await this.service.updateAdminRole(id, role);
     return {
       success: true,
       data: admin,
@@ -60,7 +61,7 @@ export class AdminManagementController {
   @Post(':id/status')
   @Permissions(AdminPermission.ADMIN_MANAGE)
   @ApiOperation({ summary: 'Suspend or activate an admin user' })
-  toggleAdminStatus(
+  async toggleAdminStatus(
     @CurrentAdmin() currentAdmin: AuthenticatedAdmin,
     @Param('id') id: string,
     @Body('status') status: 'ACTIVE' | 'SUSPENDED' | 'REVOKED',
@@ -68,7 +69,7 @@ export class AdminManagementController {
     if (currentAdmin.id === id) {
       throw new ForbiddenException('Cannot modify your own administrative status');
     }
-    const admin = this.service.toggleAdminStatus(id, status);
+    const admin = await this.service.toggleAdminStatus(id, status);
     return {
       success: true,
       data: admin,

@@ -137,7 +137,6 @@ export class PaymentOrderService {
   async createOrder(userKey: bigint | string, dto: CreatePaymentOrderDto) {
     const userStr = String(userKey);
     const telegramUserIdBig = this.toBigIntUserId(userKey);
-    const orderId = `po_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const reference = `ORD-${Date.now().toString().slice(-6)}`;
     const currency = dto.currency || 'USDT';
     const network = dto.network || 'MTN';
@@ -162,12 +161,58 @@ export class PaymentOrderService {
 
     // Encode for tel: protocol (encode # as %23)
     const telUri = `tel:${ussdCode.replace('#', '%23')}`;
-
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 mins expiry
 
-    const order = {
-      id: orderId,
-      reference,
+    const sessionType = dto.type === 'WITHDRAWAL' ? 'WITHDRAWAL' : 'DEPOSIT';
+
+    // Ensure User record exists in DB for foreign key constraint
+    let user = await this.prisma.user.findUnique({ where: { telegramUserId: telegramUserIdBig } });
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          telegramUserId: telegramUserIdBig,
+          firstName: `User_${telegramUserIdBig}`,
+        },
+      });
+    }
+
+    const session = await this.prisma.settlementSession.create({
+      data: {
+        telegramUserId: telegramUserIdBig,
+        sessionType: sessionType as any,
+        asset: 'USDT',
+        requestedAmount: usdtAmount,
+        expectedCryptoAmount: usdtAmount,
+        exchangeRate: config.exchangeRateUsdt,
+        country,
+        mobileMoneyNetwork: network,
+        referenceCode: reference,
+        status: 'CREATED',
+        expiresAt,
+        providerMetadata: {
+          type: dto.type,
+          currency,
+          localAmount,
+          paymentMethod: dto.paymentMethod || 'MOBILE_MONEY',
+          receivingNumber: config.receivingNumber,
+          receivingName: config.receivingName,
+          ussdCode,
+          telUri,
+          metadata: dto.metadata || {},
+        },
+      },
+    });
+
+    await this.audit.create({
+      telegramUserId: telegramUserIdBig,
+      eventType: AuditEventType.TRANSACTION_CREATED,
+      description: `Created ${dto.type} payment order ${reference}`,
+      metadata: { orderId: session.id, reference, amount: usdtAmount, type: dto.type },
+    });
+
+    return {
+      id: session.id,
+      reference: session.referenceCode,
       userId: userStr,
       telegramUserId: userStr,
       type: dto.type,
@@ -183,60 +228,132 @@ export class PaymentOrderService {
       receivingName: config.receivingName,
       ussdCode,
       telUri,
-      expiresAt: expiresAt.toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      expiresAt: session.expiresAt.toISOString(),
+      createdAt: session.createdAt.toISOString(),
+      updatedAt: session.updatedAt.toISOString(),
       metadata: dto.metadata || {},
     };
+  }
 
-    this.orders.set(orderId, order);
+  async getOrder(orderId: string) {
+    const session = await this.prisma.settlementSession.findFirst({
+      where: { OR: [{ id: orderId }, { referenceCode: orderId }] },
+    });
+    if (!session) throw new NotFoundException('PAYMENT_ORDER_NOT_FOUND');
+    const meta = (session.providerMetadata as any) || {};
 
-    await this.audit.create({
-      telegramUserId: telegramUserIdBig,
-      eventType: AuditEventType.TRANSACTION_CREATED,
-      description: `Created ${dto.type} payment order ${reference}`,
-      metadata: { orderId, reference, amount: usdtAmount, type: dto.type },
+    return {
+      id: session.id,
+      reference: session.referenceCode,
+      userId: session.telegramUserId.toString(),
+      telegramUserId: session.telegramUserId.toString(),
+      type: meta.type || (session.sessionType === 'WITHDRAWAL' ? 'WITHDRAWAL' : 'DEPOSIT'),
+      amount: Number(session.requestedAmount),
+      localAmount: meta.localAmount || Number(session.requestedAmount) * Number(session.exchangeRate),
+      currency: meta.currency || 'USDT',
+      asset: session.asset,
+      paymentMethod: meta.paymentMethod || 'MOBILE_MONEY',
+      network: session.mobileMoneyNetwork,
+      country: session.country,
+      status: session.status as any,
+      receivingNumber: meta.receivingNumber || '234654',
+      receivingName: meta.receivingName || 'TitanStream Escrow',
+      ussdCode: meta.ussdCode || '*165*1*1*234654*10000#',
+      telUri: meta.telUri || 'tel:*165*1*1*234654*10000%23',
+      expiresAt: session.expiresAt.toISOString(),
+      createdAt: session.createdAt.toISOString(),
+      updatedAt: session.updatedAt.toISOString(),
+      metadata: meta.metadata || {},
+    };
+  }
+
+  async getUserOrders(userKey: string | bigint) {
+    const telegramUserIdBig = this.toBigIntUserId(userKey);
+    const sessions = await this.prisma.settlementSession.findMany({
+      where: { telegramUserId: telegramUserIdBig },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
     });
 
-    return order;
+    return sessions.map((session) => {
+      const meta = (session.providerMetadata as any) || {};
+      return {
+        id: session.id,
+        reference: session.referenceCode,
+        userId: session.telegramUserId.toString(),
+        telegramUserId: session.telegramUserId.toString(),
+        type: meta.type || (session.sessionType === 'WITHDRAWAL' ? 'WITHDRAWAL' : 'DEPOSIT'),
+        amount: Number(session.requestedAmount),
+        localAmount: meta.localAmount || Number(session.requestedAmount) * Number(session.exchangeRate),
+        currency: meta.currency || 'USDT',
+        asset: session.asset,
+        paymentMethod: meta.paymentMethod || 'MOBILE_MONEY',
+        network: session.mobileMoneyNetwork,
+        country: session.country,
+        status: session.status as any,
+        createdAt: session.createdAt.toISOString(),
+        updatedAt: session.updatedAt.toISOString(),
+        metadata: meta.metadata || {},
+      };
+    });
   }
 
-  getOrder(orderId: string) {
-    const order = this.orders.get(orderId);
-    if (!order) throw new NotFoundException('PAYMENT_ORDER_NOT_FOUND');
-    return order;
-  }
+  async getAllOrders() {
+    const sessions = await this.prisma.settlementSession.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
 
-  getUserOrders(userKey: string | bigint) {
-    const userStr = String(userKey);
-    return Array.from(this.orders.values()).filter((o) => o.userId === userStr || o.telegramUserId === userStr);
-  }
-
-  getAllOrders() {
-    return Array.from(this.orders.values());
+    return sessions.map((session) => {
+      const meta = (session.providerMetadata as any) || {};
+      return {
+        id: session.id,
+        reference: session.referenceCode,
+        userId: session.telegramUserId.toString(),
+        telegramUserId: session.telegramUserId.toString(),
+        type: meta.type || (session.sessionType === 'WITHDRAWAL' ? 'WITHDRAWAL' : 'DEPOSIT'),
+        amount: Number(session.requestedAmount),
+        localAmount: meta.localAmount || Number(session.requestedAmount) * Number(session.exchangeRate),
+        currency: meta.currency || 'USDT',
+        asset: session.asset,
+        paymentMethod: meta.paymentMethod || 'MOBILE_MONEY',
+        network: session.mobileMoneyNetwork,
+        country: session.country,
+        status: session.status as any,
+        createdAt: session.createdAt.toISOString(),
+        updatedAt: session.updatedAt.toISOString(),
+        metadata: meta.metadata || {},
+      };
+    });
   }
 
   async submitForVerification(orderId: string) {
-    const order = this.getOrder(orderId);
-    if (order.status !== 'AWAITING_PAYMENT') {
-      throw new BadRequestException(`Cannot submit order in status ${order.status}`);
-    }
+    const session = await this.prisma.settlementSession.findFirst({
+      where: { OR: [{ id: orderId }, { referenceCode: orderId }] },
+    });
+    if (!session) throw new NotFoundException('PAYMENT_ORDER_NOT_FOUND');
 
-    order.status = 'AWAITING_VERIFICATION';
-    order.updatedAt = new Date().toISOString();
-    this.orders.set(orderId, order);
+    const updated = await this.prisma.settlementSession.update({
+      where: { id: session.id },
+      data: { status: 'PENDING_VERIFICATION' as any },
+    });
 
-    return order;
+    return this.getOrder(updated.id);
   }
 
   async approveOrder(orderId: string, adminUserId?: string) {
-    const order = this.getOrder(orderId);
-    if (order.status !== 'AWAITING_VERIFICATION' && order.status !== 'AWAITING_PAYMENT') {
-      throw new BadRequestException(`Cannot approve order in status ${order.status}`);
-    }
+    const order = await this.getOrder(orderId);
+    const session = await this.prisma.settlementSession.findUnique({ where: { id: order.id } });
+    if (!session) throw new NotFoundException('PAYMENT_ORDER_NOT_FOUND');
 
-    order.status = 'POSTING_TO_LEDGER';
-    order.updatedAt = new Date().toISOString();
+    await this.prisma.settlementSession.update({
+      where: { id: session.id },
+      data: {
+        status: 'PROCESSING' as any,
+        verifiedByAdminId: adminUserId || 'system_admin',
+        verifiedAt: new Date(),
+      },
+    });
 
     const telegramUserId = this.toBigIntUserId(order.telegramUserId);
     const orchestratorRef = `po_ledger_${order.reference}`;
@@ -264,10 +381,13 @@ export class PaymentOrderService {
       }
     }
 
-    order.status = 'COMPLETED';
-    order.completedAt = new Date().toISOString();
-    order.updatedAt = new Date().toISOString();
-    this.orders.set(orderId, order);
+    const completed = await this.prisma.settlementSession.update({
+      where: { id: session.id },
+      data: {
+        status: 'COMPLETED',
+        completedAt: new Date(),
+      },
+    });
 
     // Send User Notification
     await this.notification.createNotification({
@@ -283,15 +403,25 @@ export class PaymentOrderService {
       metadata: { orderId: order.id, reference: order.reference, adminUserId },
     });
 
-    return order;
+    return this.getOrder(completed.id);
   }
 
   async rejectOrder(orderId: string, reason: string, adminUserId?: string) {
-    const order = this.getOrder(orderId);
-    order.status = 'REJECTED';
-    order.rejectionReason = reason;
-    order.updatedAt = new Date().toISOString();
-    this.orders.set(orderId, order);
+    const order = await this.getOrder(orderId);
+    const session = await this.prisma.settlementSession.findUnique({ where: { id: order.id } });
+    if (!session) throw new NotFoundException('PAYMENT_ORDER_NOT_FOUND');
+
+    const updated = await this.prisma.settlementSession.update({
+      where: { id: session.id },
+      data: {
+        status: 'FAILED',
+        providerMetadata: {
+          ...((session.providerMetadata as any) || {}),
+          rejectionReason: reason,
+          rejectedByAdminId: adminUserId || 'system_admin',
+        },
+      },
+    });
 
     const telegramUserId = this.toBigIntUserId(order.telegramUserId);
     await this.notification.createNotification({
@@ -300,6 +430,6 @@ export class PaymentOrderService {
       message: `Your ${order.type.toLowerCase()} order ${order.reference} was rejected: ${reason}`,
     });
 
-    return order;
+    return this.getOrder(updated.id);
   }
 }

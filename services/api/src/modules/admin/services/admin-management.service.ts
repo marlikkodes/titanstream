@@ -15,73 +15,97 @@ export interface AdminAccountRecord {
 
 @Injectable()
 export class AdminManagementService {
-  private readonly admins = new Map<string, AdminAccountRecord>();
+  constructor(private readonly prisma: PrismaService) {}
 
-  constructor(private readonly prisma: PrismaService) {
-    this.seedDefaultAdmins();
+  async getAdminAccounts(): Promise<AdminAccountRecord[]> {
+    const users = await this.prisma.adminUser.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (users.length === 0) {
+      // Return authoritative empty array if no admin users present in DB
+      return [];
+    }
+
+    return users.map((u) => ({
+      id: u.id,
+      telegramUserId: u.username,
+      name: u.username,
+      role: u.role,
+      status: u.isActive ? 'ACTIVE' : 'SUSPENDED',
+      permissions: [u.role],
+      lastLoginAt: u.updatedAt.toISOString(),
+      createdAt: u.createdAt.toISOString(),
+    }));
   }
 
-  private seedDefaultAdmins() {
-    const superAdmin: AdminAccountRecord = {
-      id: 'admin_super_1',
-      telegramUserId: '88102931',
-      name: 'Lead Super Admin',
-      role: AdminRole.SUPER_ADMIN,
-      status: 'ACTIVE',
-      permissions: ['ALL'],
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-    };
+  async inviteAdmin(dto: { telegramUserId: string; name: string; role: AdminRole }): Promise<AdminAccountRecord> {
+    const cleanName = dto.name?.trim() || `Admin_${dto.telegramUserId}`;
+    const username = `${cleanName.toLowerCase().replace(/\s+/g, '_')}_${dto.telegramUserId}`;
+    const email = `${username}@titanstream.io`;
 
-    const treasuryManager: AdminAccountRecord = {
-      id: 'admin_treasury_mgr',
-      telegramUserId: '99201823',
-      name: 'Treasury Manager',
-      role: AdminRole.FINANCE_ADMIN,
-      status: 'ACTIVE',
-      permissions: ['treasury.*', 'settlement.*'],
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-    };
+    const user = await this.prisma.adminUser.create({
+      data: {
+        username,
+        email,
+        passwordHash: 'INVITED_ADMIN_CREDENTIAL',
+        role: dto.role || AdminRole.OPERATIONS_ADMIN,
+        isActive: true,
+      },
+    });
 
-    this.admins.set(superAdmin.id, superAdmin);
-    this.admins.set(treasuryManager.id, treasuryManager);
-  }
-
-  getAdminAccounts(): AdminAccountRecord[] {
-    return Array.from(this.admins.values());
-  }
-
-  inviteAdmin(dto: { telegramUserId: string; name: string; role: AdminRole }): AdminAccountRecord {
-    const id = `admin_${Date.now()}`;
-    const newAdmin: AdminAccountRecord = {
-      id,
+    return {
+      id: user.id,
       telegramUserId: dto.telegramUserId,
-      name: dto.name,
-      role: dto.role || AdminRole.OPERATIONS_ADMIN,
-      status: 'ACTIVE',
-      permissions: [dto.role],
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
+      name: cleanName,
+      role: user.role,
+      status: user.isActive ? 'ACTIVE' : 'SUSPENDED',
+      permissions: [user.role],
+      lastLoginAt: user.createdAt.toISOString(),
+      createdAt: user.createdAt.toISOString(),
     };
-
-    this.admins.set(id, newAdmin);
-    return newAdmin;
   }
 
-  updateAdminRole(id: string, role: AdminRole): AdminAccountRecord {
-    const admin = this.admins.get(id);
-    if (!admin) throw new NotFoundException('ADMIN_NOT_FOUND');
-    admin.role = role;
-    this.admins.set(id, admin);
-    return admin;
+  async updateAdminRole(id: string, role: AdminRole): Promise<AdminAccountRecord> {
+    const user = await this.prisma.adminUser.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('ADMIN_NOT_FOUND');
+
+    const updated = await this.prisma.adminUser.update({
+      where: { id },
+      data: { role },
+    });
+
+    return {
+      id: updated.id,
+      telegramUserId: updated.username,
+      name: updated.username,
+      role: updated.role,
+      status: updated.isActive ? 'ACTIVE' : 'SUSPENDED',
+      permissions: [updated.role],
+      lastLoginAt: updated.updatedAt.toISOString(),
+      createdAt: updated.createdAt.toISOString(),
+    };
   }
 
-  toggleAdminStatus(id: string, status: 'ACTIVE' | 'SUSPENDED' | 'REVOKED'): AdminAccountRecord {
-    const admin = this.admins.get(id);
-    if (!admin) throw new NotFoundException('ADMIN_NOT_FOUND');
-    admin.status = status;
-    this.admins.set(id, admin);
-    return admin;
+  async toggleAdminStatus(id: string, status: 'ACTIVE' | 'SUSPENDED' | 'REVOKED'): Promise<AdminAccountRecord> {
+    const user = await this.prisma.adminUser.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('ADMIN_NOT_FOUND');
+
+    const isActive = status === 'ACTIVE';
+    const updated = await this.prisma.adminUser.update({
+      where: { id },
+      data: { isActive },
+    });
+
+    return {
+      id: updated.id,
+      telegramUserId: updated.username,
+      name: updated.username,
+      role: updated.role,
+      status: updated.isActive ? 'ACTIVE' : 'SUSPENDED',
+      permissions: [updated.role],
+      lastLoginAt: updated.updatedAt.toISOString(),
+      createdAt: updated.createdAt.toISOString(),
+    };
   }
 }

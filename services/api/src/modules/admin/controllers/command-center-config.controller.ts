@@ -16,21 +16,22 @@ export class CommandCenterConfigController {
   @Get('mobile-money')
   @Permissions(AdminPermission.SETTLEMENT_VIEW)
   @ApiOperation({ summary: 'Get Mobile Money Receiving Numbers Registry' })
-  getMobileMoneyRegistry() {
+  async getMobileMoneyRegistry() {
+    const data = await this.service.getMobileMoneyRegistry();
     return {
       success: true,
-      data: this.service.getMobileMoneyRegistry(),
+      data,
     };
   }
 
   @Post('mobile-money')
-  @Permissions(AdminPermission.SETTLEMENT_OVERRIDE)
+  @Permissions(AdminPermission.TREASURY_MANAGE)
   @ApiOperation({ summary: 'Create or Edit Mobile Money Receiving Number and USSD template' })
-  upsertMobileMoney(
+  async upsertMobileMoney(
     @CurrentAdmin() admin: AuthenticatedAdmin,
     @Body() body: any,
   ) {
-    const cfg = this.service.upsertMobileMoneyConfig(body, admin.id);
+    const cfg = await this.service.upsertMobileMoneyConfig(body, admin.id);
     return {
       success: true,
       data: cfg,
@@ -40,21 +41,22 @@ export class CommandCenterConfigController {
   @Get('crypto-wallets')
   @Permissions(AdminPermission.SETTLEMENT_VIEW)
   @ApiOperation({ summary: 'Get Crypto Receiving Wallets Registry' })
-  getCryptoWallets() {
+  async getCryptoWallets() {
+    const data = await this.service.getCryptoWalletRegistry();
     return {
       success: true,
-      data: this.service.getCryptoWalletRegistry(),
+      data,
     };
   }
 
   @Post('crypto-wallets')
-  @Permissions(AdminPermission.SETTLEMENT_OVERRIDE)
+  @Permissions(AdminPermission.TREASURY_MANAGE)
   @ApiOperation({ summary: 'Create or Edit Crypto Receiving Wallet' })
-  upsertCryptoWallet(
+  async upsertCryptoWallet(
     @CurrentAdmin() admin: AuthenticatedAdmin,
     @Body() body: any,
   ) {
-    const wallet = this.service.upsertCryptoWalletConfig(body, admin.id);
+    const wallet = await this.service.upsertCryptoWalletConfig(body, admin.id);
     return {
       success: true,
       data: wallet,

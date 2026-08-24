@@ -179,65 +179,171 @@ export class CommandCenterConfigService {
 
   // ─── MOBILE MONEY REGISTRY ──────────────────────────────────────────────────
 
-  getMobileMoneyRegistry(): MobileMoneyConfig[] {
-    return Array.from(this.mobileMoneyRegistry.values()).sort((a, b) => a.priority - b.priority);
+  async getMobileMoneyRegistry(): Promise<MobileMoneyConfig[]> {
+    const merchants = await this.prisma.mobileMoneyMerchant.findMany({
+      orderBy: { priority: 'asc' },
+    });
+
+    if (merchants.length === 0) {
+      // Seed default active MTN merchant record if database is empty
+      const seeded = await this.prisma.mobileMoneyMerchant.create({
+        data: {
+          network: 'MTN',
+          merchantName: 'TitanStream UG Escrow Pool 1',
+          merchantNumber: '234654',
+          country: 'UG',
+          currency: 'UGX',
+          status: 'ACTIVE',
+          priority: 1,
+        },
+      });
+      merchants.push(seeded);
+    }
+
+    return merchants.map((m) => ({
+      id: m.id,
+      provider: m.network,
+      country: m.country,
+      currency: m.currency,
+      phoneNumber: m.merchantNumber,
+      displayName: m.merchantName,
+      ussdTemplate: m.network === 'MTN' ? '*165*1*1*{phone}*{amount}#' : '*185*9*{phone}*{amount}#',
+      priority: m.priority,
+      dailyCapacityUsdt: Number(m.dailyLimit) / 3700,
+      status: m.status as any,
+      createdBy: 'SYSTEM_SUPER_ADMIN',
+      updatedBy: 'SYSTEM_SUPER_ADMIN',
+      createdAt: m.createdAt.toISOString(),
+      updatedAt: m.updatedAt.toISOString(),
+    }));
   }
 
-  upsertMobileMoneyConfig(dto: Partial<MobileMoneyConfig>, adminId: string): MobileMoneyConfig {
-    const id = dto.id || `mm_${dto.provider?.toLowerCase()}_${dto.country?.toLowerCase()}_${Date.now()}`;
-    const existing = this.mobileMoneyRegistry.get(id);
+  async upsertMobileMoneyConfig(dto: Partial<MobileMoneyConfig>, adminId: string): Promise<MobileMoneyConfig> {
+    const network = dto.provider || 'MTN';
+    const merchantName = dto.displayName || 'TitanStream Escrow Pool';
+    const merchantNumber = dto.phoneNumber || '0770000000';
+    const country = dto.country || 'UG';
+    const currency = dto.currency || 'UGX';
+    const status = dto.status || 'ACTIVE';
+    const priority = dto.priority ?? 1;
 
-    const config: MobileMoneyConfig = {
-      id,
-      provider: dto.provider || existing?.provider || 'MTN',
-      country: dto.country || existing?.country || 'UG',
-      currency: dto.currency || existing?.currency || 'UGX',
-      phoneNumber: dto.phoneNumber || existing?.phoneNumber || '0770000000',
-      displayName: dto.displayName || existing?.displayName || 'TitanStream Escrow Pool',
-      ussdTemplate: dto.ussdTemplate || existing?.ussdTemplate || '*165*1*1*{phone}*{amount}#',
-      priority: dto.priority ?? existing?.priority ?? 1,
-      dailyCapacityUsdt: dto.dailyCapacityUsdt ?? existing?.dailyCapacityUsdt ?? 5000,
-      status: dto.status || existing?.status || 'ACTIVE',
-      notes: dto.notes ?? existing?.notes,
-      createdBy: existing?.createdBy || adminId,
+    let merchant;
+    if (dto.id) {
+      merchant = await this.prisma.mobileMoneyMerchant.upsert({
+        where: { id: dto.id },
+        update: {
+          network,
+          merchantName,
+          merchantNumber,
+          country,
+          currency,
+          status,
+          priority,
+        },
+        create: {
+          id: dto.id,
+          network,
+          merchantName,
+          merchantNumber,
+          country,
+          currency,
+          status,
+          priority,
+        },
+      });
+    } else {
+      merchant = await this.prisma.mobileMoneyMerchant.create({
+        data: {
+          network,
+          merchantName,
+          merchantNumber,
+          country,
+          currency,
+          status,
+          priority,
+        },
+      });
+    }
+
+    this.logger.log(`[CommandCenterConfig] Mobile money merchant ${merchant.id} updated in DB by admin ${adminId}`);
+
+    return {
+      id: merchant.id,
+      provider: merchant.network,
+      country: merchant.country,
+      currency: merchant.currency,
+      phoneNumber: merchant.merchantNumber,
+      displayName: merchant.merchantName,
+      ussdTemplate: merchant.network === 'MTN' ? '*165*1*1*{phone}*{amount}#' : '*185*9*{phone}*{amount}#',
+      priority: merchant.priority,
+      dailyCapacityUsdt: Number(merchant.dailyLimit) / 3700,
+      status: merchant.status as any,
+      createdBy: adminId,
       updatedBy: adminId,
-      createdAt: existing?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: merchant.createdAt.toISOString(),
+      updatedAt: merchant.updatedAt.toISOString(),
     };
-
-    this.mobileMoneyRegistry.set(id, config);
-    this.logger.log(`[CommandCenterConfig] Mobile money receiving config ${id} updated by ${adminId}`);
-    return config;
   }
 
   // ─── CRYPTO WALLET REGISTRY ────────────────────────────────────────────────
 
-  getCryptoWalletRegistry(): CryptoWalletConfig[] {
-    return Array.from(this.cryptoWalletRegistry.values()).sort((a, b) => a.priority - b.priority);
+  async getCryptoWalletRegistry(): Promise<CryptoWalletConfig[]> {
+    const config = await this.prisma.usdtConfig.findUnique({ where: { id: 'default' } });
+    const receivingAddr = config?.receivingAddress || process.env.USDT_RECEIVING_ADDRESS || 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf';
+
+    return [
+      {
+        id: config?.id || 'default',
+        asset: 'USDT',
+        network: config?.network || 'TRON',
+        address: receivingAddr,
+        label: 'TitanStream Primary USDT Receiving Escrow Wallet',
+        status: config?.enabled ? 'ACTIVE' : 'DISABLED',
+        priority: 1,
+        dailyCapacityUsdt: 500000,
+        createdBy: config?.configuredByAdminId || 'SYSTEM_SUPER_ADMIN',
+        createdAt: config?.createdAt?.toISOString() || new Date().toISOString(),
+        updatedAt: config?.updatedAt?.toISOString() || new Date().toISOString(),
+      },
+    ];
   }
 
-  upsertCryptoWalletConfig(dto: Partial<CryptoWalletConfig>, adminId: string): CryptoWalletConfig {
-    const id = dto.id || `cw_${dto.asset?.toLowerCase()}_${Date.now()}`;
-    const existing = this.cryptoWalletRegistry.get(id);
+  async upsertCryptoWalletConfig(dto: Partial<CryptoWalletConfig>, adminId: string): Promise<CryptoWalletConfig> {
+    const receivingAddress = dto.address?.trim();
+    if (!receivingAddress) {
+      throw new BadRequestException('CRYPTO_ADDRESS_REQUIRED: Valid receiving address string required');
+    }
 
-    const config: CryptoWalletConfig = {
-      id,
-      asset: dto.asset || existing?.asset || 'USDT',
-      network: dto.network || existing?.network || 'TON',
-      address: dto.address || existing?.address || 'EQD_titanstream_escrow',
-      label: dto.label || existing?.label || 'TitanStream Crypto Escrow',
-      qrCodeUrl: dto.qrCodeUrl ?? existing?.qrCodeUrl,
-      status: dto.status || existing?.status || 'ACTIVE',
-      priority: dto.priority ?? existing?.priority ?? 1,
-      dailyCapacityUsdt: dto.dailyCapacityUsdt ?? existing?.dailyCapacityUsdt ?? 50000,
-      notes: dto.notes ?? existing?.notes,
-      createdBy: existing?.createdBy || adminId,
-      createdAt: existing?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+    const updated = await this.prisma.usdtConfig.upsert({
+      where: { id: 'default' },
+      update: {
+        receivingAddress,
+        network: dto.network || 'TRON',
+        enabled: dto.status !== 'DISABLED',
+        configuredByAdminId: adminId,
+      },
+      create: {
+        id: 'default',
+        receivingAddress,
+        network: dto.network || 'TRON',
+        enabled: dto.status !== 'DISABLED',
+        configuredByAdminId: adminId,
+      },
+    });
+
+    return {
+      id: updated.id,
+      asset: dto.asset || 'USDT',
+      network: updated.network,
+      address: updated.receivingAddress,
+      label: dto.label || 'TitanStream Crypto Escrow',
+      status: updated.enabled ? 'ACTIVE' : 'DISABLED',
+      priority: dto.priority ?? 1,
+      dailyCapacityUsdt: dto.dailyCapacityUsdt ?? 500000,
+      createdBy: adminId,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
     };
-
-    this.cryptoWalletRegistry.set(id, config);
-    return config;
   }
 
   // ─── USSD TEMPLATE ENGINE & PREVIEW ──────────────────────────────────────────

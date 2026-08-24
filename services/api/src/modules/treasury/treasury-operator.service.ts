@@ -75,10 +75,10 @@ export class TreasuryOperatorService {
     return op;
   }
 
-  getVerificationQueue() {
-    const allOrders = this.paymentOrderService.getAllOrders();
+  async getVerificationQueue() {
+    const allOrders = await this.paymentOrderService.getAllOrders();
     return allOrders.filter(
-      (o) => o.status === 'AWAITING_VERIFICATION' || o.status === 'AWAITING_PAYMENT',
+      (o) => o.status === 'AWAITING_VERIFICATION' || o.status === 'AWAITING_PAYMENT' || o.status === 'CREATED',
     );
   }
 
