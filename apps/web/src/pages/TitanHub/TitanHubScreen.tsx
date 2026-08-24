@@ -233,7 +233,7 @@ export const TitanHubScreen: React.FC = () => {
 
       {/* SECTION 2: FLEET OVERVIEW & MACHINE SELECTOR */}
       <FleetOverviewCard
-        onOpenShop={() => setShowShopSection(true)}
+        onOpenShop={() => openShop()}
         onSelectTier={(tier) => setSelectedTierCode(tier)}
         selectedTierCode={selectedTierCode}
         onOpenHowItWorks={() => setShowEducationModal(true)}
@@ -264,7 +264,7 @@ export const TitanHubScreen: React.FC = () => {
       {/* SECTION 3: OPERATIONAL MACHINE CONTROLS */}
       <MachineControlCenter
         activeTierCode={selectedTierCode}
-        onOpenShop={() => setShowShopSection(true)}
+        onOpenShop={() => openShop()}
         onOpenHealthModal={() => setShowHealthModal(true)}
       />
 
@@ -280,7 +280,7 @@ export const TitanHubScreen: React.FC = () => {
         </h3>
         <div className="grid grid-cols-4 gap-2">
           <button
-            onClick={() => setShowShopSection(!showShopSection)}
+            onClick={() => openShop()}
             className="web3-card p-2.5 rounded-xl border border-white/10 flex flex-col items-center gap-1.5 hover:border-usdt-green/30 transition-colors press-feedback"
           >
             <div className="w-8 h-8 rounded-lg bg-usdt-green/10 text-usdt-green flex items-center justify-center">
@@ -298,7 +298,7 @@ export const TitanHubScreen: React.FC = () => {
             <span className="text-[10px] font-extrabold text-text-primary">Collect</span>
           </button>
           <button 
-            onClick={() => setShowShopSection(!showShopSection)}
+            onClick={() => openShop()}
             className="web3-card p-2.5 rounded-xl border border-white/10 flex flex-col items-center gap-1.5 hover:border-ton-blue/30 transition-colors press-feedback"
           >
             <div className="w-8 h-8 rounded-lg bg-ton-blue/10 text-ton-blue flex items-center justify-center">
@@ -564,11 +564,7 @@ export const TitanHubScreen: React.FC = () => {
                 </p>
               </div>
               <button
-                onClick={() => {
-                  setShowShopSection(true);
-                  // Smoothly scroll down to catalog catalog Item
-                  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-                }}
+                onClick={() => openShop()}
                 className="w-full py-3 rounded-2xl bg-cyan-500 text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 press-feedback"
               >
                 <ShoppingCart size={14} />

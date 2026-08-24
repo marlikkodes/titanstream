@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Smartphone, Wallet, ArrowDownToLine, CheckCircle2, AlertCircle, Zap, Clock } from 'lucide-react';
+import { X, Smartphone, Wallet, ArrowDownToLine, CheckCircle2, AlertCircle, Zap, Clock, Users } from 'lucide-react';
 import { useWalletStore } from '../../store/useWalletStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { useCountryStore } from '../../store/useCountryStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useGrowthStore } from '../../store/useGrowthStore';
 import { withdrawalService, type WithdrawalSession } from '../../services/withdrawalService';
 import { showToast } from '../Toast';
 import { CurrencyDisplay } from '../DualCurrencyDisplay';
@@ -21,6 +22,13 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
   const { hapticFeedback } = useTelegram();
   const { selectedCountry, getLocalAmountRaw } = useCountryStore();
   const { preferLocalCurrency } = useSettingsStore();
+  const { qualification, fetchQualification } = useGrowthStore();
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchQualification();
+    }
+  }, [isOpen, fetchQualification]);
 
   const [selectedMethod, setSelectedMethod] = useState<WithdrawMethod | null>(null);
   const [momoNetwork, setMomoNetwork] = useState<'MTN' | 'AIRTEL'>('MTN');
@@ -48,8 +56,12 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
   const isMissingDestination = selectedMethod === 'USDT_ADDRESS'
     ? !walletAddress || walletAddress.trim().length < 10
     : false;
+  const isReferralLocked = qualification?.withdrawal ? !qualification.withdrawal.canWithdraw : false;
 
   const getDisabledReason = (): string | null => {
+    if (isReferralLocked && qualification?.withdrawal) {
+      return qualification.withdrawal.reason || `Withdrawal locked: 5 qualified referrals required (${qualification.withdrawal.qualifiedCount || 0}/5).`;
+    }
     if (isZeroBalance) {
       return `Your wallet balance is $0.00 USDT. Deposit or earn funds to enable withdrawals.`;
     }
@@ -436,6 +448,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                       onClick={handleWithdraw}
                       disabled={
                         isProcessing ||
+                        isReferralLocked ||
                         !withdrawAmount ||
                         parsedAmount <= 0 ||
                         isBelowMin ||
