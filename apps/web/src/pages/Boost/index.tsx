@@ -394,7 +394,7 @@ export const BoostScreen: React.FC = () => {
         {showCheckout && selectedMachine && (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-0 sm:p-4 pb-20 sm:pb-4">
             {/* Backdrop click closer */}
-            {invoiceStatus !== 'PAID' && (
+            {checkoutStep !== 'ACTIVATED' && (
               <div 
                 className="absolute inset-0 z-10" 
                 onClick={() => {
