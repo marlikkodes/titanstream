@@ -245,7 +245,30 @@ export class MachineService {
     return [trialMachine, ...userAssets];
   }
 
-  async fulfillMachineOwnershipAfterPayment(telegramUserId: bigint, tierCode: string, pricePaid: number) {
+  private async resolveTelegramUserId(userKey: string | bigint): Promise<bigint> {
+    if (typeof userKey === 'bigint') return userKey;
+    const userStr = String(userKey).trim();
+    if (/^\d+$/.test(userStr)) {
+      return BigInt(userStr);
+    }
+    const u = await this.prisma.user.findUnique({ where: { id: userStr } });
+    if (u?.telegramUserId) {
+      return u.telegramUserId;
+    }
+    const digits = userStr.replace(/\D/g, '');
+    if (digits.length > 0) {
+      return BigInt(digits);
+    }
+    let hash = 0;
+    for (let i = 0; i < userStr.length; i++) {
+      hash = (hash << 5) - hash + userStr.charCodeAt(i);
+      hash |= 0;
+    }
+    return BigInt(Math.abs(hash) + 100000);
+  }
+
+  async fulfillMachineOwnershipAfterPayment(userIdOrTelegramId: string | bigint, tierCode: string, pricePaid: number) {
+    const telegramUserId = await this.resolveTelegramUserId(userIdOrTelegramId);
     const tier = this.catalog.find((t) => t.tierCode === tierCode);
 
     if (this.opsEngine) {
@@ -287,7 +310,8 @@ export class MachineService {
     return createdMachine;
   }
 
-  async purchaseMachine(telegramUserId: bigint, tierCode: string, isSandbox?: boolean) {
+  async purchaseMachine(userIdOrTelegramId: string | bigint, tierCode: string, isSandbox?: boolean) {
+    const telegramUserId = await this.resolveTelegramUserId(userIdOrTelegramId);
     const tier = this.catalog.find((t) => t.tierCode === tierCode);
     if (!tier) throw new NotFoundException(`Machine tier ${tierCode} not found`);
 
@@ -301,11 +325,11 @@ export class MachineService {
         telegramUserId: userIdStr,
         tierCode: createdMachine.tierCode,
         name: createdMachine.name,
-        purchasePrice: createdMachine.purchasePrice.toNumber(),
+        purchasePrice: Number(createdMachine.purchasePrice),
         currency: createdMachine.currency,
         status: createdMachine.status as any,
-        capacityGhs: createdMachine.capacityGhs.toNumber(),
-        lifetimeEarnings: createdMachine.lifetimeEarnings.toNumber(),
+        capacityGhs: Number(createdMachine.capacityGhs),
+        lifetimeEarnings: Number(createdMachine.lifetimeEarnings),
         purchasedAt: createdMachine.purchasedAt.toISOString(),
         activatedAt: createdMachine.activatedAt.toISOString(),
       };
@@ -318,11 +342,15 @@ export class MachineService {
       };
     }
 
-    // Check user available balance
-    const account = await this.prisma.financialAccount.findUnique({
+    // Check user available balance (auto-create financial account if missing)
+    let account = await this.prisma.financialAccount.findUnique({
       where: { telegramUserId },
     });
-    if (!account) throw new NotFoundException('Financial account not found');
+    if (!account) {
+      account = await this.prisma.financialAccount.create({
+        data: { telegramUserId },
+      });
+    }
     const { balances } = await this.balanceService.getBalances(telegramUserId, account.id);
     const usdtBalance = balances.find((b) => b.assetCode === 'USDT');
     const availableUsdt = parseFloat(usdtBalance?.availableBalance || '0');
@@ -410,7 +438,8 @@ export class MachineService {
     };
   }
 
-  async repowerMachine(telegramUserId: bigint, machineId: string) {
+  async repowerMachine(userIdOrTelegramId: string | bigint, machineId: string) {
+    const telegramUserId = await this.resolveTelegramUserId(userIdOrTelegramId);
     const machine = await this.prisma.userMachine.findUnique({
       where: { id: machineId },
     });
@@ -458,7 +487,8 @@ export class MachineService {
     };
   }
 
-  async upgradeMachineTier(telegramUserId: bigint, currentMachineId: string, targetTierCode: string) {
+  async upgradeMachineTier(userIdOrTelegramId: string | bigint, currentMachineId: string, targetTierCode: string) {
+    const telegramUserId = await this.resolveTelegramUserId(userIdOrTelegramId);
     const currentMachine = await this.prisma.userMachine.findUnique({
       where: { id: currentMachineId },
     });
