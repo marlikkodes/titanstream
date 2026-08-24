@@ -11,6 +11,7 @@ import { machineService } from '../../services/machineService';
 import { MACHINE_CATALOG, getMachineYieldDetails, type FrontendMachineModel } from '../../data/machines';
 import { MachineEducationModal } from '../../components/MachineEducationModal';
 import { ComputeNodeSvg } from '../../components/ComputeNodeSvg';
+import { FundingModal } from '../../components/funding/FundingModal';
 import { 
   Gauge, 
   Sparkles, 
