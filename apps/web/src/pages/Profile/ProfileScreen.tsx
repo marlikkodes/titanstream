@@ -62,6 +62,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
   const [whatsappInput, setWhatsappInput] = useState(settings.connectedWhatsApp);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [withdrawalPhone, setWithdrawalPhone] = useState(settings.withdrawalPhoneNumber || '');
+  const [isSavingPhone, setIsSavingPhone] = useState(false);
 
   useEffect(() => {
     fetchGrowthProfile();
@@ -72,7 +74,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
     if (settings.displayName) {
       setDisplayNameInput(settings.displayName);
     }
-  }, [settings.displayName]);
+    if (settings.withdrawalPhoneNumber) {
+      setWithdrawalPhone(settings.withdrawalPhoneNumber);
+    }
+  }, [settings.displayName, settings.withdrawalPhoneNumber]);
 
   if (isLoading && !profile) {
     return <DestinationLoader destination="profile" />;
@@ -94,9 +99,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
   const createdAt = session?.user?.createdAt || authUser?.createdAt || new Date().toISOString();
   const commissionDate = new Date(createdAt).toISOString().split('T')[0];
   const serialNumber = `SN-PASS-${telegramUserId.toString().slice(-6)}`;
-
-  const [withdrawalPhone, setWithdrawalPhone] = useState(settings.withdrawalPhoneNumber || '');
-  const [isSavingPhone, setIsSavingPhone] = useState(false);
 
   const handleSaveWithdrawalPhone = async () => {
     if (!withdrawalPhone || withdrawalPhone.trim().length < 8) {
