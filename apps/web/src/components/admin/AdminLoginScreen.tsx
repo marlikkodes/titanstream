@@ -22,14 +22,6 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
     onAuthenticated();
   };
 
-  const handleDevBypass = () => {
-    // Inject the fast-path super admin dev token supported by NestJS AdminAuthGuard
-    const devToken = 'admin-token:SUPER_ADMIN:dev_super_admin';
-    localStorage.setItem('admin_auth_token', devToken);
-    localStorage.setItem('admin_role', 'SUPER_ADMIN');
-    onAuthenticated();
-  };
-
   return (
     <div className="w-screen h-screen flex items-center justify-center bg-app-bg text-text-primary p-4 select-none">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,230,118,0.15),transparent_60%)] pointer-events-none" />
@@ -86,20 +78,6 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
           </motion.button>
         </form>
 
-        <div className="w-full border-t border-white/5 my-1" />
-
-        <div className="w-full space-y-2">
-          <p className="text-[10px] text-text-tertiary font-medium">
-            Deploying in development/sandbox mode? Bypasses authentication check via Fast Path.
-          </p>
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={handleDevBypass}
-            className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-text-secondary font-bold text-xs py-2.5 rounded-xl cursor-pointer transition-colors"
-          >
-            Bypass to Dev Super Admin
-          </motion.button>
-        </div>
       </motion.div>
     </div>
   );

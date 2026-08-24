@@ -11,6 +11,7 @@ import { useNavigationStore } from '../../../store/useNavigationStore';
 import { useCountryStore } from '../../../store/useCountryStore';
 import { useSettingsStore } from '../../../store/useSettingsStore';
 import { QuantumLoopReactor, type QuantumLoopReactorRef } from './QuantumLoopReactor';
+import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
 
 interface Particle {
   id: number;
@@ -646,7 +647,7 @@ export const MiningSpinner = React.memo(() => {
                 strokeDasharray="12, 180"
                 style={{
                   transformOrigin: 'center',
-                  animation: isPaused ? 'none' : `spin ${Math.max(0.5, 5 - coolerMultiplier * 0.2)}s linear infinite`,
+                  animation: isMachinePaused ? 'none' : `spin ${Math.max(0.5, 5 - coolerMultiplier * 0.2)}s linear infinite`,
                 }}
               />
             </svg>
@@ -742,7 +743,7 @@ export const MiningSpinner = React.memo(() => {
                           opacity="0.3"
                           style={{
                             transformOrigin: 'center',
-                            animation: isPaused ? 'none' : `spin ${Math.max(0.3, 3.5 - coolerMultiplier * 0.2)}s linear infinite`,
+                            animation: isMachinePaused ? 'none' : `spin ${Math.max(0.3, 3.5 - coolerMultiplier * 0.2)}s linear infinite`,
                           }}
                         />
                       </svg>

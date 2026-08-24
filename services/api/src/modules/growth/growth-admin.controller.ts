@@ -1,5 +1,8 @@
 import { Controller, Get, Post, Param, Body, Query, UseGuards, Inject, forwardRef } from '@nestjs/common';
-import { JwtAuthGuard as AuthGuard } from '../../common/guards/jwt-auth.guard';
+import { AdminAuthGuard } from '../admin/guards/admin-auth.guard';
+import { RbacGuard } from '../admin/guards/rbac.guard';
+import { Permissions } from '../admin/decorators/permissions.decorator';
+import { AdminPermission } from '../admin/interfaces/admin-permissions.enum';
 import { RewardService } from './reward.service';
 import { UserLevelService } from './user-level.service';
 import { GrowthNotificationService } from './growth-notification.service';
@@ -9,7 +12,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { RewardStatus, RewardType, ReferralStatus, UserLevelTier, NotificationChannel } from '@prisma/client';
 
 @Controller('admin')
-@UseGuards(AuthGuard)
+@UseGuards(AdminAuthGuard, RbacGuard)
 export class GrowthAdminController {
   constructor(
     private readonly rewardService: RewardService,
@@ -26,6 +29,7 @@ export class GrowthAdminController {
    * Admin view of all rewards.
    */
   @Get('rewards')
+  @Permissions(AdminPermission.REFERRAL_READ)
   async getAllRewards(@Query('status') status?: RewardStatus) {
     const rewards = await this.rewardService.getAllRewards(status);
     return rewards.map((r) => ({
@@ -40,6 +44,7 @@ export class GrowthAdminController {
    * Admin trigger to approve & disburse pending reward via Financial Orchestrator.
    */
   @Post('rewards/:id/approve')
+  @Permissions(AdminPermission.REFERRAL_MANAGE)
   async approveReward(@Param('id') id: string) {
     const result = await this.rewardService.approveAndDisburseReward(id);
     return {
@@ -54,6 +59,7 @@ export class GrowthAdminController {
    * Detailed listing of all referral relationships for auditing.
    */
   @Get('referrals/relationships')
+  @Permissions(AdminPermission.REFERRAL_READ)
   async getReferralRelationships(
     @Query('status') status?: ReferralStatus,
     @Query('referrerId') referrerId?: string,
@@ -99,6 +105,7 @@ export class GrowthAdminController {
    * Inspect referral graph tree & chain for a specific user.
    */
   @Get('referrals/graph/:userId')
+  @Permissions(AdminPermission.REFERRAL_READ)
   async getReferralGraphForUser(@Param('userId') userId: string) {
     const targetId = BigInt(userId);
     const tree = await this.referralGraphService.getReferralTree(targetId);
@@ -118,6 +125,7 @@ export class GrowthAdminController {
    * Run fraud analysis across IP clusters and referral graph cycles.
    */
   @Get('referrals/fraud-check')
+  @Permissions(AdminPermission.RISK_MANAGE)
   async runFraudCheck() {
     const ipClusters = await this.fraudDetectionService.analyzeIpClusters();
     const graphCycles = await this.fraudDetectionService.checkReferralGraph();
@@ -134,6 +142,7 @@ export class GrowthAdminController {
    * Create or update a reward rule.
    */
   @Post('rewards/rules')
+  @Permissions(AdminPermission.REFERRAL_MANAGE)
   async upsertRewardRule(
     @Body()
     body: {
@@ -173,6 +182,7 @@ export class GrowthAdminController {
    * Configure user level progression criteria and benefits.
    */
   @Post('levels/configure')
+  @Permissions(AdminPermission.REFERRAL_MANAGE)
   async configureLevel(
     @Body()
     body: {
@@ -204,6 +214,7 @@ export class GrowthAdminController {
    * Create or update notification templates.
    */
   @Post('notifications/templates')
+  @Permissions(AdminPermission.OPERATIONS_CONTROL)
   async upsertNotificationTemplate(
     @Body()
     body: {

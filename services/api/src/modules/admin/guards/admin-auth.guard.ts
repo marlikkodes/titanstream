@@ -17,20 +17,6 @@ export class AdminAuthGuard implements CanActivate {
       ? authHeader.slice(7)
       : authHeader;
 
-    // Fast-path / test-path for dev/testing when header is simulated: "admin-token:<role>:<id>"
-    if (typeof token === 'string' && token.startsWith('admin-token:')) {
-      const parts = token.split(':');
-      const role = parts[1] as any;
-      const id = parts[2] || 'admin_test_id';
-      request.admin = {
-        id,
-        username: `admin_${role.toLowerCase()}`,
-        email: `${role.toLowerCase()}@titanstream.io`,
-        role,
-      };
-      return true;
-    }
-
     const session = await this.prisma.adminSession.findFirst({
       where: {
         tokenHash: token,

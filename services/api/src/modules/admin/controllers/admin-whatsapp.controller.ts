@@ -22,7 +22,7 @@ export class AdminWhatsappController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @Permissions(AdminPermission.OPERATIONS_CONTROL)
+  @Permissions(AdminPermission.WHATSAPP_MANAGE)
   @ApiOperation({ summary: 'Register a new Baileys transport account' })
   async addAccount(@Body() body: { phone: string; displayName?: string }) {
     return { success: true, data: await this.baileysAccountManager.addAccount(body.phone, body.displayName) };
@@ -30,7 +30,7 @@ export class AdminWhatsappController {
 
   @Post(':id/action')
   @HttpCode(HttpStatus.OK)
-  @Permissions(AdminPermission.OPERATIONS_CONTROL)
+  @Permissions(AdminPermission.WHATSAPP_MANAGE)
   @ApiOperation({ summary: 'Execute administrative action on a Baileys transport account' })
   async executeAccountAction(
     @Param('id') accountId: string,
@@ -41,7 +41,7 @@ export class AdminWhatsappController {
 
   @Post(':id/pairing-code')
   @HttpCode(HttpStatus.OK)
-  @Permissions(AdminPermission.OPERATIONS_CONTROL)
+  @Permissions(AdminPermission.WHATSAPP_MANAGE)
   @ApiOperation({ summary: 'Request an 8-digit pairing code for linking a WhatsApp phone number' })
   async requestPairingCode(@Param('id') accountId: string, @Body('phone') phone?: string) {
     return { success: true, data: await this.baileysAccountManager.requestPairingCode(accountId, phone) };

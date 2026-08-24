@@ -63,6 +63,13 @@ export enum AdminPermission {
   RECONCILIATION_RUN = 'reconciliation.run',
   DISASTER_RECOVERY_MANAGE = 'disaster_recovery.manage',
   READINESS_ADMIN = 'readiness.admin',
+  ADMIN_MANAGE = 'admin.manage',
+  IDENTITY_REASSIGN = 'identity.reassign',
+  REFERRAL_MANAGE = 'referral.manage',
+  WHATSAPP_MANAGE = 'whatsapp.manage',
+  SECURITY_MANAGE = 'security.manage',
+  SESSION_MANAGE = 'session.manage',
+  PAYMENT_PROVIDER_MANAGE = 'payment_provider.manage',
 }
 
 export const ROLE_PERMISSIONS_MAP: Record<AdminRole, AdminPermission[]> = {

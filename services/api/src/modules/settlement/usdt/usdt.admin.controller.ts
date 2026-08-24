@@ -1,27 +1,32 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '../../../common/guards/auth.guard';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { AuthenticatedUser } from '../../../common/interfaces/user.interface';
+import { AdminAuthGuard } from '../../admin/guards/admin-auth.guard';
+import { RbacGuard } from '../../admin/guards/rbac.guard';
+import { Permissions } from '../../admin/decorators/permissions.decorator';
+import { AdminPermission } from '../../admin/interfaces/admin-permissions.enum';
+import { CurrentAdmin, AuthenticatedAdmin } from '../../admin/decorators/current-admin.decorator';
 import { UsdtAdminService } from './usdt.admin.service';
 
 @Controller(['admin/settlement/usdt', 'api/v1/admin/settlement/usdt'])
-@UseGuards(AuthGuard)
+@UseGuards(AdminAuthGuard, RbacGuard)
 export class UsdtAdminController {
   constructor(private readonly adminService: UsdtAdminService) {}
 
   @Get('health')
+  @Permissions(AdminPermission.TREASURY_VIEW)
   getHealth() {
     return this.adminService.getConfig();
   }
 
   @Get('config')
+  @Permissions(AdminPermission.TREASURY_VIEW)
   getConfig() {
     return this.adminService.getConfig();
   }
 
   @Post('config')
+  @Permissions(AdminPermission.TREASURY_MANAGE)
   updateConfig(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
     @Body() dto: {
       enabled?: boolean;
       network?: string;
@@ -31,10 +36,11 @@ export class UsdtAdminController {
       reason?: string;
     },
   ) {
-    return this.adminService.updateConfig(user.id.toString(), dto);
+    return this.adminService.updateConfig(admin.id, dto);
   }
 
   @Get('transactions')
+  @Permissions(AdminPermission.TREASURY_VIEW)
   listTransactions(
     @Query('status') status?: string,
     @Query('limit') limit?: number,
@@ -44,13 +50,14 @@ export class UsdtAdminController {
   }
 
   @Post('transactions/:id/resolve')
+  @Permissions(AdminPermission.TREASURY_MANAGE)
   resolveTransaction(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
     @Param('id') id: string,
     @Body() dto: { targetSettlementSessionId: string; reason: string },
   ) {
     return this.adminService.resolveAmbiguousTransaction(
-      user.id.toString(),
+      admin.id,
       id,
       dto.targetSettlementSessionId,
       dto.reason,

@@ -7,6 +7,8 @@ export interface LogActionParams {
   action: string;
   entity: string;
   entityId?: string;
+  beforeState?: Record<string, any>;
+  afterState?: Record<string, any>;
   metadata?: Record<string, any>;
 }
 
@@ -15,6 +17,12 @@ export class OperationalAuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   async logAction(params: LogActionParams) {
+    const combinedMetadata = {
+      ...(params.metadata || {}),
+      ...(params.beforeState ? { beforeState: params.beforeState } : {}),
+      ...(params.afterState ? { afterState: params.afterState } : {}),
+    };
+
     return this.prisma.operationalAuditLog.create({
       data: {
         actorId: params.actorId,
@@ -22,7 +30,7 @@ export class OperationalAuditService {
         action: params.action,
         entity: params.entity,
         entityId: params.entityId || null,
-        metadata: params.metadata || {},
+        metadata: combinedMetadata,
       },
     });
   }

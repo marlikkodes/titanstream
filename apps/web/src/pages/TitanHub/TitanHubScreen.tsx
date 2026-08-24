@@ -25,16 +25,29 @@ import { FleetOverviewCard } from './components/FleetOverviewCard';
 import { formatCurrencyWithLocalFallback } from '../../store/useCountryStore';
 
 export const TitanHubScreen: React.FC = () => {
-  const { fetchMiningState, fetchUserMachines, baseSpeedGhs, unclaimedBalance, isMachineOwned, isOverheated, coolerMultiplier, ownedTierCodes } = useMiningStore();
-  const { fetchBalanceFromEngine } = useWalletStore();
-  const { events } = useTreasuryStore();
-  const { openGames, openShop } = useNavigationStore();
+  const fetchMiningState = useMiningStore((s) => s.fetchMiningState);
+  const fetchUserMachines = useMiningStore((s) => s.fetchUserMachines);
+  const baseSpeedGhs = useMiningStore((s) => s.baseSpeedGhs);
+  const unclaimedBalance = useMiningStore((s) => s.unclaimedBalance);
+  const isMachineOwned = useMiningStore((s) => s.isMachineOwned);
+  const isOverheated = useMiningStore((s) => s.isOverheated);
+  const coolerMultiplier = useMiningStore((s) => s.coolerMultiplier);
+  const ownedTierCodes = useMiningStore((s) => s.ownedTierCodes);
 
-  const { initializeDefaultCore, getRecordByTier, openOwnersManual, openCertificate } = useMachineOwnershipStore();
-  
+  const fetchBalanceFromEngine = useWalletStore((s) => s.fetchBalanceFromEngine);
+  const events = useTreasuryStore((s) => s.events);
+
+  const openGames = useNavigationStore((s) => s.openGames);
+  const openShop = useNavigationStore((s) => s.openShop);
+
+  const initializeDefaultCore = useMachineOwnershipStore((s) => s.initializeDefaultCore);
+  const getRecordByTier = useMachineOwnershipStore((s) => s.getRecordByTier);
+  const openOwnersManual = useMachineOwnershipStore((s) => s.openOwnersManual);
+  const openCertificate = useMachineOwnershipStore((s) => s.openCertificate);
+
   const titanState = useTitanState();
   const titanContext = useTitanContext();
-  
+
   const updateMachineStatus = useTitanStateEngine((state) => state.updateMachineStatus);
   const updateRewardStatus = useTitanStateEngine((state) => state.updateRewardStatus);
   const updateSyncStatus = useTitanStateEngine((state) => state.updateSyncStatus);
