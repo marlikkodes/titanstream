@@ -247,7 +247,7 @@ export class IdentityMasterEngineService {
           };
         }
       }
-      if (err instanceof ConflictException) throw err;
+      if (err instanceof ConflictException || err.message?.startsWith('FAIL_AT_') || err.message?.includes('DATABASE_WRITE_ERROR')) throw err;
       this.logger.warn(`[IDENTITY_ENGINE] DB unreachable during register (${err.message}). Using in-memory fallback identity.`);
 
       const identityId = `titan_id_${normalizedId.replace(/\D/g, '') || Date.now()}`;

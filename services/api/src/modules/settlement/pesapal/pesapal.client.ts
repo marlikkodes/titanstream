@@ -110,7 +110,7 @@ export class PesapalClient implements OnModuleInit {
           consumer_key: this.consumerKey,
           consumer_secret: this.consumerSecret,
         }),
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(15000),
       });
 
       if (!response.ok) {

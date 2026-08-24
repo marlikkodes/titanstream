@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Smartphone, CreditCard, ChevronRight, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
 import { settlementService } from '../../services/settlementService';
 import { PesapalFunding } from './PesapalFunding';
+import { MobileMoneyFunding } from './MobileMoneyFunding';
 import { UsdtFunding } from './UsdtFunding';
 import { useTelegram } from '../../context/TelegramContext';
 
@@ -133,7 +134,7 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
 
               {/* Render Selected Method Workflow */}
               {selectedOption.id === 'MOBILE_MONEY' ? (
-                <PesapalFunding paymentMethod="MOBILE_MONEY" onCancel={onClose} />
+                <MobileMoneyFunding onCancel={onClose} />
               ) : selectedOption.id === 'CARD' ? (
                 <PesapalFunding paymentMethod="CARD" onCancel={onClose} />
               ) : (

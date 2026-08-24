@@ -31,6 +31,7 @@ describe('Stage 9 — Growth Engine Unit & Integration Tests', () => {
     },
     referralRelationship: {
       findUnique: jest.fn(),
+      findFirst: jest.fn().mockResolvedValue(null),
       findMany: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockImplementation((args) => Promise.resolve({ id: 'rel_1', ...args.data })),
       update: jest.fn().mockImplementation((args) => Promise.resolve({ id: 'rel_1', ...args.data })),

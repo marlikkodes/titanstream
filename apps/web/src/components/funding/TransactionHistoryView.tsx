@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowDownLeft, ArrowUpRight, Clock, RefreshCw, Filter, AlertCircle, Inbox, CheckCircle2 } from 'lucide-react';
 import { useWalletStore } from '../../store/useWalletStore';
+import { usePaymentOrderStore } from '../../store/usePaymentOrderStore';
 import type { TransactionRecord } from '../../services/financialService';
 import type { SettlementSessionView } from '../../services/settlementService';
 import { useTelegram } from '../../context/TelegramContext';
@@ -24,17 +25,21 @@ export const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ 
     fetchSettlementHistory,
   } = useWalletStore();
 
+  const myOrders = usePaymentOrderStore((s) => s.myOrders);
+
   const { hapticFeedback } = useTelegram();
 
   useEffect(() => {
     fetchTransactions(limit, page * limit);
     fetchSettlementHistory();
+    usePaymentOrderStore.getState().fetchMyOrders().catch(() => undefined);
   }, [page, fetchTransactions, fetchSettlementHistory]);
 
   const handleRefresh = () => {
     hapticFeedback.impactOccurred('light');
     fetchTransactions(limit, page * limit);
     fetchSettlementHistory();
+    usePaymentOrderStore.getState().fetchMyOrders().catch(() => undefined);
   };
 
   const formatDate = (dateStr?: string) => {
@@ -61,20 +66,32 @@ export const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ 
       source: 'ledger',
     }));
 
-    const settlementItems = (settlementHistory || []).map((s) => ({
+    const settlementItems = (Array.isArray(settlementHistory) ? settlementHistory : []).map((s) => ({
       id: s.settlementId,
       type: 'SETTLEMENT',
       amount: s.expectedCryptoAmount || s.expectedAssetAmount || s.requestedAmount || '0.00',
       asset: s.asset || 'USDT',
       status: s.status,
-      reference: s.referenceCode || s.reference || s.settlementId.slice(-8),
+      reference: s.referenceCode || s.reference || (s.settlementId ? s.settlementId.slice(-8) : 'SETT'),
       date: s.createdAt || s.updatedAt,
       source: 'settlement',
     }));
 
-    // Deduplicate by reference if ledger entry matches settlement
+    const safeOrders = Array.isArray(myOrders) ? myOrders : Array.isArray((myOrders as any)?.data) ? (myOrders as any).data : [];
+    const orderItems = safeOrders.map((o: any) => ({
+      id: o.id,
+      type: 'MOBILE_MONEY',
+      amount: o.amount || 0,
+      asset: o.asset || 'USDT',
+      status: o.status === 'AWAITING_VERIFICATION' ? 'VERIFYING' : o.status === 'AWAITING_PAYMENT' ? 'WAITING_FOR_PAYMENT' : o.status,
+      reference: o.reference || (o.id ? o.id.slice(-8) : 'ORD'),
+      date: o.createdAt,
+      source: 'order',
+    }));
+
+    // Deduplicate by reference if ledger entry matches settlement/order
     const map = new Map<string, any>();
-    [...settlementItems, ...txItems].forEach((item) => {
+    [...orderItems, ...settlementItems, ...txItems].forEach((item) => {
       if (!map.has(item.reference)) {
         map.set(item.reference, item);
       }

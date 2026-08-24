@@ -53,6 +53,8 @@ export const WalletScreen: React.FC = () => {
 
   const isLocalPreferred = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
 
+  const hasFetchedBalanceOnce = useWalletStore((s) => s.hasFetchedBalanceOnce);
+
   useEffect(() => {
     useWalletStore.getState().fetchBalanceFromEngine();
     useWalletStore.getState().fetchSettlementHistory();
@@ -68,7 +70,9 @@ export const WalletScreen: React.FC = () => {
     useMiningStore.getState().fetchUserMachines();
   };
 
-  if (isLoadingBalance && usdtBalance === 0) {
+  const isModalActive = isFundingModalOpen || isWithdrawModalOpen || isHistoryModalOpen;
+
+  if (isLoadingBalance && usdtBalance === 0 && !hasFetchedBalanceOnce && !isModalActive) {
     return <DestinationLoader destination="wallet" />;
   }
 

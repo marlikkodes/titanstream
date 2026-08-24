@@ -35,10 +35,11 @@ export const usePaymentOrderStore = create<PaymentOrderState>((set, get) => ({
   fetchMyOrders: async () => {
     set({ isLoading: true });
     try {
-      const orders = await paymentOrderService.getMyOrders();
-      set({ myOrders: orders, isLoading: false });
+      const res = await paymentOrderService.getMyOrders();
+      const list = Array.isArray(res) ? res : Array.isArray((res as any)?.data) ? (res as any).data : [];
+      set({ myOrders: list, isLoading: false });
     } catch (err) {
-      set({ isLoading: false });
+      set({ myOrders: [], isLoading: false });
     }
   },
 

@@ -724,7 +724,7 @@ export class FinancialAdminService {
       throw new BadRequestException(`WITHDRAWAL_SAFETY_CHECK_FAILED: Cannot approve withdrawal due to failed pre-approval safety checks.`);
     }
 
-    return this.withdrawalService.approveWithdrawal(admin, settlementId);
+    return this.withdrawalService.verifyAndSettleWithdrawal(admin.id, settlementId);
   }
 
   /**
@@ -780,7 +780,7 @@ export class FinancialAdminService {
     if (!session) throw new NotFoundException('SETTLEMENT_SESSION_NOT_FOUND');
 
     if (session.sessionType === SettlementType.PAYOUT) {
-      return this.withdrawalService.dispatchPayout(session.id);
+      return this.withdrawalService.claimWithdrawalForExecution(admin.id, session.id);
     }
 
     const updated = await this.prisma.settlementSession.update({

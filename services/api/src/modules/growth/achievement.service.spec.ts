@@ -23,6 +23,14 @@ describe('AchievementService', () => {
     userLevelRecord: {
       findUnique: jest.fn().mockResolvedValue({ currentLevel: 'NEW' }),
     },
+    gameSession: {
+      findFirst: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
+    },
+    gamePlayerStat: {
+      findUnique: jest.fn().mockResolvedValue(null),
+      findFirst: jest.fn().mockResolvedValue(null),
+    },
     achievement: {
       findUnique: jest.fn().mockResolvedValue(null),
       create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'a1', ...data })),

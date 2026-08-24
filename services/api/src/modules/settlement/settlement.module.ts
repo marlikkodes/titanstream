@@ -25,6 +25,9 @@ import { PesapalProvider } from './pesapal/pesapal.provider';
 import { UsdtModule } from './usdt/usdt.module';
 import { UsdtProvider } from './usdt/usdt.provider';
 
+import { MerchantRoutingService } from './merchant-routing.service';
+import { MerchantPaymentMatchingService } from './merchant-payment-matching.service';
+
 @Module({
   imports: [PrismaModule, FinancialOrchestrationModule, CryptoBotModule, PesapalModule, UsdtModule],
   controllers: [OperatorController, SettlementController, OperationsPortalController, UniversalSettlementController],
@@ -32,6 +35,8 @@ import { UsdtProvider } from './usdt/usdt.provider';
     OperatorRepository,
     OperatorService,
     RoutingService,
+    MerchantRoutingService,
+    MerchantPaymentMatchingService,
     SettlementRiskService,
     SettlementService,
     ProviderEventService,
@@ -47,6 +52,8 @@ import { UsdtProvider } from './usdt/usdt.provider';
   exports: [
     SettlementService,
     RoutingService,
+    MerchantRoutingService,
+    MerchantPaymentMatchingService,
     SettlementRiskService,
     ProviderRegistryService,
     SettlementProviderRegistry,

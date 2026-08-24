@@ -408,4 +408,80 @@ export class UserService {
       return { success: true, message: 'Account deleted successfully' };
     });
   }
+
+  private serializeUser(user: any) {
+    if (!user) return user;
+    return {
+      ...user,
+      telegramUserId: user.telegramUserId ? user.telegramUserId.toString() : null,
+    };
+  }
+
+  async updateVerifiedPhoneNumber(userIdOrTelegramId: string | bigint, rawPhone: string) {
+    const cleaned = (rawPhone || '').trim();
+    if (!cleaned || cleaned.length < 8) {
+      throw new ConflictException('INVALID_PHONE_NUMBER');
+    }
+    const coolingUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const where: any = typeof userIdOrTelegramId === 'bigint' || (typeof userIdOrTelegramId === 'string' && /^\d+$/.test(userIdOrTelegramId))
+      ? { telegramUserId: BigInt(userIdOrTelegramId) }
+      : { id: userIdOrTelegramId as string };
+
+    const user = await this.prisma.user.update({
+      where,
+      data: {
+        phoneNumber: cleaned,
+        phoneVerified: true,
+        phoneVerifiedAt: new Date(),
+        recipientCoolingUntil: coolingUntil,
+      },
+    });
+
+    try {
+      await this.auditService.create({
+        telegramUserId: user.telegramUserId,
+        eventType: AuditEventType.USER_UPDATED,
+        description: 'Verified phone number updated (Cooling period activated)',
+        metadata: { phoneNumber: cleaned, recipientCoolingUntil: coolingUntil.toISOString() },
+      });
+    } catch {
+      // ignore
+    }
+
+    return this.serializeUser(user);
+  }
+
+  async updateVerifiedUsdtAddress(userIdOrTelegramId: string | bigint, address: string) {
+    const cleaned = (address || '').trim();
+    if (!cleaned || cleaned.length < 10) {
+      throw new ConflictException('INVALID_USDT_ADDRESS');
+    }
+    const coolingUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const where: any = typeof userIdOrTelegramId === 'bigint' || (typeof userIdOrTelegramId === 'string' && /^\d+$/.test(userIdOrTelegramId))
+      ? { telegramUserId: BigInt(userIdOrTelegramId) }
+      : { id: userIdOrTelegramId as string };
+
+    const user = await this.prisma.user.update({
+      where,
+      data: {
+        verifiedUsdtAddress: cleaned,
+        usdtAddressVerified: true,
+        usdtAddressVerifiedAt: new Date(),
+        recipientCoolingUntil: coolingUntil,
+      },
+    });
+
+    try {
+      await this.auditService.create({
+        telegramUserId: user.telegramUserId,
+        eventType: AuditEventType.USER_UPDATED,
+        description: 'Verified USDT address updated (Cooling period activated)',
+        metadata: { verifiedUsdtAddress: cleaned, recipientCoolingUntil: coolingUntil.toISOString() },
+      });
+    } catch {
+      // ignore
+    }
+
+    return this.serializeUser(user);
+  }
 }

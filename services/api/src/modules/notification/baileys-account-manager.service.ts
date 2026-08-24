@@ -97,6 +97,62 @@ export class BaileysAccountManagerService implements OnModuleInit {
         this.logger.error(`[BAILEYS_QUEUE_ERROR] ${err.message}`);
       });
     }, 100);
+
+    // 3. Start Safety Net Watchdog Loop to keep main account active for new users
+    this.startSafetyNetWatchdog();
+  }
+
+  /**
+   * Safety Net Watchdog: Continuously monitors account health every 15 seconds.
+   * Auto-reconnects disconnected sockets and self-heals degraded/logged-out sessions.
+   */
+  private startSafetyNetWatchdog() {
+    this.logger.log('🛡️  Starting Baileys Safety Net Watchdog (15s health heartbeat loop)...');
+    setInterval(async () => {
+      try {
+        const primaryPhone = process.env.WHATSAPP_BOT_PHONE || '+18257320524';
+        const cleanDigits = primaryPhone.replace(/\D/g, '');
+        const primaryAccountId = `baileys_acc_${cleanDigits}`;
+
+        let primaryAccount = this.accounts.get(primaryAccountId);
+
+        // If primary account is missing from memory map, re-sync/register it
+        if (!primaryAccount) {
+          this.logger.warn(`[SAFETY_NET] Primary account ${primaryAccountId} missing from memory map. Re-syncing...`);
+          await this.syncAccountsFromDatabase().catch(() => null);
+          primaryAccount = this.accounts.get(primaryAccountId);
+        }
+
+        if (primaryAccount && primaryAccount.isEnabled && !primaryAccount.isQuarantined) {
+          // Case 1: Account is DISCONNECTED or socket dropped
+          if (primaryAccount.state !== 'CONNECTED' || !primaryAccount.socket) {
+            if (primaryAccount.state !== 'CONNECTING') {
+              this.logger.log(`[SAFETY_NET_RECOVER] Primary account [${primaryAccount.accountId}] is ${primaryAccount.state}. Triggering socket reconnect...`);
+              await this.initAccountSocket(primaryAccount.accountId);
+            }
+          }
+
+          // Case 2: Account was logged out / DEGRADED -> reset stale auth folder and re-init pairing
+          if (primaryAccount.healthState === 'DEGRADED' && primaryAccount.state === 'DISCONNECTED') {
+            this.logger.warn(`[SAFETY_NET_SELF_HEAL] Primary account [${primaryAccount.accountId}] is DEGRADED (logged out). Resetting credentials for fresh pairing...`);
+            const authFolderPath = path.resolve(process.cwd(), primaryAccount.authFolder);
+            if (fs.existsSync(authFolderPath)) {
+              try {
+                fs.rmSync(authFolderPath, { recursive: true, force: true });
+                this.logger.log(`[SAFETY_NET_SELF_HEAL] Cleaned stale auth folder: ${authFolderPath}`);
+              } catch (rmErr: any) {
+                this.logger.error(`[SAFETY_NET_SELF_HEAL_ERR] ${rmErr.message}`);
+              }
+            }
+            primaryAccount.healthState = 'HEALTHY';
+            await this.updateDbAccountState(primaryAccount.accountId, 'DISCONNECTED', 'HEALTHY');
+            await this.initAccountSocket(primaryAccount.accountId);
+          }
+        }
+      } catch (watchdogErr: any) {
+        this.logger.error(`[SAFETY_NET_WATCHDOG_ERROR] ${watchdogErr.message}`);
+      }
+    }, 15000);
   }
 
   /**
@@ -365,6 +421,15 @@ export class BaileysAccountManagerService implements OnModuleInit {
   private async initAccountSocket(accountId: string) {
     const account = this.accounts.get(accountId);
     if (!account || !account.isEnabled || account.isQuarantined) return;
+    if (account.state === 'CONNECTING') return;
+
+    if (account.socket) {
+      try {
+        account.socket.ws?.close();
+        account.socket.ev?.removeAllListeners();
+      } catch {}
+      account.socket = null;
+    }
 
     try {
       const baileys = await import('@whiskeysockets/baileys').catch(() => null);
@@ -395,9 +460,13 @@ export class BaileysAccountManagerService implements OnModuleInit {
 
       const socket = makeWASocket({
         auth: state,
-        printQRInTerminal: process.env.NODE_ENV !== 'production',
+        printQRInTerminal: false,
         logger: pinoLogger,
         browser: ['Ubuntu', 'Chrome', '120.0.0.0'],
+        connectTimeoutMs: 60000,
+        defaultQueryTimeoutMs: 60000,
+        keepAliveIntervalMs: 15000,
+        retryRequestDelayMs: 2500,
       });
 
       account.socket = socket;
@@ -421,8 +490,42 @@ export class BaileysAccountManagerService implements OnModuleInit {
         }
       });
 
+      // Track whether we've already requested a pairing code for this socket lifecycle
+      let pairingCodeRequested = false;
+
       socket.ev.on('connection.update', async (update: any) => {
-        const { connection, lastDisconnect } = update;
+        const { connection, lastDisconnect, qr } = update;
+
+        // When Baileys emits a QR, request a pairing code instead
+        if (qr && !state.creds.registered && !pairingCodeRequested) {
+          pairingCodeRequested = true;
+          const phoneForPairing = account.phone.replace(/\D/g, '');
+          try {
+            const pairingCode = await socket.requestPairingCode(phoneForPairing);
+            account.pairingCode = pairingCode;
+            this.logger.log(`\n` +
+              `╔══════════════════════════════════════════════════════════════╗\n` +
+              `║         WHATSAPP PAIRING CODE FOR ${account.phone}          ║\n` +
+              `║                                                            ║\n` +
+              `║   Code:  ${pairingCode.padEnd(48)}║\n` +
+              `║                                                            ║\n` +
+              `║   Open WhatsApp on your phone → Linked Devices             ║\n` +
+              `║   → Link a Device → Link with phone number instead         ║\n` +
+              `║   → Enter this code                                        ║\n` +
+              `╚══════════════════════════════════════════════════════════════╝`);
+            // Persist pairing code to DB so admin endpoints can read it
+            try {
+              await this.prisma.baileysAccount.update({
+                where: { accountId },
+                data: { pairingCode },
+              });
+            } catch {}
+          } catch (pairErr: any) {
+            this.logger.error(`[BAILEYS_PAIRING_ERROR] Failed to request pairing code for ${account.phone}: ${pairErr.message}`);
+            pairingCodeRequested = false; // Allow retry on next QR cycle
+          }
+        }
+
         if (connection === 'close') {
           const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
           const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
@@ -432,7 +535,8 @@ export class BaileysAccountManagerService implements OnModuleInit {
           await this.updateDbAccountState(accountId, 'DISCONNECTED', account.healthState);
 
           if (shouldReconnect && account.isEnabled && !account.isQuarantined) {
-            setTimeout(() => this.initAccountSocket(accountId), 5000);
+            // Use longer delay (10s) to avoid rapid reconnect loops
+            setTimeout(() => this.initAccountSocket(accountId), 10000);
           } else if (statusCode === DisconnectReason.loggedOut) {
             account.healthState = 'DEGRADED';
             await this.updateDbAccountState(accountId, 'DISCONNECTED', 'DEGRADED');
@@ -440,8 +544,9 @@ export class BaileysAccountManagerService implements OnModuleInit {
         } else if (connection === 'open') {
           account.state = 'CONNECTED';
           account.healthState = 'HEALTHY';
+          account.pairingCode = undefined;
           account.metrics.lastConnectedAt = new Date();
-          this.logger.log(`[BAILEYS] WhatsApp account [${accountId}] connected successfully.`);
+          this.logger.log(`[BAILEYS] ✅ WhatsApp account [${accountId}] connected successfully.`);
           await this.updateDbAccountState(accountId, 'CONNECTED', 'HEALTHY', new Date());
         }
       });

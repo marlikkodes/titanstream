@@ -209,12 +209,20 @@ enum SettlementType {
 }
 
 enum SettlementStatus {
+  REQUESTED
+  RISK_CHECKING
   CREATED
   INITIALIZED
   OPERATOR_ASSIGNED
   MERCHANT_ASSIGNED
   WAITING_FOR_PAYMENT
   WAITING_PAYMENT
+  AWAITING_ADMIN_EXECUTION
+  ADMIN_EXECUTION_IN_PROGRESS
+  PAYOUT_EXECUTED
+  PROOF_SUBMITTED
+  PROOF_VERIFICATION_REQUIRED
+  AWAITING_VERIFICATION
   VERIFYING
   APPROVED
   POSTED
@@ -225,6 +233,7 @@ enum SettlementStatus {
   EXPIRED
   CANCELLED
   REJECTED
+  REVERSED
   DISPUTED
   RISK_FLAGGED
   RISK_HOLD
@@ -311,6 +320,14 @@ model User {
 
   channelVerified   Boolean   @default(false) @map("channel_verified")
   channelVerifiedAt DateTime? @map("channel_verified_at")
+
+  phoneNumber            String?   @map("phone_number")
+  phoneVerified          Boolean   @default(false) @map("phone_verified")
+  phoneVerifiedAt        DateTime? @map("phone_verified_at")
+  verifiedUsdtAddress    String?   @map("verified_usdt_address")
+  usdtAddressVerified    Boolean   @default(false) @map("usdt_address_verified")
+  usdtAddressVerifiedAt  DateTime? @map("usdt_address_verified_at")
+  recipientCoolingUntil  DateTime? @map("recipient_cooling_until")
 
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
@@ -750,6 +767,8 @@ model SettlementSession {
   id                    String               @id @default(uuid()) @map("settlement_id")
   telegramUserId        BigInt               @map("telegram_user_id")
   operatorId            String?              @map("operator_id")
+  merchantId            String?              @map("merchant_id")
+  submittedReference    String?              @map("submitted_reference")
   provider              SettlementProviderId @default(INTERNAL_OPERATIONS) @map("provider")
   sessionType           SettlementType       @default(DEPOSIT) @map("session_type")
   asset                 String               @map("asset")
@@ -765,22 +784,107 @@ model SettlementSession {
   paymentReceivedAt     DateTime?            @map("payment_received_at")
   usdtSentAt            DateTime?            @map("usdt_sent_at")
   completedAt           DateTime?            @map("completed_at")
+  claimedByAdminId      String?              @map("claimed_by_admin_id")
+  claimedAt             DateTime?            @map("claimed_at")
+  verifiedByAdminId     String?              @map("verified_by_admin_id")
+  verifiedAt            DateTime?            @map("verified_at")
+  requiresFourEyes      Boolean              @default(false) @map("requires_four_eyes")
+  recipientVerifiedAt   DateTime?            @map("recipient_verified_at")
+  payoutProof           Json?                @map("payout_proof")
+  payoutTxHash          String?              @map("payout_tx_hash")
+  verifiedRecipientAddress String?           @map("verified_recipient_address")
+  feeAmount             Decimal              @default(0) @map("fee_amount") @db.Decimal(36, 18)
+  netPayoutAmount       Decimal              @default(0) @map("net_payout_amount") @db.Decimal(36, 18)
   orchestratorReference String?              @map("orchestrator_reference")
   providerMetadata      Json                 @default("{}") @map("provider_metadata")
   createdAt             DateTime             @default(now()) @map("created_at")
   updatedAt             DateTime             @updatedAt @map("updated_at")
 
-  user     User              @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
-  operator Operator?         @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  user     User                 @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
+  operator Operator?            @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  merchant MobileMoneyMerchant? @relation(fields: [merchantId], references: [id], onDelete: SetNull)
   events   SettlementEvent[]
   notes    SettlementNote[]
+  claims   MerchantPaymentClaim[]
 
   @@index([telegramUserId])
   @@index([operatorId])
+  @@index([merchantId])
   @@index([provider])
   @@index([status])
   @@index([expiresAt])
   @@map("settlement_sessions")
+}
+
+model MobileMoneyMerchant {
+  id                  String   @id @default(uuid()) @map("merchant_id")
+  network             String   @map("network")
+  merchantName        String   @map("merchant_name")
+  merchantNumber      String   @map("merchant_number")
+  country             String   @default("UG") @map("country")
+  currency            String   @default("UGX") @map("currency")
+  status              String   @default("ACTIVE") @map("status")
+  priority            Int      @default(1) @map("priority")
+  dailyLimit          Decimal  @default(10000000) @map("daily_limit") @db.Decimal(36, 18)
+  perTransactionLimit Decimal  @default(5000000) @map("per_transaction_limit") @db.Decimal(36, 18)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  sessions     SettlementSession[]
+  transactions MerchantTransaction[]
+  claims       MerchantPaymentClaim[]
+
+  @@index([network, country, status])
+  @@map("mobile_money_merchants")
+}
+
+model MerchantTransaction {
+  id                   String    @id @default(uuid()) @map("transaction_id")
+  merchantId           String    @map("merchant_id")
+  network              String    @map("network")
+  transactionReference String    @unique @map("transaction_reference")
+  externalReference    String?   @map("external_reference")
+  amount               Decimal   @map("amount") @db.Decimal(36, 18)
+  currency             String    @map("currency")
+  senderPhone          String?   @map("sender_phone")
+  recipientMerchant    String    @map("recipient_merchant")
+  transactionTimestamp DateTime  @default(now()) @map("transaction_timestamp")
+  providerStatus       String    @default("SUCCESS") @map("provider_status")
+  rawMetadata          Json      @default("{}") @map("raw_metadata")
+  consumedAt           DateTime? @map("consumed_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  merchant MobileMoneyMerchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+
+  @@index([transactionReference])
+  @@index([merchantId])
+  @@index([consumedAt])
+  @@map("merchant_transactions")
+}
+
+model MerchantPaymentClaim {
+  id                 String   @id @default(uuid()) @map("claim_id")
+  settlementId       String   @map("settlement_id")
+  telegramUserId     BigInt   @map("telegram_user_id")
+  merchantId         String   @map("merchant_id")
+  network            String   @map("network")
+  expectedAmount     Decimal  @map("expected_amount") @db.Decimal(36, 18)
+  expectedCurrency   String   @map("expected_currency")
+  submittedReference String   @map("submitted_reference")
+  submittedAt        DateTime @default(now()) @map("submitted_at")
+  status             String   @default("REFERENCE_SUBMITTED") @map("status")
+  failureReason      String?  @map("failure_reason")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  merchant   MobileMoneyMerchant @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  settlement SettlementSession   @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@index([settlementId])
+  @@index([submittedReference])
+  @@index([status])
+  @@map("merchant_payment_claims")
 }
 
 model SettlementEvent {

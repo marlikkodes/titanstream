@@ -985,7 +985,7 @@ export class RewardService {
       return {
         id: claimed.id,
         rewardType: claimed.rewardType,
-        amount: claimed.amount.toString(),
+        amount: (claimed.amount || reward.amount || '0').toString(),
         assetCode: claimed.assetCode,
         status: claimed.status,
         reference: claimed.reference,

@@ -208,7 +208,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
     }
   };
 
-  const [showEmbeddedIframe, setShowEmbeddedIframe] = useState(false);
+  const [showEmbeddedIframe, setShowEmbeddedIframe] = useState(true);
 
   const isPendingApproval = session?.status === 'CREATED' && (session as any)?.requiresAdminApproval;
 
@@ -470,7 +470,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
             ) : (
               <>
                 <CreditCard size={18} />
-                <span>{paymentMethod === 'CARD' ? 'Continue to Card Checkout' : 'Continue to Mobile Money Checkout'}</span>
+                <span>Continue to Pesapal Checkout</span>
               </>
             )}
           </button>
@@ -613,16 +613,12 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 <h3 className="text-sm font-extrabold text-text-primary">
                   {session.status === 'VERIFYING'
                     ? 'Verifying Payment'
-                    : activePaymentMethod === 'CARD'
-                    ? 'Card Checkout Ready'
-                    : 'Mobile Money Checkout Ready'}
+                    : 'Pesapal Checkout Ready'}
                 </h3>
                 <p className="text-xs text-text-tertiary mt-1">
                   {session.status === 'VERIFYING'
-                    ? 'Payment received. Verifying transaction details...'
-                    : activePaymentMethod === 'CARD'
-                    ? 'Your secure payment page is ready. Continue to enter your card details and authorize payment.'
-                    : 'Your secure payment page is ready. Continue to the secure payment page to select MTN or Airtel Mobile Money and authorize the payment on your phone.'}
+                    ? 'Payment received. Verifying transaction details with Pesapal...'
+                    : 'Your deposit order is created. Continue to Pesapal\'s secure checkout page to choose your payment option and authorize payment.'}
                 </p>
               </div>
 
@@ -681,13 +677,13 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                     </button>
                   </div>
 
-                  {/* OPTIONAL EMBEDDED CHECKOUT IFRAME FALLBACK */}
+                  {/* EMBEDDED CHECKOUT IFRAME */}
                   {showEmbeddedIframe && (
                     <div className="rounded-2xl overflow-hidden border border-purple-500/30 bg-white shadow-2xl mt-2">
                       <iframe
                         src={checkoutUrl}
-                        title="Secure Card Checkout"
-                        className="w-full h-[480px] border-0"
+                        title="Secure Pesapal Gateway Checkout"
+                        className="w-full h-[720px] border-0"
                         allow="payment"
                       />
                     </div>

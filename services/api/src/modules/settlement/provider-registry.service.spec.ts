@@ -139,6 +139,7 @@ describe('ProviderRegistryService', () => {
 
     await expect(
       service.routeCreate(123n, {
+        provider: SettlementProviderId.PESAPAL,
         paymentMethod: 'MOBILE_MONEY',
         paymentNetwork: 'AIRTEL',
         asset: 'USDT',

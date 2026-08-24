@@ -55,12 +55,13 @@ export class WithdrawalRiskService {
     const past24hPayouts = await this.prisma.settlementSession.findMany({
       where: {
         telegramUserId,
+        sessionType: 'PAYOUT',
         createdAt: { gte: since24h },
         status: { notIn: ['CANCELLED', 'REJECTED', 'FAILED', 'EXPIRED'] },
       },
     });
 
-    const sum24h = past24hPayouts.reduce((acc, s) => acc + Number(s.requestedAmount), 0);
+    const sum24h = past24hPayouts.reduce((acc, s) => acc + Number(s.expectedCryptoAmount || 0), 0);
     const remainingDailyLimitUsd = Math.max(0, dailyLimitUsd - sum24h);
 
     if (amount > remainingDailyLimitUsd) {

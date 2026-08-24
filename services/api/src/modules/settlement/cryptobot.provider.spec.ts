@@ -1,4 +1,5 @@
 import { Prisma, SettlementProviderId, SettlementStatus, PaymentInvoiceStatus } from '@prisma/client';
+import { BadRequestException } from '@nestjs/common';
 import { CryptoBotProvider } from './cryptobot.provider';
 import { CryptoBotSignatureService } from './cryptobot/cryptobot.signature.service';
 
@@ -52,36 +53,20 @@ describe('CryptoBot Integration Tests (Stage 11.0.1)', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('generates real CryptoBot invoice, persists PaymentInvoice, and returns payUrl', async () => {
+  it('rejects creation for retired CryptoBot provider', async () => {
     prisma.settlementSession.create.mockResolvedValue(session);
 
-    const result = await provider.createSettlement(123n, {
-      provider: SettlementProviderId.CRYPTOBOT,
-      asset: 'USDT',
-      requestedAmount: '10',
-      expectedCryptoAmount: '10',
-      exchangeRate: '1.0',
-      country: 'GLOBAL',
-      mobileMoneyNetwork: 'CRYPTOBOT',
-    });
-
-    expect(cryptoBotClient.createInvoice).toHaveBeenCalledWith(
-      expect.objectContaining({
+    await expect(
+      provider.createSettlement(123n, {
+        provider: SettlementProviderId.CRYPTOBOT,
         asset: 'USDT',
-        amount: '10',
+        requestedAmount: '10',
+        expectedCryptoAmount: '10',
+        exchangeRate: '1.0',
+        country: 'GLOBAL',
+        mobileMoneyNetwork: 'CRYPTOBOT',
       }),
-    );
-    expect(prisma.paymentInvoice.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          externalInvoiceId: '889911',
-          payUrl: 'https://t.me/CryptoBot?start=IV889911',
-          status: PaymentInvoiceStatus.WAITING_FOR_PAYMENT,
-        }),
-      }),
-    );
-    expect(result.payUrl).toBe('https://t.me/CryptoBot?start=IV889911');
-    expect(result.externalInvoiceId).toBe('889911');
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('approves through the financial orchestrator once for a valid CryptoBot settlement', async () => {

@@ -52,13 +52,20 @@ export class BalanceService {
       });
     }
 
-    await this.auditService.create({
-      telegramUserId,
-      eventType: AuditEventType.BALANCE_UPDATED,
-      description: 'Balance calculated from ledger entries',
-      metadata: { financialAccountId, balances },
-      source: 'balance_service',
-    });
+    const tgUserId = typeof telegramUserId === 'bigint' ? telegramUserId : BigInt(String(telegramUserId).replace(/\D/g, '') || '0');
+    if (tgUserId > BigInt(0)) {
+      try {
+        await this.auditService.create({
+          telegramUserId: tgUserId,
+          eventType: AuditEventType.BALANCE_UPDATED,
+          description: 'Balance calculated from ledger entries',
+          metadata: { financialAccountId, balances },
+          source: 'balance_service',
+        });
+      } catch {
+        // ignore audit log error
+      }
+    }
 
     return { financialAccountId, balances };
   }

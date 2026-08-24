@@ -22,7 +22,8 @@ describe('Missions & Quests Forensic Audit Security Suite', () => {
 
     mockPrismaService = {
       rewardRule: {
-        findUnique: jest.fn(),
+        findUnique: jest.fn().mockResolvedValue({ id: 'rule_1', code: 'DAILY_CLAIM', name: 'Daily Reward', rewardType: 'USDT', amount: 5.0, isSystemRule: true, status: 'ACTIVE', requirementEngine: {} }),
+        findFirst: jest.fn().mockResolvedValue({ id: 'rule_1', code: 'DAILY_CLAIM', name: 'Daily Reward', rewardType: 'USDT', amount: 5.0, isSystemRule: true, status: 'ACTIVE', requirementEngine: {} }),
         upsert: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
       },
@@ -121,6 +122,7 @@ describe('Missions & Quests Forensic Audit Security Suite', () => {
       mockPrismaService.rewardRule.findUnique.mockResolvedValue({
         id: 'rule_settlement_1',
         code: 'MILESTONE_FIRST_SETTLEMENT',
+        status: 'ACTIVE',
         enabled: true,
         parameters: { requirementType: 'SETTLEMENT_COUNT', requirementCount: 1 },
       });
@@ -203,6 +205,7 @@ describe('Missions & Quests Forensic Audit Security Suite', () => {
       });
       mockPrismaService.rewardRule.findUnique.mockResolvedValue({
         id: 'rule_1',
+        status: 'ACTIVE',
         enabled: true,
         parameters: { requirementType: 'SETTLEMENT_COUNT', requirementCount: 0 },
       });

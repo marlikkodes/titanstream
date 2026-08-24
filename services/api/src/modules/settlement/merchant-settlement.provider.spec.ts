@@ -14,10 +14,17 @@ describe('MerchantSettlementProvider', () => {
   };
 
   let provider: MerchantSettlementProvider;
+  let prisma: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    provider = new MerchantSettlementProvider(settlements as any, events as any);
+    prisma = {
+      settlementSession: {
+        create: jest.fn().mockResolvedValue({ id: 'm_1' }),
+      },
+    };
+    const merchantRouting = { selectActiveMerchant: jest.fn().mockResolvedValue({ id: 'm1' }) };
+    provider = new MerchantSettlementProvider(prisma as any, settlements as any, events as any, merchantRouting as any);
   });
 
   it('exposes correct capabilities', () => {
@@ -37,9 +44,11 @@ describe('MerchantSettlementProvider', () => {
       country: 'KE',
       mobileMoneyNetwork: 'MPESA',
     });
-    expect(result).toEqual({ settlementId: 'm_1' });
-    expect(settlements.createCustomerSession).toHaveBeenCalledWith(123n, expect.objectContaining({
-      provider: SettlementProviderId.MERCHANT_MOBILE_MONEY,
+    expect(result).toEqual(expect.objectContaining({ settlementId: 'm_1' }));
+    expect(prisma.settlementSession.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        provider: SettlementProviderId.MERCHANT_MOBILE_MONEY,
+      }),
     }));
   });
 

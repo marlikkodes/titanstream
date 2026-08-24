@@ -8,7 +8,15 @@ describe('FinancialAccountService', () => {
 
   it('creates one active financial account for a ready user', async () => {
     const prisma = {
-      user: { findUnique: jest.fn(async () => ({ telegramUserId, state: UserState.READY, isReady: true })) },
+      user: { findUnique: jest.fn(async () => ({ id: 'u1', telegramUserId, state: UserState.READY, isReady: true })) },
+      financialAccount: {
+        findFirst: jest.fn(async () => null),
+        create: jest.fn(async () => ({
+          id: 'financial-account-id',
+          telegramUserId,
+          status: FinancialAccountStatus.ACTIVE,
+        })),
+      },
     };
     const repository = {
       findByTelegramUserId: jest.fn(async () => null),
@@ -24,7 +32,6 @@ describe('FinancialAccountService', () => {
     const account = await service.getOrCreateForReadyUser(telegramUserId);
 
     expect(account.id).toBe('financial-account-id');
-    expect(repository.createActive).toHaveBeenCalledWith(telegramUserId, prisma);
     expect(auditService.createWithClient).toHaveBeenCalledWith(prisma, expect.objectContaining({
       telegramUserId,
       metadata: expect.objectContaining({ financialAccountId: 'financial-account-id' }),
@@ -32,8 +39,12 @@ describe('FinancialAccountService', () => {
   });
 
   it('rejects users who are not ready', async () => {
+    const prisma = {
+      user: { findUnique: jest.fn(async () => ({ id: 'u1', telegramUserId, state: UserState.FROZEN, isReady: false })) },
+      financialAccount: { findFirst: jest.fn(async () => null) },
+    };
     const service = new FinancialAccountService(
-      { user: { findUnique: jest.fn(async () => ({ telegramUserId, state: UserState.FROZEN, isReady: false })) } } as any,
+      prisma as any,
       { findByTelegramUserId: jest.fn(async () => null), createActive: jest.fn() } as any,
       { create: jest.fn(), createWithClient: jest.fn() } as any,
     );

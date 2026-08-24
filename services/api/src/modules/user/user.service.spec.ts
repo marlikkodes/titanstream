@@ -11,11 +11,11 @@ describe('UserService - deleteAccount', () => {
   beforeEach(async () => {
     prismaMock = {
       $transaction: jest.fn().mockImplementation((cb) => cb(prismaMock)),
-      userMachine: { findMany: jest.fn().mockResolvedValue([]) },
+      userMachine: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       machineOutput: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       settlementSession: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       settlementEvent: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
-      financialOperation: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      financialOperation: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       financialIdempotencyRecord: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       financialDomainEvent: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       financialAccount: { findUnique: jest.fn().mockResolvedValue(null), delete: jest.fn().mockResolvedValue({}) },
@@ -37,9 +37,10 @@ describe('UserService - deleteAccount', () => {
       productSubscription: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       paymentInvoice: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       channelVerificationEvent: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
-      referralRelationship: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      referralRelationship: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       referralCode: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       referralQualificationHistory: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      referralReward: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       reward: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       growthEvent: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       notificationRecord: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
@@ -48,7 +49,7 @@ describe('UserService - deleteAccount', () => {
       benefitHistory: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       userLevelRecord: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       trustEvent: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
-      userTrustProfile: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      userTrustProfile: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       userPreferences: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       onboardingProgress: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       educationCompletion: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
@@ -56,8 +57,13 @@ describe('UserService - deleteAccount', () => {
       readinessScore: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       readinessHistory: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       userStateTransition: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      riskEvent: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       adminNote: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
-      user: { delete: jest.fn().mockResolvedValue({}) },
+      user: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'u1', telegramUserId: 123456n }),
+        findFirst: jest.fn().mockResolvedValue({ id: 'u1', telegramUserId: 123456n }),
+        delete: jest.fn().mockResolvedValue({}),
+      },
     };
 
     auditServiceMock = {

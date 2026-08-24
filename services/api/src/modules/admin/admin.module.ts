@@ -58,10 +58,14 @@ import { MachineAdminService } from './services/machine-admin.service';
 import { AdminWhatsappController } from './controllers/admin-whatsapp.controller';
 import { NotificationModule } from '../notification/notification.module';
 
+import { AdminMerchantService } from './services/admin-merchant.service';
+import { SettlementModule } from '../settlement/settlement.module';
+
 @Module({
   imports: [
     PrismaModule, 
     AuthModule,
+    forwardRef(() => SettlementModule),
     forwardRef(() => NotificationModule),
     forwardRef(() => FinancialModule),
     forwardRef(() => TreasuryModule),
@@ -118,6 +122,7 @@ import { NotificationModule } from '../notification/notification.module';
     OperationalSearchService,
     CommandCenterConfigService,
     AdminManagementService,
+    AdminMerchantService,
   ],
   exports: [
     ProductionReadinessEngineService,

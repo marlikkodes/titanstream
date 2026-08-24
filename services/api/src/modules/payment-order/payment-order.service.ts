@@ -53,7 +53,7 @@ export class PaymentOrderService {
       network: 'MTN',
       country: 'UG',
       currency: 'UGX',
-      receivingNumber: '0771234567',
+      receivingNumber: '234654',
       receivingName: 'TitanStream Escrow UG',
       ussdTemplate: '*165*1*1*{phone}*{amount}#',
       exchangeRateUsdt: 3700,
@@ -66,7 +66,7 @@ export class PaymentOrderService {
       network: 'AIRTEL',
       country: 'UG',
       currency: 'UGX',
-      receivingNumber: '0751234567',
+      receivingNumber: '7183443',
       receivingName: 'TitanStream Escrow UG',
       ussdTemplate: '*185*9*{phone}*{amount}#',
       exchangeRateUsdt: 3700,
@@ -115,8 +115,28 @@ export class PaymentOrderService {
     return newCfg;
   }
 
+  private toBigIntUserId(userKey: string | bigint): bigint {
+    if (typeof userKey === 'bigint') return userKey;
+    const str = String(userKey || '').trim();
+    const digits = str.replace(/\D/g, '');
+    if (digits.length > 0) {
+      try {
+        return BigInt(digits);
+      } catch {
+        // safe fallback to hash
+      }
+    }
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return BigInt(Math.abs(hash) + 100000);
+  }
+
   async createOrder(userKey: bigint | string, dto: CreatePaymentOrderDto) {
     const userStr = String(userKey);
+    const telegramUserIdBig = this.toBigIntUserId(userKey);
     const orderId = `po_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const reference = `ORD-${Date.now().toString().slice(-6)}`;
     const currency = dto.currency || 'USDT';
@@ -172,7 +192,7 @@ export class PaymentOrderService {
     this.orders.set(orderId, order);
 
     await this.audit.create({
-      telegramUserId: BigInt(userStr),
+      telegramUserId: telegramUserIdBig,
       eventType: AuditEventType.TRANSACTION_CREATED,
       description: `Created ${dto.type} payment order ${reference}`,
       metadata: { orderId, reference, amount: usdtAmount, type: dto.type },
@@ -218,7 +238,7 @@ export class PaymentOrderService {
     order.status = 'POSTING_TO_LEDGER';
     order.updatedAt = new Date().toISOString();
 
-    const telegramUserId = BigInt(order.telegramUserId);
+    const telegramUserId = this.toBigIntUserId(order.telegramUserId);
     const orchestratorRef = `po_ledger_${order.reference}`;
 
     // Map operation type
@@ -273,7 +293,7 @@ export class PaymentOrderService {
     order.updatedAt = new Date().toISOString();
     this.orders.set(orderId, order);
 
-    const telegramUserId = BigInt(order.telegramUserId);
+    const telegramUserId = this.toBigIntUserId(order.telegramUserId);
     await this.notification.createNotification({
       userId: telegramUserId,
       templateCode: 'PAYMENT_ORDER_REJECTED',

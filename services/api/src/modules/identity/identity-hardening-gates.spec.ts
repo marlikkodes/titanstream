@@ -3,6 +3,7 @@ import { IdentityMasterEngineService } from './identity-master.service';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { IdentityProvider, UserState } from '@prisma/client';
+import { AuditEventType } from '../../common/interfaces/user-state.enum';
 import { ConflictException, BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 
 describe('IdentityMasterEngine 10-Gate Production Hardening Certification Suite', () => {
@@ -71,6 +72,7 @@ describe('IdentityMasterEngine 10-Gate Production Hardening Certification Suite'
 
       prismaMock.universalIdentity.create.mockResolvedValue({ id: mockUuid });
       prismaMock.user.create.mockResolvedValue({ id: mockUuid, identityId: mockUuid, state: UserState.NEW });
+      prismaMock.channelIdentity.create.mockResolvedValue({ id: 'chan_race', identityId: mockUuid });
 
       // First call succeeds
       const firstCall = await service.register({

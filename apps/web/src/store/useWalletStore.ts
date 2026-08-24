@@ -40,6 +40,7 @@ interface WalletState {
   transactions: TransactionRecord[];
   
   // Status
+  hasFetchedBalanceOnce: boolean;
   isLoadingBalance: boolean;
   isLoadingSettlements: boolean;
   isLoadingTransactions: boolean;
@@ -76,6 +77,7 @@ export const useWalletStore = create<WalletState>()(
   settlementHistory: [],
   transactions: [],
 
+  hasFetchedBalanceOnce: false,
   isLoadingBalance: false,
   isLoadingSettlements: false,
   isLoadingTransactions: false,
@@ -117,7 +119,7 @@ export const useWalletStore = create<WalletState>()(
    * Fetch derived balances strictly from the Balance Engine (GET /financial/balance)
    */
   fetchBalanceFromEngine: async () => {
-    if (get().usdtBalance === 0) {
+    if (!get().hasFetchedBalanceOnce && get().usdtBalance === 0) {
       set({ isLoadingBalance: true, error: null });
     }
     try {
@@ -197,11 +199,12 @@ export const useWalletStore = create<WalletState>()(
         lifetimeWithdrawals: wthTotal,
         totalRewards: rwdTotal,
         activeMachines: (useMiningStore.getState().activeMachinesCount || 1),
+        hasFetchedBalanceOnce: true,
         isLoadingBalance: false,
       });
     } catch (err: any) {
       console.warn('Balance Engine offline or unauthenticated, falling back gracefully:', err?.message);
-      set({ isLoadingBalance: false });
+      set({ hasFetchedBalanceOnce: true, isLoadingBalance: false });
     }
   },
 

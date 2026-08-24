@@ -5,6 +5,7 @@ import {
   SettlementProviderId,
   SettlementProviderStatus,
   SettlementStatus,
+  UserState,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CryptoBotProvider } from './cryptobot.provider';
@@ -146,55 +147,50 @@ export class ProviderRegistryService implements OnModuleInit {
       }));
   }
 
-  private async resolveUserAndTelegramId(userKey: bigint | string): Promise<{ user: any; telegramUserId: bigint }> {
-    if (typeof userKey === 'bigint') {
-      let user: any = null;
-      if (this.prisma?.user) {
-        try {
-          user = await this.prisma.user.findUnique({ where: { telegramUserId: userKey } });
-        } catch {
-          // safe fallback for mock unit tests
-        }
-      }
-      return { user, telegramUserId: userKey };
-    }
-
-    const strKey = String(userKey || '').trim();
-    if (!strKey) {
-      return { user: null, telegramUserId: BigInt(0) };
-    }
-
-    let user: any = null;
+  async resolveUserAndTelegramId(userKey: bigint | string): Promise<{ user: any; telegramUserId: bigint }> {
     let telegramUserId = BigInt(0);
+    let user: any = null;
 
-    if (this.prisma?.user) {
-      try {
-        user = await this.prisma.user.findUnique({ where: { id: strKey } });
-      } catch {
-        // safe fallback
-      }
-      if (!user) {
-        const digits = strKey.replace(/\D/g, '');
-        if (digits) {
-          try {
-            user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(digits) } });
-          } catch {
-            // safe fallback
-          }
-        }
-      }
-    }
-
-    if (user?.telegramUserId) {
-      telegramUserId = user.telegramUserId;
+    if (typeof userKey === 'bigint') {
+      telegramUserId = userKey;
     } else {
+      const strKey = String(userKey || '').trim();
       const digits = strKey.replace(/\D/g, '');
-      if (digits) {
+      if (digits && digits.length > 0) {
         try {
           telegramUserId = BigInt(digits);
         } catch {
           telegramUserId = BigInt(0);
         }
+      }
+      if (telegramUserId === BigInt(0) && strKey) {
+        // Deterministic fallback ID from string key
+        let hash = 0;
+        for (let i = 0; i < strKey.length; i++) {
+          hash = (hash << 5) - hash + strKey.charCodeAt(i);
+          hash |= 0;
+        }
+      }
+    }
+
+    const MAX_SAFE_BIGINT = BigInt('9007199254740991');
+    if (telegramUserId > MAX_SAFE_BIGINT) {
+      telegramUserId = (telegramUserId % MAX_SAFE_BIGINT) + BigInt(100000);
+    }
+
+    if (this.prisma?.user && telegramUserId > BigInt(0)) {
+      try {
+        user = await this.prisma.user.upsert({
+          where: { telegramUserId },
+          update: { lastActiveAt: new Date() },
+          create: {
+            telegramUserId,
+            firstName: 'Titan User',
+            state: UserState.NEW,
+          },
+        });
+      } catch (upsertErr: any) {
+        this.logger.warn(`[USER_AUTO_PROVISION_WARN] ${upsertErr.message}`);
       }
     }
 
@@ -207,23 +203,39 @@ export class ProviderRegistryService implements OnModuleInit {
 
     let providerId = dto.provider;
 
-    // Strict Enforcement: USDT paymentMethod MUST ALWAYS use SettlementProviderId.USDT rail and NEVER Pesapal
+    // Provider Routing:
+    // 1. USDT -> USDT Provider
+    // 2. MOBILE_MONEY -> MERCHANT_MOBILE_MONEY Provider (Merchant Direct Rail)
+    // 3. CARD -> PESAPAL Provider (Card Hosted Checkout - Protected Subsystem)
     if (dto.paymentMethod?.toUpperCase() === 'USDT') {
       providerId = SettlementProviderId.USDT;
-    } else if (!providerId && dto.paymentMethod) {
-      const pm = dto.paymentMethod.toUpperCase();
-      if (pm === 'MOBILE_MONEY' || pm === 'CARD') {
-        providerId = SettlementProviderId.PESAPAL;
-      }
+    } else if (dto.provider) {
+      providerId = dto.provider as SettlementProviderId;
+    } else if (dto.paymentMethod?.toUpperCase() === 'CARD') {
+      providerId = SettlementProviderId.PESAPAL;
+    } else if (dto.paymentMethod?.toUpperCase() === 'MOBILE_MONEY') {
+      providerId = SettlementProviderId.MERCHANT_MOBILE_MONEY;
     }
     if (!providerId) {
-      providerId = SettlementProviderId.PESAPAL;
+      providerId = SettlementProviderId.MERCHANT_MOBILE_MONEY;
     }
 
     if (providerId === SettlementProviderId.CRYPTOBOT || (dto.provider as string) === 'CRYPTOBOT') {
       throw new BadRequestException('UNSUPPORTED_PROVIDER: CryptoBot settlement has been retired');
     }
-    await this.assertNoActiveSettlement(telegramUserIdBig, dto.asset);
+
+    // Only check for active sessions of the SAME provider type and SAME mobile money network
+    const requestedNetwork = dto.mobileMoneyNetwork ? dto.mobileMoneyNetwork.toUpperCase() : undefined;
+    const existingActive = await this.findActiveSettlementForProvider(telegramUserIdBig, dto.asset, providerId, requestedNetwork);
+    if (existingActive) {
+      throw new BadRequestException('ACTIVE_SETTLEMENT_EXISTS: An active settlement session already exists for this provider.');
+    }
+
+    // If user is starting a session for a NEW network, cancel any active session on the old network
+    if (requestedNetwork && providerId === SettlementProviderId.MERCHANT_MOBILE_MONEY) {
+      await this.cancelOtherNetworkActiveSessions(telegramUserIdBig, dto.asset, requestedNetwork);
+    }
+
     if (this.riskService && telegramUserIdBig > 0) {
       await this.riskService.assertSessionCreationRisk(telegramUserIdBig, Number(dto.expectedCryptoAmount));
     }
@@ -248,12 +260,14 @@ export class ProviderRegistryService implements OnModuleInit {
 
     if (!telegramUserId && !user) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
 
-    const session = await this.prisma.settlementSession.findFirst({
-      where: {
-        id: settlementId,
-        ...(telegramUserId && telegramUserId > BigInt(0) ? { telegramUserId } : {}),
-      },
+    let session = await this.prisma.settlementSession.findUnique({
+      where: { id: settlementId },
     });
+    if (!session && typeof this.prisma?.settlementSession?.findFirst === 'function') {
+      session = await this.prisma.settlementSession.findFirst({
+        where: { id: settlementId },
+      });
+    }
 
     if (!session) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
     const adapter = this.adapters.get(session.provider as SettlementProviderId);
@@ -338,15 +352,62 @@ export class ProviderRegistryService implements OnModuleInit {
     }
   }
 
-  private async assertNoActiveSettlement(telegramUserId: bigint, asset: string) {
+  private async findActiveSettlementForProvider(telegramUserId: bigint, asset: string, provider: string, network?: string): Promise<any | null> {
+    try {
+      const whereClause: any = {
+        telegramUserId,
+        asset,
+        provider: provider as any,
+        status: { in: ACTIVE_STATUSES },
+        expiresAt: { gt: new Date() }, // Only non-expired sessions
+      };
+      if (network) {
+        whereClause.mobileMoneyNetwork = network.toUpperCase();
+      }
+      const existing = await this.prisma.settlementSession.findFirst({
+        where: whereClause,
+        include: { merchant: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      return existing;
+    } catch (err: any) {
+      this.logger.warn(`[SETTLEMENT_DB_WARN] Could not check active settlements for provider ${provider}: ${err?.message}`);
+      return null;
+    }
+  }
+
+  private async cancelOtherNetworkActiveSessions(telegramUserId: bigint, asset: string, keepNetwork: string): Promise<void> {
+    try {
+      const staleSessions = await this.prisma.settlementSession.findMany({
+        where: {
+          telegramUserId,
+          asset,
+          provider: SettlementProviderId.MERCHANT_MOBILE_MONEY as any,
+          status: { in: ACTIVE_STATUSES },
+          mobileMoneyNetwork: { not: keepNetwork.toUpperCase() },
+        },
+      });
+      for (const sess of staleSessions) {
+        this.logger.log(`[SETTLEMENT_ROUTING] Cancelling stale session [${sess.id}] (${sess.mobileMoneyNetwork}) because user selected network ${keepNetwork}`);
+        await this.prisma.settlementSession.update({
+          where: { id: sess.id },
+          data: { status: SettlementStatus.CANCELLED },
+        }).catch(() => null);
+      }
+    } catch (err: any) {
+      this.logger.warn(`[SETTLEMENT_DB_WARN] Could not cancel other network sessions: ${err?.message}`);
+    }
+  }
+
+  private async assertNoActiveSettlement(telegramUserId: bigint, asset: string): Promise<any | null> {
     try {
       const existing = await this.prisma.settlementSession.findFirst({
         where: { telegramUserId, asset, status: { in: ACTIVE_STATUSES } },
       });
-      if (existing) throw new BadRequestException('ACTIVE_SETTLEMENT_EXISTS');
+      return existing;
     } catch (err: any) {
-      if (err instanceof BadRequestException) throw err;
       this.logger.warn(`[SETTLEMENT_DB_WARN] Could not check active settlements in DB: ${err?.message}`);
+      return null;
     }
   }
 

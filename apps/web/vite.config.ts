@@ -14,11 +14,7 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
     host: true,
-    allowedHosts: [
-      'borrower-autopilot-amazingly.ngrok-free.dev',
-      '.ngrok-free.dev',
-      '.ngrok.io',
-    ],
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://localhost:3001',

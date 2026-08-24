@@ -8,6 +8,7 @@ import { AchievementService } from './achievement.service';
 import { GameAntiCheatService } from '../games/game-anti-cheat.service';
 import { GameRewardService } from '../games/game-reward.service';
 import { GameEventService } from '../games/game-event.service';
+import { GrowthNotificationService } from './growth-notification.service';
 import { RewardStatus, RewardType, ReferralStatus } from '@prisma/client';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 
@@ -43,7 +44,8 @@ describe('Titan Stream Master Reward Economy Audit & Security Suite', () => {
         create: jest.fn().mockImplementation((args) => Promise.resolve({ id: 'rrw_ref_1', ...args.data })),
       },
       rewardRule: {
-        findUnique: jest.fn(),
+        findUnique: jest.fn().mockResolvedValue({ id: 'rule_1', code: 'DAILY_CLAIM', name: 'Daily Reward', rewardType: 'USDT', amount: 5.0, isSystemRule: true, status: 'ACTIVE', requirementEngine: {} }),
+        findFirst: jest.fn().mockResolvedValue({ id: 'rule_1', code: 'DAILY_CLAIM', name: 'Daily Reward', rewardType: 'USDT', amount: 5.0, isSystemRule: true, status: 'ACTIVE', requirementEngine: {} }),
         upsert: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
       },
@@ -81,6 +83,7 @@ describe('Titan Stream Master Reward Economy Audit & Security Suite', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: FinancialOrchestratorService, useValue: mockOrchestrator },
         { provide: GrowthEventService, useValue: { publish: jest.fn() } },
+        { provide: GrowthNotificationService, useValue: { sendNotification: jest.fn(), sendClaimSuccessAlert: jest.fn() } },
         { provide: GameEventService, useValue: { resolveMultipliers: jest.fn().mockResolvedValue({}) } },
         { provide: AchievementService, useValue: { reconcileAchievements: jest.fn(), getClaimStreakInfo: jest.fn().mockResolvedValue({ current: 1, best: 1 }) } },
       ],
@@ -136,7 +139,7 @@ describe('Titan Stream Master Reward Economy Audit & Security Suite', () => {
 
       const result = await referralService.evaluateQualification(2002n);
 
-      expect(result.status).toBe(ReferralStatus.REGISTERED); // Remains REGISTERED, not QUALIFIED
+      expect(result?.status).toBe(ReferralStatus.REGISTERED); // Remains REGISTERED, not QUALIFIED
     });
   });
 
@@ -190,6 +193,7 @@ describe('Titan Stream Master Reward Economy Audit & Security Suite', () => {
       });
       mockPrismaService.rewardRule.findUnique.mockResolvedValue({
         id: 'rule_ref',
+        status: 'ACTIVE',
         enabled: true,
         parameters: { requirementType: 'REFERRAL_QUALIFIED' },
       });

@@ -161,6 +161,7 @@ describe('CryptoBot Decommissioning & Retirement Verification (Phase 12)', () =>
       updatedAt: new Date(),
     };
 
+    prismaMock.settlementSession.findUnique.mockResolvedValue(historicalSession);
     prismaMock.settlementSession.findFirst.mockResolvedValue(historicalSession);
 
     const result = await registryService.getSession(100n, 'cb_session_999');

@@ -3,6 +3,11 @@ import { WithdrawalService } from './withdrawal.service';
 
 describe('WithdrawalService', () => {
   const prisma = {
+    user: {
+      findFirst: jest.fn().mockResolvedValue({ id: 'u1', telegramUserId: BigInt(123456789) }),
+      findUnique: jest.fn().mockResolvedValue({ id: 'u1', telegramUserId: BigInt(123456789) }),
+      update: jest.fn().mockResolvedValue({}),
+    },
     settlementSession: {
       create: jest.fn(),
       findUnique: jest.fn(),

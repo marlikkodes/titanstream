@@ -6,7 +6,11 @@ describe('AdminAuthService', () => {
   const prisma = {
     adminUser: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
+    },
+    adminDevice: {
+      upsert: jest.fn(),
     },
     adminSession: {
       create: jest.fn(),
@@ -15,48 +19,59 @@ describe('AdminAuthService', () => {
     },
   };
   const audit = { logAction: jest.fn() };
+  const authVerification = { verify: jest.fn() };
 
   let service: AdminAuthService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new AdminAuthService(prisma as any, audit as any);
+    service = new AdminAuthService(prisma as any, audit as any, authVerification as any);
   });
 
-  it('authenticates valid admin user and returns session token', async () => {
-    const passwordHash = (service as any).hashPassword('admin_super_secret_123');
-    prisma.adminUser.findUnique.mockResolvedValue({
-      id: 'admin_1',
+  it('authenticates valid admin user via Telegram initData and returns session token', async () => {
+    const telegramId = 5387655307n;
+    authVerification.verify.mockReturnValue({
+      telegramId,
+      firstName: 'Super',
+      lastName: 'Admin',
       username: 'superadmin',
-      email: 'superadmin@titanstream.io',
-      passwordHash,
+    });
+
+    prisma.adminUser.findFirst.mockResolvedValue({
+      id: 'admin_1',
+      username: 'admin_tg_5387655307',
+      email: 'admin_5387655307@titanstream.internal',
       role: AdminRole.SUPER_ADMIN,
       isActive: true,
     });
 
+    prisma.adminDevice.upsert.mockResolvedValue({});
     prisma.adminSession.create.mockResolvedValue({
       tokenHash: 'adm_sess_1234567890',
       expiresAt: new Date(Date.now() + 86400000),
     });
 
-    const res = await service.login({ username: 'superadmin', password: 'admin_super_secret_123' });
+    const res = await service.loginWithTelegram({
+      initData: 'query_id=123&user=test',
+      fingerprint: 'fp_123',
+    });
 
     expect(res.token).toBe('adm_sess_1234567890');
     expect(res.admin.role).toBe(AdminRole.SUPER_ADMIN);
-    expect(audit.logAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'ADMIN_LOGIN' }));
+    expect(audit.logAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'ADMIN_TELEGRAM_LOGIN' }));
   });
 
-  it('rejects invalid password with UnauthorizedException', async () => {
-    const passwordHash = (service as any).hashPassword('real_password');
-    prisma.adminUser.findUnique.mockResolvedValue({
-      id: 'admin_1',
-      username: 'superadmin',
-      passwordHash,
-      isActive: true,
+  it('rejects invalid Telegram authentication with UnauthorizedException', async () => {
+    authVerification.verify.mockImplementation(() => {
+      throw new Error('Invalid HMAC signature');
     });
 
-    await expect(service.login({ username: 'superadmin', password: 'wrong_password' })).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(
+      service.loginWithTelegram({
+        initData: 'invalid_data',
+        fingerprint: 'fp_123',
+      }),
+    ).rejects.toThrow(UnauthorizedException);
   });
 });
+

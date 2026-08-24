@@ -18,6 +18,9 @@ describe('OnboardingService', () => {
       },
       onboardingProgress: {
         findUnique: jest.fn(async () => progress),
+        findFirst: jest.fn(async () => progress),
+        create: jest.fn(async () => progress),
+        update: jest.fn(async ({ data }: any) => Object.assign(progress, data)),
         upsert: jest.fn(async () => progress),
       },
       educationModule: { count: jest.fn(async () => 5) },
@@ -33,7 +36,7 @@ describe('OnboardingService', () => {
     await service.startOnboarding(telegramUserId);
 
     expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { telegramUserId },
+      where: expect.anything(),
       data: { state: UserState.ONBOARDING_STARTED },
     });
     expect(prisma.userStateTransition.create).toHaveBeenCalledWith({

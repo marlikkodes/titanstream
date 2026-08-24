@@ -476,9 +476,24 @@ export class PesapalProvider implements SettlementProvider {
     const sessionMeta = (session.providerMetadata || {}) as Record<string, any>;
     const pesapalCurrency = sessionMeta.paymentCurrency
       || (session.country === 'KE' ? 'KES' : session.country === 'UG' ? 'UGX' : 'USD');
-    const pesapalAmount = sessionMeta.paymentAmount != null
-      ? Number(sessionMeta.paymentAmount)
-      : new Prisma.Decimal(session.requestedAmount.toString()).mul(new Prisma.Decimal(session.exchangeRate.toString())).toDecimalPlaces(0).toNumber();
+
+    let rawAmount = 0;
+    if (sessionMeta.paymentAmount != null && Number(sessionMeta.paymentAmount) > 0) {
+      rawAmount = Number(sessionMeta.paymentAmount);
+    } else if (session.requestedAmount && session.exchangeRate) {
+      rawAmount = new Prisma.Decimal(session.requestedAmount.toString())
+        .mul(new Prisma.Decimal(session.exchangeRate.toString()))
+        .toNumber();
+    } else if (session.requestedAmount) {
+      rawAmount = Number(session.requestedAmount.toString());
+    }
+
+    if (!rawAmount || rawAmount <= 0 || isNaN(rawAmount)) {
+      this.logger.error(`[PesapalProvider] Invalid order amount calculated for session ${session.id}: rawAmount=${rawAmount}`);
+      throw new BadRequestException('INVALID_SETTLEMENT_AMOUNT: Transaction amount must be greater than 0');
+    }
+
+    const pesapalAmount = Number(rawAmount.toFixed(2));
 
     const normalizedPhone = this.normalizePhoneNumber(sessionMeta.phoneNumber, session.country);
 

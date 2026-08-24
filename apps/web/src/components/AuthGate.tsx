@@ -66,6 +66,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [copiedPin, setCopiedPin] = useState(false);
 
   // Traditional OTP fallback states
+  const [waStep, setWaStep] = useState<'phone' | 'otp'>('phone');
   const [waPhone, setWaPhone] = useState('');
   const [waOtpCode, setWaOtpCode] = useState('');
 
