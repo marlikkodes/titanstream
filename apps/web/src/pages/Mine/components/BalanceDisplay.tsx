@@ -4,17 +4,30 @@ import { useSettingsStore } from '../../../store/useSettingsStore';
 import { useCountryStore } from '../../../store/useCountryStore';
 import { formatAdaptiveCounter } from '../../../utils/format';
 
+import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
+import { MACHINE_CATALOG } from '../../../data/machines';
+
 export const BalanceDisplay: React.FC = () => {
   const activeCurrency = useMiningStore((s) => s.activeCurrency);
   const displayMultiplier = useMiningStore((s) => s.displayMultiplier);
   const displayUnclaimed = useMiningStore((s) => s.displayUnclaimed);
-  const isPaused = useMiningStore((s) => s.isPaused);
-  const activeSpeedGhs = useMiningStore((s) => s.activeSpeedGhs);
+  const ownedTierCodes = useMiningStore((s) => s.ownedTierCodes);
+  const ownerships = useMachineOwnershipStore((s) => s.ownerships);
 
   const { preferLocalCurrency } = useSettingsStore();
   const { selectedCountry } = useCountryStore();
 
-  const activeSpeed = isPaused ? 0 : activeSpeedGhs;
+  const safeOwned = Array.isArray(ownedTierCodes) ? ownedTierCodes : ['TS_TRIAL'];
+  let activeSpeed = 0;
+  for (const code of safeOwned) {
+    const norm = (code || '').toUpperCase();
+    const rec = ownerships[norm] || (norm === 'TS_TRIAL' ? useMachineOwnershipStore.getState().getRecordByTier('TS_TRIAL') : null);
+    if (rec?.status === 'RUNNING' || (!rec && norm === 'TS_TRIAL')) {
+      const item = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === norm);
+      activeSpeed += item?.capacityGhs || (norm === 'TS_TRIAL' ? 1.0 : 0);
+    }
+  }
+  const isPaused = activeSpeed <= 0;
 
   const currentDisplay = Math.max(0, Number(displayUnclaimed) || 0);
   const isUsdt = activeCurrency === 'USDT';

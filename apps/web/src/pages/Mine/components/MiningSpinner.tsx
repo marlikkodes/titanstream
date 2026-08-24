@@ -141,7 +141,7 @@ export const MiningSpinner = React.memo(() => {
   const upgradeLimits = useMiningStore((s) => s.upgradeLimits);
   const ownedTierCodes = useMiningStore((s) => s.ownedTierCodes);
   const userMachines = useMiningStore((s) => s.userMachines);
-  const isPaused = useMiningStore((s) => s.isPaused);
+  const ownerships = useMachineOwnershipStore((s) => s.ownerships);
 
   const { setActiveTab } = useNavigationStore();
 
@@ -235,6 +235,10 @@ export const MiningSpinner = React.memo(() => {
   const activeSpinnerIdx = isUsdt ? usdtSpinnerIdx : tonSpinnerIdx;
   const activeSpinner = activeSpinners[activeSpinnerIdx];
 
+  const currentTierCode = (activeSpinner?.tierCode || 'TS_TRIAL').toUpperCase();
+  const currentMachineRecord = ownerships[currentTierCode] || useMachineOwnershipStore.getState().getRecordByTier(currentTierCode);
+  const isMachinePaused = currentMachineRecord?.status === 'PAUSED';
+
   // DOM Refs for direct GPU-accelerated rotation updates (Phase 3 & Phase 5)
   const rotorPrimaryRef = React.useRef<HTMLDivElement>(null);
   const rotorSecondaryRef = React.useRef<HTMLDivElement>(null);
@@ -261,7 +265,7 @@ export const MiningSpinner = React.memo(() => {
       const revolutionsPerSec = configMultiplier * intensity * tapSurgeFactor * 2.8;
       
       // Maintain continuous smooth rotation so spinner NEVER freezes or gets stuck unless paused
-      const speedFactor = isPaused ? 0 : (isOverheated ? 0.35 : (isLocked ? 0.2 : 1.0));
+      const speedFactor = isMachinePaused ? 0 : (isOverheated ? 0.35 : (isLocked ? 0.2 : 1.0));
       const rotationSpeed = reducedMotion
         ? 0
         : (((revolutionsPerSec * speedFactor * 360) / 1000) * delta);
@@ -311,7 +315,7 @@ export const MiningSpinner = React.memo(() => {
       cancelAnimationFrame(animFrame);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [coolerMultiplier, isAnyLimitReached, isOverheated, activeSpinner.baseSpeedMultiplier, activeSpinner.promoSpinnerSpeedMultiplier, isMiningLocked, machineMode, maxMultiplier, reducedMotion, activeSpinner.id, isPaused]);
+  }, [coolerMultiplier, isAnyLimitReached, isOverheated, activeSpinner.baseSpeedMultiplier, activeSpinner.promoSpinnerSpeedMultiplier, isMiningLocked, machineMode, maxMultiplier, reducedMotion, activeSpinner.id, isMachinePaused]);
 
   // Heat smoke generation when multiplier is high or overheated (Phase 8: battery optimization - skipped on low graphics)
   useEffect(() => {
@@ -689,7 +693,7 @@ export const MiningSpinner = React.memo(() => {
           )}
 
           {/* Paused Machine Visual Overlay */}
-          {isPaused && (
+          {isMachinePaused && (
             <div className="absolute inset-0 rounded-full bg-black/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-4 text-center border border-amber-500/40 animate-fade-in pointer-events-none">
               <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center font-black text-lg mb-1 shadow-lg shadow-amber-500/20">
                 ⏸️
@@ -710,7 +714,7 @@ export const MiningSpinner = React.memo(() => {
               coolerMultiplier={coolerMultiplier}
               isOverheated={isOverheated}
               isLocked={isMiningLocked()}
-              isPaused={isPaused}
+              isPaused={isMachinePaused}
               onDiscoveryEvent={handleDiscoveryEvent}
               tierCode={activeSpinner.tierCode}
               tierIndex={activeSpinnerIdx}
