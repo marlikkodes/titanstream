@@ -29,6 +29,8 @@ import { useTelegram } from '../../context/TelegramContext';
 
 import { useCountryStore } from '../../store/useCountryStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useGrowthStore } from '../../store/useGrowthStore';
+import { Users } from 'lucide-react';
 
 export const WalletScreen: React.FC = () => {
   const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
@@ -50,6 +52,17 @@ export const WalletScreen: React.FC = () => {
   const { hapticFeedback, user } = useTelegram();
   const { selectedCountry, getLocalAmount } = useCountryStore();
   const { preferLocalCurrency, hideEarnings } = useSettingsStore();
+
+  const { qualification, fetchQualification } = useGrowthStore();
+
+  useEffect(() => {
+    fetchQualification();
+  }, [fetchQualification]);
+
+  const isWithdrawalLocked = qualification?.withdrawal ? !qualification.withdrawal.canWithdraw : false;
+  const qualifiedCount = qualification?.withdrawal?.qualifiedCount ?? 0;
+  const requirementCount = qualification?.withdrawal?.requirement ?? 5;
+  const remainingNeeded = qualification?.withdrawal?.remainingNeeded ?? 5;
 
   const isLocalPreferred = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
 
@@ -183,13 +196,70 @@ export const WalletScreen: React.FC = () => {
 
           <button
             onClick={() => setIsWithdrawModalOpen(true)}
-            className="py-3 rounded-2xl bg-white/10 border border-white/15 text-text-primary font-black text-xs flex items-center justify-center gap-2 hover:bg-white/15 transition-colors press-feedback"
+            className={`py-3 rounded-2xl border font-black text-xs flex items-center justify-center gap-2 transition-colors press-feedback ${
+              isWithdrawalLocked
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                : 'bg-white/10 border-white/15 text-text-primary hover:bg-white/15'
+            }`}
           >
-            <ArrowDownLeft size={16} />
-            <span>Take Out Money</span>
+            {isWithdrawalLocked ? <Lock size={15} className="text-amber-400" /> : <ArrowDownLeft size={16} />}
+            <span>Take Out Money {isWithdrawalLocked && `(${qualifiedCount}/${requirementCount})`}</span>
           </button>
         </div>
       </motion.div>
+
+      {/* WITHDRAWAL UNLOCK PROGRESS CARD */}
+      {isWithdrawalLocked && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-3xl bg-amber-500/10 border border-amber-500/25 space-y-3 relative overflow-hidden"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold shrink-0">
+                <Lock size={16} />
+              </div>
+              <div>
+                <span className="text-xs font-black text-text-primary block">
+                  Withdrawals Locked ({qualifiedCount}/{requirementCount} Referrals)
+                </span>
+                <span className="text-[10px] text-amber-300/90 block">
+                  Invite 5 qualified members to unlock cash payouts
+                </span>
+              </div>
+            </div>
+            <span className="text-[11px] font-mono font-black text-amber-400 bg-amber-500/15 px-2.5 py-1 rounded-full border border-amber-500/30 shrink-0">
+              {qualifiedCount} / {requirementCount}
+            </span>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="space-y-1">
+            <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(100, (qualifiedCount / requirementCount) * 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-[10px] text-text-tertiary font-mono">
+              <span>{Math.round((qualifiedCount / requirementCount) * 100)}% Completed</span>
+              <span>{remainingNeeded} more {remainingNeeded === 1 ? 'member' : 'members'} needed</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              hapticFeedback.impactOccurred('medium');
+              setActiveTab('grow');
+            }}
+            className="w-full py-2.5 rounded-xl bg-amber-500 text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 hover:brightness-110 press-feedback"
+          >
+            <Users size={14} />
+            <span>Invite Members to Unlock ({remainingNeeded} Left)</span>
+          </button>
+        </motion.div>
+      )}
 
       {/* CROSS-PAGE CONTINUITY BANNER (No Dead Ends) */}
       {unclaimedBalance > 0 && (
