@@ -260,8 +260,8 @@ export const MiningSpinner = React.memo(() => {
       const tapSurgeFactor = 1.0 + Math.max(0, coolerMultiplier - 1.0) * 2.0;
       const revolutionsPerSec = configMultiplier * intensity * tapSurgeFactor * 2.8;
       
-      // Maintain continuous smooth rotation so spinner NEVER freezes or gets stuck
-      const speedFactor = isOverheated ? 0.35 : (isLocked ? 0.2 : 1.0);
+      // Maintain continuous smooth rotation so spinner NEVER freezes or gets stuck unless paused
+      const speedFactor = isPaused ? 0 : (isOverheated ? 0.35 : (isLocked ? 0.2 : 1.0));
       const rotationSpeed = reducedMotion
         ? 0
         : (((revolutionsPerSec * speedFactor * 360) / 1000) * delta);
@@ -311,7 +311,7 @@ export const MiningSpinner = React.memo(() => {
       cancelAnimationFrame(animFrame);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [coolerMultiplier, isAnyLimitReached, isOverheated, activeSpinner.baseSpeedMultiplier, activeSpinner.promoSpinnerSpeedMultiplier, isMiningLocked, machineMode, maxMultiplier, reducedMotion, activeSpinner.id]);
+  }, [coolerMultiplier, isAnyLimitReached, isOverheated, activeSpinner.baseSpeedMultiplier, activeSpinner.promoSpinnerSpeedMultiplier, isMiningLocked, machineMode, maxMultiplier, reducedMotion, activeSpinner.id, isPaused]);
 
   // Heat smoke generation when multiplier is high or overheated (Phase 8: battery optimization - skipped on low graphics)
   useEffect(() => {
@@ -642,7 +642,7 @@ export const MiningSpinner = React.memo(() => {
                 strokeDasharray="12, 180"
                 style={{
                   transformOrigin: 'center',
-                  animation: `spin ${Math.max(0.5, 5 - coolerMultiplier * 0.2)}s linear infinite`,
+                  animation: isPaused ? 'none' : `spin ${Math.max(0.5, 5 - coolerMultiplier * 0.2)}s linear infinite`,
                 }}
               />
             </svg>
@@ -738,7 +738,7 @@ export const MiningSpinner = React.memo(() => {
                           opacity="0.3"
                           style={{
                             transformOrigin: 'center',
-                            animation: `spin ${Math.max(0.3, 3.5 - coolerMultiplier * 0.2)}s linear infinite`,
+                            animation: isPaused ? 'none' : `spin ${Math.max(0.3, 3.5 - coolerMultiplier * 0.2)}s linear infinite`,
                           }}
                         />
                       </svg>

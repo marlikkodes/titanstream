@@ -505,7 +505,7 @@ export const useMiningStore = create<MiningState>()(
         const activeSpeed = s.getActiveHashSpeed();
         let activeUnclaimed = s.unclaimedBalance;
         if (activeSpeed > 0 && !s.isOverheated) {
-          const ratePerSec = activeSpeed * s.coolerMultiplier * 0.0001;
+          const ratePerSec = activeSpeed * s.coolerMultiplier * 0.001;
           const tickYield = ratePerSec * (TICK_MS / 1000);
           activeUnclaimed = s.unclaimedBalance + tickYield;
         }
