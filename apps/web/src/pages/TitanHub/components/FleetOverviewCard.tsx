@@ -25,7 +25,7 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
   const ownedTierCodes = useMiningStore((s) => s.ownedTierCodes);
   const isPaused = useMiningStore((s) => s.isPaused);
   const activeSpeedGhs = useMiningStore((s) => s.activeSpeedGhs);
-  const { ownerships } = useMachineOwnershipStore();
+  const ownerships = useMachineOwnershipStore((s) => s.ownerships);
 
   const activeSpeed = isPaused ? 0 : activeSpeedGhs;
 

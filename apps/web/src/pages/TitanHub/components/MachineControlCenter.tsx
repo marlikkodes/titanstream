@@ -16,17 +16,17 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
   activeTierCode,
   onOpenHealthModal,
 }) => {
-  const {
-    getRecordByTier,
-    setMachineStatus,
-    setMachineNickname,
-    openOwnersManual,
-    openCertificate,
-    addTimelineEvent,
-  } = useMachineOwnershipStore();
+  // Subscribe reactively to state in useMachineOwnershipStore
+  const ownerships = useMachineOwnershipStore((s) => s.ownerships);
+  const setMachineStatus = useMachineOwnershipStore((s) => s.setMachineStatus);
+  const setMachineNickname = useMachineOwnershipStore((s) => s.setMachineNickname);
+  const openOwnersManual = useMachineOwnershipStore((s) => s.openOwnersManual);
+  const openCertificate = useMachineOwnershipStore((s) => s.openCertificate);
+  const addTimelineEvent = useMachineOwnershipStore((s) => s.addTimelineEvent);
 
-  const record = getRecordByTier(activeTierCode);
-  const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === activeTierCode.toUpperCase()) || MACHINE_CATALOG[0];
+  const normTier = (activeTierCode || 'TS_TRIAL').trim().toUpperCase();
+  const record = ownerships[normTier] || useMachineOwnershipStore.getState().getRecordByTier(normTier);
+  const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === normTier) || MACHINE_CATALOG[0];
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [nicknameInput, setNicknameInput] = useState(record?.nickname || catalogItem.name);
@@ -45,7 +45,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
   ];
 
   const handleToggleState = (targetStatus: 'RUNNING' | 'PAUSED') => {
-    setMachineStatus(activeTierCode, targetStatus);
+    setMachineStatus(normTier, targetStatus);
     if (targetStatus === 'PAUSED') {
       showToast(`⏸️ ${record.nickname} Paused — Hash generation on hold`, 'warning');
     } else {
@@ -56,22 +56,22 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
   const handleRestart = async () => {
     setIsRebooting(true);
     setRebootStep(0);
-    setMachineStatus(activeTierCode, 'PAUSED');
+    setMachineStatus(normTier, 'PAUSED');
 
     for (let i = 0; i < rebootSteps.length; i++) {
       await new Promise((resolve) => setTimeout(resolve, 500));
       setRebootStep(i);
     }
 
-    setMachineStatus(activeTierCode, 'RUNNING');
-    addTimelineEvent(activeTierCode, 'Hardware Reboot Completed', 'SRAM memory cleared, hash frequency recalibrated, stratum session restored.');
+    setMachineStatus(normTier, 'RUNNING');
+    addTimelineEvent(normTier, 'Hardware Reboot Completed', 'SRAM memory cleared, hash frequency recalibrated, stratum session restored.');
     showToast(`🔄 ${record.nickname} Reboot Complete — 100% capacity restored`, 'info');
     setIsRebooting(false);
   };
 
   const handleSaveName = () => {
     if (nicknameInput.trim()) {
-      setMachineNickname(activeTierCode, nicknameInput.trim());
+      setMachineNickname(normTier, nicknameInput.trim());
       showToast(`✏️ Machine renamed to "${nicknameInput.trim()}"`, 'info');
     }
     setIsEditingName(false);
@@ -81,7 +81,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
 
   return (
     <motion.div
-      key={activeTierCode}
+      key={normTier}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
@@ -226,7 +226,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
       {/* DOCUMENTATION & OWNERSHIP ARTIFACT ACTIONS */}
       <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
         <button
-          onClick={() => openOwnersManual(activeTierCode)}
+          onClick={() => openOwnersManual(normTier)}
           className="py-2 px-3 rounded-xl bg-ton-blue/10 border border-ton-blue/20 text-ton-blue font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-ton-blue/20 transition-colors press-feedback"
         >
           <BookOpen size={14} />
