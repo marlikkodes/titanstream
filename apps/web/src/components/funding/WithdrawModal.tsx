@@ -32,8 +32,43 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
   const [completedSession, setCompletedSession] = useState<WithdrawalSession | null>(null);
 
   const isLocalPreferred = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
-  const currencySymbol = isLocalPreferred ? selectedCountry?.currencySymbol || '₮' : '₮';
-  const currencyLabel = isLocalPreferred ? selectedCountry?.currencyCode || 'USDT' : 'USDT';
+  const currencyCode = isLocalPreferred ? (selectedCountry?.currencyCode || 'UGX') : 'USDT';
+  const currencySymbol = isLocalPreferred ? (selectedCountry?.currencyCode || 'UGX') : 'USDT';
+  const exchangeRate = selectedCountry?.exchangeRate || 3700;
+  const minUsdtLimit = selectedCountry?.withdrawalLimits?.min || 2;
+  const minLocalLimit = isLocalPreferred ? Math.round(minUsdtLimit * exchangeRate) : minUsdtLimit;
+
+  const parsedAmount = parseFloat(withdrawAmount) || 0;
+  const calculatedUsdt = isLocalPreferred ? parsedAmount / exchangeRate : parsedAmount;
+  const calculatedLocal = isLocalPreferred ? parsedAmount : Math.round(parsedAmount * exchangeRate);
+
+  const isBelowMin = parsedAmount > 0 && (isLocalPreferred ? parsedAmount < minLocalLimit : parsedAmount < minUsdtLimit);
+  const isExceedingBalance = calculatedUsdt > usdtBalance;
+  const isZeroBalance = usdtBalance <= 0;
+  const isMissingDestination = selectedMethod === 'USDT_ADDRESS'
+    ? !walletAddress || walletAddress.trim().length < 10
+    : false;
+
+  const getDisabledReason = (): string | null => {
+    if (isZeroBalance) {
+      return `Your wallet balance is $0.00 USDT. Deposit or earn funds to enable withdrawals.`;
+    }
+    if (!withdrawAmount || parsedAmount <= 0) {
+      return `Enter withdrawal amount in ${currencyCode}.`;
+    }
+    if (isBelowMin) {
+      return `Minimum withdrawal is ${minUsdtLimit.toFixed(2)} USDT (≈ ${currencyCode} ${minLocalLimit.toLocaleString()}).`;
+    }
+    if (isExceedingBalance) {
+      return `Amount exceeds your available wallet balance of ${isLocalPreferred ? `${currencyCode} ${getLocalAmountRaw(usdtBalance).toLocaleString()}` : `$${usdtBalance.toFixed(2)} USDT`}.`;
+    }
+    if (isMissingDestination) {
+      return `Please enter a valid TRC-20 USDT wallet address.`;
+    }
+    return null;
+  };
+
+  const disabledReason = getDisabledReason();
 
   const withdrawMethods = [
     {
@@ -64,7 +99,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
     }
 
     const usdtAmount = isLocalPreferred
-      ? amountVal / (selectedCountry?.exchangeRate || 1)
+      ? amountVal / exchangeRate
       : amountVal;
 
     if (usdtAmount > usdtBalance) {
@@ -307,16 +342,18 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
 
                     {/* Amount Input */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-tertiary uppercase">Amount ({currencyLabel})</label>
+                      <label className="text-[10px] font-bold text-text-tertiary uppercase">Amount ({currencyCode})</label>
                       <div className="relative flex items-center">
-                        <span className="absolute left-3 text-sm font-mono text-text-tertiary">{currencySymbol}</span>
+                        <span className="absolute left-3 text-xs font-mono font-black text-usdt-green uppercase tracking-wide">
+                          {currencySymbol}
+                        </span>
                         <input
                           type="number"
                           value={withdrawAmount}
                           onChange={(e) => setWithdrawAmount(e.target.value)}
-                          placeholder="0.00"
+                          placeholder={isLocalPreferred ? `${minLocalLimit}` : `${minUsdtLimit}.00`}
                           max={isLocalPreferred ? getLocalAmountRaw(usdtBalance) : usdtBalance}
-                          className="w-full bg-control-bg text-text-primary text-sm font-mono font-bold rounded-xl pl-7 pr-3 py-3 border border-white/10 focus:border-usdt-green focus:outline-none"
+                          className="w-full bg-control-bg text-text-primary text-sm font-mono font-bold rounded-xl pl-16 pr-3 py-3 border border-white/10 focus:border-usdt-green focus:outline-none"
                         />
                       </div>
                       <div className="flex justify-between text-[10px] text-text-tertiary">
@@ -370,13 +407,27 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                       </div>
                     )}
 
-                    {/* Local Currency Payout Estimate */}
-                    {selectedMethod === 'MOBILE_MONEY' && withdrawAmount && parseFloat(withdrawAmount) > 0 && (
-                      <div className="bg-control-bg/30 border border-usdt-green/20 rounded-xl p-3 flex items-center justify-between">
-                        <span className="text-[10px] text-text-secondary font-bold">Estimated Local Payout</span>
-                        <span className="text-xs font-mono font-extrabold text-usdt-green">
-                          UGX {Math.round(parseFloat(withdrawAmount) * (selectedCountry?.exchangeRate || 3774.62)).toLocaleString()}
-                        </span>
+                    {/* Payout Calculation Display */}
+                    {selectedMethod === 'MOBILE_MONEY' && parsedAmount > 0 && (
+                      <div className="bg-control-bg/30 border border-usdt-green/20 rounded-xl p-3 flex flex-col gap-1">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-text-secondary font-bold">Estimated Payout</span>
+                          <span className="font-mono font-extrabold text-usdt-green text-xs">
+                            {currencyCode} {calculatedLocal.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-text-tertiary font-mono">
+                          <span>Equivalent USDT Amount</span>
+                          <span>${calculatedUsdt.toFixed(2)} USDT</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Disabled Reason / Requirement Warning */}
+                    {disabledReason && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[11px] font-bold flex items-start gap-2">
+                        <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                        <span>{disabledReason}</span>
                       </div>
                     )}
 
@@ -386,12 +437,13 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                       disabled={
                         isProcessing ||
                         !withdrawAmount ||
-                        parseFloat(withdrawAmount) <= 0 ||
-                        (isLocalPreferred
-                          ? parseFloat(withdrawAmount) > getLocalAmountRaw(usdtBalance)
-                          : parseFloat(withdrawAmount) > usdtBalance)
+                        parsedAmount <= 0 ||
+                        isBelowMin ||
+                        isExceedingBalance ||
+                        isZeroBalance ||
+                        isMissingDestination
                       }
-                      className="press-feedback bg-gradient-to-r from-usdt-green to-[#00c853] text-app-bg font-extrabold text-xs py-3 rounded-xl shadow-lg w-full flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,230,118,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="press-feedback bg-gradient-to-r from-usdt-green to-[#00c853] text-app-bg font-extrabold text-xs py-3.5 rounded-xl shadow-lg w-full flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,230,118,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isProcessing ? (
                         <>
