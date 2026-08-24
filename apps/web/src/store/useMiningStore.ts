@@ -64,6 +64,7 @@ export interface MiningState {
   resetTaps: (period: 'daily' | 'weekly' | 'monthly') => void;
   unlockTON: () => void;
   isMiningLocked: () => boolean;
+  getActiveHashSpeed: () => number;
 }
 
 const MIN_BOOST_USDT = [0, 5.0, 25.0, 130.0, 550.0, 1500.0];
@@ -292,6 +293,12 @@ export const useMiningStore = create<MiningState>()(
      */
     tap: () => {
       const state = get();
+      if (state.getActiveHashSpeed() <= 0) {
+        import('../components/Toast').then(({ showToast }) => {
+          showToast('⏸️ Machine is paused. Resume machine to start hashing!', 'warning');
+        });
+        return -1;
+      }
       if (state.isMiningLocked()) {
         return -1;
       }
@@ -425,15 +432,38 @@ export const useMiningStore = create<MiningState>()(
       return !s.isMachineOwned(targetTier);
     },
 
+    getActiveHashSpeed: () => {
+      const s = get();
+      try {
+        const { useMachineOwnershipStore } = require('./useMachineOwnershipStore');
+        const ownerships = useMachineOwnershipStore.getState().ownerships || {};
+        const safeOwned = Array.isArray(s.ownedTierCodes) ? s.ownedTierCodes : ['TS_TRIAL'];
+        let activeGhs = 0;
+
+        for (const tierCode of safeOwned) {
+          const rec = ownerships[tierCode.toUpperCase()];
+          const status = rec?.status || 'RUNNING';
+          if (status === 'RUNNING') {
+            const catItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === tierCode.toUpperCase());
+            activeGhs += catItem?.capacityGhs || (tierCode === 'TS_TRIAL' ? 1.0 : 0);
+          }
+        }
+        return activeGhs;
+      } catch (e) {
+        return s.baseSpeedGhs || 1.0;
+      }
+    },
+
     startDisplayTicker: () => {
       if (displayTicker) return;
       displayTicker = setInterval(() => {
         const s = get();
 
-        // Real-time continuous yield tick accumulation while active machines are running
+        // Real-time continuous yield tick accumulation ONLY while active running speed > 0
+        const activeSpeed = s.getActiveHashSpeed();
         let activeUnclaimed = s.unclaimedBalance;
-        if (s.baseSpeedGhs > 0 && !s.isOverheated) {
-          const ratePerSec = s.baseSpeedGhs * s.coolerMultiplier * 0.0001;
+        if (activeSpeed > 0 && !s.isOverheated) {
+          const ratePerSec = activeSpeed * s.coolerMultiplier * 0.0001;
           const tickYield = ratePerSec * (TICK_MS / 1000);
           activeUnclaimed = s.unclaimedBalance + tickYield;
         }

@@ -9,6 +9,7 @@ interface QuantumLoopReactorProps {
   coolerMultiplier?: number;
   isOverheated?: boolean;
   isLocked?: boolean;
+  isPaused?: boolean;
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
   onDiscoveryEvent?: (title: string) => void;
   tierCode?: string;
@@ -281,7 +282,7 @@ const audioSynth = new ReactorAudioSynth();
 export { audioSynth };
 
 export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopReactorProps>(
-  ({ coolerMultiplier = 1.0, isOverheated = false, isLocked = false, onClick, onDiscoveryEvent, tierCode, tierIndex }, ref) => {
+  ({ coolerMultiplier = 1.0, isOverheated = false, isLocked = false, isPaused = false, onClick, onDiscoveryEvent, tierCode, tierIndex }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [personality] = useState(getDailyPersonality);
     const activeTierIdx = resolveTierIndex(tierCode, tierIndex);
@@ -451,7 +452,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
         }
 
         const idleSpeedMult = 1.0 - s.idleFactor * 0.35;
-        const isActive = !isOverheated && !isLocked;
+        const isActive = !isOverheated && !isLocked && !isPaused;
         const intensity = isActive ? (0.4 + 0.6 * Math.min(1.5, coolerMultiplier)) * personality.speedFactor * idleSpeedMult : 0;
 
         // Decays

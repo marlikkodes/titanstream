@@ -22,8 +22,10 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
   onOpenHowItWorks,
   onOpenHealthModal,
 }) => {
-  const { ownedTierCodes, baseSpeedGhs } = useMiningStore();
+  const { ownedTierCodes, getActiveHashSpeed } = useMiningStore();
   const { ownerships } = useMachineOwnershipStore();
+
+  const activeSpeed = getActiveHashSpeed();
 
   // Active controls drawer tier state (null = collapsed, tierCode = expanded)
   const [activeControlsTier, setActiveControlsTier] = useState<string | null>(null);
@@ -85,7 +87,11 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
               <HelpCircle size={10} /> How It Works & FAQs
             </button>
           )}
-          <span className="text-[10px] font-mono font-black text-usdt-green bg-usdt-green/10 px-2.5 py-1 rounded-full border border-usdt-green/20">
+          <span className={`text-[10px] font-mono font-black px-2.5 py-1 rounded-full border ${
+            activeCount > 0
+              ? 'text-usdt-green bg-usdt-green/10 border-usdt-green/20'
+              : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+          }`}>
             {activeCount}/{totalMachinesCount} ACTIVE
           </span>
         </div>
@@ -94,13 +100,17 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
       {/* SUMMARY METRIC BAR */}
       <div className="grid grid-cols-3 gap-2 bg-control-bg/40 p-2 rounded-xl border border-white/5">
         <div className="flex items-center gap-2 px-2 py-1">
-          <div className="w-7 h-7 rounded-lg bg-usdt-green/15 text-usdt-green flex items-center justify-center shrink-0">
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+            activeSpeed > 0 ? 'bg-usdt-green/15 text-usdt-green' : 'bg-amber-500/15 text-amber-400'
+          }`}>
             <Zap size={14} />
           </div>
           <div>
             <div className="text-[9px] font-extrabold text-text-tertiary uppercase leading-tight">Total Power</div>
-            <div className="text-xs font-black text-text-primary font-mono leading-tight">
-              {(baseSpeedGhs * 10).toFixed(0)} Power
+            <div className={`text-xs font-black font-mono leading-tight ${
+              activeSpeed > 0 ? 'text-text-primary' : 'text-amber-400'
+            }`}>
+              {(activeSpeed * 10).toFixed(0)} Power {activeSpeed === 0 ? '(PAUSED)' : ''}
             </div>
           </div>
         </div>
@@ -118,13 +128,17 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
         </div>
 
         <div className="flex items-center gap-2 px-2 py-1 border-l border-white/5">
-          <div className="w-7 h-7 rounded-lg bg-ton-blue/15 text-ton-blue flex items-center justify-center shrink-0">
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+            activeCount > 0 ? 'bg-ton-blue/15 text-ton-blue' : 'bg-amber-500/15 text-amber-400'
+          }`}>
             <ShieldCheck size={14} />
           </div>
           <div>
             <div className="text-[9px] font-extrabold text-text-tertiary uppercase leading-tight">Status</div>
-            <div className="text-xs font-black text-ton-blue font-mono leading-tight">
-              OPTIMAL
+            <div className={`text-xs font-black font-mono leading-tight ${
+              activeCount > 0 ? 'text-ton-blue' : 'text-amber-400'
+            }`}>
+              {activeCount > 0 ? 'OPTIMAL' : 'PAUSED'}
             </div>
           </div>
         </div>

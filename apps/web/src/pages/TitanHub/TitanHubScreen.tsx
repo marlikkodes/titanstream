@@ -109,14 +109,19 @@ export const TitanHubScreen: React.FC = () => {
   }, []);
 
   // 2. Synchronize machine status changes to the Titan State Engine
+  const activeRecord = getRecordByTier(selectedTierCode);
+  const isSelectedPaused = activeRecord?.status === 'PAUSED';
+
   useEffect(() => {
+    const activeSpeed = useMiningStore.getState().getActiveHashSpeed();
+
     updateMachineStatus(
-      isOverheated ? 'OVERHEATED' : 'RUNNING',
-      baseSpeedGhs * 10,
+      isOverheated ? 'OVERHEATED' : isSelectedPaused ? 'PAUSED' : 'RUNNING',
+      activeSpeed * 10,
       coolerMultiplier,
-      isOverheated ? 85 : 45
+      isOverheated ? 85 : isSelectedPaused ? 30 : 45
     );
-  }, [isOverheated, baseSpeedGhs, coolerMultiplier, updateMachineStatus]);
+  }, [isOverheated, isSelectedPaused, coolerMultiplier, updateMachineStatus]);
 
   // 3. Synchronize reward status changes to the Titan State Engine
   useEffect(() => {
@@ -170,7 +175,6 @@ export const TitanHubScreen: React.FC = () => {
     );
   }
 
-  const activeRecord = getRecordByTier(selectedTierCode);
   const activeCatalog = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === selectedTierCode.toUpperCase()) || MACHINE_CATALOG[0];
 
   const getMoodColor = (mood: typeof titanContext.titanMood) => {

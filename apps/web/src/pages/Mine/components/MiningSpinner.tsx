@@ -141,6 +141,8 @@ export const MiningSpinner = React.memo(() => {
   const upgradeLimits = useMiningStore((s) => s.upgradeLimits);
   const ownedTierCodes = useMiningStore((s) => s.ownedTierCodes);
   const userMachines = useMiningStore((s) => s.userMachines);
+  const getActiveHashSpeed = useMiningStore((s) => s.getActiveHashSpeed);
+  const isPaused = getActiveHashSpeed() <= 0;
 
   const { setActiveTab } = useNavigationStore();
 
@@ -687,6 +689,21 @@ export const MiningSpinner = React.memo(() => {
             </div>
           )}
 
+          {/* Paused Machine Visual Overlay */}
+          {isPaused && (
+            <div className="absolute inset-0 rounded-full bg-black/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-4 text-center border border-amber-500/40 animate-fade-in pointer-events-none">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center font-black text-lg mb-1 shadow-lg shadow-amber-500/20">
+                ⏸️
+              </div>
+              <span className="text-[10px] font-mono font-black text-amber-400 uppercase tracking-widest">
+                HASHING PAUSED
+              </span>
+              <span className="text-[8px] text-text-tertiary font-mono mt-0.5">
+                Resume machine to generate yield
+              </span>
+            </div>
+          )}
+
           {/* Canvas Physics Core Engine */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
             <QuantumLoopReactor
@@ -694,6 +711,7 @@ export const MiningSpinner = React.memo(() => {
               coolerMultiplier={coolerMultiplier}
               isOverheated={isOverheated}
               isLocked={isMiningLocked()}
+              isPaused={isPaused}
               onDiscoveryEvent={handleDiscoveryEvent}
               tierCode={activeSpinner.tierCode}
               tierIndex={activeSpinnerIdx}
