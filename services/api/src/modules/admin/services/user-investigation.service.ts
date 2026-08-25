@@ -231,7 +231,7 @@ export class UserInvestigationService {
       if (user.state === UserState.BANNED_USER) activityStatus = 'BANNED';
 
       let joinChannel: 'WHATSAPP' | 'TELEGRAM' | 'WEB' = 'TELEGRAM';
-      if (user.phoneNumber || user.phoneVerified) {
+      if (user.phoneNumber || user.phoneVerified || (user.firstName && user.firstName.toLowerCase().includes('whatsapp'))) {
         joinChannel = 'WHATSAPP';
       } else if (!user.telegramUsername && !user.photoUrl) {
         joinChannel = 'WEB';
