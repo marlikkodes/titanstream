@@ -118,10 +118,11 @@ export const useUserNotificationStore = create<UserNotificationState>((set, get)
   fetchNotifications: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.get('/notifications');
-      const data = response.data?.data || [];
+      const response = await api.get('/notifications').catch(() => ({ data: { data: [] } }));
+      const data = response.data?.data || response.data || [];
+      const safeData = Array.isArray(data) ? data : [];
       
-      const mapped: UserNotification[] = data.map((record: any) => {
+      const mapped: UserNotification[] = safeData.map((record: any) => {
         const meta = getNotificationMetadata(record.templateCode);
         return {
           id: record.id,

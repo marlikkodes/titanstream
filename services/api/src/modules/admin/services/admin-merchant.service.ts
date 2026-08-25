@@ -78,10 +78,11 @@ export class AdminMerchantService {
 
     // Execute matching
     const result = await this.matchingService.attemptMatchClaim(claimId);
+    if (result.matched) {
       return { success: true, settlementId: claim.settlementId, status: 'COMPLETED' };
     }
 
-    throw new BadRequestException(`VERIFICATION_FAILED: ${res.reason}`);
+    throw new BadRequestException(`VERIFICATION_FAILED: ${result.failureReason || 'Verification failed'}`);
   }
 
   /**
@@ -100,7 +101,7 @@ export class AdminMerchantService {
       where: { id: claimId },
       data: {
         status: 'EXPIRED',
-        failureReason: MatchingFailureReason.MANUAL_REJECTED,
+        failureReason: MatchingFailureReason.SUSPICIOUS_TRANSACTION,
       },
     });
 

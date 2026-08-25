@@ -70,7 +70,7 @@ export class AdminMerchantController {
   }
 
   @Post('merchants')
-  @Permissions(AdminPermission.MERCHANT_MANAGE)
+  @Permissions(AdminPermission.MERCHANT_CREATE)
   async upsertMerchant(@Body() body: {
     id?: string;
     network: string;
@@ -86,7 +86,7 @@ export class AdminMerchantController {
   }
 
   @Post('merchants/:id/status')
-  @Permissions(AdminPermission.MERCHANT_MANAGE)
+  @Permissions(AdminPermission.MERCHANT_SUSPEND)
   async toggleStatus(
     @Param('id') id: string,
     @Body() body: { status: string },
