@@ -4,6 +4,7 @@ import { PrismaService } from '../../../database/prisma.service';
 
 describe('CommandCenterConfigService', () => {
   let service: CommandCenterConfigService;
+  const now = new Date('2026-08-25T00:00:00.000Z');
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -11,7 +12,24 @@ describe('CommandCenterConfigService', () => {
         CommandCenterConfigService,
         {
           provide: PrismaService,
-          useValue: {},
+          useValue: {
+            mobileMoneyMerchant: {
+              findMany: jest.fn().mockResolvedValue([]),
+              create: jest.fn().mockResolvedValue({
+                id: 'merchant_mtn_ug_1',
+                network: 'MTN',
+                merchantName: 'TitanStream UG Escrow Pool 1',
+                merchantNumber: '234654',
+                country: 'UG',
+                currency: 'UGX',
+                status: 'ACTIVE',
+                priority: 1,
+                dailyLimit: 3700000,
+                createdAt: now,
+                updatedAt: now,
+              }),
+            },
+          },
         },
       ],
     }).compile();

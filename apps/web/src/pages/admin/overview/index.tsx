@@ -38,13 +38,24 @@ export const OverviewPage: React.FC = () => {
     setLoadingEvents(true);
     try {
       const [eventsRes, statsRes] = await Promise.all([
-        api.get<LiveEvent[]>('/admin/dashboard/live-stream'),
+        api.get<any>('/admin/dashboard/live-stream'),
         api.get<any>('/admin/dashboard'),
       ]);
-      setLiveEvents(eventsRes.data || []);
-      setStats(statsRes.data || null);
+      const rawEvents = eventsRes?.data;
+      const eventsList = Array.isArray(rawEvents)
+        ? rawEvents
+        : (Array.isArray(rawEvents?.data) ? rawEvents.data : []);
+
+      const rawStats = statsRes?.data;
+      const statsObj = (rawStats && typeof rawStats === 'object')
+        ? (rawStats.data || rawStats)
+        : null;
+
+      setLiveEvents(eventsList);
+      setStats(statsObj);
     } catch (err) {
       console.warn('Live stream fetch notice:', err);
+      setLiveEvents([]);
     } finally {
       setLoadingEvents(false);
     }
@@ -211,106 +222,111 @@ export const OverviewPage: React.FC = () => {
       </div>
 
       {/* 3. LIVE EVENT STREAM FEED & QUICK SHORTCUTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-card-bg border border-white/10 rounded-2xl p-5 shadow-lg space-y-4">
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-usdt-green animate-ping" />
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-text-primary">Live Production Event Stream</h3>
-            </div>
-            <span className="text-[10px] font-mono text-text-tertiary">{liveEvents.length} events logged</span>
-          </div>
-
-          <div className="space-y-2 max-h-[420px] overflow-y-auto no-scrollbar pr-1">
-            {liveEvents.length === 0 ? (
-              <div className="py-12 px-6 text-center space-y-3 rounded-xl bg-control-bg/40 border border-white/5">
-                <div className="w-12 h-12 rounded-full bg-usdt-green/10 border border-usdt-green/20 flex items-center justify-center text-usdt-green mx-auto">
-                  <Radio size={24} className="animate-pulse" />
+      {(() => {
+        const safeEvents = Array.isArray(liveEvents) ? liveEvents : [];
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-card-bg border border-white/10 rounded-2xl p-5 shadow-lg space-y-4">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-usdt-green animate-ping" />
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-text-primary">Live Production Event Stream</h3>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-text-primary">All System Workers Operational</h4>
-                  <p className="text-[11px] text-text-tertiary max-w-sm mx-auto mt-1">
-                    Listening for real-time settlements, withdrawal claims, audit entries, and queue transitions. New events will appear here automatically.
-                  </p>
-                </div>
+                <span className="text-[10px] font-mono text-text-tertiary">{safeEvents.length} events logged</span>
               </div>
-            ) : (
-              liveEvents.map((evt) => (
-                <div
-                  key={evt.id}
-                  className="p-3 rounded-xl bg-control-bg/60 border border-white/5 flex items-start justify-between gap-3 text-xs hover:border-white/10 transition-all"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide mt-0.5
-                      ${evt.severity === 'CRITICAL' ? 'bg-error-red text-white' :
-                        evt.severity === 'WARNING' ? 'bg-amber-500/20 text-amber-300' :
-                        evt.severity === 'SUCCESS' ? 'bg-usdt-green/20 text-usdt-green' : 'bg-blue-500/20 text-blue-300'}`}
-                    >
-                      {evt.category}
-                    </span>
+
+              <div className="space-y-2 max-h-[420px] overflow-y-auto no-scrollbar pr-1">
+                {safeEvents.length === 0 ? (
+                  <div className="py-12 px-6 text-center space-y-3 rounded-xl bg-control-bg/40 border border-white/5">
+                    <div className="w-12 h-12 rounded-full bg-usdt-green/10 border border-usdt-green/20 flex items-center justify-center text-usdt-green mx-auto">
+                      <Radio size={24} className="animate-pulse" />
+                    </div>
                     <div>
-                      <div className="font-bold text-text-primary leading-tight">{evt.title}</div>
-                      <div className="text-[11px] text-text-secondary mt-0.5">{evt.detail}</div>
+                      <h4 className="text-xs font-bold text-text-primary">All System Workers Operational</h4>
+                      <p className="text-[11px] text-text-tertiary max-w-sm mx-auto mt-1">
+                        Listening for real-time settlements, withdrawal claims, audit entries, and queue transitions. New events will appear here automatically.
+                      </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-mono text-text-tertiary flex-shrink-0">
-                    {new Date(evt.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-              ))
-            )}
+                ) : (
+                  safeEvents.map((evt) => (
+                    <div
+                      key={evt.id}
+                      className="p-3 rounded-xl bg-control-bg/60 border border-white/5 flex items-start justify-between gap-3 text-xs hover:border-white/10 transition-all"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide mt-0.5
+                          ${evt.severity === 'CRITICAL' ? 'bg-error-red text-white' :
+                            evt.severity === 'WARNING' ? 'bg-amber-500/20 text-amber-300' :
+                            evt.severity === 'SUCCESS' ? 'bg-usdt-green/20 text-usdt-green' : 'bg-blue-500/20 text-blue-300'}`}
+                        >
+                          {evt.category}
+                        </span>
+                        <div>
+                          <div className="font-bold text-text-primary leading-tight">{evt.title}</div>
+                          <div className="text-[11px] text-text-secondary mt-0.5">{evt.detail}</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono text-text-tertiary flex-shrink-0">
+                        {new Date(evt.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Operational Quick Controls */}
+            <div className="bg-card-bg border border-white/10 rounded-2xl p-5 shadow-lg space-y-4">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-text-primary border-b border-white/10 pb-3">Operational Shortcuts</h3>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => navigate('/admin/treasury')}
+                  className="w-full p-3 rounded-xl bg-control-bg hover:bg-white/10 border border-white/10 text-left flex items-center justify-between group transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck size={18} className="text-usdt-green" />
+                    <div>
+                      <div className="text-xs font-bold text-text-primary group-hover:text-usdt-green transition-colors">Treasury & Ledger</div>
+                      <div className="text-[10px] text-text-tertiary">Review reserves & payouts</div>
+                    </div>
+                  </div>
+                  <span className="text-xs text-text-tertiary group-hover:translate-x-1 transition-transform">→</span>
+                </button>
+
+                <button
+                  onClick={() => navigate('/admin/users')}
+                  className="w-full p-3 rounded-xl bg-control-bg hover:bg-white/10 border border-white/10 text-left flex items-center justify-between group transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <Users size={18} className="text-blue-400" />
+                    <div>
+                      <div className="text-xs font-bold text-text-primary group-hover:text-blue-400 transition-colors">User Intelligence</div>
+                      <div className="text-[10px] text-text-tertiary">Inspector & Support queue</div>
+                    </div>
+                  </div>
+                  <span className="text-xs text-text-tertiary group-hover:translate-x-1 transition-transform">→</span>
+                </button>
+
+                <button
+                  onClick={() => navigate('/admin/operations')}
+                  className="w-full p-3 rounded-xl bg-control-bg hover:bg-white/10 border border-white/10 text-left flex items-center justify-between group transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <Cpu size={18} className="text-amber-400" />
+                    <div>
+                      <div className="text-xs font-bold text-text-primary group-hover:text-amber-400 transition-colors">Emergency Kill Switches</div>
+                      <div className="text-[10px] text-text-tertiary">Control system features</div>
+                    </div>
+                  </div>
+                  <span className="text-xs text-text-tertiary group-hover:translate-x-1 transition-transform">→</span>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-
-        {/* Operational Quick Controls */}
-        <div className="bg-card-bg border border-white/10 rounded-2xl p-5 shadow-lg space-y-4">
-          <h3 className="text-xs font-extrabold uppercase tracking-wider text-text-primary border-b border-white/10 pb-3">Operational Shortcuts</h3>
-          
-          <div className="space-y-3">
-            <button
-              onClick={() => navigate('/admin/treasury')}
-              className="w-full p-3 rounded-xl bg-control-bg hover:bg-white/10 border border-white/10 text-left flex items-center justify-between group transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <ShieldCheck size={18} className="text-usdt-green" />
-                <div>
-                  <div className="text-xs font-bold text-text-primary group-hover:text-usdt-green transition-colors">Treasury & Ledger</div>
-                  <div className="text-[10px] text-text-tertiary">Review reserves & payouts</div>
-                </div>
-              </div>
-              <span className="text-xs text-text-tertiary group-hover:translate-x-1 transition-transform">→</span>
-            </button>
-
-            <button
-              onClick={() => navigate('/admin/users')}
-              className="w-full p-3 rounded-xl bg-control-bg hover:bg-white/10 border border-white/10 text-left flex items-center justify-between group transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <Users size={18} className="text-blue-400" />
-                <div>
-                  <div className="text-xs font-bold text-text-primary group-hover:text-blue-400 transition-colors">User Intelligence</div>
-                  <div className="text-[10px] text-text-tertiary">Inspector & Support queue</div>
-                </div>
-              </div>
-              <span className="text-xs text-text-tertiary group-hover:translate-x-1 transition-transform">→</span>
-            </button>
-
-            <button
-              onClick={() => navigate('/admin/operations')}
-              className="w-full p-3 rounded-xl bg-control-bg hover:bg-white/10 border border-white/10 text-left flex items-center justify-between group transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <Cpu size={18} className="text-amber-400" />
-                <div>
-                  <div className="text-xs font-bold text-text-primary group-hover:text-amber-400 transition-colors">Emergency Kill Switches</div>
-                  <div className="text-[10px] text-text-tertiary">Control system features</div>
-                </div>
-              </div>
-              <span className="text-xs text-text-tertiary group-hover:translate-x-1 transition-transform">→</span>
-            </button>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
     </div>
   );
 };
