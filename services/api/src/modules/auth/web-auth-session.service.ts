@@ -90,15 +90,8 @@ export class WebAuthSessionService {
         });
       }
     } catch (dbErr: any) {
-      this.logger.warn(`[WEB_AUTH_FALLBACK] Database lookup failed: ${dbErr.message}`);
-      user = {
-        id: `fb_${telegramUser.id}`,
-        telegramUserId: telegramUserIdBig,
-        firstName: telegramUser.first_name || 'Titan',
-        lastName: telegramUser.last_name || 'User',
-        telegramUsername: telegramUser.username || 'titanuser',
-        state: UserState.READY,
-      };
+      this.logger.error(`[WEB_AUTH] Database registration failed for Telegram user ${telegramUser.id}: ${dbErr.message}`);
+      throw new UnauthorizedException('AUTHENTICATION_FAILED: Unable to persist user identity to database');
     }
 
     const payload = {

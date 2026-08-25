@@ -385,35 +385,23 @@ export class AuthService {
   }
 
   async getProfile(userKey: string | bigint) {
-    try {
-      let user: any = null;
+    let user: any = null;
 
-      if (typeof userKey === 'string') {
-        user = await this.prisma.user.findUnique({
-          where: { id: userKey },
-          include: {
-            onboardingProgress: true,
-            educationCompletions: true,
-            userConsents: true,
-            readinessScores: true,
-          },
-        });
+    if (typeof userKey === 'string') {
+      user = await this.prisma.user.findUnique({
+        where: { id: userKey },
+        include: {
+          onboardingProgress: true,
+          educationCompletions: true,
+          userConsents: true,
+          readinessScores: true,
+        },
+      });
 
-        if (!user && !isNaN(Number(userKey))) {
-          const telegramUserId = BigInt(userKey);
-          user = await this.prisma.user.findUnique({
-            where: { telegramUserId },
-            include: {
-              onboardingProgress: true,
-              educationCompletions: true,
-              userConsents: true,
-              readinessScores: true,
-            },
-          });
-        }
-      } else if (typeof userKey === 'bigint') {
+      if (!user && !isNaN(Number(userKey))) {
+        const telegramUserId = BigInt(userKey);
         user = await this.prisma.user.findUnique({
-          where: { telegramUserId: userKey },
+          where: { telegramUserId },
           include: {
             onboardingProgress: true,
             educationCompletions: true,
@@ -422,33 +410,26 @@ export class AuthService {
           },
         });
       }
-
-      if (!user) throw new UnauthorizedException('USER_NOT_FOUND');
-      return {
-        user: this.sanitizeUser(user),
-        onboarding: user.onboardingProgress,
-        education: user.educationCompletions,
-        consents: user.userConsents,
-        readiness: user.readinessScores,
-      };
-    } catch (err: any) {
-      this.logger.warn(`[AUTH_FALLBACK] getProfile failed: ${err.message}`);
-      return {
-        user: {
-          telegramUserId: typeof userKey === 'bigint' ? Number(userKey) : undefined,
-          telegramUsername: 'titanuser',
-          firstName: 'Titan',
-          lastName: 'User',
-          state: UserState.READY,
-          isReady: true,
-          createdAt: new Date(),
+    } else if (typeof userKey === 'bigint') {
+      user = await this.prisma.user.findUnique({
+        where: { telegramUserId: userKey },
+        include: {
+          onboardingProgress: true,
+          educationCompletions: true,
+          userConsents: true,
+          readinessScores: true,
         },
-        onboarding: { currentStep: 'welcome', stepsCompleted: [] },
-        education: [],
-        consents: [],
-        readiness: { isReady: true, score: 100 },
-      };
+      });
     }
+
+    if (!user) throw new UnauthorizedException('USER_NOT_FOUND: User does not exist in database');
+    return {
+      user: this.sanitizeUser(user),
+      onboarding: user.onboardingProgress,
+      education: user.educationCompletions,
+      consents: user.userConsents,
+      readiness: user.readinessScores,
+    };
   }
 
   private async evaluateReadiness(telegramUserId: bigint) {
