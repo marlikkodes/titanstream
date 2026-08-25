@@ -8,6 +8,7 @@ export interface SearchUsersParams {
   telegramUserId?: string;
   telegramUsername?: string;
   state?: UserState;
+  statusFilter?: 'ALL' | 'ACTIVE' | 'INACTIVE' | 'WHATSAPP' | 'TELEGRAM' | 'FROZEN';
   settlementReference?: string;
   transactionReference?: string;
   limit?: number;
@@ -61,6 +62,9 @@ export class UserInvestigationService {
       }
     }
 
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
     const where: any = {};
     if (searchTelegramId) {
       where.telegramUserId = searchTelegramId;
@@ -71,20 +75,51 @@ export class UserInvestigationService {
     if (params.state) {
       where.state = params.state;
     }
+
+    if (params.statusFilter && params.statusFilter !== 'ALL') {
+      if (params.statusFilter === 'ACTIVE') {
+        where.OR = [
+          { lastActiveAt: { gte: sevenDaysAgo } },
+          { createdAt: { gte: thirtyDaysAgo } },
+          { state: { in: [UserState.ACTIVE_USER, UserState.READY, UserState.NEW] } },
+        ];
+        where.state = { notIn: [UserState.SUSPENDED_USER, UserState.BANNED_USER] };
+      } else if (params.statusFilter === 'INACTIVE') {
+        where.AND = [
+          {
+            OR: [
+              { lastActiveAt: null },
+              { lastActiveAt: { lt: sevenDaysAgo } },
+            ],
+          },
+          { createdAt: { lt: thirtyDaysAgo } },
+          { state: { notIn: [UserState.ACTIVE_USER, UserState.READY, UserState.NEW] } },
+        ];
+      } else if (params.statusFilter === 'WHATSAPP') {
+        where.OR = [{ phoneNumber: { not: null } }, { phoneVerified: true }];
+      } else if (params.statusFilter === 'TELEGRAM') {
+        where.telegramUsername = { not: null };
+      } else if (params.statusFilter === 'FROZEN') {
+        where.state = { in: [UserState.SUSPENDED_USER, UserState.BANNED_USER] };
+      }
+    }
+
     if (params.query && !searchTelegramId && !params.telegramUsername) {
       const q = params.query.trim().replace(/^@/, '');
       const isNumeric = /^\d+$/.test(q);
-      where.OR = [
+      const queryOr = [
         { firstName: { contains: q, mode: 'insensitive' } },
         { lastName: { contains: q, mode: 'insensitive' } },
         { telegramUsername: { contains: q, mode: 'insensitive' } },
         { phoneNumber: { contains: q, mode: 'insensitive' } },
         ...(isNumeric ? [{ telegramUserId: BigInt(q) }] : []),
       ];
+      if (where.OR) {
+        where.AND = (where.AND || []).concat([{ OR: queryOr }]);
+      } else {
+        where.OR = queryOr;
+      }
     }
-
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     const [items, total, totalActiveCount, totalInactiveCount, whatsappCount, telegramCount] = await Promise.all([
       this.prisma.user.findMany({

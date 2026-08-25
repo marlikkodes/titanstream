@@ -271,7 +271,7 @@ export const UsersPage: React.FC = () => {
   // Fetch paginated users directory
   const fetchUsers = useCallback(() => {
     setLoading(true);
-    api.get('/admin/users', { params: { query: searchQuery, page, limit: 50 } })
+    api.get('/admin/users', { params: { query: searchQuery, statusFilter, page, limit: 50 } })
       .then((res) => {
         const raw = res.data;
         const payload = raw?.data || raw;
@@ -290,7 +290,7 @@ export const UsersPage: React.FC = () => {
         setTotalCount(0);
       })
       .finally(() => setLoading(false));
-  }, [searchQuery, page]);
+  }, [searchQuery, statusFilter, page]);
 
   useEffect(() => {
     fetchUsers();
@@ -445,18 +445,18 @@ export const UsersPage: React.FC = () => {
             {(['ALL', 'ACTIVE', 'INACTIVE', 'WHATSAPP', 'TELEGRAM', 'FROZEN'] as const).map((filter) => (
               <button
                 key={filter}
-                onClick={() => setStatusFilter(filter)}
+                onClick={() => { setStatusFilter(filter); setPage(1); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-extrabold uppercase tracking-wide transition-all ${
                   statusFilter === filter
                     ? 'bg-usdt-green text-app-bg shadow-md'
                     : 'bg-control-bg text-text-tertiary hover:text-text-primary border border-white/5'
                 }`}
               >
-                {filter === 'ALL' ? `All (${totalCount})` :
-                 filter === 'ACTIVE' ? `Active` :
-                 filter === 'INACTIVE' ? `Inactive` :
-                 filter === 'WHATSAPP' ? `WhatsApp` :
-                 filter === 'TELEGRAM' ? `Telegram` : `Frozen / Banned`}
+                {filter === 'ALL' ? `All (${summaryStats.totalUsers || totalCount})` :
+                 filter === 'ACTIVE' ? `Active (${summaryStats.activeUsers ?? usersList.filter(u => u.activityStatus === 'ACTIVE').length})` :
+                 filter === 'INACTIVE' ? `Inactive (${summaryStats.inactiveUsers ?? usersList.filter(u => u.activityStatus === 'INACTIVE').length})` :
+                 filter === 'WHATSAPP' ? `WhatsApp (${summaryStats.whatsappUsers ?? usersList.filter(u => u.joinChannel === 'WHATSAPP').length})` :
+                 filter === 'TELEGRAM' ? `Telegram (${summaryStats.telegramUsers ?? usersList.filter(u => u.joinChannel === 'TELEGRAM').length})` : `Frozen / Banned`}
               </button>
             ))}
           </div>
