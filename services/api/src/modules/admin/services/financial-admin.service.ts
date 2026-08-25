@@ -630,6 +630,56 @@ export class FinancialAdminService {
   }
 
   /**
+   * 7b. Withdrawals Queue & Payout Management
+   */
+  async getWithdrawals(params: { status?: SettlementStatus; limit?: number; offset?: number; page?: number }) {
+    const limit = Math.min(Math.max(Number(params.limit) || 20, 1), 100);
+    const page = Math.max(Number(params.page) || 1, 1);
+    const offset = params.offset !== undefined ? Math.max(0, Number(params.offset)) : (page - 1) * limit;
+
+    const where: Prisma.SettlementSessionWhereInput = {
+      sessionType: SettlementType.PAYOUT,
+      ...(params.status ? { status: params.status } : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.settlementSession.findMany({
+        where,
+        include: {
+          user: { select: { telegramUsername: true, firstName: true, lastName: true, phoneNumber: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      this.prisma.settlementSession.count({ where }),
+    ]);
+
+    return {
+      items: items.map((item) => ({
+        id: item.id,
+        referenceCode: item.referenceCode,
+        telegramUserId: item.telegramUserId.toString(),
+        userId: item.telegramUserId.toString(),
+        userName: [item.user?.firstName, item.user?.lastName].filter(Boolean).join(' ') || `User ${item.telegramUserId}`,
+        userHandle: item.user?.telegramUsername ? `@${item.user.telegramUsername}` : 'No handle',
+        phoneNumber: item.user?.phoneNumber || null,
+        provider: item.provider,
+        asset: item.asset,
+        requestedAmount: item.requestedAmount.toString(),
+        amount: item.requestedAmount.toString(),
+        expectedCryptoAmount: item.expectedCryptoAmount?.toString() || item.requestedAmount.toString(),
+        mobileMoneyNetwork: item.mobileMoneyNetwork,
+        paymentMethod: item.mobileMoneyNetwork || item.provider || 'MOBILE_MONEY',
+        destinationAddress: (item as any).recipientAddress || item.user?.phoneNumber || 'TRC20',
+        status: item.status,
+        createdAt: item.createdAt,
+      })),
+      pagination: { total, limit, offset, page, totalPages: Math.ceil(total / limit) || 1 },
+    };
+  }
+
+  /**
    * Verify Deposit & Post Double-Entry Journal (Atomic Concurrency Check)
    */
   async verifyDeposit(admin: { id: string; role: string }, settlementId: string, reason?: string) {

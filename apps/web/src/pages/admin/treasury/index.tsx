@@ -812,34 +812,56 @@ export const TreasuryPage: React.FC = () => {
                 <thead>
                   <tr className="border-b border-white/10 text-[10px] uppercase text-text-tertiary">
                     <th className="py-2 px-3">Deposit Ref</th>
-                    <th className="py-2 px-3">User ID</th>
-                    <th className="py-2 px-3">Amount (USDT)</th>
-                    <th className="py-2 px-3">Rail / Method</th>
-                    <th className="py-2 px-3">Status</th>
-                    <th className="py-2 px-3 text-right">Created At</th>
+                    <th className="py-2 px-3">User & Handle</th>
+                    <th className="py-2 px-3 text-right">Amount</th>
+                    <th className="py-2 px-3">Rail / Network</th>
+                    <th className="py-2 px-3 text-center">Status</th>
+                    <th className="py-2 px-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 font-mono">
-                  {depositsList.map((dep: any) => (
+                  {(Array.isArray(depositsList) ? depositsList : []).map((dep: any) => (
                     <tr key={dep.id} className="hover:bg-white/[0.02]">
-                      <td className="py-2.5 px-3 font-bold text-text-primary">{dep.reference || dep.id}</td>
-                      <td className="py-2.5 px-3 text-text-secondary">{dep.userId}</td>
-                      <td className="py-2.5 px-3 font-bold text-usdt-green">${(Number(dep.amount) || 0).toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-text-secondary">{dep.paymentRail || 'PESAPAL / MM'}</td>
+                      <td className="py-2.5 px-3 font-bold text-text-primary">
+                        #{dep.referenceCode?.slice(0, 12) || dep.reference || dep.id?.slice(0, 8)}
+                      </td>
                       <td className="py-2.5 px-3">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-usdt-green/15 text-usdt-green border border-usdt-green/30">
-                          {dep.status || 'COMPLETED'}
+                        <div className="font-bold text-text-primary">{dep.userName || dep.userId || dep.telegramUserId}</div>
+                        <div className="text-[10px] text-text-tertiary font-mono">{dep.userHandle || dep.phoneNumber || 'N/A'}</div>
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-bold text-usdt-green">
+                        ${(Number(dep.requestedAmount || dep.expectedCryptoAmount || dep.amount) || 0).toFixed(2)} USDT
+                      </td>
+                      <td className="py-2.5 px-3 text-text-secondary font-bold">
+                        {dep.mobileMoneyNetwork || dep.provider || dep.paymentRail || 'PESAPAL / MM'}
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                          dep.status === 'COMPLETED'
+                            ? 'bg-usdt-green/15 text-usdt-green border border-usdt-green/30'
+                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        }`}>
+                          {dep.status || 'VERIFYING'}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-right text-text-tertiary text-[11px]">
-                        {dep.createdAt ? new Date(dep.createdAt).toLocaleString() : 'Recent'}
+                      <td className="py-2.5 px-3 text-right">
+                        {dep.status !== 'COMPLETED' ? (
+                          <button
+                            onClick={() => handleVerifyDeposit(dep.id)}
+                            className="px-3 py-1 rounded-lg bg-usdt-green text-app-bg text-[10px] font-black uppercase flex items-center gap-1 ml-auto shadow hover:brightness-110"
+                          >
+                            <Check size={12} /> Force Verify & Credit
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-text-tertiary font-sans">Verified</span>
+                        )}
                       </td>
                     </tr>
                   ))}
                   {(!Array.isArray(depositsList) || depositsList.length === 0) && (
                     <tr>
                       <td colSpan={6} className="py-6 text-center text-text-tertiary font-sans">
-                        No verified deposits in current ledger window.
+                        No pending unconfirmed deposit sessions found in queue.
                       </td>
                     </tr>
                   )}
@@ -856,41 +878,61 @@ export const TreasuryPage: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-white/10 text-[10px] uppercase text-text-tertiary">
-                    <th className="py-2 px-3">Claim ID</th>
-                    <th className="py-2 px-3">User ID</th>
-                    <th className="py-2 px-3">Amount (USDT)</th>
-                    <th className="py-2 px-3">Destination</th>
-                    <th className="py-2 px-3">Status</th>
+                    <th className="py-2 px-3">Payout Session ID</th>
+                    <th className="py-2 px-3">User Account</th>
+                    <th className="py-2 px-3 text-right">Amount</th>
+                    <th className="py-2 px-3">Destination / Rail</th>
+                    <th className="py-2 px-3 text-center">Status</th>
                     <th className="py-2 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 font-mono">
-                  {withdrawalsList.map((wth: any) => (
+                  {(Array.isArray(withdrawalsList) ? withdrawalsList : []).map((wth: any) => (
                     <tr key={wth.id} className="hover:bg-white/[0.02]">
-                      <td className="py-2.5 px-3 font-bold text-text-primary">{wth.id}</td>
-                      <td className="py-2.5 px-3 text-text-secondary">{wth.userId}</td>
-                      <td className="py-2.5 px-3 font-bold text-amber-400">${(Number(wth.amount) || 0).toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-text-secondary">{wth.destinationAddress || wth.phoneNumber || 'TRC20'}</td>
+                      <td className="py-2.5 px-3 font-bold text-text-primary">
+                        #{wth.referenceCode?.slice(0, 12) || wth.id?.slice(0, 8)}
+                      </td>
                       <td className="py-2.5 px-3">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                          {wth.status || 'PENDING'}
+                        <div className="font-bold text-text-primary">{wth.userName || wth.userId || wth.telegramUserId}</div>
+                        <div className="text-[10px] text-text-tertiary font-mono">{wth.userHandle || wth.phoneNumber || 'No Handle'}</div>
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-bold text-amber-400">
+                        ${(Number(wth.requestedAmount || wth.expectedCryptoAmount || wth.amount) || 0).toFixed(2)} USDT
+                      </td>
+                      <td className="py-2.5 px-3 text-text-secondary">
+                        <div className="font-bold">{wth.mobileMoneyNetwork || wth.paymentMethod || 'MOBILE_MONEY'}</div>
+                        <div className="text-[10px] text-text-tertiary truncate max-w-[140px]">{wth.destinationAddress || wth.phoneNumber || 'TRC20'}</div>
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                          wth.status === 'COMPLETED'
+                            ? 'bg-usdt-green/15 text-usdt-green border border-usdt-green/30'
+                            : wth.status === 'REJECTED'
+                            ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        }`}>
+                          {wth.status || 'WAITING_APPROVAL'}
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-right">
-                        <div className="flex items-center gap-1.5 justify-end">
-                          <button
-                            onClick={() => handleApproveWithdrawal(wth.id)}
-                            className="px-2.5 py-1 rounded-lg bg-usdt-green text-app-bg text-[10px] font-black uppercase flex items-center gap-1"
-                          >
-                            <Check size={12} /> Approve
-                          </button>
-                          <button
-                            onClick={() => handleRejectWithdrawal(wth.id)}
-                            className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase flex items-center gap-1"
-                          >
-                            <X size={12} /> Reject
-                          </button>
-                        </div>
+                        {wth.status !== 'COMPLETED' && wth.status !== 'REJECTED' ? (
+                          <div className="flex items-center gap-1.5 justify-end">
+                            <button
+                              onClick={() => handleApproveWithdrawal(wth.id)}
+                              className="px-2.5 py-1 rounded-lg bg-usdt-green text-app-bg text-[10px] font-black uppercase flex items-center gap-1 shadow hover:brightness-110"
+                            >
+                              <Check size={12} /> Approve & Dispatch
+                            </button>
+                            <button
+                              onClick={() => handleRejectWithdrawal(wth.id)}
+                              className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase flex items-center gap-1 shadow hover:bg-rose-500/30"
+                            >
+                              <X size={12} /> Reject & Refund
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-text-tertiary font-sans">Finalized</span>
+                        )}
                       </td>
                     </tr>
                   ))}

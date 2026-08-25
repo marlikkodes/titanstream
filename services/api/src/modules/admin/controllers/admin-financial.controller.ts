@@ -93,7 +93,7 @@ export class AdminFinancialController {
     @Query('offset') offset?: number,
     @Query('page') page?: number,
   ) {
-    return this.financialAdminService.getDeposits({ status, limit, offset, page });
+    return this.financialAdminService.getWithdrawals({ status, limit, offset, page });
   }
 
   @Get('withdrawals/:id/validate')
