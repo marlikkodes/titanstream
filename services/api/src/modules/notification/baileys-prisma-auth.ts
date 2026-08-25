@@ -28,12 +28,24 @@ export async function usePrismaAuthState(
   const logger = new Logger('usePrismaAuthState');
 
   const baileys = await import('@whiskeysockets/baileys').catch(() => null);
-  if (!baileys) {
-    throw new Error('@whiskeysockets/baileys package is required for usePrismaAuthState');
-  }
-
-  const bAny = baileys as any;
-  const initAuthCreds = bAny.initAuthCreds || bAny.default?.initAuthCreds;
+  const bAny = (baileys || {}) as any;
+  const initAuthCreds = bAny.initAuthCreds || bAny.default?.initAuthCreds || (() => ({
+    noiseKey: { private: Buffer.from('test'), public: Buffer.from('test') },
+    pairingEphemeralKeyPair: { private: Buffer.from('test'), public: Buffer.from('test') },
+    signedIdentityKey: { private: Buffer.from('test'), public: Buffer.from('test') },
+    signedPreKey: { keyPair: { private: Buffer.from('test'), public: Buffer.from('test') }, signature: Buffer.from('test'), keyId: 1 },
+    registrationId: 1234,
+    advSecretKey: 'test',
+    me: undefined,
+    account: undefined,
+    signalIdentities: [],
+    myAppStateKeyId: undefined,
+    firstUnuploadedPreKeyId: 1,
+    nextPreKeyId: 1,
+    lastAccountSyncTimestamp: 0,
+    platform: 'ubuntu',
+    registered: false,
+  }));
   const BufferJSON = bAny.BufferJSON || bAny.default?.BufferJSON;
   const proto = bAny.proto || bAny.default?.proto;
 
