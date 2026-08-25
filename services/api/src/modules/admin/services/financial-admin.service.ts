@@ -671,7 +671,7 @@ export class FinancialAdminService {
         expectedCryptoAmount: item.expectedCryptoAmount?.toString() || item.requestedAmount.toString(),
         mobileMoneyNetwork: item.mobileMoneyNetwork,
         paymentMethod: item.mobileMoneyNetwork || item.provider || 'MOBILE_MONEY',
-        destinationAddress: (item as any).recipientAddress || item.user?.phoneNumber || 'TRC20',
+        destinationAddress: item.verifiedRecipientAddress || (item as any).recipientAddress || item.user?.phoneNumber || 'TRC20',
         status: item.status,
         createdAt: item.createdAt,
       })),
