@@ -199,18 +199,20 @@ export const UsersPage: React.FC = () => {
     setLoading(true);
     api.get('/admin/users', { params: { query: searchQuery, page, limit: 20 } })
       .then((res) => {
-        const data = res.data;
-        if (Array.isArray(data)) {
-          setUsersList(data);
-          setTotalCount(data.length);
+        const raw = res.data;
+        const payload = raw?.data || raw;
+        if (Array.isArray(payload)) {
+          setUsersList(payload);
+          setTotalCount(payload.length);
         } else {
-          setUsersList(data?.items || []);
-          setTotalCount(data?.pagination?.total || 0);
+          setUsersList(payload?.items || []);
+          setTotalCount(payload?.pagination?.total || 0);
         }
       })
       .catch((err) => {
         showToast(err.response?.data?.message || 'Failed to load user directory', 'error');
         setUsersList([]);
+        setTotalCount(0);
       })
       .finally(() => setLoading(false));
   }, [searchQuery, page]);

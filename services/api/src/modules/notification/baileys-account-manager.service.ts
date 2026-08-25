@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../../database/prisma.service';
 import { WhatsappChallengeService } from '../auth/whatsapp-challenge.service';
+import { usePrismaAuthState } from './baileys-prisma-auth';
 
 export interface ManagedBaileysAccount {
   id?: string;
@@ -104,7 +105,7 @@ export class BaileysAccountManagerService implements OnModuleInit {
 
   /**
    * Safety Net Watchdog: Continuously monitors account health every 15 seconds.
-   * Auto-reconnects disconnected sockets and self-heals degraded/logged-out sessions.
+   * Non-destructively auto-reconnects disconnected sockets using DB-backed auth credentials.
    */
   private startSafetyNetWatchdog() {
     this.logger.log('🛡️  Starting Baileys Safety Net Watchdog (15s health heartbeat loop)...');
@@ -124,29 +125,12 @@ export class BaileysAccountManagerService implements OnModuleInit {
         }
 
         if (primaryAccount && primaryAccount.isEnabled && !primaryAccount.isQuarantined) {
-          // Case 1: Account is DISCONNECTED or socket dropped
+          // Auto-reconnect if socket dropped or disconnected
           if (primaryAccount.state !== 'CONNECTED' || !primaryAccount.socket) {
             if (primaryAccount.state !== 'CONNECTING') {
-              this.logger.log(`[SAFETY_NET_RECOVER] Primary account [${primaryAccount.accountId}] is ${primaryAccount.state}. Triggering socket reconnect...`);
+              this.logger.log(`[SAFETY_NET_RECOVER] Primary account [${primaryAccount.accountId}] is ${primaryAccount.state}. Triggering non-destructive socket reconnect...`);
               await this.initAccountSocket(primaryAccount.accountId);
             }
-          }
-
-          // Case 2: Account was logged out / DEGRADED -> reset stale auth folder and re-init pairing
-          if (primaryAccount.healthState === 'DEGRADED' && primaryAccount.state === 'DISCONNECTED') {
-            this.logger.warn(`[SAFETY_NET_SELF_HEAL] Primary account [${primaryAccount.accountId}] is DEGRADED (logged out). Resetting credentials for fresh pairing...`);
-            const authFolderPath = path.resolve(process.cwd(), primaryAccount.authFolder);
-            if (fs.existsSync(authFolderPath)) {
-              try {
-                fs.rmSync(authFolderPath, { recursive: true, force: true });
-                this.logger.log(`[SAFETY_NET_SELF_HEAL] Cleaned stale auth folder: ${authFolderPath}`);
-              } catch (rmErr: any) {
-                this.logger.error(`[SAFETY_NET_SELF_HEAL_ERR] ${rmErr.message}`);
-              }
-            }
-            primaryAccount.healthState = 'HEALTHY';
-            await this.updateDbAccountState(primaryAccount.accountId, 'DISCONNECTED', 'HEALTHY');
-            await this.initAccountSocket(primaryAccount.accountId);
           }
         }
       } catch (watchdogErr: any) {
@@ -441,9 +425,8 @@ export class BaileysAccountManagerService implements OnModuleInit {
 
       const bAny = baileys as any;
       const makeWASocket = bAny.makeWASocket || bAny.default?.makeWASocket || bAny.default;
-      const useMultiFileAuthState = bAny.useMultiFileAuthState || bAny.default?.useMultiFileAuthState;
       const DisconnectReason = bAny.DisconnectReason || bAny.default?.DisconnectReason;
-      const { state, saveCreds } = await useMultiFileAuthState(account.authFolder);
+      const { state, saveCreds } = await usePrismaAuthState(this.prisma, account.accountId, account.authFolder);
 
       const pinoLogger: any = {
         level: 'silent',
@@ -528,18 +511,21 @@ export class BaileysAccountManagerService implements OnModuleInit {
 
         if (connection === 'close') {
           const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-          const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-          this.logger.warn(`[BAILEYS_DISCONNECT] Account ${accountId} disconnected (Reason ${statusCode}). Reconnect: ${shouldReconnect}`);
+          const isLoggedOut = statusCode === DisconnectReason?.loggedOut;
+          this.logger.warn(`[BAILEYS_DISCONNECT] Account ${accountId} disconnected (Reason ${statusCode}). Logged out status: ${isLoggedOut}`);
           account.state = 'DISCONNECTED';
           account.socket = undefined;
-          await this.updateDbAccountState(accountId, 'DISCONNECTED', account.healthState);
 
-          if (shouldReconnect && account.isEnabled && !account.isQuarantined) {
-            // Use longer delay (10s) to avoid rapid reconnect loops
-            setTimeout(() => this.initAccountSocket(accountId), 10000);
-          } else if (statusCode === DisconnectReason.loggedOut) {
-            account.healthState = 'DEGRADED';
-            await this.updateDbAccountState(accountId, 'DISCONNECTED', 'DEGRADED');
+          if (account.isEnabled && !account.isQuarantined) {
+            if (isLoggedOut) {
+              this.logger.warn(`[BAILEYS_LOGGED_OUT_NOTICE] Account ${accountId} reported 401/LoggedOut status. Preserving DB credentials & scheduling non-destructive reconnect in 15s...`);
+              account.healthState = 'DEGRADED';
+              await this.updateDbAccountState(accountId, 'DISCONNECTED', 'DEGRADED');
+              setTimeout(() => this.initAccountSocket(accountId), 15000);
+            } else {
+              await this.updateDbAccountState(accountId, 'DISCONNECTED', account.healthState);
+              setTimeout(() => this.initAccountSocket(accountId), 5000);
+            }
           }
         } else if (connection === 'open') {
           account.state = 'CONNECTED';
@@ -653,6 +639,9 @@ export class BaileysAccountManagerService implements OnModuleInit {
           } catch {}
         }
         this.accounts.delete(accountId);
+        await this.prisma.baileysAuthKey.deleteMany({
+          where: { accountId },
+        }).catch(() => null);
         await this.prisma.baileysAccount.delete({
           where: { accountId },
         }).catch(() => null);

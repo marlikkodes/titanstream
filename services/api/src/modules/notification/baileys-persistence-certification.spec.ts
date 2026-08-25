@@ -23,6 +23,12 @@ describe('Baileys Account Persistence & Conversational Certification Suite', () 
       update: jest.fn().mockResolvedValue({}),
       delete: jest.fn().mockResolvedValue({}),
     },
+    baileysAuthKey: {
+      findUnique: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
+      upsert: jest.fn().mockResolvedValue({}),
+      deleteMany: jest.fn().mockResolvedValue({}),
+    },
     user: {
       findUnique: jest.fn().mockResolvedValue(null),
     },
@@ -185,6 +191,39 @@ describe('Baileys Account Persistence & Conversational Certification Suite', () 
       const statusObj = whatsappChallenge.getChallengeStatus(challengeInfo.challengeId) as any;
       expect(statusObj.status).toBe('APPROVED');
       expect(statusObj.accessToken).toBe('test_access_token');
+    });
+  });
+
+  describe('P0 GATE 3: Database-Backed Auth State Persistence (usePrismaAuthState)', () => {
+    it('MUST save and re-hydrate creds and key stores directly from PostgreSQL', async () => {
+      const { usePrismaAuthState } = await import('./baileys-prisma-auth');
+      const accountId = 'baileys_acc_18257320524';
+
+      // 1. Initial auth state load
+      mockPrisma.baileysAuthKey.findUnique.mockResolvedValueOnce(null);
+      const authState1 = await usePrismaAuthState(prisma, accountId);
+      expect(authState1.state.creds).toBeDefined();
+      expect(authState1.state.creds.registered).toBe(false);
+
+      // 2. Save creds
+      authState1.state.creds.registered = true;
+      await authState1.saveCreds();
+      expect(mockPrisma.baileysAuthKey.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { accountId_keyId: { accountId, keyId: 'creds' } },
+        }),
+      );
+
+      // 3. Simulate server restart: re-hydrate from DB
+      mockPrisma.baileysAuthKey.findUnique.mockResolvedValueOnce({
+        accountId,
+        keyId: 'creds',
+        data: { registered: true, me: { id: '18257320524:0@s.whatsapp.net' } },
+      });
+
+      const authState2 = await usePrismaAuthState(prisma, accountId);
+      expect(authState2.state.creds.registered).toBe(true);
+      expect(authState2.state.creds.me.id).toBe('18257320524:0@s.whatsapp.net');
     });
   });
 });

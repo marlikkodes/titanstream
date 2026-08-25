@@ -1821,6 +1821,19 @@ model BaileysAccount {
   @@map("baileys_accounts")
 }
 
+model BaileysAuthKey {
+  id        String   @id @default(uuid()) @map("id")
+  accountId String   @map("account_id")
+  keyId     String   @map("key_id")
+  data      Json     @map("data")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([accountId, keyId])
+  @@index([accountId])
+  @@map("baileys_auth_keys")
+}
+
 model NotificationPreference {
   id               String   @id @default(uuid()) @map("id")
   telegramUserId   BigInt   @unique @map("telegram_user_id")

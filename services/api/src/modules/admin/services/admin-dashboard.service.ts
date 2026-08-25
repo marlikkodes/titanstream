@@ -23,7 +23,7 @@ export class AdminDashboardService {
       riskReview,
       supportCases,
     ] = await Promise.all([
-      this.prisma.user.count({ where: { lastActiveAt: { gte: thirtyDaysAgo } } }),
+      this.prisma.user.count(),
       this.prisma.merchantProfile.count({ where: { status: MerchantStatus.ACTIVE } }),
       this.prisma.settlementSession.count({
         where: {
