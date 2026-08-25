@@ -99,12 +99,14 @@ export class UserInvestigationService {
           readinessScore: true,
           createdAt: true,
           lastActiveAt: true,
+          lastLoginAt: true,
+          lastActiveIp: true,
           identityId: true,
           financialAccount: { select: { id: true, status: true } },
           crystalAccount: { select: { balance: true } },
           userMachines: { select: { id: true } },
           settlementSessions: {
-            select: { requestedAmount: true, sessionType: true, status: true },
+            select: { requestedAmount: true, expectedCryptoAmount: true, exchangeRate: true, sessionType: true, status: true, asset: true },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -127,17 +129,38 @@ export class UserInvestigationService {
 
     const totalPages = Math.ceil(total / limit) || 1;
 
+    // Detect shared IP / shared device fingerprints across accounts
+    const ipCounts = new Map<string, number>();
+    items.forEach((u: any) => {
+      if (u.lastActiveIp) {
+        ipCounts.set(u.lastActiveIp, (ipCounts.get(u.lastActiveIp) || 0) + 1);
+      }
+    });
+
+    const extractUsdtAmount = (s: any): number => {
+      if (!s) return 0;
+      const expectedCrypto = Number(s.expectedCryptoAmount || 0);
+      if (expectedCrypto > 0) return expectedCrypto;
+
+      const rawAmt = Number(s.requestedAmount || 0);
+      const rate = Number(s.exchangeRate || 1);
+      if (rawAmt > 0 && rate > 1) {
+        return rawAmt / rate;
+      }
+      return rawAmt;
+    };
+
     let aggregateMoneyIn = 0;
     let aggregateMoneyOut = 0;
 
     const formattedItems = items.map((user: any) => {
       const moneyIn = (user.settlementSessions || [])
         .filter((s: any) => s.sessionType === 'DEPOSIT' && s.status === 'COMPLETED')
-        .reduce((sum: number, s: any) => sum + Number(s.requestedAmount || 0), 0);
+        .reduce((sum: number, s: any) => sum + extractUsdtAmount(s), 0);
 
       const moneyOut = (user.settlementSessions || [])
         .filter((s: any) => s.sessionType === 'PAYOUT' && s.status === 'COMPLETED')
-        .reduce((sum: number, s: any) => sum + Number(s.requestedAmount || 0), 0);
+        .reduce((sum: number, s: any) => sum + extractUsdtAmount(s), 0);
 
       aggregateMoneyIn += moneyIn;
       aggregateMoneyOut += moneyOut;
@@ -158,13 +181,22 @@ export class UserInvestigationService {
         ? user.phoneNumber
         : (user.telegramUsername ? `@${user.telegramUsername}` : user.telegramUserId.toString());
 
+      const hasSharedDevice = Boolean(user.lastActiveIp && (ipCounts.get(user.lastActiveIp) || 0) > 1);
+
       const flags: string[] = [];
       if (user.state === UserState.SUSPENDED_USER) flags.push('FROZEN');
       if (user.state === UserState.BANNED_USER) flags.push('BANNED');
+      if (hasSharedDevice) flags.push('SHARED_DEVICE_IP');
 
       return {
         id: user.telegramUserId.toString(),
         telegramId: user.telegramUserId.toString(),
+        phoneNumber: user.phoneNumber || null,
+        primaryIdentifier,
+        joinChannel,
+        activityStatus,
+        lastActiveIp: user.lastActiveIp || null,
+        hasSharedDevice,
         phoneNumber: user.phoneNumber || null,
         primaryIdentifier,
         joinChannel,
@@ -248,13 +280,26 @@ export class UserInvestigationService {
       }),
     ]);
 
+    const extractUsdtAmount = (s: any): number => {
+      if (!s) return 0;
+      const expectedCrypto = Number(s.expectedCryptoAmount || 0);
+      if (expectedCrypto > 0) return expectedCrypto;
+
+      const rawAmt = Number(s.requestedAmount || 0);
+      const rate = Number(s.exchangeRate || 1);
+      if (rawAmt > 0 && rate > 1) {
+        return rawAmt / rate;
+      }
+      return rawAmt;
+    };
+
     const totalDeposits = (user.settlementSessions || [])
       .filter((s: any) => s.sessionType === 'DEPOSIT' && s.status === 'COMPLETED')
-      .reduce((sum: number, s: any) => sum + Number(s.requestedAmount || 0), 0);
+      .reduce((sum: number, s: any) => sum + extractUsdtAmount(s), 0);
 
     const totalWithdrawals = (user.settlementSessions || [])
       .filter((s: any) => s.sessionType === 'PAYOUT' && s.status === 'COMPLETED')
-      .reduce((sum: number, s: any) => sum + Number(s.requestedAmount || 0), 0);
+      .reduce((sum: number, s: any) => sum + extractUsdtAmount(s), 0);
 
     return {
       id: user.telegramUserId.toString(),

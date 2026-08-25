@@ -28,6 +28,8 @@ export interface UserSummaryItem {
   primaryIdentifier: string;
   joinChannel: 'WHATSAPP' | 'TELEGRAM' | 'WEB';
   activityStatus: 'ACTIVE' | 'INACTIVE' | 'FROZEN' | 'BANNED';
+  hasSharedDevice?: boolean;
+  lastActiveIp?: string | null;
   name: string;
   username: string;
   state: string;
@@ -147,12 +149,17 @@ const columns: Column<UserSummaryItem>[] = [
     key: 'name',
     label: 'User Account & Channel',
     sortable: true,
-    width: 'w-[200px]',
+    width: 'w-[220px]',
     render: (u) => (
       <div>
-        <div className="font-bold text-text-primary flex items-center gap-2">
+        <div className="font-bold text-text-primary flex flex-wrap items-center gap-1.5">
           <span>{u.name}</span>
           {channelBadge(u.joinChannel)}
+          {u.hasSharedDevice && (
+            <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase tracking-wider bg-amber-500/30 text-amber-300 border border-amber-400/40" title={`Shared IP / Multi-Account Device: ${u.lastActiveIp || 'Same Device'}`}>
+              ⚠️ SHARED IP
+            </span>
+          )}
         </div>
         <div className="text-xs text-text-tertiary font-mono mt-0.5">{u.primaryIdentifier || u.username || u.telegramId}</div>
       </div>

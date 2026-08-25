@@ -70,12 +70,12 @@ export class FinancialAdminService {
     ] = await Promise.all([
       this.prisma.settlementSession.aggregate({
         where: { sessionType: SettlementType.DEPOSIT, status: SettlementStatus.COMPLETED },
-        _sum: { requestedAmount: true },
+        _sum: { expectedCryptoAmount: true },
         _count: true,
       }),
       this.prisma.settlementSession.aggregate({
         where: { sessionType: SettlementType.PAYOUT, status: SettlementStatus.COMPLETED },
-        _sum: { requestedAmount: true },
+        _sum: { expectedCryptoAmount: true },
         _count: true,
       }),
       this.prisma.settlementSession.count({
@@ -91,8 +91,8 @@ export class FinancialAdminService {
       this.prisma.user.count(),
     ]);
 
-    const totalDepositVol = Number(totalDepositsResult._sum.requestedAmount || 0);
-    const totalPayoutVol = Number(totalPayoutsResult._sum.requestedAmount || 0);
+    const totalDepositVol = Number(totalDepositsResult._sum.expectedCryptoAmount || 0);
+    const totalPayoutVol = Number(totalPayoutsResult._sum.expectedCryptoAmount || 0);
     const netPlatformVolume = totalDepositVol - totalPayoutVol;
 
     const reserveRatioPct = totalPayoutVol > 0 ? ((totalDepositVol / totalPayoutVol) * 100).toFixed(1) : '100.0';
@@ -132,11 +132,11 @@ export class FinancialAdminService {
           }),
           this.prisma.settlementSession.aggregate({
             where: { asset: asset.assetCode, sessionType: SettlementType.DEPOSIT, status: SettlementStatus.VERIFYING },
-            _sum: { requestedAmount: true },
+            _sum: { expectedCryptoAmount: true },
           }),
           this.prisma.settlementSession.aggregate({
             where: { asset: asset.assetCode, sessionType: SettlementType.PAYOUT, status: SettlementStatus.WAITING_FOR_PAYMENT },
-            _sum: { requestedAmount: true },
+            _sum: { expectedCryptoAmount: true },
           }),
         ]);
 
@@ -147,8 +147,8 @@ export class FinancialAdminService {
           decimals: asset.decimals,
           enabled: asset.enabled,
           totalLedgerVolume: Number(ledgerEntries._sum.amount || 0),
-          pendingDepositVolume: Number(pendingDeposits._sum.requestedAmount || 0),
-          pendingPayoutVolume: Number(pendingPayouts._sum.requestedAmount || 0),
+          pendingDepositVolume: Number(pendingDeposits._sum.expectedCryptoAmount || 0),
+          pendingPayoutVolume: Number(pendingPayouts._sum.expectedCryptoAmount || 0),
           treasuryBalance: Number(ledgerEntries._sum.amount || 0) * 0.1,
         };
       }),
@@ -808,16 +808,16 @@ export class FinancialAdminService {
       this.prisma.settlementProvider.findMany({ select: { id: true, displayName: true, status: true } }),
       this.prisma.settlementSession.aggregate({
         where: { sessionType: SettlementType.DEPOSIT, status: SettlementStatus.COMPLETED },
-        _sum: { requestedAmount: true },
+        _sum: { expectedCryptoAmount: true },
       }),
       this.prisma.settlementSession.aggregate({
         where: { sessionType: SettlementType.PAYOUT, status: SettlementStatus.COMPLETED },
-        _sum: { requestedAmount: true },
+        _sum: { expectedCryptoAmount: true },
       }),
     ]);
 
-    const depositVol = Number(totalDeposits._sum.requestedAmount || 0);
-    const payoutVol = Number(totalPayouts._sum.requestedAmount || 0);
+    const depositVol = Number(totalDeposits._sum.expectedCryptoAmount || 0);
+    const payoutVol = Number(totalPayouts._sum.expectedCryptoAmount || 0);
     const netFloat = depositVol - payoutVol;
 
     return {
