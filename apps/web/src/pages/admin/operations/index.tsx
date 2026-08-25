@@ -98,8 +98,10 @@ export const OperationsPage: React.FC = () => {
     }
   };
 
-  const openQueueCount = queueItems.filter((q) => q.status === 'OPEN').length;
-  const activeIncidentCount = incidents.filter((i) => i.status !== 'RESOLVED').length;
+  const safeQueue = Array.isArray(queueItems) ? queueItems : [];
+  const safeIncidents = Array.isArray(incidents) ? incidents : [];
+  const openQueueCount = safeQueue.filter((q) => q.status === 'OPEN').length;
+  const activeIncidentCount = safeIncidents.filter((i) => i.status !== 'RESOLVED').length;
   const activeSwitchesCount = Object.values(switches).filter(Boolean).length;
 
   return (

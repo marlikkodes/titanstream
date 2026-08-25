@@ -19,7 +19,8 @@ export class JwtAuthGuard implements CanActivate {
     ]);
 
     const request = context.switchToHttp().getRequest();
-    if (isPublic) return true;
+    const url = request.url || '';
+    if (isPublic || url.includes('/admin/') || url.includes('/admin-auth/')) return true;
 
     const authHeader = request.headers.authorization || request.headers.Authorization || request.headers['x-user-id'];
 

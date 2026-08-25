@@ -142,10 +142,12 @@ export const TreasuryPage: React.FC = () => {
   const fetchTreasuryData = useCallback(async () => {
     setLoading(true);
     try {
-      const [intelRes, rosterData, queueData] = await Promise.all([
+      const [intelRes, rosterData, queueData, depRes, wthRes] = await Promise.all([
         api.get('/admin/treasury-operators/intelligence').catch(() => null),
         treasuryOperatorService.getRoster().catch(() => []),
         treasuryOperatorService.getQueue().catch(() => []),
+        api.get('/admin/financial/deposits', { params: { limit: 50 } }).catch(() => null),
+        api.get('/admin/financial/withdrawals', { params: { limit: 50 } }).catch(() => null),
       ]);
 
       if (intelRes?.data?.data) {
@@ -158,7 +160,33 @@ export const TreasuryPage: React.FC = () => {
       }
 
       setRoster(rosterData);
-      setVerificationQueue(queueData);
+
+      const rawDep = depRes?.data?.items || depRes?.data?.data || depRes?.data || [];
+      const safeDep = Array.isArray(rawDep) ? rawDep : [];
+      setDepositsList(safeDep);
+
+      const rawWth = wthRes?.data?.items || wthRes?.data?.data || wthRes?.data || [];
+      const safeWth = Array.isArray(rawWth) ? rawWth : [];
+      setWithdrawalsList(safeWth);
+
+      // Combine queue items and pending settlement sessions
+      const pendingItems = [
+        ...(Array.isArray(queueData) ? queueData : []),
+        ...safeDep.filter((d: any) => d.status !== 'COMPLETED' && d.status !== 'REJECTED').map((d: any) => ({
+          id: d.id,
+          amount: Number(d.requestedAmount || d.amount || 0),
+          userId: d.userName || d.userHandle || d.userId || d.telegramUserId,
+          type: 'DEPOSIT_VERIFICATION',
+        })),
+        ...safeWth.filter((w: any) => w.status !== 'COMPLETED' && w.status !== 'REJECTED').map((w: any) => ({
+          id: w.id,
+          amount: Number(w.requestedAmount || w.amount || 0),
+          userId: w.userName || w.userHandle || w.userId || w.telegramUserId,
+          type: 'WITHDRAWAL_APPROVAL',
+        })),
+      ];
+
+      setVerificationQueue(pendingItems);
     } catch (err) {
       console.warn('Failed to load real-time treasury metrics:', err);
     } finally {

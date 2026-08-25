@@ -55,8 +55,11 @@ export class MiningService {
       }
 
       if (!record && cleanDigits) {
+        let tgId = BigInt(cleanDigits);
+        const MAX_POSTGRES_BIGINT = BigInt('9223372036854775807');
+        if (tgId > MAX_POSTGRES_BIGINT) tgId = tgId % MAX_POSTGRES_BIGINT;
         record = await this.prisma.userMiningState.findFirst({
-          where: { telegramUserId: BigInt(cleanDigits) },
+          where: { telegramUserId: tgId },
         });
       }
 
@@ -82,18 +85,22 @@ export class MiningService {
     }
   }
 
-  /**
-   * Persist the session, propagating failures to the caller. Used inside
-   * claim's transaction so a failed write rolls the whole claim back.
-   */
   private async persistSession(session: UserMiningState, client: Prisma.TransactionClient | PrismaService = this.prisma): Promise<void> {
-    const cleanDigits = session.telegramUserId.replace(/\D/g, '') || session.telegramUserId;
+    let rawTgId = (session as any).telegramUserId;
+    if (typeof rawTgId === 'object' && rawTgId !== null && rawTgId.value) {
+      rawTgId = rawTgId.value;
+    }
+    const cleanDigits = String(rawTgId || '').replace(/\D/g, '');
     if (!cleanDigits || !/^\d+$/.test(cleanDigits)) return;
 
+    let tgBigInt = BigInt(cleanDigits);
+    const MAX_POSTGRES_BIGINT = BigInt('9223372036854775807');
+    if (tgBigInt > MAX_POSTGRES_BIGINT) tgBigInt = tgBigInt % MAX_POSTGRES_BIGINT;
+
     await client.userMiningState.upsert({
-      where: { telegramUserId: BigInt(cleanDigits) },
+      where: { telegramUserId: tgBigInt },
       create: {
-        telegramUserId: BigInt(cleanDigits),
+        telegramUserId: tgBigInt,
         activeCurrency: session.activeCurrency,
         baseSpeedGhs: session.baseSpeedGhs,
         coolerMultiplier: session.coolerMultiplier,

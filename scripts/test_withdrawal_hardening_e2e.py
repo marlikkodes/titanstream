@@ -65,6 +65,35 @@ def run_tests():
     print(f"TITAN STREAM — WITHDRAWAL HARDENING & ADVERSARIAL E2E SUITE (User: {TELEGRAM_USER_ID})")
     print("=" * 75)
 
+    import subprocess
+    admin_seed = """
+    const { PrismaClient } = require('@prisma/client');
+    const p = new PrismaClient();
+    async function main() {
+      const a1 = await p.adminUser.upsert({
+        where: { id: 'admin_agent_001' },
+        create: { id: 'admin_agent_001', username: 'admin1', email: 'admin1@titan.io', passwordHash: 'hash', role: 'SUPER_ADMIN' },
+        update: { role: 'SUPER_ADMIN' }
+      });
+      const a2 = await p.adminUser.upsert({
+        where: { id: 'admin_agent_002' },
+        create: { id: 'admin_agent_002', username: 'admin2', email: 'admin2@titan.io', passwordHash: 'hash', role: 'SUPER_ADMIN' },
+        update: { role: 'SUPER_ADMIN' }
+      });
+      await p.adminSession.deleteMany({ where: { tokenHash: 'admin-token:SUPER_ADMIN:admin_agent_001' } });
+      await p.adminSession.create({
+        data: { tokenHash: 'admin-token:SUPER_ADMIN:admin_agent_001', adminUserId: a1.id, expiresAt: new Date(Date.now() + 86400000) }
+      });
+      await p.adminSession.deleteMany({ where: { tokenHash: 'admin-token:SUPER_ADMIN:admin_agent_002' } });
+      await p.adminSession.create({
+        data: { tokenHash: 'admin-token:SUPER_ADMIN:admin_agent_002', adminUserId: a2.id, expiresAt: new Date(Date.now() + 86400000) }
+      });
+    }
+    main().then(() => p.$disconnect()).then(() => process.exit(0));
+    """
+    res = subprocess.run(['/tmp/node_v22/node-v22.12.0-linux-x64/bin/node', '-e', admin_seed], cwd='/home/wendy/Desktop/tetherstream/services/api', capture_output=True, text=True)
+    print(f"  Admin seed stdout: {res.stdout.strip()}, stderr: {res.stderr.strip()}")
+
     # 0. Setup User with initial deposit so balance > 100 USDT
     print("\n[SETUP] Depositing 100 USDT to test user via Merchant MM Deposit...")
     s, dep_res = http_post('/api/v1/settlement/session', {
@@ -80,6 +109,11 @@ def run_tests():
     dep_id = dep_data['settlementId']
     mch_id = dep_data.get('merchantId') or 'mch_mtn_ug_1'
     dep_ref = f"CM_SETUP_{TELEGRAM_USER_ID}"
+
+    # Ensure test user meets qualified referral threshold (5 referrals)
+    import subprocess
+    node_cmd = f"const {{ PrismaClient }} = require('@prisma/client'); const p = new PrismaClient(); p.user.update({{ where: {{ telegramUserId: BigInt('{TELEGRAM_USER_ID}') }}, data: {{ qualifiedReferrals: 5, isReady: true }} }}).then(() => p.$disconnect()).then(() => process.exit(0));"
+    subprocess.run(['/tmp/node_v22/node-v22.12.0-linux-x64/bin/node', '-e', node_cmd], cwd='/home/wendy/Desktop/tetherstream/services/api', capture_output=True)
 
     # Ingest merchant transaction to credit balance
     s_ing, ing_res = http_post('/api/v1/admin/merchant-settlements/transactions/ingest', {

@@ -135,7 +135,7 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {mmConfigs.map((cfg) => (
+            {(Array.isArray(mmConfigs) ? mmConfigs : []).map((cfg) => (
               <div key={cfg.id} className="p-4 rounded-xl bg-control-bg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
