@@ -16,17 +16,23 @@ export interface TreasuryOperatorProfile {
 export const treasuryOperatorService = {
   async getRoster(): Promise<TreasuryOperatorProfile[]> {
     const res = await api.get('/admin/treasury-operators/roster');
-    return res.data.data;
+    const raw = res.data;
+    if (Array.isArray(raw)) return raw;
+    if (Array.isArray(raw?.data)) return raw.data;
+    return [];
   },
 
   async setDutyStatus(dutyStatus: DutyStatus): Promise<TreasuryOperatorProfile> {
     const res = await api.post('/admin/treasury-operators/duty', { dutyStatus });
-    return res.data.data;
+    return res.data?.data || res.data;
   },
 
   async getQueue(): Promise<PaymentOrderRecord[]> {
     const res = await api.get('/admin/treasury-operators/queue');
-    return res.data.data;
+    const raw = res.data;
+    if (Array.isArray(raw)) return raw;
+    if (Array.isArray(raw?.data)) return raw.data;
+    return [];
   },
 
   async verifyPaymentOrder(
@@ -35,6 +41,6 @@ export const treasuryOperatorService = {
     reason?: string,
   ): Promise<PaymentOrderRecord> {
     const res = await api.post(`/admin/treasury-operators/verify/${orderId}`, { action, reason });
-    return res.data.data;
+    return res.data?.data || res.data;
   },
 };

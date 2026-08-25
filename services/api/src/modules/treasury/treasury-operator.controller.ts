@@ -46,10 +46,10 @@ export class TreasuryOperatorController {
   @Get('queue')
   @Permissions(AdminPermission.SETTLEMENT_VIEW)
   @ApiOperation({ summary: 'Get Treasury Operator pending payment order verification queue' })
-  getQueue() {
+  async getQueue() {
     return {
       success: true,
-      data: this.service.getVerificationQueue(),
+      data: await this.service.getVerificationQueue(),
     };
   }
 

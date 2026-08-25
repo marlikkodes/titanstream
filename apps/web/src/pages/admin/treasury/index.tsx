@@ -145,44 +145,49 @@ export const TreasuryPage: React.FC = () => {
       </div>
 
       {/* Verification Queue Workstation */}
-      <div className="bg-card-bg border border-white/10 rounded-2xl p-5 space-y-4 shadow-lg">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-          <h4 className="text-xs font-extrabold uppercase tracking-wider text-text-primary flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-usdt-green" /> Withdrawal & Deposit Command Queue ({verificationQueue.length})
-          </h4>
-          <span className="text-[10px] text-text-tertiary">Requires Dual-Auth Telegram Confirmation for high values</span>
-        </div>
-
-        <div className="space-y-3">
-          {verificationQueue.map((order) => (
-            <div key={order.id} className="p-4 rounded-xl bg-control-bg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-extrabold text-sm text-text-primary">#{order.reference}</span>
-                  <span className="px-2 py-0.5 rounded bg-usdt-green/15 text-usdt-green font-bold text-[10px]">
-                    ${(Number(order?.amount) || 0).toFixed(2)} USDT
-                  </span>
-                </div>
-                <div className="text-xs text-text-secondary mt-1">
-                  User Telegram: {order.telegramUserId} | Method: {order.paymentMethod}
-                </div>
-              </div>
-
-              <button
-                onClick={() => triggerDualAuthAction(order.id, 'WITHDRAWAL_APPROVAL')}
-                className="px-4 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-extrabold flex items-center gap-2 shadow-md hover:brightness-110"
-              >
-                <Lock size={14} /> Dual-Auth Verify & Post
-              </button>
+      {(() => {
+        const safeQueue = Array.isArray(verificationQueue) ? verificationQueue : [];
+        return (
+          <div className="bg-card-bg border border-white/10 rounded-2xl p-5 space-y-4 shadow-lg">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-text-primary flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-usdt-green" /> Withdrawal & Deposit Command Queue ({safeQueue.length})
+              </h4>
+              <span className="text-[10px] text-text-tertiary">Requires Dual-Auth Telegram Confirmation for high values</span>
             </div>
-          ))}
-          {verificationQueue.length === 0 && (
-            <div className="text-center py-6 text-xs text-text-tertiary">
-              🟢 Verification queue clear — No pending withdrawal/deposit orders awaiting action.
+
+            <div className="space-y-3">
+              {safeQueue.map((order) => (
+                <div key={order.id} className="p-4 rounded-xl bg-control-bg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-extrabold text-sm text-text-primary">#{order.reference}</span>
+                      <span className="px-2 py-0.5 rounded bg-usdt-green/15 text-usdt-green font-bold text-[10px]">
+                        ${(Number(order?.amount) || 0).toFixed(2)} USDT
+                      </span>
+                    </div>
+                    <div className="text-xs text-text-secondary mt-1">
+                      User Telegram: {order.telegramUserId} | Method: {order.paymentMethod}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => triggerDualAuthAction(order.id, 'WITHDRAWAL_APPROVAL')}
+                    className="px-4 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-extrabold flex items-center gap-2 shadow-md hover:brightness-110"
+                  >
+                    <Lock size={14} /> Dual-Auth Verify & Post
+                  </button>
+                </div>
+              ))}
+              {safeQueue.length === 0 && (
+                <div className="text-center py-6 text-xs text-text-tertiary">
+                  🟢 Verification queue clear — No pending withdrawal/deposit orders awaiting action.
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        );
+      })()}
 
       {/* FINANCIAL SIMULATION LAB */}
       <div className="bg-card-bg border border-white/10 rounded-2xl p-5 shadow-lg space-y-4">
