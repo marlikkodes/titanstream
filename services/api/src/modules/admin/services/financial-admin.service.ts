@@ -55,6 +55,66 @@ export class FinancialAdminService {
     return BigInt(clean);
   }
 
+  private async resolveUserAndAccount(idOrTelegramId: string, tx?: Prisma.TransactionClient) {
+    const db = tx || this.prisma;
+    const clean = idOrTelegramId.trim();
+    const isUuid = clean.includes('-');
+    let user: any = null;
+
+    if (isUuid) {
+      user = await db.user.findUnique({ where: { id: clean } });
+    }
+    if (!user && /^\d+$/.test(clean)) {
+      try {
+        user = await db.user.findUnique({ where: { telegramUserId: BigInt(clean) } });
+      } catch {
+        // ignore
+      }
+    }
+    if (!user) {
+      const phoneFormatted = clean.startsWith('+') ? clean : '+' + clean;
+      user = await db.user.findFirst({
+        where: {
+          OR: [
+            { phoneNumber: clean },
+            { phoneNumber: phoneFormatted },
+            { id: clean },
+          ],
+        },
+      });
+    }
+
+    if (!user) {
+      if (/^\d+$/.test(clean)) {
+        const tgId = BigInt(clean);
+        let fin = await db.financialAccount.findUnique({ where: { telegramUserId: tgId } });
+        if (!fin) {
+          fin = await db.financialAccount.create({ data: { telegramUserId: tgId, status: 'ACTIVE' } });
+        }
+        return { telegramUserId: tgId, finAccount: fin };
+      }
+      throw new NotFoundException(`USER_NOT_FOUND: User '${idOrTelegramId}' does not exist`);
+    }
+
+    const telegramUserId = user.telegramUserId || BigInt(0);
+    let finAccount = await db.financialAccount.findFirst({
+      where: {
+        OR: [
+          ...(user.telegramUserId ? [{ telegramUserId: user.telegramUserId }] : []),
+          ...(user.id ? [{ id: user.id }] : []),
+        ],
+      },
+    });
+
+    if (!finAccount) {
+      finAccount = await db.financialAccount.create({
+        data: { telegramUserId, status: 'ACTIVE' },
+      });
+    }
+
+    return { user, finAccount, telegramUserId };
+  }
+
   /**
    * 1. Live Platform Financial Overview
    */
@@ -334,7 +394,6 @@ export class FinancialAdminService {
       throw new BadRequestException('INVALID_AMOUNT: Adjustment amount must be a positive number');
     }
 
-    const telegramUserId = this.parseBigInt(dto.telegramUserId);
     const assetCode = (dto.assetCode || 'USDT').toUpperCase();
     const amountStr = Number(dto.amount).toFixed(6);
     const cleanReason = dto.reason.trim();
@@ -342,12 +401,7 @@ export class FinancialAdminService {
     const ref = dto.reference || `ADJ-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
     return this.prisma.$transaction(async (tx) => {
-      let finAccount = await tx.financialAccount.findUnique({ where: { telegramUserId } });
-      if (!finAccount) {
-        finAccount = await tx.financialAccount.create({
-          data: { telegramUserId, status: 'ACTIVE' },
-        });
-      }
+      const { finAccount, telegramUserId } = await this.resolveUserAndAccount(dto.telegramUserId, tx);
 
       const lines = dto.adjustmentType === 'CREDIT_USER'
         ? [
@@ -455,14 +509,12 @@ export class FinancialAdminService {
     if (!dto.reason || !dto.reason.trim()) {
       throw new BadRequestException('ACTION_REASON_REQUIRED: Financial hold placement requires a mandatory reason');
     }
-    const telegramUserId = this.parseBigInt(dto.telegramUserId);
     const assetCode = (dto.assetCode || 'USDT').toUpperCase();
     const cleanReason = dto.reason.trim();
     const ref = `HOLD-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
     return this.prisma.$transaction(async (tx) => {
-      const finAccount = await tx.financialAccount.findUnique({ where: { telegramUserId } });
-      if (!finAccount) throw new NotFoundException(`FINANCIAL_ACCOUNT_NOT_FOUND for user ${telegramUserId.toString()}`);
+      const { finAccount, telegramUserId } = await this.resolveUserAndAccount(dto.telegramUserId, tx);
 
       const audit = await tx.auditEvent.create({
         data: {

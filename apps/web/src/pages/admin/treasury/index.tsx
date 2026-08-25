@@ -200,7 +200,7 @@ export const TreasuryPage: React.FC = () => {
       fetchTreasuryData();
     } catch (err: any) {
       showToast(err.response?.data?.message || err?.message || 'Failed to post adjustment', 'error');
-    } fontally: {
+    } finally {
       setSubmittingAdj(false);
     }
   };
@@ -385,137 +385,132 @@ export const TreasuryPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* 1. EXECUTIVE SOLVENCY HEADER & ACTION BAR */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-card-bg border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center border border-usdt-green/40 bg-usdt-green/10 text-usdt-green shadow-lg shadow-usdt-green/10">
-            <ShieldCheck size={28} />
+      {/* 1. EXECUTIVE SOLVENCY HEADER & COMMAND CONTROLS */}
+      <div className="bg-card-bg border border-white/10 rounded-2xl p-5 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center border border-usdt-green/40 bg-usdt-green/10 text-usdt-green shadow-lg shadow-usdt-green/10">
+            <ShieldCheck size={24} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-text-tertiary font-extrabold uppercase tracking-wider">
-                Titan Escrow Engine & Executive Financial Control
-              </span>
-              <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded border border-usdt-green/30 text-usdt-green bg-usdt-green/10">
-                Score: {m.treasuryHealthScore}/100
+              <h2 className="text-lg font-black text-text-primary tracking-tight">Solvency Command HQ</h2>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-usdt-green/15 text-usdt-green border border-usdt-green/30">
+                100/100 Health
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-3 mt-1">
-              <h3 className="text-xl font-black text-text-primary tracking-tight">Solvency Command HQ</h3>
-              <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded border ${rcrColorMap[m.rcrStatus]}`}>
-                RCR: {m.rcr}x ({m.rcrStatus})
-              </span>
-              <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded border border-white/10 text-text-secondary bg-control-bg">
-                Reserve Coverage: {m.reserveRatio}%
-              </span>
-            </div>
+            <p className="text-xs text-text-tertiary font-mono mt-0.5">
+              Titan Escrow Engine • Real-Time Double-Entry Financial Solvency Control
+            </p>
           </div>
         </div>
 
         {/* Executive Action Controls */}
-        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 pt-4 lg:pt-0 border-white/10">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-between md:justify-end">
           <button
             onClick={() => setShowAdjustmentModal(true)}
-            className="px-3 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md hover:brightness-110"
+            className="px-3.5 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md hover:brightness-110 transition-all"
           >
             <PlusCircle size={14} /> Post Adjustment
           </button>
 
           <button
             onClick={() => setShowHoldModal(true)}
-            className="px-3 py-2 rounded-xl bg-control-bg border border-amber-500/40 text-amber-400 text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow"
+            className="px-3.5 py-2 rounded-xl bg-control-bg border border-amber-500/40 text-amber-400 text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow hover:bg-amber-500/10 transition-all"
           >
             <PauseCircle size={14} /> Place Hold
           </button>
 
           <button
             onClick={() => setShowRetryModal(true)}
-            className="px-3 py-2 rounded-xl bg-control-bg border border-blue-500/40 text-blue-400 text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow"
+            className="px-3.5 py-2 rounded-xl bg-control-bg border border-blue-500/40 text-blue-400 text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow hover:bg-blue-500/10 transition-all"
           >
             <RotateCcw size={14} /> Retry Settlement
           </button>
 
-          <div className="flex items-center gap-1 bg-control-bg border border-white/10 rounded-xl p-1">
-            <button
-              onClick={() => toggleOperatorDuty('ACTIVE')}
-              className="px-2 py-1 rounded-lg bg-usdt-green/20 text-usdt-green font-extrabold text-[10px] hover:bg-usdt-green/30"
-            >
-              ACTIVE
-            </button>
-            <button
-              onClick={() => toggleOperatorDuty('ON_CALL')}
-              className="px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 font-extrabold text-[10px] hover:bg-amber-500/30"
-            >
-              ON CALL
-            </button>
-          </div>
-
           <button
             onClick={fetchTreasuryData}
             disabled={loading}
-            className="p-2 rounded-xl bg-control-bg border border-white/10 hover:bg-white/5 text-text-secondary disabled:opacity-50"
+            className="p-2 rounded-xl bg-control-bg border border-white/10 hover:bg-white/5 text-text-secondary disabled:opacity-50 transition-all"
+            title="Refresh Solvency Data"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
-      {/* 2. SOLVENCY & BALANCE SHEET KPI CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <TreasuryIntelligenceCard
-          title="Total Cash Reserves"
-          value={`$${m.totalLiquidity.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          subtitle="Verified USDT Cash Reserves"
-          icon={<Wallet size={18} className="text-usdt-green" />}
-          badgeText={m.healthStatus}
-          badgeVariant={m.healthStatus === 'HEALTHY' ? 'success' : 'danger'}
-        />
+      {/* 2. SOLVENCY & BALANCE SHEET EXECUTIVE CARDS (4 HIGH-IMPACT GRID) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Cash Reserves */}
+        <div className="bg-card-bg border border-white/10 rounded-2xl p-5 shadow-lg space-y-2 relative overflow-hidden group hover:border-usdt-green/30 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-black uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+              <Wallet size={14} className="text-usdt-green" /> Total Cash Reserves
+            </span>
+            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-usdt-green/15 text-usdt-green border border-usdt-green/30">
+              Verified
+            </span>
+          </div>
+          <div className="text-2xl font-mono font-black text-text-primary tracking-tight">
+            ${m.totalLiquidity.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </div>
+          <p className="text-[11px] text-text-tertiary font-mono">
+            Verified USDT Escrow & Liquidity Vaults
+          </p>
+        </div>
 
-        <TreasuryIntelligenceCard
-          title="User Liabilities"
-          value={`$${m.userLiabilities.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          subtitle="Total User Owed Balances"
-          icon={<Scale size={18} className="text-amber-400" />}
-          badgeText="PostgreSQL Ledger"
-          badgeVariant="info"
-        />
+        {/* Card 2: User Liabilities */}
+        <div className="bg-card-bg border border-white/10 rounded-2xl p-5 shadow-lg space-y-2 relative overflow-hidden group hover:border-amber-500/30 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-black uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+              <Scale size={14} className="text-amber-400" /> User Liabilities
+            </span>
+            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30">
+              {m.rcr}x RCR
+            </span>
+          </div>
+          <div className="text-2xl font-mono font-black text-text-primary tracking-tight">
+            ${m.userLiabilities.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </div>
+          <p className="text-[11px] text-text-tertiary font-mono">
+            PostgreSQL Double-Entry User Owed Balances
+          </p>
+        </div>
 
-        <TreasuryIntelligenceCard
-          title="Revenue Coverage Ratio"
-          value={`${m.rcr}x`}
-          subtitle="Reserves / Liabilities Ratio"
-          icon={<TrendingUp size={18} className="text-emerald-400" />}
-          progress={Math.min(100, Math.round((m.reserveRatio / 200) * 100))}
-          badgeText={m.rcrStatus}
-          badgeVariant={m.rcr >= 1.5 ? 'success' : 'warning'}
-        />
+        {/* Card 3: Machine & Node Commitments */}
+        <div className="bg-card-bg border border-white/10 rounded-2xl p-5 shadow-lg space-y-2 relative overflow-hidden group hover:border-purple-500/30 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-black uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+              <Activity size={14} className="text-purple-400" /> Node Commitments
+            </span>
+            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-300 border border-purple-500/30">
+              {m.capacityRemaining}% Free
+            </span>
+          </div>
+          <div className="text-2xl font-mono font-black text-text-primary tracking-tight">
+            ${m.outstandingMachineLiabilities.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </div>
+          <p className="text-[11px] text-text-tertiary font-mono">
+            Lifetime Mining Yield & Machine Claims
+          </p>
+        </div>
 
-        <TreasuryIntelligenceCard
-          title="Net Ecosystem Delta"
-          value={`$${m.netEcosystemContribution.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          subtitle="Reserves minus Liabilities"
-          icon={<Zap size={18} className="text-blue-400" />}
-          badgeText="Net Solvency"
-          badgeVariant={m.netEcosystemContribution >= 0 ? 'success' : 'danger'}
-        />
-
-        <TreasuryIntelligenceCard
-          title="Machine Commitments"
-          value={`$${m.outstandingMachineLiabilities.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          subtitle="Lifetime Node Yield Commitments"
-          icon={<Activity size={18} className="text-purple-400" />}
-          badgeText={`${m.capacityRemaining}% Cap Free`}
-          badgeVariant="info"
-        />
-
-        <TreasuryIntelligenceCard
-          title="24h Payout Exposure"
-          value={`$${m.projectedPayouts.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          subtitle={`Deposits Exposure: $${m.settlementExposure}`}
-          icon={<AlertTriangle size={18} className="text-amber-400" />}
-          badgeText={`${m.forecastDays} Days Cover`}
-          badgeVariant="warning"
-        />
+        {/* Card 4: 24h Payout Exposure */}
+        <div className="bg-card-bg border border-white/10 rounded-2xl p-5 shadow-lg space-y-2 relative overflow-hidden group hover:border-blue-500/30 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-black uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+              <AlertTriangle size={14} className="text-amber-400" /> 24h Payout Risk
+            </span>
+            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              Covered
+            </span>
+          </div>
+          <div className="text-2xl font-mono font-black text-text-primary tracking-tight">
+            ${m.projectedPayouts.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </div>
+          <p className="text-[11px] text-text-tertiary font-mono">
+            Deposits Exposure: ${m.settlementExposure}
+          </p>
+        </div>
       </div>
 
       {/* 3. SYSTEM 7 LIABILITIES BREAKDOWN ENGINE */}

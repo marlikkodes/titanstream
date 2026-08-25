@@ -373,8 +373,14 @@ export class NotificationService implements OnModuleInit {
     if (isUuid) {
       const u = await this.prisma.user.findUnique({ where: { id: userKey as string } });
       telegramUserId = u?.telegramUserId || null;
-    } else {
-      telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+    } else if (typeof userKey === 'bigint') {
+      telegramUserId = userKey;
+    } else if (typeof userKey === 'string' && /^\d+$/.test(userKey)) {
+      try {
+        telegramUserId = BigInt(userKey);
+      } catch {
+        telegramUserId = null;
+      }
     }
     if (!telegramUserId) return [];
     return this.prisma.notificationRecord.findMany({
@@ -393,8 +399,14 @@ export class NotificationService implements OnModuleInit {
     if (isUuid) {
       const u = await this.prisma.user.findUnique({ where: { id: userKey as string } });
       telegramUserId = u?.telegramUserId || null;
-    } else {
-      telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+    } else if (typeof userKey === 'bigint') {
+      telegramUserId = userKey;
+    } else if (typeof userKey === 'string' && /^\d+$/.test(userKey)) {
+      try {
+        telegramUserId = BigInt(userKey);
+      } catch {
+        telegramUserId = null;
+      }
     }
     if (!telegramUserId) return { count: 0 };
     return this.prisma.notificationRecord.updateMany({
@@ -412,8 +424,14 @@ export class NotificationService implements OnModuleInit {
     if (isUuid) {
       const u = await this.prisma.user.findUnique({ where: { id: userKey as string } });
       telegramUserId = u?.telegramUserId || null;
-    } else {
-      telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
+    } else if (typeof userKey === 'bigint') {
+      telegramUserId = userKey;
+    } else if (typeof userKey === 'string' && /^\d+$/.test(userKey)) {
+      try {
+        telegramUserId = BigInt(userKey);
+      } catch {
+        telegramUserId = null;
+      }
     }
     if (!telegramUserId) return { count: 0 };
     return this.prisma.notificationRecord.updateMany({
