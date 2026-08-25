@@ -78,22 +78,28 @@ export class UserInvestigationService {
         { firstName: { contains: q, mode: 'insensitive' } },
         { lastName: { contains: q, mode: 'insensitive' } },
         { telegramUsername: { contains: q, mode: 'insensitive' } },
+        { phoneNumber: { contains: q, mode: 'insensitive' } },
         ...(isNumeric ? [{ telegramUserId: BigInt(q) }] : []),
       ];
     }
 
-    const [items, total] = await Promise.all([
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [items, total, totalActiveCount, totalInactiveCount, whatsappCount, telegramCount] = await Promise.all([
       this.prisma.user.findMany({
         where,
         select: {
           telegramUserId: true,
           telegramUsername: true,
+          phoneNumber: true,
+          phoneVerified: true,
           firstName: true,
           lastName: true,
           state: true,
           readinessScore: true,
           createdAt: true,
           lastActiveAt: true,
+          identityId: true,
           financialAccount: { select: { id: true, status: true } },
           crystalAccount: { select: { balance: true } },
           userMachines: { select: { id: true } },
@@ -106,18 +112,51 @@ export class UserInvestigationService {
         skip: offset,
       }),
       this.prisma.user.count({ where }),
+      this.prisma.user.count({ where: { lastActiveAt: { gte: sevenDaysAgo } } }),
+      this.prisma.user.count({
+        where: {
+          OR: [
+            { lastActiveAt: null },
+            { lastActiveAt: { lt: sevenDaysAgo } },
+          ],
+        },
+      }),
+      this.prisma.user.count({ where: { OR: [{ phoneNumber: { not: null } }, { phoneVerified: true }] } }),
+      this.prisma.user.count({ where: { telegramUsername: { not: null } } }),
     ]);
 
     const totalPages = Math.ceil(total / limit) || 1;
 
+    let aggregateMoneyIn = 0;
+    let aggregateMoneyOut = 0;
+
     const formattedItems = items.map((user: any) => {
-      const totalDeposits = (user.settlementSessions || [])
+      const moneyIn = (user.settlementSessions || [])
         .filter((s: any) => s.sessionType === 'DEPOSIT' && s.status === 'COMPLETED')
         .reduce((sum: number, s: any) => sum + Number(s.requestedAmount || 0), 0);
 
-      const totalWithdrawals = (user.settlementSessions || [])
+      const moneyOut = (user.settlementSessions || [])
         .filter((s: any) => s.sessionType === 'PAYOUT' && s.status === 'COMPLETED')
         .reduce((sum: number, s: any) => sum + Number(s.requestedAmount || 0), 0);
+
+      aggregateMoneyIn += moneyIn;
+      aggregateMoneyOut += moneyOut;
+
+      const isRecentlyActive = user.lastActiveAt && new Date(user.lastActiveAt) >= sevenDaysAgo;
+      let activityStatus: 'ACTIVE' | 'INACTIVE' | 'FROZEN' | 'BANNED' = isRecentlyActive ? 'ACTIVE' : 'INACTIVE';
+      if (user.state === UserState.SUSPENDED_USER) activityStatus = 'FROZEN';
+      if (user.state === UserState.BANNED_USER) activityStatus = 'BANNED';
+
+      let joinChannel: 'WHATSAPP' | 'TELEGRAM' | 'WEB' = 'TELEGRAM';
+      if (user.phoneNumber || user.phoneVerified) {
+        joinChannel = 'WHATSAPP';
+      } else if (!user.telegramUsername && !user.photoUrl) {
+        joinChannel = 'WEB';
+      }
+
+      const primaryIdentifier = joinChannel === 'WHATSAPP' && user.phoneNumber
+        ? user.phoneNumber
+        : (user.telegramUsername ? `@${user.telegramUsername}` : user.telegramUserId.toString());
 
       const flags: string[] = [];
       if (user.state === UserState.SUSPENDED_USER) flags.push('FROZEN');
@@ -126,12 +165,19 @@ export class UserInvestigationService {
       return {
         id: user.telegramUserId.toString(),
         telegramId: user.telegramUserId.toString(),
-        name: [user.firstName, user.lastName].filter(Boolean).join(' ') || `User ${user.telegramUserId}`,
-        username: user.telegramUsername ? `@${user.telegramUsername}` : 'No handle',
+        phoneNumber: user.phoneNumber || null,
+        primaryIdentifier,
+        joinChannel,
+        activityStatus,
+        name: [user.firstName, user.lastName].filter(Boolean).join(' ') || `User ${primaryIdentifier}`,
+        username: user.telegramUsername ? `@${user.telegramUsername}` : (user.phoneNumber || 'No handle'),
         state: user.state,
-        totalVolume: totalDeposits + totalWithdrawals,
-        totalDeposits,
-        totalWithdrawals,
+        totalVolume: moneyIn + moneyOut,
+        moneyIn,
+        moneyOut,
+        totalDeposits: moneyIn,
+        totalWithdrawals: moneyOut,
+        netBalance: moneyIn - moneyOut,
         riskScore: user.readinessScore || 0,
         flags,
         wallets: user.financialAccount ? [user.financialAccount.id] : [],
@@ -144,6 +190,15 @@ export class UserInvestigationService {
 
     return {
       items: formattedItems,
+      summary: {
+        totalUsers: total,
+        activeUsers: totalActiveCount,
+        inactiveUsers: totalInactiveCount,
+        whatsappUsers: whatsappCount,
+        telegramUsers: telegramCount,
+        aggregateMoneyIn,
+        aggregateMoneyOut,
+      },
       pagination: {
         total,
         limit,
