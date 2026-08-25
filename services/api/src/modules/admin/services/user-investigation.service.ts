@@ -436,7 +436,7 @@ export class UserInvestigationService {
             telegramUserId: user.crystalAccount.telegramUserId.toString(),
           }
         : null,
-      userMachines: (user.userMachines || []).map((m) => ({
+      userMachines: (user.userMachines || []).map((m: any) => ({
         ...m,
         telegramUserId: m.telegramUserId.toString(),
       })),
@@ -452,11 +452,11 @@ export class UserInvestigationService {
         payingCount: user.payingReferrals,
         totalReferred: user.referralAsReferrer ? user.referralAsReferrer.length : 0,
       },
-      settlementSessions: user.settlementSessions.map((s) => ({
+      settlementSessions: (user.settlementSessions || []).map((s: any) => ({
         ...s,
-        telegramUserId: s.telegramUserId.toString(),
-        requestedAmount: s.requestedAmount.toString(),
-        expectedCryptoAmount: s.expectedCryptoAmount.toString(),
+        telegramUserId: s.telegramUserId ? s.telegramUserId.toString() : null,
+        requestedAmount: s.requestedAmount ? s.requestedAmount.toString() : '0',
+        expectedCryptoAmount: s.expectedCryptoAmount ? s.expectedCryptoAmount.toString() : '0',
       })),
       summaryMetrics: {
         totalDeposits,
@@ -465,16 +465,16 @@ export class UserInvestigationService {
         activeMachines: user.userMachines ? user.userMachines.length : 0,
         crystalBalance: user.crystalAccount?.balance || 0,
       },
-      adminNotes: (user.adminNotes || []).map((n) => ({
+      adminNotes: (user.adminNotes || []).map((n: any) => ({
         ...n,
-        telegramUserId: n.telegramUserId.toString(),
+        telegramUserId: n.telegramUserId ? n.telegramUserId.toString() : null,
       })),
       riskEvents,
-      supportCases: supportCases.map((c) => ({
+      supportCases: supportCases.map((c: any) => ({
         ...c,
         userId: c.userId?.toString(),
       })),
-      recentAuditEvents: auditEvents.map((a) => ({
+      recentAuditEvents: auditEvents.map((a: any) => ({
         ...a,
         telegramUserId: a.telegramUserId?.toString(),
       })),
