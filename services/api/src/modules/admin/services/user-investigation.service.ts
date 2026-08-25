@@ -175,8 +175,25 @@ export class UserInvestigationService {
           ],
         },
       }),
-      this.prisma.user.count({ where: { OR: [{ phoneNumber: { not: null } }, { phoneVerified: true }] } }),
-      this.prisma.user.count({ where: { telegramUsername: { not: null } } }),
+      this.prisma.user.count({
+        where: {
+          OR: [
+            { phoneNumber: { not: null } },
+            { phoneVerified: true },
+            { firstName: { contains: 'WhatsApp', mode: 'insensitive' } },
+          ],
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          AND: [
+            { telegramUsername: { not: null } },
+            { phoneNumber: null },
+            { phoneVerified: false },
+            { NOT: { firstName: { contains: 'WhatsApp', mode: 'insensitive' } } },
+          ],
+        },
+      }),
     ]);
 
     const totalPages = Math.ceil(total / limit) || 1;
@@ -300,25 +317,52 @@ export class UserInvestigationService {
   }
 
   async getUserDetail(rawId: string | bigint) {
-    const telegramUserId = typeof rawId === 'bigint' ? rawId : this.parseBigInt(rawId)!;
+    const isUuid = typeof rawId === 'string' && rawId.includes('-');
+    let user: any = null;
 
-    const user = await this.prisma.user.findUnique({
-      where: { telegramUserId },
-      include: {
-        financialAccount: true,
-        crystalAccount: true,
-        userMachines: true,
-        onboardingProgress: true,
-        referralCode: true,
-        referralAsReferrer: { take: 10 },
-        referralAsReferee: true,
-        rewards: { orderBy: { createdAt: 'desc' }, take: 10 },
-        adminNotes: { orderBy: { createdAt: 'desc' } },
-        settlementSessions: { orderBy: { createdAt: 'desc' }, take: 15 },
-      },
-    });
+    if (isUuid) {
+      user = await this.prisma.user.findUnique({
+        where: { id: rawId as string },
+        include: {
+          financialAccount: true,
+          crystalAccount: true,
+          userMachines: true,
+          onboardingProgress: true,
+          referralCode: true,
+          referralAsReferrer: { take: 10 },
+          referralAsReferee: true,
+          rewards: { orderBy: { createdAt: 'desc' }, take: 10 },
+          adminNotes: { orderBy: { createdAt: 'desc' } },
+          settlementSessions: { orderBy: { createdAt: 'desc' }, take: 15 },
+        },
+      });
+    } else {
+      let telegramUserId: bigint;
+      try {
+        telegramUserId = typeof rawId === 'bigint' ? rawId : BigInt(rawId);
+      } catch {
+        throw new BadRequestException(`INVALID_USER_ID: '${rawId}' is not a valid User ID`);
+      }
+      user = await this.prisma.user.findUnique({
+        where: { telegramUserId },
+        include: {
+          financialAccount: true,
+          crystalAccount: true,
+          userMachines: true,
+          onboardingProgress: true,
+          referralCode: true,
+          referralAsReferrer: { take: 10 },
+          referralAsReferee: true,
+          rewards: { orderBy: { createdAt: 'desc' }, take: 10 },
+          adminNotes: { orderBy: { createdAt: 'desc' } },
+          settlementSessions: { orderBy: { createdAt: 'desc' }, take: 15 },
+        },
+      });
+    }
 
-    if (!user) throw new NotFoundException(`USER_NOT_FOUND: User ID ${telegramUserId.toString()} does not exist`);
+    if (!user) throw new NotFoundException(`USER_NOT_FOUND: User ID ${rawId.toString()} does not exist`);
+
+    const telegramUserId = user.telegramUserId;
 
     const [riskEvents, supportCases, auditEvents] = await Promise.all([
       this.prisma.riskEvent.findMany({
