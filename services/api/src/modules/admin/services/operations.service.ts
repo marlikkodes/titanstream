@@ -49,7 +49,7 @@ export class OperationsService {
 
   async getMissionControlOverview(): Promise<MissionControlOverview> {
     const treasuryMetrics = await this.treasuryService.getMetrics();
-    const allPaymentOrders = this.paymentOrderService.getAllOrders();
+    const allPaymentOrders = await this.paymentOrderService.getAllOrders();
 
     const pendingOrdersCount = allPaymentOrders.filter((o) => o.status === 'AWAITING_PAYMENT').length;
     const verificationOrdersCount = allPaymentOrders.filter((o) => o.status === 'AWAITING_VERIFICATION').length;

@@ -155,7 +155,9 @@ export const OverviewPage: React.FC = () => {
           <div>
             <span className="text-[10px] font-mono text-text-tertiary uppercase tracking-wider font-extrabold">Active Users</span>
             <div className="text-xl font-black text-text-primary mt-1">
-              {stats?.totalUsers ? Number(stats.totalUsers).toLocaleString() : '1,280'}
+              {stats?.system_overview?.active_users !== undefined
+                ? Number(stats.system_overview.active_users).toLocaleString()
+                : (stats?.totalUsers !== undefined ? Number(stats.totalUsers).toLocaleString() : '0')}
             </div>
             <span className="text-[10px] text-usdt-green font-bold">100% Verified Identity</span>
           </div>
@@ -168,7 +170,9 @@ export const OverviewPage: React.FC = () => {
           <div>
             <span className="text-[10px] font-mono text-text-tertiary uppercase tracking-wider font-extrabold">24h Settlement Volume</span>
             <div className="text-xl font-black text-text-primary mt-1">
-              ${stats?.volume24h ? Number(stats.volume24h).toLocaleString() : '42,500.00'}
+              ${stats?.system_overview?.transaction_volume !== undefined
+                ? Number(stats.system_overview.transaction_volume).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : (stats?.volume24h !== undefined ? Number(stats.volume24h).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00')}
             </div>
             <span className="text-[10px] text-blue-400 font-bold">Balanced Double-Entry</span>
           </div>
@@ -181,7 +185,9 @@ export const OverviewPage: React.FC = () => {
           <div>
             <span className="text-[10px] font-mono text-text-tertiary uppercase tracking-wider font-extrabold">System Queue Health</span>
             <div className="text-xl font-black text-text-primary mt-1">
-              {stats?.pendingJobs !== undefined ? stats.pendingJobs : 0} <span className="text-xs font-normal text-text-tertiary">jobs pending</span>
+              {stats?.operational_queues?.verification_required !== undefined
+                ? stats.operational_queues.verification_required
+                : (stats?.pendingJobs !== undefined ? stats.pendingJobs : 0)} <span className="text-xs font-normal text-text-tertiary">jobs pending</span>
             </div>
             <span className="text-[10px] text-amber-400 font-bold">SKIP LOCKED Outbox</span>
           </div>

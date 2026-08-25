@@ -44,6 +44,9 @@ export interface PaymentDestinationConfig {
   isActive: boolean;
 }
 
+const paymentOrderTypeFromSession = (sessionType: string, metaType?: PaymentOrderType): PaymentOrderType =>
+  metaType || (sessionType === 'PAYOUT' ? 'WITHDRAWAL' : 'DEPOSIT');
+
 @Injectable()
 export class PaymentOrderService {
   // Configurable Command Center destinations for mobile money receiving
@@ -163,7 +166,7 @@ export class PaymentOrderService {
     const telUri = `tel:${ussdCode.replace('#', '%23')}`;
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 mins expiry
 
-    const sessionType = dto.type === 'WITHDRAWAL' ? 'WITHDRAWAL' : 'DEPOSIT';
+    const sessionType = dto.type === 'WITHDRAWAL' ? 'PAYOUT' : 'DEPOSIT';
 
     // Ensure User record exists in DB for foreign key constraint
     let user = await this.prisma.user.findUnique({ where: { telegramUserId: telegramUserIdBig } });
@@ -247,7 +250,7 @@ export class PaymentOrderService {
       reference: session.referenceCode,
       userId: session.telegramUserId.toString(),
       telegramUserId: session.telegramUserId.toString(),
-      type: meta.type || (session.sessionType === 'WITHDRAWAL' ? 'WITHDRAWAL' : 'DEPOSIT'),
+      type: paymentOrderTypeFromSession(session.sessionType, meta.type),
       amount: Number(session.requestedAmount),
       localAmount: meta.localAmount || Number(session.requestedAmount) * Number(session.exchangeRate),
       currency: meta.currency || 'USDT',
@@ -282,7 +285,7 @@ export class PaymentOrderService {
         reference: session.referenceCode,
         userId: session.telegramUserId.toString(),
         telegramUserId: session.telegramUserId.toString(),
-        type: meta.type || (session.sessionType === 'WITHDRAWAL' ? 'WITHDRAWAL' : 'DEPOSIT'),
+        type: paymentOrderTypeFromSession(session.sessionType, meta.type),
         amount: Number(session.requestedAmount),
         localAmount: meta.localAmount || Number(session.requestedAmount) * Number(session.exchangeRate),
         currency: meta.currency || 'USDT',
@@ -311,7 +314,7 @@ export class PaymentOrderService {
         reference: session.referenceCode,
         userId: session.telegramUserId.toString(),
         telegramUserId: session.telegramUserId.toString(),
-        type: meta.type || (session.sessionType === 'WITHDRAWAL' ? 'WITHDRAWAL' : 'DEPOSIT'),
+        type: paymentOrderTypeFromSession(session.sessionType, meta.type),
         amount: Number(session.requestedAmount),
         localAmount: meta.localAmount || Number(session.requestedAmount) * Number(session.exchangeRate),
         currency: meta.currency || 'USDT',

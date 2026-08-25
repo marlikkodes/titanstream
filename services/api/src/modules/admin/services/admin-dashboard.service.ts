@@ -70,6 +70,9 @@ export class AdminDashboardService {
     ]);
 
     return {
+      totalUsers: activeUsers,
+      volume24h: volumeAggregate._sum.expectedCryptoAmount?.toString() || '0',
+      pendingJobs: awaitingPayment + verificationRequired,
       system_overview: {
         active_users: activeUsers,
         active_merchants: activeMerchants,

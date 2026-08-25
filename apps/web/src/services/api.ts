@@ -31,6 +31,11 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
+  const adminToken = localStorage.getItem('admin_auth_token');
+  if (adminToken && String(config.url || '').includes('/admin/')) {
+    config.headers['X-Admin-Token'] = adminToken;
+    config.headers['Authorization'] = `Bearer ${adminToken}`;
+  }
   const stepUpToken = useAuthStore.getState().stepUpToken;
   if (stepUpToken) {
     config.headers['X-StepUp-Token'] = stepUpToken;

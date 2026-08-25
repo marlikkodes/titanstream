@@ -23,8 +23,8 @@ describe('CommandCenterConfigService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should retrieve default mobile money receiving registry', () => {
-    const registry = service.getMobileMoneyRegistry();
+  it('should retrieve default mobile money receiving registry', async () => {
+    const registry = await service.getMobileMoneyRegistry();
     expect(registry.length).toBeGreaterThan(0);
     expect(registry[0].ussdTemplate).toContain('{phone}');
   });

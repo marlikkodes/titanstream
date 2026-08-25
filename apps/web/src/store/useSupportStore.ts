@@ -59,70 +59,11 @@ interface SupportState {
   updateStatus: (ticketId: string, status: TicketStatus) => void;
 }
 
-const INITIAL_TICKETS: SupportTicket[] = [
-  {
-    id: 'tkt-001',
-    reference: 'TKT-8849',
-    userTelegramId: '74829103',
-    userName: 'Kagiso Okello',
-    userUsername: '@kokello',
-    userCountry: 'Uganda',
-    userBalanceUsdt: 124.50,
-    category: 'Funding',
-    priority: 'High',
-    status: 'Waiting for Admin',
-    subject: 'USSD Mobile Money Payment Pending Verification',
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    updatedAt: new Date(Date.now() - 1800000).toISOString(),
-    runningMachinesCount: 2,
-    messages: [
-      {
-        id: 'msg-1',
-        sender: 'user',
-        senderName: 'Kagiso Okello',
-        text: 'I completed USSD payment prompt *165*1*1*0771234567*50# for 50 USDT deposit. Reference: KES-88291.',
-        createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-      },
-      {
-        id: 'msg-2',
-        sender: 'admin',
-        senderName: 'TitanStream Automated Escrow',
-        text: 'Your deposit session #KES-88291 was submitted to admin verification queue.',
-        createdAt: new Date(Date.now() - 3600000 * 1.8).toISOString(),
-        internalNote: true,
-      },
-    ],
-  },
-  {
-    id: 'tkt-002',
-    reference: 'TKT-9102',
-    userTelegramId: '19482019',
-    userName: 'Amina Nsabimana',
-    userUsername: '@amina_n',
-    userCountry: 'Kenya',
-    userBalanceUsdt: 580.00,
-    category: 'Machine',
-    priority: 'Normal',
-    status: 'Open',
-    subject: 'Question on Pro Processing Unit Hashrate Upgrade',
-    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-    runningMachinesCount: 4,
-    messages: [
-      {
-        id: 'msg-3',
-        sender: 'user',
-        senderName: 'Amina Nsabimana',
-        text: 'Hi support team, if I upgrade my Cloud Machine tier to AI Matrix Core, does my existing cooler multiplier persist?',
-        createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-      },
-    ],
-  },
-];
+const INITIAL_TICKETS: SupportTicket[] = [];
 
 export const useSupportStore = create<SupportState>((set, get) => ({
   tickets: INITIAL_TICKETS,
-  selectedTicketId: 'tkt-001',
+  selectedTicketId: null,
   knowledgeBaseArticles: [
     {
       id: 'kb-1',

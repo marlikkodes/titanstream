@@ -12,12 +12,12 @@ interface UserState {
 }
 
 export const useUserStore = create<UserState>((set) => ({
-  id: '18273645',
-  username: 'demo_user',
-  firstName: 'Demo',
-  lastName: 'User',
+  id: '',
+  username: '',
+  firstName: '',
+  lastName: '',
   languageCode: 'en',
   role: 'USER',
-  isAuthenticated: true,
+  isAuthenticated: false,
   setUser: (user) => set((state) => ({ ...state, ...user })),
 }));

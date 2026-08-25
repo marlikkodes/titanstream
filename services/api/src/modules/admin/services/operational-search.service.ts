@@ -28,7 +28,7 @@ export class OperationalSearchService {
     const results: SearchResultItem[] = [];
 
     // 1. Search Payment Orders
-    const allOrders = this.paymentOrderService.getAllOrders();
+    const allOrders = await this.paymentOrderService.getAllOrders();
     allOrders.forEach((o) => {
       if (
         o.id.toLowerCase().includes(q) ||

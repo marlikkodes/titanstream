@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Radio, Wallet, Users, Cpu, ShieldAlert, Sparkles, ChevronLeft, Gamepad2,
+  Radio, Wallet, Users, Cpu, ShieldAlert, Sparkles, ChevronLeft, Gamepad2, Settings,
 } from 'lucide-react';
 
 interface NavItem {
@@ -16,9 +16,10 @@ const primaryNavItems: NavItem[] = [
   { label: 'Treasury & Financials', icon: <Wallet size={18} />, path: '/admin/treasury' },
   { label: 'Users & Support', icon: <Users size={18} />, path: '/admin/users', badge: 2 },
   { label: 'Operations & Infra', icon: <Cpu size={18} />, path: '/admin/operations' },
-  { label: 'Security & Intelligence', icon: <ShieldAlert size={18} />, path: '/admin/security', badge: 1 },
-  { label: 'Wallet & Growth Config', icon: <Sparkles size={18} />, path: '/admin/growth-config' },
+  { label: 'Security & Intelligence', icon: <ShieldAlert size={18} />, path: '/admin/risk', badge: 1 },
+  { label: 'Wallet & Growth Config', icon: <Sparkles size={18} />, path: '/admin/settings' },
   { label: 'Games Command', icon: <Gamepad2 size={18} />, path: '/admin/games' },
+  { label: 'Readiness', icon: <Settings size={18} />, path: '/admin/readiness' },
 ];
 
 interface AdminSidebarProps {
