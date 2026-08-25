@@ -175,7 +175,11 @@ export class TreasuryService implements OnModuleInit {
 
       const reserveRatio = userLiabilities > 0 
         ? Math.round((totalLiquidity / userLiabilities) * 100) 
-        : 100;
+        : (totalLiquidity > 0 ? 1000 : 100);
+
+      const rcr = userLiabilities > 0 
+        ? Math.round((totalLiquidity / userLiabilities) * 100) / 100 
+        : (totalLiquidity > 0 ? 10.0 : 1.0);
 
       const pendingPayouts = await this.prisma.settlementSession.aggregate({
         where: { 
@@ -218,7 +222,6 @@ export class TreasuryService implements OnModuleInit {
       const netEcosystemContribution = Math.round((totalLiquidity - userLiabilities) * 100) / 100;
 
       // Revenue Coverage Ratio (RCR) = Total Verified Revenue / Total Outstanding Liabilities
-      const rcr = userLiabilities > 0 ? Math.round((totalLiquidity / userLiabilities) * 100) / 100 : 1.0;
       let rcrStatus: 'CRITICAL' | 'STABLE' | 'HEALTHY' | 'EXPANSION_READY' = 'HEALTHY';
       if (rcr < 1.0) rcrStatus = 'CRITICAL';
       else if (rcr < 1.25) rcrStatus = 'STABLE';

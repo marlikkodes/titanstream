@@ -7,10 +7,23 @@ describe('TreasuryService — Treasury Health & Safety Test Suite', () => {
 
   const mockPrismaService = {
     ledgerEntry: {
-      aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 1000 } }),
+      aggregate: jest.fn().mockImplementation(({ where }) => {
+        if (where?.ledgerAccount?.code === 'SYSTEM_RESERVE' && where?.entryType === 'CREDIT') {
+          return Promise.resolve({ _sum: { amount: 100000 } });
+        }
+        if (where?.ledgerAccount?.code === 'USER_ASSET_LIABILITY' && where?.entryType === 'CREDIT') {
+          return Promise.resolve({ _sum: { amount: 10000 } });
+        }
+        return Promise.resolve({ _sum: { amount: 0 } });
+      }),
     },
     settlementSession: {
-      aggregate: jest.fn().mockResolvedValue({ _sum: { expectedCryptoAmount: 500 } }),
+      aggregate: jest.fn().mockImplementation(({ where }) => {
+        if (where?.sessionType === 'DEPOSIT') {
+          return Promise.resolve({ _sum: { expectedCryptoAmount: 50000 } });
+        }
+        return Promise.resolve({ _sum: { expectedCryptoAmount: 0 } });
+      }),
       findMany: jest.fn().mockResolvedValue([]),
     },
     financialTransaction: {

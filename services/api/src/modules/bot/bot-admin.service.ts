@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { TelegramClientService } from './telegram-client.service';
 import { TelegramUserCtx } from './bot-gate.service';
+import { OperationalAuditService } from '../admin/services/operational-audit.service';
 
 @Injectable()
 export class BotAdminService {
@@ -11,19 +12,19 @@ export class BotAdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegramClient: TelegramClientService,
+    @Optional() private readonly auditService?: OperationalAuditService,
   ) {
     const ids = (process.env.ADMIN_TELEGRAM_IDS || '').split(',').map((id) => id.trim()).filter(Boolean);
     this.adminTelegramIds = new Set(ids);
   }
 
   isAdmin(telegramUserId: bigint | string | number): boolean {
-    const idStr = telegramUserId.toString();
-    if (this.adminTelegramIds.has(idStr)) return true;
-    if (this.adminTelegramIds.size === 0) {
-      // Development mode fallback
-      return true;
+    if (!telegramUserId) return false;
+    const idStr = telegramUserId.toString().trim();
+    if (!idStr || this.adminTelegramIds.size === 0) {
+      return false;
     }
-    return false;
+    return this.adminTelegramIds.has(idStr);
   }
 
   async getEmergencyState() {
@@ -268,6 +269,26 @@ export class BotAdminService {
           updatedBy: adminUsername,
         },
       });
+    }
+
+    if (this.auditService) {
+      await this.auditService.logAction({
+        actorId: `tg_admin_${adminUsername}`,
+        actorRole: 'ADMIN',
+        action: `TELEGRAM_EMERGENCY_CONTROL_${field.toUpperCase()}`,
+        entity: 'EMERGENCY_CONTROL_STATE',
+        entityId: 'SYSTEM_EMERGENCY_STATE',
+        beforeState: {
+          depositsPaused: state.depositsPaused,
+          withdrawalsPaused: state.withdrawalsPaused,
+          rewardsPaused: state.rewardsPaused,
+          channelGateEnabled: state.channelGateEnabled,
+        },
+        afterState: field === 'resumeAll'
+          ? { depositsPaused: false, withdrawalsPaused: false, rewardsPaused: false, channelGateEnabled: true }
+          : { [field]: !(state as any)[field] },
+        metadata: { adminUsername, field },
+      }).catch((err) => this.logger.error(`Failed to audit emergency control toggle: ${err.message}`));
     }
 
     return this.getEmergencyMenu();

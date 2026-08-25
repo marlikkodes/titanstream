@@ -35,13 +35,16 @@ export class JwtAuthGuard implements CanActivate {
       try {
         payload = this.jwtService.verify(token);
       } catch (jwtErr: any) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new UnauthorizedException({ code: 'TOKEN_INVALID', message: 'Invalid JWT signature' });
+        }
         const decoded = this.jwtService.decode(token) as any;
         const fallbackUserId = request.headers['x-user-id'] || request.headers['X-User-Id'];
         if (decoded && (decoded.sub || decoded.telegramUserId || decoded.titanUserId)) {
           payload = decoded;
-        } else if (fallbackUserId || token.startsWith('titan_id_') || token.startsWith('usr_') || token.startsWith('admin-token:') || /^\d+$/.test(token)) {
+        } else if (fallbackUserId || token.startsWith('titan_id_') || token.startsWith('usr_') || /^\d+$/.test(token)) {
           const rawId = String(fallbackUserId || token);
-          payload = { sub: rawId, userId: rawId, telegramUserId: rawId, role: 'ADMIN', state: 'READY' };
+          payload = { sub: rawId, userId: rawId, telegramUserId: rawId, role: 'USER', state: 'READY' };
         } else {
           throw jwtErr;
         }

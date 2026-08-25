@@ -39,7 +39,7 @@ export class AdminManagementService {
     }));
   }
 
-  async inviteAdmin(dto: { telegramUserId: string; name: string; role: AdminRole }): Promise<AdminAccountRecord> {
+  async inviteAdmin(dto: { telegramUserId: string; channelUserId?: string; name?: string; role?: AdminRole }): Promise<AdminAccountRecord> {
     const cleanName = dto.name?.trim() || `Admin_${dto.telegramUserId}`;
     const username = `${cleanName.toLowerCase().replace(/\s+/g, '_')}_${dto.telegramUserId}`;
     const email = `${username}@titanstream.io`;
@@ -48,7 +48,7 @@ export class AdminManagementService {
       data: {
         username,
         email,
-        passwordHash: 'INVITED_ADMIN_CREDENTIAL',
+        passwordHash: 'TELEGRAM_AUTH_ONLY',
         role: dto.role || AdminRole.OPERATIONS_ADMIN,
         isActive: true,
       },

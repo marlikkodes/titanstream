@@ -27,13 +27,16 @@ export class AdminManagementController {
 
   @Post('invite')
   @Permissions(AdminPermission.ADMIN_MANAGE)
-  @ApiOperation({ summary: 'Invite a new Admin user by telegram_user_id' })
+  @ApiOperation({ summary: 'Invite a new Admin user by telegram_user_id, whatsapp phone, or channel user ID' })
   async inviteAdmin(
-    @Body('telegramUserId') telegramUserId: string,
-    @Body('name') name: string,
-    @Body('role') role: AdminRole,
+    @Body('telegramUserId') telegramUserId?: string,
+    @Body('channelUserId') channelUserId?: string,
+    @Body('whatsappPhone') whatsappPhone?: string,
+    @Body('name') name?: string,
+    @Body('role') role?: AdminRole,
   ) {
-    const admin = await this.service.inviteAdmin({ telegramUserId, name, role });
+    const identifier = telegramUserId || channelUserId || whatsappPhone || 'unknown';
+    const admin = await this.service.inviteAdmin({ telegramUserId: identifier, channelUserId: channelUserId || whatsappPhone, name, role });
     return {
       success: true,
       data: admin,
@@ -50,6 +53,9 @@ export class AdminManagementController {
   ) {
     if (currentAdmin.id === id) {
       throw new ForbiddenException('Cannot modify your own administrative role');
+    }
+    if (role === AdminRole.SUPER_ADMIN && currentAdmin.role !== AdminRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only SUPER_ADMIN can assign SUPER_ADMIN role');
     }
     const admin = await this.service.updateAdminRole(id, role);
     return {
