@@ -24,6 +24,7 @@ import {
 export interface UserSummaryItem {
   id: string;
   telegramId: string;
+  titanId?: string;
   phoneNumber?: string | null;
   primaryIdentifier: string;
   joinChannel: 'WHATSAPP' | 'TELEGRAM' | 'WEB';
@@ -50,6 +51,7 @@ export interface UserSummaryItem {
 export interface DetailedUserObject {
   id: string;
   telegramUserId: string;
+  identityId?: string;
   telegramUsername?: string;
   phoneNumber?: string;
   firstName: string;
@@ -147,9 +149,9 @@ const channelBadge = (channel?: string) => {
 const columns: Column<UserSummaryItem>[] = [
   {
     key: 'name',
-    label: 'User Account & Channel',
+    label: 'User Account & Titan ID',
     sortable: true,
-    width: 'w-[220px]',
+    width: 'w-[240px]',
     render: (u) => (
       <div>
         <div className="font-bold text-text-primary flex flex-wrap items-center gap-1.5">
@@ -161,7 +163,10 @@ const columns: Column<UserSummaryItem>[] = [
             </span>
           )}
         </div>
-        <div className="text-xs text-text-tertiary font-mono mt-0.5">{u.primaryIdentifier || u.username || u.telegramId}</div>
+        <div className="text-xs text-text-tertiary font-mono mt-0.5 flex flex-wrap items-center gap-2">
+          <span>{u.primaryIdentifier || u.username || u.telegramId}</span>
+          {u.titanId && <span className="text-[10px] text-text-tertiary/70 font-mono">({u.titanId.slice(0, 13)}...)</span>}
+        </div>
       </div>
     ),
     mobile: (u) => ({
@@ -402,7 +407,7 @@ export const UsersPage: React.FC = () => {
         <MetricCard
           label="Total Accounts"
           value={totalCount.toString()}
-          subValue={`Active: ${summaryStats.activeUsers || usersList.filter(u => u.activityStatus === 'ACTIVE').length} | Inactive: ${summaryStats.inactiveUsers || usersList.filter(u => u.activityStatus === 'INACTIVE').length}`}
+          subValue={`Active: ${summaryStats.activeUsers ?? usersList.filter(u => u.activityStatus === 'ACTIVE').length} | Inactive: ${summaryStats.inactiveUsers ?? usersList.filter(u => u.activityStatus === 'INACTIVE').length}`}
           change={0}
           icon="Users"
           variant="green"

@@ -84,11 +84,14 @@ export class UserInvestigationService {
     }
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     const [items, total, totalActiveCount, totalInactiveCount, whatsappCount, telegramCount] = await Promise.all([
       this.prisma.user.findMany({
         where,
         select: {
+          id: true,
+          identityId: true,
           telegramUserId: true,
           telegramUsername: true,
           phoneNumber: true,
@@ -101,7 +104,6 @@ export class UserInvestigationService {
           lastActiveAt: true,
           lastLoginAt: true,
           lastActiveIp: true,
-          identityId: true,
           financialAccount: { select: { id: true, status: true } },
           crystalAccount: { select: { balance: true } },
           userMachines: { select: { id: true } },
@@ -114,12 +116,27 @@ export class UserInvestigationService {
         skip: offset,
       }),
       this.prisma.user.count({ where }),
-      this.prisma.user.count({ where: { lastActiveAt: { gte: sevenDaysAgo } } }),
       this.prisma.user.count({
         where: {
           OR: [
-            { lastActiveAt: null },
-            { lastActiveAt: { lt: sevenDaysAgo } },
+            { lastActiveAt: { gte: sevenDaysAgo } },
+            { createdAt: { gte: thirtyDaysAgo } },
+            { state: { in: [UserState.ACTIVE_USER, UserState.READY, UserState.NEW] } },
+          ],
+          state: { notIn: [UserState.SUSPENDED_USER, UserState.BANNED_USER] },
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          AND: [
+            {
+              OR: [
+                { lastActiveAt: null },
+                { lastActiveAt: { lt: sevenDaysAgo } },
+              ],
+            },
+            { createdAt: { lt: thirtyDaysAgo } },
+            { state: { notIn: [UserState.ACTIVE_USER, UserState.READY, UserState.NEW] } },
           ],
         },
       }),
@@ -165,7 +182,15 @@ export class UserInvestigationService {
       aggregateMoneyIn += moneyIn;
       aggregateMoneyOut += moneyOut;
 
-      const isRecentlyActive = user.lastActiveAt && new Date(user.lastActiveAt) >= sevenDaysAgo;
+      const isRecentlyActive = Boolean(
+        (user.lastActiveAt && new Date(user.lastActiveAt) >= sevenDaysAgo) ||
+        (user.createdAt && new Date(user.createdAt) >= thirtyDaysAgo) ||
+        user.state === UserState.READY ||
+        user.state === UserState.ACTIVE_USER ||
+        user.state === UserState.NEW ||
+        user.loginCount > 0
+      );
+
       let activityStatus: 'ACTIVE' | 'INACTIVE' | 'FROZEN' | 'BANNED' = isRecentlyActive ? 'ACTIVE' : 'INACTIVE';
       if (user.state === UserState.SUSPENDED_USER) activityStatus = 'FROZEN';
       if (user.state === UserState.BANNED_USER) activityStatus = 'BANNED';
@@ -181,6 +206,7 @@ export class UserInvestigationService {
         ? user.phoneNumber
         : (user.telegramUsername ? `@${user.telegramUsername}` : user.telegramUserId.toString());
 
+      const titanId = user.identityId || user.id || `titan_${user.telegramUserId}`;
       const hasSharedDevice = Boolean(user.lastActiveIp && (ipCounts.get(user.lastActiveIp) || 0) > 1);
 
       const flags: string[] = [];
@@ -191,16 +217,13 @@ export class UserInvestigationService {
       return {
         id: user.telegramUserId.toString(),
         telegramId: user.telegramUserId.toString(),
+        titanId,
         phoneNumber: user.phoneNumber || null,
         primaryIdentifier,
         joinChannel,
         activityStatus,
         lastActiveIp: user.lastActiveIp || null,
         hasSharedDevice,
-        phoneNumber: user.phoneNumber || null,
-        primaryIdentifier,
-        joinChannel,
-        activityStatus,
         name: [user.firstName, user.lastName].filter(Boolean).join(' ') || `User ${primaryIdentifier}`,
         username: user.telegramUsername ? `@${user.telegramUsername}` : (user.phoneNumber || 'No handle'),
         state: user.state,

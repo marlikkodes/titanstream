@@ -28,6 +28,8 @@ export interface RegisterIdentityDto {
   firstName?: string;
   lastName?: string;
   telegramUsername?: string;
+  phoneNumber?: string;
+  phoneVerified?: boolean;
   languageCode?: string;
   metadata?: Record<string, any>;
 }

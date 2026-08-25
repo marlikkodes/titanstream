@@ -120,6 +120,7 @@ export class IdentityMasterEngineService {
         });
 
         const isTelegram = dto.provider === IdentityProvider.TELEGRAM;
+        const isWhatsapp = dto.provider === IdentityProvider.WHATSAPP;
         const telegramUserIdBig = isTelegram && /^\d+$/.test(normalizedId) ? BigInt(normalizedId) : BigInt(normalizedId.replace(/\D/g, '').slice(0, 15) || Date.now());
 
         // 2. Create User (id = identity.id to guarantee User.id === UniversalIdentity.id)
@@ -128,12 +129,15 @@ export class IdentityMasterEngineService {
             id: identity.id,
             identityId: identity.id,
             telegramUserId: telegramUserIdBig,
-            firstName: dto.firstName || dto.displayName || `${dto.provider}_User`,
+            firstName: dto.firstName || dto.displayName || (isWhatsapp ? `WhatsApp User (${normalizedId.slice(-4)})` : `User_${normalizedId}`),
             lastName: dto.lastName,
             telegramUsername: dto.telegramUsername,
+            phoneNumber: isWhatsapp || dto.phoneNumber ? (dto.phoneNumber || normalizedId) : undefined,
+            phoneVerified: isWhatsapp || Boolean(dto.phoneVerified),
+            phoneVerifiedAt: isWhatsapp ? new Date() : undefined,
             languageCode: dto.languageCode || 'en',
             photoUrl: dto.avatarUrl,
-            state: UserState.NEW,
+            state: UserState.READY,
             lastActiveAt: new Date(),
             lastLoginAt: new Date(),
             loginCount: 1,
