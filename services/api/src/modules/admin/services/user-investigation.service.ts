@@ -337,27 +337,58 @@ export class UserInvestigationService {
         },
       });
     } else {
-      let telegramUserId: bigint;
-      try {
-        telegramUserId = typeof rawId === 'bigint' ? rawId : BigInt(rawId);
-      } catch {
-        throw new BadRequestException(`INVALID_USER_ID: '${rawId}' is not a valid User ID`);
+      const clean = String(rawId).trim();
+      let telegramUserId: bigint | undefined;
+      if (/^\d+$/.test(clean)) {
+        try {
+          telegramUserId = BigInt(clean);
+        } catch {
+          // ignore
+        }
       }
-      user = await this.prisma.user.findUnique({
-        where: { telegramUserId },
-        include: {
-          financialAccount: true,
-          crystalAccount: true,
-          userMachines: true,
-          onboardingProgress: true,
-          referralCode: true,
-          referralAsReferrer: { take: 10 },
-          referralAsReferee: true,
-          rewards: { orderBy: { createdAt: 'desc' }, take: 10 },
-          adminNotes: { orderBy: { createdAt: 'desc' } },
-          settlementSessions: { orderBy: { createdAt: 'desc' }, take: 15 },
-        },
-      });
+
+      if (telegramUserId) {
+        user = await this.prisma.user.findUnique({
+          where: { telegramUserId },
+          include: {
+            financialAccount: true,
+            crystalAccount: true,
+            userMachines: true,
+            onboardingProgress: true,
+            referralCode: true,
+            referralAsReferrer: { take: 10 },
+            referralAsReferee: true,
+            rewards: { orderBy: { createdAt: 'desc' }, take: 10 },
+            adminNotes: { orderBy: { createdAt: 'desc' } },
+            settlementSessions: { orderBy: { createdAt: 'desc' }, take: 15 },
+          },
+        });
+      }
+
+      if (!user) {
+        const phoneFormatted = clean.startsWith('+') ? clean : '+' + clean;
+        user = await this.prisma.user.findFirst({
+          where: {
+            OR: [
+              { phoneNumber: clean },
+              { phoneNumber: phoneFormatted },
+              { id: clean },
+            ],
+          },
+          include: {
+            financialAccount: true,
+            crystalAccount: true,
+            userMachines: true,
+            onboardingProgress: true,
+            referralCode: true,
+            referralAsReferrer: { take: 10 },
+            referralAsReferee: true,
+            rewards: { orderBy: { createdAt: 'desc' }, take: 10 },
+            adminNotes: { orderBy: { createdAt: 'desc' } },
+            settlementSessions: { orderBy: { createdAt: 'desc' }, take: 15 },
+          },
+        });
+      }
     }
 
     if (!user) throw new NotFoundException(`USER_NOT_FOUND: User ID ${rawId.toString()} does not exist`);

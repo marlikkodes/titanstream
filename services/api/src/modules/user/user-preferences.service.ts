@@ -19,11 +19,43 @@ export class UserPreferencesService {
     if (isUuid) {
       user = await this.prisma.user.findUnique({ where: { id: userKey as string } });
     } else {
-      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
-      user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+      const clean = String(userKey).trim();
+      let telegramUserId: bigint | undefined;
+      if (/^\d+$/.test(clean)) {
+        try {
+          telegramUserId = BigInt(clean);
+        } catch {
+          // ignore
+        }
+      }
+
+      if (telegramUserId) {
+        user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+      }
+
+      if (!user) {
+        const phoneFormatted = clean.startsWith('+') ? clean : '+' + clean;
+        user = await this.prisma.user.findFirst({
+          where: {
+            OR: [
+              { phoneNumber: clean },
+              { phoneNumber: phoneFormatted },
+              { id: clean },
+            ],
+          },
+        });
+      }
     }
 
-    if (!user) throw new NotFoundException('USER_NOT_FOUND');
+    if (!user) {
+      return {
+        userId: String(userKey),
+        authenticationMethod: 'WEB',
+        notificationChannel: 'WEB',
+        preferredShareChannel: 'WEB',
+        settings: {},
+      };
+    }
 
     let prefs = await this.prisma.userPreferences.findFirst({
       where: { telegramUserId: user.telegramUserId || undefined },

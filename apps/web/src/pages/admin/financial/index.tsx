@@ -127,8 +127,11 @@ export const FinancialControlCenterPage: React.FC = () => {
       api.get('/admin/financial/assets').catch(() => ({ data: [] })),
     ])
       .then(([ovRes, assetRes]) => {
-        if (ovRes.data) setOverview(ovRes.data);
-        if (assetRes.data) setAssetMetrics(assetRes.data);
+        if (ovRes.data) setOverview(ovRes.data?.data || ovRes.data);
+        const raw = assetRes.data?.data || assetRes.data;
+        if (Array.isArray(raw)) setAssetMetrics(raw);
+        else if (Array.isArray(raw?.items)) setAssetMetrics(raw.items);
+        else setAssetMetrics([]);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -140,8 +143,11 @@ export const FinancialControlCenterPage: React.FC = () => {
       params: { page: ledgerPage, limit: 20, assetCode: ledgerAssetFilter, search: ledgerSearch },
     })
       .then((res) => {
-        setLedgerEntries(res.data?.items || []);
-        setLedgerTotal(res.data?.pagination?.total || 0);
+        const raw = res.data?.data || res.data;
+        if (Array.isArray(raw)) setLedgerEntries(raw);
+        else if (Array.isArray(raw?.items)) setLedgerEntries(raw.items);
+        else setLedgerEntries([]);
+        setLedgerTotal(res.data?.pagination?.total || raw?.total || 0);
       })
       .catch((err) => showToast(err.response?.data?.message || 'Failed to fetch ledger entries', 'error'))
       .finally(() => setLedgerLoading(false));
@@ -151,7 +157,12 @@ export const FinancialControlCenterPage: React.FC = () => {
   const fetchWithdrawals = useCallback(() => {
     setWithdrawalsLoading(true);
     api.get('/admin/financial/withdrawals', { params: { limit: 20 } })
-      .then((res) => setWithdrawals(res.data?.items || []))
+      .then((res) => {
+        const raw = res.data?.data || res.data;
+        if (Array.isArray(raw)) setWithdrawals(raw);
+        else if (Array.isArray(raw?.items)) setWithdrawals(raw.items);
+        else setWithdrawals([]);
+      })
       .catch(() => setWithdrawals([]))
       .finally(() => setWithdrawalsLoading(false));
   }, []);
@@ -160,7 +171,12 @@ export const FinancialControlCenterPage: React.FC = () => {
   const fetchDeposits = useCallback(() => {
     setDepositsLoading(true);
     api.get('/admin/financial/deposits', { params: { limit: 20 } })
-      .then((res) => setDeposits(res.data?.items || []))
+      .then((res) => {
+        const raw = res.data?.data || res.data;
+        if (Array.isArray(raw)) setDeposits(raw);
+        else if (Array.isArray(raw?.items)) setDeposits(raw.items);
+        else setDeposits([]);
+      })
       .catch(() => setDeposits([]))
       .finally(() => setDepositsLoading(false));
   }, []);
@@ -168,7 +184,12 @@ export const FinancialControlCenterPage: React.FC = () => {
   // Fetch Settlement Providers
   const fetchProviders = useCallback(() => {
     api.get('/admin/financial/settlement-center')
-      .then((res) => setProviders(res.data || []))
+      .then((res) => {
+        const raw = res.data?.data || res.data;
+        if (Array.isArray(raw)) setProviders(raw);
+        else if (Array.isArray(raw?.providers)) setProviders(raw.providers);
+        else setProviders([]);
+      })
       .catch(() => setProviders([]));
   }, []);
 

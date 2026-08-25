@@ -139,16 +139,28 @@ export const TreasuryPage: React.FC = () => {
     try {
       if (workstationTab === 'DEPOSITS') {
         const res = await api.get('/admin/financial/deposits', { params: { limit: 20 } }).catch(() => null);
-        setDepositsList(res?.data?.items || res?.data?.data || res?.data || []);
+        const raw = res?.data;
+        if (Array.isArray(raw)) setDepositsList(raw);
+        else if (Array.isArray(raw?.items)) setDepositsList(raw.items);
+        else if (Array.isArray(raw?.data)) setDepositsList(raw.data);
+        else if (Array.isArray(raw?.data?.items)) setDepositsList(raw.data.items);
+        else setDepositsList([]);
       } else if (workstationTab === 'WITHDRAWALS') {
         const res = await api.get('/admin/financial/withdrawals', { params: { limit: 20 } }).catch(() => null);
-        setWithdrawalsList(res?.data?.items || res?.data?.data || res?.data || []);
+        const raw = res?.data;
+        if (Array.isArray(raw)) setWithdrawalsList(raw);
+        else if (Array.isArray(raw?.items)) setWithdrawalsList(raw.items);
+        else if (Array.isArray(raw?.data)) setWithdrawalsList(raw.data);
+        else if (Array.isArray(raw?.data?.items)) setWithdrawalsList(raw.data.items);
+        else setWithdrawalsList([]);
       } else if (workstationTab === 'SETTLEMENTS') {
         const res = await api.get('/admin/financial/settlement-center').catch(() => null);
         setSettlementMetrics(res?.data?.data || res?.data);
       }
     } catch (err) {
       console.warn('Failed to load workstation desk data:', err);
+      setDepositsList([]);
+      setWithdrawalsList([]);
     }
   }, [workstationTab]);
 
@@ -679,9 +691,9 @@ export const TreasuryPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 font-mono">
-                  {depositsList.map((dep) => (
+                  {(Array.isArray(depositsList) ? depositsList : []).map((dep) => (
                     <tr key={dep.id} className="hover:bg-white/5">
-                      <td className="py-2.5 px-3 font-bold text-text-primary">#{dep.id.slice(0, 8)}...</td>
+                      <td className="py-2.5 px-3 font-bold text-text-primary">#{dep.id?.slice(0, 8) || dep.id}...</td>
                       <td className="py-2.5 px-3 text-text-secondary">{dep.userId || dep.telegramUserId}</td>
                       <td className="py-2.5 px-3">{dep.providerId || dep.paymentMethod || 'PESAPAL'}</td>
                       <td className="py-2.5 px-3 text-right font-bold text-usdt-green">${Number(dep.expectedCryptoAmount || dep.amount || 0).toFixed(2)}</td>
@@ -700,7 +712,7 @@ export const TreasuryPage: React.FC = () => {
                       </td>
                     </tr>
                   ))}
-                  {depositsList.length === 0 && (
+                  {(!Array.isArray(depositsList) || depositsList.length === 0) && (
                     <tr>
                       <td colSpan={6} className="py-6 text-center text-text-tertiary font-sans">
                         No pending unconfirmed deposit sessions found.
@@ -729,9 +741,9 @@ export const TreasuryPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 font-mono">
-                  {withdrawalsList.map((wth) => (
+                  {(Array.isArray(withdrawalsList) ? withdrawalsList : []).map((wth) => (
                     <tr key={wth.id} className="hover:bg-white/5">
-                      <td className="py-2.5 px-3 font-bold text-text-primary">#{wth.id.slice(0, 8)}...</td>
+                      <td className="py-2.5 px-3 font-bold text-text-primary">#{wth.id?.slice(0, 8) || wth.id}...</td>
                       <td className="py-2.5 px-3 text-text-secondary">{wth.userId || wth.telegramUserId}</td>
                       <td className="py-2.5 px-3">{wth.paymentMethod || 'MOBILE_MONEY'}</td>
                       <td className="py-2.5 px-3 text-right font-bold text-amber-400">${Number(wth.expectedCryptoAmount || wth.amount || 0).toFixed(2)}</td>
@@ -758,7 +770,7 @@ export const TreasuryPage: React.FC = () => {
                       </td>
                     </tr>
                   ))}
-                  {withdrawalsList.length === 0 && (
+                  {(!Array.isArray(withdrawalsList) || withdrawalsList.length === 0) && (
                     <tr>
                       <td colSpan={6} className="py-6 text-center text-text-tertiary font-sans">
                         No pending withdrawal requests awaiting operator decision.

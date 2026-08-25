@@ -135,15 +135,28 @@ const stateBadge = (state: string) => {
   }
 };
 
-const channelBadge = (channel?: string) => {
-  const ch = channel || 'TELEGRAM';
-  if (ch === 'WHATSAPP') {
-    return <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">WHATSAPP</span>;
+const channelBadge = (channel?: string, name?: string, phone?: string) => {
+  const isWa = channel === 'WHATSAPP' || (name && name.toLowerCase().includes('whatsapp')) || Boolean(phone && phone.length > 5);
+  if (isWa) {
+    return (
+      <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 w-fit shadow-sm">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        WHATSAPP
+      </span>
+    );
   }
-  if (ch === 'WEB') {
-    return <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-400 border border-purple-500/30">WEB APP</span>;
+  if (channel === 'WEB') {
+    return (
+      <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center gap-1 w-fit shadow-sm">
+        WEB APP
+      </span>
+    );
   }
-  return <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30">TELEGRAM</span>;
+  return (
+    <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center gap-1 w-fit shadow-sm">
+      TELEGRAM
+    </span>
+  );
 };
 
 const columns: Column<UserSummaryItem>[] = [
@@ -156,7 +169,7 @@ const columns: Column<UserSummaryItem>[] = [
       <div>
         <div className="font-bold text-text-primary flex flex-wrap items-center gap-1.5">
           <span>{u.name}</span>
-          {channelBadge(u.joinChannel)}
+          {channelBadge(u.joinChannel, u.name, u.phoneNumber)}
           {u.hasSharedDevice && (
             <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase tracking-wider bg-amber-500/30 text-amber-300 border border-amber-400/40" title={`Shared IP / Multi-Account Device: ${u.lastActiveIp || 'Same Device'}`}>
               ⚠️ SHARED IP
@@ -397,8 +410,81 @@ export const UsersPage: React.FC = () => {
     return true;
   });
 
-  const safeNotes = Array.isArray(notesList) ? notesList : [];
-  const safeTimeline = Array.isArray(timeline) ? timeline : [];
+const ChannelBreakdownCard = ({
+  whatsappCount,
+  telegramCount,
+  webCount,
+  totalUsers,
+}: {
+  whatsappCount: number;
+  telegramCount: number;
+  webCount: number;
+  totalUsers: number;
+}) => {
+  const safeTotal = Math.max(totalUsers, whatsappCount + telegramCount + webCount, 1);
+  const waPercent = Math.round((whatsappCount / safeTotal) * 100);
+  const tgPercent = Math.round((telegramCount / safeTotal) * 100);
+
+  return (
+    <div className="bg-card-bg border border-white/10 rounded-2xl p-4 shadow-lg flex flex-col justify-between space-y-3 relative overflow-hidden group hover:border-usdt-green/30 transition-all">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-usdt-green/10 border border-usdt-green/30 text-usdt-green flex items-center justify-center font-black text-xs shadow-inner">
+            <Zap size={16} />
+          </div>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-text-tertiary block">
+              Channel Distribution
+            </span>
+            <span className="text-xs font-black text-text-primary">
+              Omnichannel Breakdown
+            </span>
+          </div>
+        </div>
+        <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded-full bg-usdt-green/15 text-usdt-green border border-usdt-green/30">
+          {safeTotal} Total
+        </span>
+      </div>
+
+      {/* Progress Bar Visual Split */}
+      <div className="w-full h-2 rounded-full bg-control-bg overflow-hidden flex p-0.5 gap-0.5 border border-white/5">
+        <div
+          style={{ width: `${Math.max(waPercent, whatsappCount > 0 ? 15 : 0)}%` }}
+          className="h-full bg-emerald-400 rounded-full transition-all duration-500 shadow-sm shadow-emerald-400/50"
+          title={`WhatsApp: ${whatsappCount} (${waPercent}%)`}
+        />
+        <div
+          style={{ width: `${Math.max(tgPercent, telegramCount > 0 ? 15 : 0)}%` }}
+          className="h-full bg-sky-400 rounded-full transition-all duration-500 shadow-sm shadow-sky-400/50"
+          title={`Telegram: ${telegramCount} (${tgPercent}%)`}
+        />
+      </div>
+
+      {/* Breakdown Badges */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wide">WhatsApp</span>
+          </div>
+          <span className="text-xs font-mono font-black text-emerald-300">{whatsappCount}</span>
+        </div>
+
+        <div className="px-2.5 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-sky-400" />
+            <span className="text-[10px] font-black text-sky-400 uppercase tracking-wide">Telegram</span>
+          </div>
+          <span className="text-xs font-mono font-black text-sky-300">{telegramCount}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+  const waCount = summaryStats.whatsappUsers ?? usersList.filter(u => u.joinChannel === 'WHATSAPP' || (u.name && u.name.toLowerCase().includes('whatsapp')) || Boolean(u.phoneNumber)).length;
+  const tgCount = summaryStats.telegramUsers ?? usersList.filter(u => u.joinChannel === 'TELEGRAM' && !u.name?.toLowerCase().includes('whatsapp') && !u.phoneNumber).length;
+  const webCount = usersList.filter(u => u.joinChannel === 'WEB').length;
 
   return (
     <div className="space-y-4">
@@ -412,13 +498,11 @@ export const UsersPage: React.FC = () => {
           icon="Users"
           variant="green"
         />
-        <MetricCard
-          label="Channel Breakdown"
-          value={`📱 WA: ${summaryStats.whatsappUsers} | ✈️ TG: ${summaryStats.telegramUsers}`}
-          subValue="Multi-Channel Omnichannel Identity"
-          change={0}
-          icon="Zap"
-          variant="blue"
+        <ChannelBreakdownCard
+          whatsappCount={waCount}
+          telegramCount={tgCount}
+          webCount={webCount}
+          totalUsers={totalCount}
         />
         <MetricCard
           label="Aggregate Money In (Deposits)"
