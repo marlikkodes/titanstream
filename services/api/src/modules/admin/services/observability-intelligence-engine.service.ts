@@ -58,12 +58,12 @@ export class ObservabilityIntelligenceEngineService {
     ] = await Promise.all([
       this.prisma.settlementSession.aggregate({
         where: { sessionType: SettlementType.DEPOSIT, status: SettlementStatus.COMPLETED },
-        _sum: { requestedAmount: true },
+        _sum: { expectedCryptoAmount: true },
         _count: true,
       }),
       this.prisma.settlementSession.aggregate({
         where: { sessionType: SettlementType.PAYOUT, status: SettlementStatus.COMPLETED },
-        _sum: { requestedAmount: true },
+        _sum: { expectedCryptoAmount: true },
         _count: true,
       }),
       this.prisma.ledgerEntry.aggregate({
@@ -78,8 +78,8 @@ export class ObservabilityIntelligenceEngineService {
       this.prisma.supportCase.count({ where: { status: { in: ['OPEN', 'ASSIGNED'] } } }),
     ]);
 
-    const depositVol = Number(totalDeposits._sum.requestedAmount || 0);
-    const payoutVol = Number(totalPayouts._sum.requestedAmount || 0);
+    const depositVol = Number(totalDeposits._sum.expectedCryptoAmount || 0);
+    const payoutVol = Number(totalPayouts._sum.expectedCryptoAmount || 0);
     const netRevenue = depositVol - payoutVol;
     const totalLedgerVol = Number(ledgerVolume._sum.amount || 0);
 
@@ -122,13 +122,13 @@ export class ObservabilityIntelligenceEngineService {
     const [deposits, payouts, ledgerEntries] = await Promise.all([
       this.prisma.settlementSession.findMany({
         where: { sessionType: SettlementType.DEPOSIT, status: SettlementStatus.COMPLETED, asset },
-        select: { requestedAmount: true, createdAt: true },
+        select: { requestedAmount: true, expectedCryptoAmount: true, exchangeRate: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
       this.prisma.settlementSession.findMany({
         where: { sessionType: SettlementType.PAYOUT, status: SettlementStatus.COMPLETED, asset },
-        select: { requestedAmount: true, createdAt: true },
+        select: { requestedAmount: true, expectedCryptoAmount: true, exchangeRate: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
@@ -140,10 +140,18 @@ export class ObservabilityIntelligenceEngineService {
       }),
     ]);
 
+    const getUsdtVal = (d: any) => {
+      const exp = Number(d.expectedCryptoAmount || 0);
+      if (exp > 0) return exp;
+      const raw = Number(d.requestedAmount || 0);
+      const rate = Number(d.exchangeRate || 1);
+      return (raw > 0 && rate > 1) ? raw / rate : raw;
+    };
+
     return {
       assetCode: asset,
-      depositsHistory: deposits.map((d) => ({ amount: Number(d.requestedAmount), date: d.createdAt })),
-      payoutsHistory: payouts.map((p) => ({ amount: Number(p.requestedAmount), date: p.createdAt })),
+      depositsHistory: deposits.map((d) => ({ amount: getUsdtVal(d), date: d.createdAt })),
+      payoutsHistory: payouts.map((p) => ({ amount: getUsdtVal(p), date: p.createdAt })),
       ledgerHistory: ledgerEntries.map((l) => ({ amount: Number(l.amount), type: l.entryType, date: l.createdAt })),
     };
   }
@@ -206,17 +214,17 @@ export class ObservabilityIntelligenceEngineService {
     const [recentDeposits, recentPayouts, activeFleetCount] = await Promise.all([
       this.prisma.settlementSession.aggregate({
         where: { sessionType: SettlementType.DEPOSIT, status: SettlementStatus.COMPLETED },
-        _sum: { requestedAmount: true },
+        _sum: { expectedCryptoAmount: true },
       }),
       this.prisma.settlementSession.aggregate({
         where: { sessionType: SettlementType.PAYOUT, status: SettlementStatus.COMPLETED },
-        _sum: { requestedAmount: true },
+        _sum: { expectedCryptoAmount: true },
       }),
       this.prisma.userMachineFleetItem.count({ where: { status: 'ACTIVE' } }),
     ]);
 
-    const historicalDepositTotal = Number(recentDeposits._sum.requestedAmount || 100);
-    const historicalPayoutTotal = Number(recentPayouts._sum.requestedAmount || 50);
+    const historicalDepositTotal = Number(recentDeposits._sum.expectedCryptoAmount || 0);
+    const historicalPayoutTotal = Number(recentPayouts._sum.expectedCryptoAmount || 0);
 
     const estimatedDailyDepositRate = historicalDepositTotal / 30;
     const estimatedDailyPayoutRate = historicalPayoutTotal / 30;
