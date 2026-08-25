@@ -61,4 +61,36 @@ export class AdminMerchantController {
     const tx = await this.matchingService.ingestMerchantTransaction(body);
     return { success: true, data: tx };
   }
+
+  @Get('merchants')
+  @Permissions(AdminPermission.MERCHANT_VIEW)
+  async listMerchants() {
+    const data = await this.adminMerchantService.listMerchants();
+    return { success: true, data };
+  }
+
+  @Post('merchants')
+  @Permissions(AdminPermission.MERCHANT_MANAGE)
+  async upsertMerchant(@Body() body: {
+    id?: string;
+    network: string;
+    merchantName: string;
+    merchantNumber: string;
+    country?: string;
+    currency?: string;
+    status?: string;
+    dailyLimit?: number | string;
+    perTransactionLimit?: number | string;
+  }) {
+    return this.adminMerchantService.upsertMerchant(body);
+  }
+
+  @Post('merchants/:id/status')
+  @Permissions(AdminPermission.MERCHANT_MANAGE)
+  async toggleStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string },
+  ) {
+    return this.adminMerchantService.toggleMerchantStatus(id, body?.status || 'ACTIVE');
+  }
 }

@@ -486,6 +486,9 @@ const ChannelBreakdownCard = ({
   const tgCount = summaryStats.telegramUsers ?? usersList.filter(u => u.joinChannel === 'TELEGRAM' && !u.name?.toLowerCase().includes('whatsapp') && !u.phoneNumber).length;
   const webCount = usersList.filter(u => u.joinChannel === 'WEB').length;
 
+  const safeNotes = Array.isArray(notesList) ? notesList : [];
+  const safeTimeline = Array.isArray(timeline) ? timeline : [];
+
   return (
     <div className="space-y-4">
       {/* Top Metrics Cards */}

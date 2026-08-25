@@ -78,16 +78,14 @@ export class AdminMerchantService {
 
     // Execute matching
     const result = await this.matchingService.attemptMatchClaim(claimId);
-    return {
-      success: result.matched,
-      claimId,
-      matched: result.matched,
-      failureReason: result.failureReason,
-    };
+      return { success: true, settlementId: claim.settlementId, status: 'COMPLETED' };
+    }
+
+    throw new BadRequestException(`VERIFICATION_FAILED: ${res.reason}`);
   }
 
   /**
-   * Admin "Reject" action.
+   * Admin "Reject Claim" action.
    */
   async rejectClaim(claimId: string, adminUserId: string, reason?: string) {
     const claim = await this.prisma.merchantPaymentClaim.findUnique({
@@ -101,12 +99,88 @@ export class AdminMerchantService {
     await this.prisma.merchantPaymentClaim.update({
       where: { id: claimId },
       data: {
-        status: 'REJECTED',
-        failureReason: reason || 'REJECTED_BY_ADMIN',
+        status: 'EXPIRED',
+        failureReason: MatchingFailureReason.MANUAL_REJECTED,
       },
     });
 
-    this.logger.log(`[ADMIN_REJECT_CLAIM] Admin [${adminUserId}] rejected claim [${claimId}]: ${reason}`);
-    return { success: true, claimId, status: 'REJECTED' };
+    this.logger.log(`[AdminMerchant] Claim ${claimId} rejected by admin ${adminUserId}. Reason: ${reason || 'Manual Admin Rejection'}`);
+    return { success: true, claimId, status: 'EXPIRED' };
+  }
+
+  /**
+   * List all registered Mobile Money Merchants & Paybills.
+   */
+  async listMerchants() {
+    const merchants = await this.prisma.mobileMoneyMerchant.findMany({
+      orderBy: [{ priority: 'asc' }, { createdAt: 'desc' }],
+    });
+    return merchants.map((m) => ({
+      id: m.id,
+      network: m.network,
+      merchantName: m.merchantName,
+      merchantNumber: m.merchantNumber,
+      country: m.country,
+      currency: m.currency,
+      status: m.status,
+      priority: m.priority,
+      dailyLimit: m.dailyLimit.toString(),
+      perTransactionLimit: m.perTransactionLimit.toString(),
+      createdAt: m.createdAt,
+    }));
+  }
+
+  /**
+   * Create or update a Mobile Money Merchant Paybill code.
+   */
+  async upsertMerchant(dto: {
+    id?: string;
+    network: string;
+    merchantName: string;
+    merchantNumber: string;
+    country?: string;
+    currency?: string;
+    status?: string;
+    dailyLimit?: number | string;
+    perTransactionLimit?: number | string;
+  }) {
+    if (!dto.network || !dto.merchantName || !dto.merchantNumber) {
+      throw new BadRequestException('MISSING_FIELDS: network, merchantName, and merchantNumber are required');
+    }
+
+    const data: any = {
+      network: dto.network.toUpperCase(),
+      merchantName: dto.merchantName.trim(),
+      merchantNumber: dto.merchantNumber.trim(),
+      country: (dto.country || 'UG').toUpperCase(),
+      currency: (dto.currency || 'UGX').toUpperCase(),
+      status: dto.status || 'ACTIVE',
+      dailyLimit: dto.dailyLimit ? Number(dto.dailyLimit) : 10000000,
+      perTransactionLimit: dto.perTransactionLimit ? Number(dto.perTransactionLimit) : 5000000,
+    };
+
+    if (dto.id) {
+      const updated = await this.prisma.mobileMoneyMerchant.update({
+        where: { id: dto.id },
+        data,
+      });
+      return { success: true, merchant: updated };
+    }
+
+    const created = await this.prisma.mobileMoneyMerchant.create({
+      data,
+    });
+    return { success: true, merchant: created };
+  }
+
+  /**
+   * Toggle merchant active / paused status.
+   */
+  async toggleMerchantStatus(id: string, status: string) {
+    const updated = await this.prisma.mobileMoneyMerchant.update({
+      where: { id },
+      data: { status: status.toUpperCase() },
+    });
+    return { success: true, merchant: updated };
   }
 }

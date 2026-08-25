@@ -66,10 +66,40 @@ export const TreasuryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Workstation Desk Tabs State
-  const [workstationTab, setWorkstationTab] = useState<'QUEUE' | 'DEPOSITS' | 'WITHDRAWALS' | 'SETTLEMENTS'>('QUEUE');
+  const [workstationTab, setWorkstationTab] = useState<'QUEUE' | 'DEPOSITS' | 'WITHDRAWALS' | 'SETTLEMENTS' | 'USDT_GATEWAY' | 'MERCHANT_CODES'>('QUEUE');
   const [depositsList, setDepositsList] = useState<any[]>([]);
   const [withdrawalsList, setWithdrawalsList] = useState<any[]>([]);
   const [settlementMetrics, setSettlementMetrics] = useState<any>(null);
+
+  // USDT Gateway & Merchant Codes State
+  const [usdtConfig, setUsdtConfig] = useState<{
+    enabled: boolean;
+    network: string;
+    receivingAddress: string;
+    tokenContract: string;
+    requiredConfirmations: number;
+    pollIntervalSeconds: number;
+  }>({
+    enabled: true,
+    network: 'TRON',
+    receivingAddress: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+    tokenContract: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+    requiredConfirmations: 19,
+    pollIntervalSeconds: 10,
+  });
+  const [usdtTxList, setUsdtTxList] = useState<any[]>([]);
+  const [updatingUsdt, setUpdatingUsdt] = useState(false);
+  const [newUsdtAddress, setNewUsdtAddress] = useState('');
+
+  const [merchantsList, setMerchantsList] = useState<any[]>([]);
+  const [showMerchantModal, setShowMerchantModal] = useState(false);
+  const [merchantNetwork, setMerchantNetwork] = useState('PESAPAL');
+  const [merchantName, setMerchantName] = useState('');
+  const [merchantNumber, setMerchantNumber] = useState('');
+  const [merchantCountry, setMerchantCountry] = useState('UG');
+  const [merchantCurrency, setMerchantCurrency] = useState('UGX');
+  const [merchantDailyLimit, setMerchantDailyLimit] = useState('10000000');
+  const [submittingMerchant, setSubmittingMerchant] = useState(false);
 
   // Simulation Lab State
   const [simDays, setSimDays] = useState<30 | 90 | 180>(90);
@@ -156,6 +186,23 @@ export const TreasuryPage: React.FC = () => {
       } else if (workstationTab === 'SETTLEMENTS') {
         const res = await api.get('/admin/financial/settlement-center').catch(() => null);
         setSettlementMetrics(res?.data?.data || res?.data);
+      } else if (workstationTab === 'USDT_GATEWAY') {
+        const [configRes, txRes] = await Promise.all([
+          api.get('/admin/settlement/usdt/config').catch(() => null),
+          api.get('/admin/settlement/usdt/transactions').catch(() => null),
+        ]);
+        if (configRes?.data) {
+          setUsdtConfig(configRes.data);
+          setNewUsdtAddress(configRes.data.receivingAddress || '');
+        }
+        if (Array.isArray(txRes?.data?.data)) setUsdtTxList(txRes.data.data);
+        else if (Array.isArray(txRes?.data)) setUsdtTxList(txRes.data);
+        else setUsdtTxList([]);
+      } else if (workstationTab === 'MERCHANT_CODES') {
+        const res = await api.get('/admin/merchant-settlements/merchants').catch(() => null);
+        if (Array.isArray(res?.data?.data)) setMerchantsList(res.data.data);
+        else if (Array.isArray(res?.data)) setMerchantsList(res.data);
+        else setMerchantsList([]);
       }
     } catch (err) {
       console.warn('Failed to load workstation desk data:', err);
@@ -163,6 +210,69 @@ export const TreasuryPage: React.FC = () => {
       setWithdrawalsList([]);
     }
   }, [workstationTab]);
+
+  const handleUpdateUsdtAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUsdtAddress.trim()) {
+      showToast('Receiving USDT address is required', 'error');
+      return;
+    }
+    setUpdatingUsdt(true);
+    try {
+      await api.post('/admin/settlement/usdt/config', {
+        receivingAddress: newUsdtAddress.trim(),
+        network: 'TRON',
+        tokenContract: usdtConfig.tokenContract,
+        requiredConfirmations: usdtConfig.requiredConfirmations,
+        reason: 'Admin updated receiving USDT wallet',
+      });
+      showToast('USDT receiving address updated successfully!', 'success');
+      fetchWorkstationData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to update USDT address', 'error');
+    } finally {
+      setUpdatingUsdt(false);
+    }
+  };
+
+  const handleSaveMerchant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!merchantName.trim() || !merchantNumber.trim()) {
+      showToast('Merchant Name and Paybill / Till Number are required', 'error');
+      return;
+    }
+    setSubmittingMerchant(true);
+    try {
+      await api.post('/admin/merchant-settlements/merchants', {
+        network: merchantNetwork,
+        merchantName: merchantName.trim(),
+        merchantNumber: merchantNumber.trim(),
+        country: merchantCountry,
+        currency: merchantCurrency,
+        dailyLimit: merchantDailyLimit,
+      });
+      showToast('Merchant Paybill code registered successfully!', 'success');
+      setShowMerchantModal(false);
+      setMerchantName('');
+      setMerchantNumber('');
+      fetchWorkstationData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to register merchant code', 'error');
+    } finally {
+      setSubmittingMerchant(false);
+    }
+  };
+
+  const handleToggleMerchantStatus = async (id: string, currentStatus: string) => {
+    const nextStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    try {
+      await api.post(`/admin/merchant-settlements/merchants/${id}/status`, { status: nextStatus });
+      showToast(`Merchant status changed to ${nextStatus}`, 'success');
+      fetchWorkstationData();
+    } catch (err: any) {
+      showToast('Failed to toggle merchant status', 'error');
+    }
+  };
 
   useEffect(() => {
     fetchTreasuryData();
@@ -632,6 +742,22 @@ export const TreasuryPage: React.FC = () => {
             >
               <RotateCcw size={14} /> Stuck Settlement Dispatcher
             </button>
+            <button
+              onClick={() => setWorkstationTab('USDT_GATEWAY')}
+              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
+                workstationTab === 'USDT_GATEWAY' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
+              }`}
+            >
+              <Zap size={14} /> USDT Wallet & TRC-20 Config
+            </button>
+            <button
+              onClick={() => setWorkstationTab('MERCHANT_CODES')}
+              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
+                workstationTab === 'MERCHANT_CODES' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
+              }`}
+            >
+              <CreditCard size={14} /> Mobile Money Merchant Codes ({merchantsList.length})
+            </button>
           </div>
 
           <span className="text-[10px] font-mono text-text-tertiary">Real-time Operator Dispatch Engine</span>
@@ -650,21 +776,28 @@ export const TreasuryPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="text-xs text-text-secondary mt-1">
-                    User Telegram: {order.telegramUserId} | Method: {order.paymentMethod}
+                    User ID: {order.userId} • Operator Verification Level: Required
                   </div>
                 </div>
-
-                <button
-                  onClick={() => triggerDualAuthAction(order.id, 'WITHDRAWAL_APPROVAL')}
-                  className="px-4 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-extrabold flex items-center gap-2 shadow-md hover:brightness-110"
-                >
-                  <Lock size={14} /> Dual-Auth Verify & Post
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleOperatorQueueAction(order.id, 'APPROVE')}
+                    className="px-3 py-1.5 rounded-lg bg-usdt-green text-app-bg font-extrabold text-xs flex items-center gap-1"
+                  >
+                    <Check size={14} /> Approve & Dispatch
+                  </button>
+                  <button
+                    onClick={() => handleOperatorQueueAction(order.id, 'REJECT')}
+                    className="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 font-extrabold text-xs flex items-center gap-1"
+                  >
+                    <X size={14} /> Reject
+                  </button>
+                </div>
               </div>
             ))}
             {verificationQueue.length === 0 && (
-              <div className="text-center py-6 text-xs text-text-tertiary">
-                🟢 Verification queue clear — No pending withdrawal/deposit orders awaiting action.
+              <div className="py-6 text-center text-text-tertiary font-sans text-xs">
+                Dual-authorization operator queue is clear. No items pending verification.
               </div>
             )}
           </div>
@@ -674,43 +807,38 @@ export const TreasuryPage: React.FC = () => {
         {workstationTab === 'DEPOSITS' && (
           <div className="space-y-3">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-white/10 text-text-tertiary font-extrabold uppercase text-[10px]">
-                    <th className="py-2.5 px-3">Session ID</th>
-                    <th className="py-2.5 px-3">User ID</th>
-                    <th className="py-2.5 px-3">Method</th>
-                    <th className="py-2.5 px-3 text-right">Amount</th>
-                    <th className="py-2.5 px-3 text-center">Status</th>
-                    <th className="py-2.5 px-3 text-right">Action</th>
+                  <tr className="border-b border-white/10 text-[10px] uppercase text-text-tertiary">
+                    <th className="py-2 px-3">Deposit Ref</th>
+                    <th className="py-2 px-3">User ID</th>
+                    <th className="py-2 px-3">Amount (USDT)</th>
+                    <th className="py-2 px-3">Rail / Method</th>
+                    <th className="py-2 px-3">Status</th>
+                    <th className="py-2 px-3 text-right">Created At</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 font-mono">
-                  {(Array.isArray(depositsList) ? depositsList : []).map((dep) => (
-                    <tr key={dep.id} className="hover:bg-white/5">
-                      <td className="py-2.5 px-3 font-bold text-text-primary">#{dep.id?.slice(0, 8) || dep.id}...</td>
-                      <td className="py-2.5 px-3 text-text-secondary">{dep.userId || dep.telegramUserId}</td>
-                      <td className="py-2.5 px-3">{dep.providerId || dep.paymentMethod || 'PESAPAL'}</td>
-                      <td className="py-2.5 px-3 text-right font-bold text-usdt-green">${Number(dep.expectedCryptoAmount || dep.amount || 0).toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center">
-                        <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 font-extrabold text-[10px]">
-                          {dep.status}
+                  {depositsList.map((dep: any) => (
+                    <tr key={dep.id} className="hover:bg-white/[0.02]">
+                      <td className="py-2.5 px-3 font-bold text-text-primary">{dep.reference || dep.id}</td>
+                      <td className="py-2.5 px-3 text-text-secondary">{dep.userId}</td>
+                      <td className="py-2.5 px-3 font-bold text-usdt-green">${(Number(dep.amount) || 0).toFixed(2)}</td>
+                      <td className="py-2.5 px-3 text-text-secondary">{dep.paymentRail || 'PESAPAL / MM'}</td>
+                      <td className="py-2.5 px-3">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-usdt-green/15 text-usdt-green border border-usdt-green/30">
+                          {dep.status || 'COMPLETED'}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <button
-                          onClick={() => handleVerifyDeposit(dep.id)}
-                          className="px-3 py-1 rounded-lg bg-usdt-green text-app-bg text-[10px] font-black uppercase flex items-center gap-1 ml-auto"
-                        >
-                          <Check size={12} /> Force Verify
-                        </button>
+                      <td className="py-2.5 px-3 text-right text-text-tertiary text-[11px]">
+                        {dep.createdAt ? new Date(dep.createdAt).toLocaleString() : 'Recent'}
                       </td>
                     </tr>
                   ))}
                   {(!Array.isArray(depositsList) || depositsList.length === 0) && (
                     <tr>
                       <td colSpan={6} className="py-6 text-center text-text-tertiary font-sans">
-                        No pending unconfirmed deposit sessions found.
+                        No verified deposits in current ledger window.
                       </td>
                     </tr>
                   )}
@@ -724,27 +852,27 @@ export const TreasuryPage: React.FC = () => {
         {workstationTab === 'WITHDRAWALS' && (
           <div className="space-y-3">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-white/10 text-text-tertiary font-extrabold uppercase text-[10px]">
-                    <th className="py-2.5 px-3">Session ID</th>
-                    <th className="py-2.5 px-3">User ID</th>
-                    <th className="py-2.5 px-3">Payout Method</th>
-                    <th className="py-2.5 px-3 text-right">Amount</th>
-                    <th className="py-2.5 px-3 text-center">Status</th>
-                    <th className="py-2.5 px-3 text-right">Actions</th>
+                  <tr className="border-b border-white/10 text-[10px] uppercase text-text-tertiary">
+                    <th className="py-2 px-3">Claim ID</th>
+                    <th className="py-2 px-3">User ID</th>
+                    <th className="py-2 px-3">Amount (USDT)</th>
+                    <th className="py-2 px-3">Destination</th>
+                    <th className="py-2 px-3">Status</th>
+                    <th className="py-2 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 font-mono">
-                  {(Array.isArray(withdrawalsList) ? withdrawalsList : []).map((wth) => (
-                    <tr key={wth.id} className="hover:bg-white/5">
-                      <td className="py-2.5 px-3 font-bold text-text-primary">#{wth.id?.slice(0, 8) || wth.id}...</td>
-                      <td className="py-2.5 px-3 text-text-secondary">{wth.userId || wth.telegramUserId}</td>
-                      <td className="py-2.5 px-3">{wth.paymentMethod || 'MOBILE_MONEY'}</td>
-                      <td className="py-2.5 px-3 text-right font-bold text-amber-400">${Number(wth.expectedCryptoAmount || wth.amount || 0).toFixed(2)}</td>
-                      <td className="py-2.5 px-3 text-center">
-                        <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 font-extrabold text-[10px]">
-                          {wth.status}
+                  {withdrawalsList.map((wth: any) => (
+                    <tr key={wth.id} className="hover:bg-white/[0.02]">
+                      <td className="py-2.5 px-3 font-bold text-text-primary">{wth.id}</td>
+                      <td className="py-2.5 px-3 text-text-secondary">{wth.userId}</td>
+                      <td className="py-2.5 px-3 font-bold text-amber-400">${(Number(wth.amount) || 0).toFixed(2)}</td>
+                      <td className="py-2.5 px-3 text-text-secondary">{wth.destinationAddress || wth.phoneNumber || 'TRC20'}</td>
+                      <td className="py-2.5 px-3">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          {wth.status || 'PENDING'}
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-right">
@@ -798,6 +926,187 @@ export const TreasuryPage: React.FC = () => {
               >
                 <RotateCcw size={12} /> Retry Session by ID
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: USDT WALLET & TRC-20 CONFIG */}
+        {workstationTab === 'USDT_GATEWAY' && (
+          <div className="space-y-4">
+            {/* USDT Config Bar */}
+            <form onSubmit={handleUpdateUsdtAddress} className="p-4 rounded-xl bg-control-bg border border-white/10 space-y-3">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/10 pb-3">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-text-primary flex items-center gap-1.5">
+                    <Zap size={14} className="text-usdt-green" /> USDT TRC-20 Receiving Wallet Configuration
+                  </h4>
+                  <p className="text-[11px] text-text-tertiary font-mono">
+                    Authoritative TRON TRC-20 Blockchain Wallet for Customer USDT Escrow Payments
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-black uppercase bg-usdt-green/15 text-usdt-green border border-usdt-green/30">
+                    NETWORK: {usdtConfig.network}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-black uppercase bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                    CONFIRMATIONS: {usdtConfig.requiredConfirmations}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="md:col-span-2 space-y-1">
+                  <label className="text-[10px] font-black uppercase text-text-tertiary block">
+                    Receiving USDT Wallet Address (TRC-20)
+                  </label>
+                  <input
+                    type="text"
+                    value={newUsdtAddress}
+                    onChange={(e) => setNewUsdtAddress(e.target.value)}
+                    placeholder="e.g. TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+                    className="w-full px-3 py-2 rounded-xl bg-card-bg border border-white/10 text-xs font-mono font-bold text-usdt-green focus:outline-none focus:border-usdt-green"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    disabled={updatingUsdt}
+                    className="w-full py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow hover:brightness-110 disabled:opacity-50"
+                  >
+                    <Check size={14} /> {updatingUsdt ? 'Updating...' : 'Update Receiving Wallet'}
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            {/* Blockchain Transactions List */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 text-[10px] uppercase text-text-tertiary">
+                    <th className="py-2 px-3">Transaction TxID</th>
+                    <th className="py-2 px-3">Amount</th>
+                    <th className="py-2 px-3">Confirmations</th>
+                    <th className="py-2 px-3">Status</th>
+                    <th className="py-2 px-3 text-right">Detected At</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 font-mono">
+                  {usdtTxList.map((tx: any) => (
+                    <tr key={tx.id || tx.txHash} className="hover:bg-white/[0.02]">
+                      <td className="py-2.5 px-3 font-bold text-text-primary text-[11px]">
+                        {tx.txHash ? `${tx.txHash.slice(0, 10)}...${tx.txHash.slice(-8)}` : tx.id}
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-usdt-green">
+                        ${(Number(tx.amount) || 0).toFixed(2)} USDT
+                      </td>
+                      <td className="py-2.5 px-3 text-text-secondary">
+                        {tx.confirmations || 19} / 19
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-usdt-green/15 text-usdt-green border border-usdt-green/30">
+                          {tx.status || 'CONFIRMED'}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-text-tertiary text-[11px]">
+                        {tx.createdAt ? new Date(tx.createdAt).toLocaleString() : 'Recent'}
+                      </td>
+                    </tr>
+                  ))}
+                  {usdtTxList.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-center text-text-tertiary font-sans">
+                        No recent USDT TRC-20 blockchain transactions detected on the receiving wallet address.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: MOBILE MONEY MERCHANT CODES */}
+        {workstationTab === 'MERCHANT_CODES' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-control-bg border border-white/10">
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-text-primary flex items-center gap-1.5">
+                  <CreditCard size={14} className="text-usdt-green" /> Registered Mobile Money & Pesapal Merchant Codes
+                </h4>
+                <p className="text-[11px] text-text-tertiary">
+                  Paybills, Till Numbers, and API Merchant Registrations for Customer Local Payments
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowMerchantModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow hover:brightness-110"
+              >
+                <PlusCircle size={14} /> Add Merchant Code
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 text-[10px] uppercase text-text-tertiary">
+                    <th className="py-2 px-3">Provider / Network</th>
+                    <th className="py-2 px-3">Merchant Name</th>
+                    <th className="py-2 px-3">Paybill / Till Number</th>
+                    <th className="py-2 px-3">Country / Currency</th>
+                    <th className="py-2 px-3">Daily Limit</th>
+                    <th className="py-2 px-3">Status</th>
+                    <th className="py-2 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 font-mono">
+                  {merchantsList.map((m: any) => (
+                    <tr key={m.id} className="hover:bg-white/[0.02]">
+                      <td className="py-2.5 px-3 font-bold text-usdt-green">
+                        {m.network}
+                      </td>
+                      <td className="py-2.5 px-3 text-text-primary font-bold">
+                        {m.merchantName}
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-amber-400">
+                        {m.merchantNumber}
+                      </td>
+                      <td className="py-2.5 px-3 text-text-secondary">
+                        {m.country} ({m.currency})
+                      </td>
+                      <td className="py-2.5 px-3 text-text-secondary">
+                        {Number(m.dailyLimit || 10000000).toLocaleString()} {m.currency}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                          m.status === 'ACTIVE'
+                            ? 'bg-usdt-green/15 text-usdt-green border border-usdt-green/30'
+                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        }`}>
+                          {m.status}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <button
+                          onClick={() => handleToggleMerchantStatus(m.id, m.status)}
+                          className="px-2.5 py-1 rounded-lg bg-control-bg border border-white/10 hover:bg-white/10 text-[10px] font-bold text-text-secondary"
+                        >
+                          {m.status === 'ACTIVE' ? 'Pause' : 'Activate'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {merchantsList.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="py-6 text-center text-text-tertiary font-sans">
+                        No mobile money merchant codes registered yet. Click &quot;Add Merchant Code&quot; to add Paybills or Till numbers.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -1199,6 +1508,104 @@ export const TreasuryPage: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* REGISTER MERCHANT MODAL */}
+      {showMerchantModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <form onSubmit={handleSaveMerchant} className="bg-card-bg border border-white/10 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-black uppercase tracking-wider text-text-primary flex items-center gap-1.5">
+                <CreditCard size={16} className="text-usdt-green" /> Register Merchant Paybill Code
+              </h3>
+              <button type="button" onClick={() => setShowMerchantModal(false)} className="text-text-tertiary hover:text-white">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase text-text-tertiary">Payment Network Provider</label>
+                <select
+                  value={merchantNetwork}
+                  onChange={(e) => setMerchantNetwork(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-control-bg border border-white/10 text-text-primary font-bold focus:outline-none"
+                >
+                  <option value="PESAPAL">Pesapal Merchant Gateway</option>
+                  <option value="MTN">MTN Mobile Money Paybill</option>
+                  <option value="AIRTEL">Airtel Money Merchant Till</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase text-text-tertiary">Merchant Name</label>
+                <input
+                  type="text"
+                  value={merchantName}
+                  onChange={(e) => setMerchantName(e.target.value)}
+                  placeholder="e.g. TitanStream Escrow Merchant"
+                  className="w-full px-3 py-2 rounded-xl bg-control-bg border border-white/10 text-text-primary font-bold focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase text-text-tertiary">Paybill / Till / Merchant Number</label>
+                <input
+                  type="text"
+                  value={merchantNumber}
+                  onChange={(e) => setMerchantNumber(e.target.value)}
+                  placeholder="e.g. 678910 or PESAPAL_MERCHANT_01"
+                  className="w-full px-3 py-2 rounded-xl bg-control-bg border border-white/10 text-text-primary font-mono font-bold text-amber-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary">Country</label>
+                  <select
+                    value={merchantCountry}
+                    onChange={(e) => setMerchantCountry(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-control-bg border border-white/10 text-text-primary font-bold"
+                  >
+                    <option value="UG">Uganda (UG)</option>
+                    <option value="KE">Kenya (KE)</option>
+                    <option value="TZ">Tanzania (TZ)</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary">Currency</label>
+                  <select
+                    value={merchantCurrency}
+                    onChange={(e) => setMerchantCurrency(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-control-bg border border-white/10 text-text-primary font-bold"
+                  >
+                    <option value="UGX">UGX</option>
+                    <option value="KES">KES</option>
+                    <option value="TZS">TZS</option>
+                    <option value="USDT">USDT</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowMerchantModal(false)}
+                className="w-1/2 py-2 rounded-xl bg-control-bg border border-white/10 text-text-secondary font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submittingMerchant}
+                className="w-1/2 py-2 rounded-xl bg-usdt-green text-app-bg font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow"
+              >
+                <Check size={14} /> {submittingMerchant ? 'Saving...' : 'Register Code'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>
