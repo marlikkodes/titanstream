@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/services/api';
 import { treasuryOperatorService, type TreasuryOperatorProfile } from '@/services/treasuryOperatorService';
 import { type PaymentOrderRecord } from '@/services/paymentOrderService';
@@ -20,6 +20,13 @@ import {
   Activity,
   AlertTriangle,
   Zap,
+  PlusCircle,
+  PauseCircle,
+  RotateCcw,
+  Sliders,
+  Check,
+  X,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
 
@@ -58,6 +65,12 @@ export const TreasuryPage: React.FC = () => {
   const [verificationQueue, setVerificationQueue] = useState<PaymentOrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Workstation Desk Tabs State
+  const [workstationTab, setWorkstationTab] = useState<'QUEUE' | 'DEPOSITS' | 'WITHDRAWALS' | 'SETTLEMENTS'>('QUEUE');
+  const [depositsList, setDepositsList] = useState<any[]>([]);
+  const [withdrawalsList, setWithdrawalsList] = useState<any[]>([]);
+  const [settlementMetrics, setSettlementMetrics] = useState<any>(null);
+
   // Simulation Lab State
   const [simDays, setSimDays] = useState<30 | 90 | 180>(90);
   const [repowerMult, setRepowerMult] = useState(1.0);
@@ -70,7 +83,32 @@ export const TreasuryPage: React.FC = () => {
   const [pendingAction, setPendingAction] = useState<any>(null);
   const [authCode, setAuthCode] = useState('');
 
-  const fetchTreasuryData = async () => {
+  // Executive Action Modals State
+  // 1. Ledger Adjustment Modal
+  const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
+  const [adjUserId, setAdjUserId] = useState('');
+  const [adjAccountCode, setAdjAccountCode] = useState('USER_ASSET_LIABILITY');
+  const [adjEntryType, setAdjEntryType] = useState<'DEBIT' | 'CREDIT'>('CREDIT');
+  const [adjAmount, setAdjAmount] = useState('');
+  const [adjReference, setAdjReference] = useState('');
+  const [adjReason, setAdjReason] = useState('');
+  const [submittingAdj, setSubmittingAdj] = useState(false);
+
+  // 2. Financial Hold Modal
+  const [showHoldModal, setShowHoldModal] = useState(false);
+  const [holdUserId, setHoldUserId] = useState('');
+  const [holdAsset, setHoldAsset] = useState('USDT');
+  const [holdAmount, setHoldAmount] = useState('');
+  const [holdType, setHoldType] = useState('COMPLIANCE_REVIEW');
+  const [holdReason, setHoldReason] = useState('');
+  const [submittingHold, setSubmittingHold] = useState(false);
+
+  // 3. Retry Settlement Modal
+  const [showRetryModal, setShowRetryModal] = useState(false);
+  const [retrySettlementId, setRetrySettlementId] = useState('');
+  const [submittingRetry, setSubmittingRetry] = useState(false);
+
+  const fetchTreasuryData = useCallback(async () => {
     setLoading(true);
     try {
       const [intelRes, rosterData, queueData] = await Promise.all([
@@ -95,11 +133,152 @@ export const TreasuryPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const fetchWorkstationData = useCallback(async () => {
+    try {
+      if (workstationTab === 'DEPOSITS') {
+        const res = await api.get('/admin/financial/deposits', { params: { limit: 20 } }).catch(() => null);
+        setDepositsList(res?.data?.items || res?.data?.data || res?.data || []);
+      } else if (workstationTab === 'WITHDRAWALS') {
+        const res = await api.get('/admin/financial/withdrawals', { params: { limit: 20 } }).catch(() => null);
+        setWithdrawalsList(res?.data?.items || res?.data?.data || res?.data || []);
+      } else if (workstationTab === 'SETTLEMENTS') {
+        const res = await api.get('/admin/financial/settlement-center').catch(() => null);
+        setSettlementMetrics(res?.data?.data || res?.data);
+      }
+    } catch (err) {
+      console.warn('Failed to load workstation desk data:', err);
+    }
+  }, [workstationTab]);
 
   useEffect(() => {
     fetchTreasuryData();
-  }, []);
+  }, [fetchTreasuryData]);
+
+  useEffect(() => {
+    fetchWorkstationData();
+  }, [fetchWorkstationData]);
+
+  // Executive Actions
+  const handleExecuteAdjustment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adjUserId.trim() || !adjAmount || !adjReason.trim()) {
+      showToast('User ID, Amount, and Reason are mandatory for double-entry adjustments', 'error');
+      return;
+    }
+
+    setSubmittingAdj(true);
+    try {
+      await api.post('/admin/financial/adjustments', {
+        telegramUserId: adjUserId.trim(),
+        ledgerAccountCode: adjAccountCode,
+        entryType: adjEntryType,
+        amount: adjAmount,
+        assetCode: 'USDT',
+        reference: adjReference.trim() || `ADJ-${Date.now().toString().slice(-6)}`,
+        reason: adjReason.trim(),
+      });
+      showToast('Double-Entry Ledger Adjustment posted successfully!', 'success');
+      setShowAdjustmentModal(false);
+      setAdjUserId('');
+      setAdjAmount('');
+      setAdjReference('');
+      setAdjReason('');
+      fetchTreasuryData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || err?.message || 'Failed to post adjustment', 'error');
+    } fontally: {
+      setSubmittingAdj(false);
+    }
+  };
+
+  const handlePlaceHold = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!holdUserId.trim() || !holdAmount || !holdReason.trim()) {
+      showToast('User ID, Amount, and Reason are required to place hold', 'error');
+      return;
+    }
+
+    setSubmittingHold(true);
+    try {
+      await api.post('/admin/financial/holds/place', {
+        telegramUserId: holdUserId.trim(),
+        assetCode: holdAsset,
+        amount: holdAmount,
+        holdType: holdType,
+        reason: holdReason.trim(),
+      });
+      showToast(`Financial Hold placed on user balance.`, 'success');
+      setShowHoldModal(false);
+      setHoldUserId('');
+      setHoldAmount('');
+      setHoldReason('');
+      fetchTreasuryData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || err?.message || 'Failed to place hold', 'error');
+    } finally {
+      setSubmittingHold(false);
+    }
+  };
+
+  const handleRetrySettlement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!retrySettlementId.trim()) {
+      showToast('Settlement ID is required', 'error');
+      return;
+    }
+
+    setSubmittingRetry(true);
+    try {
+      await api.post(`/admin/financial/settlement/${retrySettlementId.trim()}/retry`);
+      showToast(`Settlement dispatch triggered for #${retrySettlementId.slice(0, 8)}`, 'success');
+      setShowRetryModal(false);
+      setRetrySettlementId('');
+      fetchWorkstationData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || err?.message || 'Failed to retry settlement', 'error');
+    } finally {
+      setSubmittingRetry(false);
+    }
+  };
+
+  const handleVerifyDeposit = async (id: string) => {
+    if (!confirm(`Verify & confirm deposit settlement #${id.slice(0, 8)}?`)) return;
+    try {
+      await api.post(`/admin/financial/deposits/${id}/verify`, { reason: 'Admin Manual Verification' });
+      showToast('Deposit verified & credited via double-entry ledger!', 'success');
+      fetchWorkstationData();
+      fetchTreasuryData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Verification failed', 'error');
+    }
+  };
+
+  const handleApproveWithdrawal = async (id: string) => {
+    if (!confirm(`Approve & dispatch payout for withdrawal #${id.slice(0, 8)}?`)) return;
+    try {
+      await api.post(`/admin/financial/withdrawals/${id}/approve`);
+      showToast('Withdrawal approved & payout queue dispatched!', 'success');
+      fetchWorkstationData();
+      fetchTreasuryData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Approval failed', 'error');
+    }
+  };
+
+  const handleRejectWithdrawal = async (id: string) => {
+    const reason = prompt('Enter rejection reason for this withdrawal:');
+    if (!reason) return;
+    try {
+      await api.post(`/admin/financial/withdrawals/${id}/reject`, { reason });
+      showToast('Withdrawal rejected & escrow unlocked.', 'info');
+      fetchWorkstationData();
+      fetchTreasuryData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Rejection failed', 'error');
+    }
+  };
 
   const runFinancialSimulation = async () => {
     setRunningSim(true);
@@ -158,31 +337,31 @@ export const TreasuryPage: React.FC = () => {
   };
 
   const m: ComprehensiveTreasuryMetrics = metrics || {
-    totalLiquidity: 25000,
-    userLiabilities: 16000,
-    reserveRatio: 156,
-    projectedPayouts: 150,
-    settlementExposure: 320,
-    capacityRemaining: 62,
+    totalLiquidity: 0,
+    userLiabilities: 0,
+    reserveRatio: 100,
+    projectedPayouts: 0,
+    settlementExposure: 0,
+    capacityRemaining: 100,
     healthStatus: 'HEALTHY',
     riskScore: 'LOW',
-    forecastDays: 7,
-    countryAllocation: { UG: 12500, KE: 8400, TZ: 4100 },
-    treasuryHealthScore: 92,
-    outstandingMachineLiabilities: 16950,
-    netEcosystemContribution: 8200,
-    rcr: 1.56,
+    forecastDays: 0,
+    countryAllocation: {},
+    treasuryHealthScore: 100,
+    outstandingMachineLiabilities: 0,
+    netEcosystemContribution: 0,
+    rcr: 1.0,
     rcrStatus: 'HEALTHY',
   };
 
   const liab: LiabilitiesBreakdownData = liabilities || {
-    activeMachineRewardPools: Math.round(m.userLiabilities * 0.55),
-    pendingSessionClaims: Math.round(m.userLiabilities * 0.25),
-    pendingWithdrawalsQueue: m.projectedPayouts,
-    referralObligations: Math.round(m.userLiabilities * 0.1),
-    campaignObligations: Math.round(m.userLiabilities * 0.05),
-    operatorBonusObligations: Math.round(m.userLiabilities * 0.05),
-    totalOutstandingLiability: m.userLiabilities,
+    activeMachineRewardPools: 0,
+    pendingSessionClaims: 0,
+    pendingWithdrawalsQueue: 0,
+    referralObligations: 0,
+    campaignObligations: 0,
+    operatorBonusObligations: 0,
+    totalOutstandingLiability: 0,
   };
 
   const rcrColorMap = {
@@ -194,7 +373,7 @@ export const TreasuryPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* 1. EXECUTIVE SOLVENCY HEADER */}
+      {/* 1. EXECUTIVE SOLVENCY HEADER & ACTION BAR */}
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-card-bg border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center border border-usdt-green/40 bg-usdt-green/10 text-usdt-green shadow-lg shadow-usdt-green/10">
@@ -221,19 +400,39 @@ export const TreasuryPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 pt-4 lg:pt-0 border-white/10">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-text-tertiary font-bold">Duty:</span>
+        {/* Executive Action Controls */}
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 pt-4 lg:pt-0 border-white/10">
+          <button
+            onClick={() => setShowAdjustmentModal(true)}
+            className="px-3 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md hover:brightness-110"
+          >
+            <PlusCircle size={14} /> Post Adjustment
+          </button>
+
+          <button
+            onClick={() => setShowHoldModal(true)}
+            className="px-3 py-2 rounded-xl bg-control-bg border border-amber-500/40 text-amber-400 text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow"
+          >
+            <PauseCircle size={14} /> Place Hold
+          </button>
+
+          <button
+            onClick={() => setShowRetryModal(true)}
+            className="px-3 py-2 rounded-xl bg-control-bg border border-blue-500/40 text-blue-400 text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow"
+          >
+            <RotateCcw size={14} /> Retry Settlement
+          </button>
+
+          <div className="flex items-center gap-1 bg-control-bg border border-white/10 rounded-xl p-1">
             <button
               onClick={() => toggleOperatorDuty('ACTIVE')}
-              className="px-2.5 py-1 rounded-lg bg-usdt-green/10 border border-usdt-green/30 text-usdt-green font-extrabold text-[10px] hover:bg-usdt-green/20"
+              className="px-2 py-1 rounded-lg bg-usdt-green/20 text-usdt-green font-extrabold text-[10px] hover:bg-usdt-green/30"
             >
               ACTIVE
             </button>
             <button
               onClick={() => toggleOperatorDuty('ON_CALL')}
-              className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 font-extrabold text-[10px] hover:bg-amber-500/20"
+              className="px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 font-extrabold text-[10px] hover:bg-amber-500/30"
             >
               ON CALL
             </button>
@@ -242,10 +441,9 @@ export const TreasuryPage: React.FC = () => {
           <button
             onClick={fetchTreasuryData}
             disabled={loading}
-            className="p-2.5 rounded-xl bg-control-bg border border-white/10 hover:bg-white/5 text-text-secondary disabled:opacity-50 min-h-[40px] flex items-center gap-2 text-xs font-bold"
+            className="p-2 rounded-xl bg-control-bg border border-white/10 hover:bg-white/5 text-text-secondary disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Sync Financial State</span>
           </button>
         </div>
       </div>
@@ -254,7 +452,7 @@ export const TreasuryPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <TreasuryIntelligenceCard
           title="Total Cash Reserves"
-          value={`$${m.totalLiquidity.toLocaleString()}`}
+          value={`$${m.totalLiquidity.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           subtitle="Verified USDT Cash Reserves"
           icon={<Wallet size={18} className="text-usdt-green" />}
           badgeText={m.healthStatus}
@@ -263,7 +461,7 @@ export const TreasuryPage: React.FC = () => {
 
         <TreasuryIntelligenceCard
           title="User Liabilities"
-          value={`$${m.userLiabilities.toLocaleString()}`}
+          value={`$${m.userLiabilities.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           subtitle="Total User Owed Balances"
           icon={<Scale size={18} className="text-amber-400" />}
           badgeText="PostgreSQL Ledger"
@@ -282,7 +480,7 @@ export const TreasuryPage: React.FC = () => {
 
         <TreasuryIntelligenceCard
           title="Net Ecosystem Delta"
-          value={`$${m.netEcosystemContribution.toLocaleString()}`}
+          value={`$${m.netEcosystemContribution.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           subtitle="Reserves minus Liabilities"
           icon={<Zap size={18} className="text-blue-400" />}
           badgeText="Net Solvency"
@@ -291,7 +489,7 @@ export const TreasuryPage: React.FC = () => {
 
         <TreasuryIntelligenceCard
           title="Machine Commitments"
-          value={`$${m.outstandingMachineLiabilities.toLocaleString()}`}
+          value={`$${m.outstandingMachineLiabilities.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           subtitle="Lifetime Node Yield Commitments"
           icon={<Activity size={18} className="text-purple-400" />}
           badgeText={`${m.capacityRemaining}% Cap Free`}
@@ -300,7 +498,7 @@ export const TreasuryPage: React.FC = () => {
 
         <TreasuryIntelligenceCard
           title="24h Payout Exposure"
-          value={`$${m.projectedPayouts.toLocaleString()}`}
+          value={`$${m.projectedPayouts.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           subtitle={`Deposits Exposure: $${m.settlementExposure}`}
           icon={<AlertTriangle size={18} className="text-amber-400" />}
           badgeText={`${m.forecastDays} Days Cover`}
@@ -321,7 +519,7 @@ export const TreasuryPage: React.FC = () => {
             </div>
           </div>
           <span className="text-xs font-mono font-black text-usdt-green">
-            Total: ${liab.totalOutstandingLiability.toLocaleString()} USDT
+            Total: ${liab.totalOutstandingLiability.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDT
           </span>
         </div>
 
@@ -390,50 +588,213 @@ export const TreasuryPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. WITHDRAWAL & DEPOSIT COMMAND QUEUE WORKSTATION */}
-      {(() => {
-        const safeQueue = Array.isArray(verificationQueue) ? verificationQueue : [];
-        return (
-          <div className="bg-card-bg border border-white/10 rounded-2xl p-5 space-y-4 shadow-lg">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-text-primary flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-usdt-green" /> Withdrawal & Deposit Command Queue ({safeQueue.length})
-              </h4>
-              <span className="text-[10px] text-text-tertiary">Requires Dual-Auth Telegram Confirmation for high values</span>
-            </div>
+      {/* 4. EXECUTIVE SETTLEMENT & WORKSTATION DESK */}
+      <div className="bg-card-bg border border-white/10 rounded-2xl p-5 space-y-4 shadow-lg">
+        {/* Navigation Desk Tabs */}
+        <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-3 gap-3">
+          <div className="flex items-center gap-4 text-xs font-bold">
+            <button
+              onClick={() => setWorkstationTab('QUEUE')}
+              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
+                workstationTab === 'QUEUE' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
+              }`}
+            >
+              <CheckCircle2 size={14} /> Dual-Auth Queue ({verificationQueue.length})
+            </button>
+            <button
+              onClick={() => setWorkstationTab('DEPOSITS')}
+              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
+                workstationTab === 'DEPOSITS' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
+              }`}
+            >
+              <TrendingUp size={14} /> Deposit Verification Desk
+            </button>
+            <button
+              onClick={() => setWorkstationTab('WITHDRAWALS')}
+              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
+                workstationTab === 'WITHDRAWALS' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
+              }`}
+            >
+              <Wallet size={14} /> Withdrawal Command Desk
+            </button>
+            <button
+              onClick={() => setWorkstationTab('SETTLEMENTS')}
+              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
+                workstationTab === 'SETTLEMENTS' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
+              }`}
+            >
+              <RotateCcw size={14} /> Stuck Settlement Dispatcher
+            </button>
+          </div>
 
-            <div className="space-y-3">
-              {safeQueue.map((order) => (
-                <div key={order.id} className="p-4 rounded-xl bg-control-bg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-extrabold text-sm text-text-primary">#{order.reference}</span>
-                      <span className="px-2 py-0.5 rounded bg-usdt-green/15 text-usdt-green font-bold text-[10px]">
-                        ${(Number(order?.amount) || 0).toFixed(2)} USDT
-                      </span>
-                    </div>
-                    <div className="text-xs text-text-secondary mt-1">
-                      User Telegram: {order.telegramUserId} | Method: {order.paymentMethod}
-                    </div>
+          <span className="text-[10px] font-mono text-text-tertiary">Real-time Operator Dispatch Engine</span>
+        </div>
+
+        {/* TAB 1: DUAL AUTH VERIFICATION QUEUE */}
+        {workstationTab === 'QUEUE' && (
+          <div className="space-y-3">
+            {verificationQueue.map((order) => (
+              <div key={order.id} className="p-4 rounded-xl bg-control-bg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-extrabold text-sm text-text-primary">#{order.reference}</span>
+                    <span className="px-2 py-0.5 rounded bg-usdt-green/15 text-usdt-green font-bold text-[10px]">
+                      ${(Number(order?.amount) || 0).toFixed(2)} USDT
+                    </span>
                   </div>
+                  <div className="text-xs text-text-secondary mt-1">
+                    User Telegram: {order.telegramUserId} | Method: {order.paymentMethod}
+                  </div>
+                </div>
 
-                  <button
-                    onClick={() => triggerDualAuthAction(order.id, 'WITHDRAWAL_APPROVAL')}
-                    className="px-4 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-extrabold flex items-center gap-2 shadow-md hover:brightness-110"
-                  >
-                    <Lock size={14} /> Dual-Auth Verify & Post
-                  </button>
-                </div>
-              ))}
-              {safeQueue.length === 0 && (
-                <div className="text-center py-6 text-xs text-text-tertiary">
-                  🟢 Verification queue clear — No pending withdrawal/deposit orders awaiting action.
-                </div>
-              )}
+                <button
+                  onClick={() => triggerDualAuthAction(order.id, 'WITHDRAWAL_APPROVAL')}
+                  className="px-4 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-extrabold flex items-center gap-2 shadow-md hover:brightness-110"
+                >
+                  <Lock size={14} /> Dual-Auth Verify & Post
+                </button>
+              </div>
+            ))}
+            {verificationQueue.length === 0 && (
+              <div className="text-center py-6 text-xs text-text-tertiary">
+                🟢 Verification queue clear — No pending withdrawal/deposit orders awaiting action.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: DEPOSIT VERIFICATION DESK */}
+        {workstationTab === 'DEPOSITS' && (
+          <div className="space-y-3">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 text-text-tertiary font-extrabold uppercase text-[10px]">
+                    <th className="py-2.5 px-3">Session ID</th>
+                    <th className="py-2.5 px-3">User ID</th>
+                    <th className="py-2.5 px-3">Method</th>
+                    <th className="py-2.5 px-3 text-right">Amount</th>
+                    <th className="py-2.5 px-3 text-center">Status</th>
+                    <th className="py-2.5 px-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 font-mono">
+                  {depositsList.map((dep) => (
+                    <tr key={dep.id} className="hover:bg-white/5">
+                      <td className="py-2.5 px-3 font-bold text-text-primary">#{dep.id.slice(0, 8)}...</td>
+                      <td className="py-2.5 px-3 text-text-secondary">{dep.userId || dep.telegramUserId}</td>
+                      <td className="py-2.5 px-3">{dep.providerId || dep.paymentMethod || 'PESAPAL'}</td>
+                      <td className="py-2.5 px-3 text-right font-bold text-usdt-green">${Number(dep.expectedCryptoAmount || dep.amount || 0).toFixed(2)}</td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 font-extrabold text-[10px]">
+                          {dep.status}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <button
+                          onClick={() => handleVerifyDeposit(dep.id)}
+                          className="px-3 py-1 rounded-lg bg-usdt-green text-app-bg text-[10px] font-black uppercase flex items-center gap-1 ml-auto"
+                        >
+                          <Check size={12} /> Force Verify
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {depositsList.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-center text-text-tertiary font-sans">
+                        No pending unconfirmed deposit sessions found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        );
-      })()}
+        )}
+
+        {/* TAB 3: WITHDRAWAL COMMAND DESK */}
+        {workstationTab === 'WITHDRAWALS' && (
+          <div className="space-y-3">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 text-text-tertiary font-extrabold uppercase text-[10px]">
+                    <th className="py-2.5 px-3">Session ID</th>
+                    <th className="py-2.5 px-3">User ID</th>
+                    <th className="py-2.5 px-3">Payout Method</th>
+                    <th className="py-2.5 px-3 text-right">Amount</th>
+                    <th className="py-2.5 px-3 text-center">Status</th>
+                    <th className="py-2.5 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 font-mono">
+                  {withdrawalsList.map((wth) => (
+                    <tr key={wth.id} className="hover:bg-white/5">
+                      <td className="py-2.5 px-3 font-bold text-text-primary">#{wth.id.slice(0, 8)}...</td>
+                      <td className="py-2.5 px-3 text-text-secondary">{wth.userId || wth.telegramUserId}</td>
+                      <td className="py-2.5 px-3">{wth.paymentMethod || 'MOBILE_MONEY'}</td>
+                      <td className="py-2.5 px-3 text-right font-bold text-amber-400">${Number(wth.expectedCryptoAmount || wth.amount || 0).toFixed(2)}</td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 font-extrabold text-[10px]">
+                          {wth.status}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <button
+                            onClick={() => handleApproveWithdrawal(wth.id)}
+                            className="px-2.5 py-1 rounded-lg bg-usdt-green text-app-bg text-[10px] font-black uppercase flex items-center gap-1"
+                          >
+                            <Check size={12} /> Approve
+                          </button>
+                          <button
+                            onClick={() => handleRejectWithdrawal(wth.id)}
+                            className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase flex items-center gap-1"
+                          >
+                            <X size={12} /> Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {withdrawalsList.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-center text-text-tertiary font-sans">
+                        No pending withdrawal requests awaiting operator decision.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: STUCK SETTLEMENT DISPATCHER */}
+        {workstationTab === 'SETTLEMENTS' && (
+          <div className="space-y-3">
+            <div className="p-4 rounded-xl bg-control-bg border border-white/5 flex items-center justify-between text-xs">
+              <div>
+                <span className="font-bold text-text-primary block">Settlement Rail Health</span>
+                <span className="text-[11px] text-text-tertiary">Pesapal & USDT TRC-20 Automated Outbox</span>
+              </div>
+              <button
+                onClick={() => {
+                  const id = prompt('Enter failed Settlement Session ID to retry:');
+                  if (id) {
+                    setRetrySettlementId(id);
+                    setShowRetryModal(true);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[11px] font-bold flex items-center gap-1"
+              >
+                <RotateCcw size={12} /> Retry Session by ID
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* 5. GENERAL LEDGER EXPLORER STREAM */}
       <GeneralLedgerStream />
@@ -498,12 +859,12 @@ export const TreasuryPage: React.FC = () => {
         </button>
 
         {simResults && (
-          <div className="p-4 rounded-xl bg-control-bg border border-usdt-green/30 space-y-2 text-xs">
+          <div className="p-4 rounded-xl bg-control-bg border border-usdt-green/30 space-y-2 text-xs font-mono">
             <div className="flex items-center justify-between font-bold">
-              <span>Status: <strong className="text-usdt-green">{simResults.results?.solvencyStatus || 'HEALTHY'}</strong></span>
-              <span>Reserve Ratio: <strong>{simResults.results?.projectedReserveRatio || 160}%</strong></span>
+              <span>Solvency Status: <strong className="text-usdt-green">{simResults.results?.solvencyStatus || 'HEALTHY'}</strong></span>
+              <span>Reserve Ratio: <strong>{simResults.results?.projectedReserveRatio || 100}%</strong></span>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-[11px]">
+            <div className="grid grid-cols-3 gap-2 text-[11px] pt-2 border-t border-white/5">
               <div>Inflow: <strong>${simResults.results?.totalProjectedInflow || 0}</strong></div>
               <div>Outflow: <strong>${simResults.results?.totalProjectedOutflow || 0}</strong></div>
               <div>Net Solvency Delta: <strong>${simResults.results?.netSolvencyDelta || 0}</strong></div>
@@ -552,6 +913,244 @@ export const TreasuryPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* MODAL 1: POST DOUBLE-ENTRY LEDGER ADJUSTMENT */}
+      {showAdjustmentModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-app-bg-secondary border border-usdt-green/40 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-extrabold text-text-primary uppercase tracking-wider flex items-center gap-2">
+                <PlusCircle size={18} className="text-usdt-green" /> Post Double-Entry Ledger Adjustment
+              </h3>
+              <button onClick={() => setShowAdjustmentModal(false)} className="text-text-tertiary hover:text-text-primary">✕</button>
+            </div>
+
+            <form onSubmit={handleExecuteAdjustment} className="space-y-3 text-xs">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Target Telegram User ID</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 256770000000 or user UUID"
+                  value={adjUserId}
+                  onChange={(e) => setAdjUserId(e.target.value)}
+                  className="w-full bg-control-bg text-text-primary text-xs font-mono rounded-xl p-3 border border-white/10 focus:border-usdt-green"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Account Code</label>
+                  <select
+                    value={adjAccountCode}
+                    onChange={(e) => setAdjAccountCode(e.target.value)}
+                    className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10 font-mono"
+                  >
+                    <option value="USER_ASSET_LIABILITY">USER_ASSET_LIABILITY</option>
+                    <option value="SYSTEM_RESERVE">SYSTEM_RESERVE</option>
+                    <option value="PLATFORM_REVENUE">PLATFORM_REVENUE</option>
+                    <option value="WITHDRAWAL_ESCROW">WITHDRAWAL_ESCROW</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Entry Type</label>
+                  <select
+                    value={adjEntryType}
+                    onChange={(e) => setAdjEntryType(e.target.value as any)}
+                    className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10 font-mono font-bold"
+                  >
+                    <option value="CREDIT">CREDIT (+)</option>
+                    <option value="DEBIT">DEBIT (-)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Amount (USDT)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="10.00"
+                    value={adjAmount}
+                    onChange={(e) => setAdjAmount(e.target.value)}
+                    className="w-full bg-control-bg text-text-primary text-xs font-mono rounded-xl p-3 border border-white/10"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Reference Tag</label>
+                  <input
+                    type="text"
+                    placeholder="ADJ-100293"
+                    value={adjReference}
+                    onChange={(e) => setAdjReference(e.target.value)}
+                    className="w-full bg-control-bg text-text-primary text-xs font-mono rounded-xl p-3 border border-white/10"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Mandatory Administrative Audit Reason</label>
+                <textarea
+                  placeholder="State technical justification for double-entry adjustment..."
+                  value={adjReason}
+                  onChange={(e) => setAdjReason(e.target.value)}
+                  className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10"
+                  rows={2}
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAdjustmentModal(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-control-bg border border-white/10 text-xs font-bold text-text-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingAdj}
+                  className="flex-1 py-2.5 rounded-xl bg-usdt-green text-app-bg text-xs font-black uppercase tracking-wider"
+                >
+                  {submittingAdj ? 'Posting...' : 'Post Entry'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: PLACE FINANCIAL HOLD */}
+      {showHoldModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-app-bg-secondary border border-amber-500/40 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-extrabold text-text-primary uppercase tracking-wider flex items-center gap-2">
+                <PauseCircle size={18} className="text-amber-400" /> Place Administrative Financial Hold
+              </h3>
+              <button onClick={() => setShowHoldModal(false)} className="text-text-tertiary hover:text-text-primary">✕</button>
+            </div>
+
+            <form onSubmit={handlePlaceHold} className="space-y-3 text-xs">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Target Telegram User ID</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 256770000000"
+                  value={holdUserId}
+                  onChange={(e) => setHoldUserId(e.target.value)}
+                  className="w-full bg-control-bg text-text-primary text-xs font-mono rounded-xl p-3 border border-white/10"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Hold Amount</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="25.00"
+                    value={holdAmount}
+                    onChange={(e) => setHoldAmount(e.target.value)}
+                    className="w-full bg-control-bg text-text-primary text-xs font-mono rounded-xl p-3 border border-white/10"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Hold Category</label>
+                  <select
+                    value={holdType}
+                    onChange={(e) => setHoldType(e.target.value)}
+                    className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10"
+                  >
+                    <option value="COMPLIANCE_REVIEW">Compliance Review</option>
+                    <option value="FRAUD_PREVENTION">Fraud Prevention</option>
+                    <option value="DISPUTE_LOCK">Dispute Lock</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Mandatory Administrative Reason</label>
+                <textarea
+                  placeholder="Reason for placing hold on user balance..."
+                  value={holdReason}
+                  onChange={(e) => setHoldReason(e.target.value)}
+                  className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10"
+                  rows={2}
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowHoldModal(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-control-bg border border-white/10 text-xs font-bold text-text-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingHold}
+                  className="flex-1 py-2.5 rounded-xl bg-amber-500 text-app-bg text-xs font-black uppercase tracking-wider"
+                >
+                  {submittingHold ? 'Placing Hold...' : 'Place Hold'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: RETRY STUCK SETTLEMENT */}
+      {showRetryModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-app-bg-secondary border border-blue-500/40 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-extrabold text-text-primary uppercase tracking-wider flex items-center gap-2">
+                <RotateCcw size={18} className="text-blue-400" /> Retry Stuck Settlement Session
+              </h3>
+              <button onClick={() => setShowRetryModal(false)} className="text-text-tertiary hover:text-text-primary">✕</button>
+            </div>
+
+            <form onSubmit={handleRetrySettlement} className="space-y-3 text-xs">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Settlement Session ID</label>
+                <input
+                  type="text"
+                  placeholder="Paste Settlement ID (e.g. s_1293847)..."
+                  value={retrySettlementId}
+                  onChange={(e) => setRetrySettlementId(e.target.value)}
+                  className="w-full bg-control-bg text-text-primary text-xs font-mono rounded-xl p-3 border border-white/10 focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRetryModal(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-control-bg border border-white/10 text-xs font-bold text-text-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingRetry}
+                  className="flex-1 py-2.5 rounded-xl bg-blue-500 text-white text-xs font-black uppercase tracking-wider"
+                >
+                  {submittingRetry ? 'Dispatching...' : 'Retry Dispatch'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* DUAL AUTH MODAL */}
       {showDualAuthModal && (
