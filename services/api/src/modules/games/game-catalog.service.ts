@@ -350,10 +350,32 @@ export class GameCatalogService {
   }
 
   async listGames(includeDisabled = false): Promise<GameCatalog[]> {
-    return this.prisma.gameCatalog.findMany({
-      where: includeDisabled ? {} : { enabled: true },
-      orderBy: { createdAt: 'asc' },
-    });
+    try {
+      const items = await this.prisma.gameCatalog.findMany({
+        where: includeDisabled ? {} : { enabled: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (items && items.length > 0) return items;
+    } catch {}
+
+    return DEFAULT_GAMES.map((g, idx) => ({
+      id: `game_${idx + 1}`,
+      gameId: g.gameId,
+      code: g.code,
+      name: g.name,
+      description: g.description,
+      category: g.category,
+      icon: g.icon,
+      accentColor: g.accentColor,
+      crystalCost: g.crystalCost,
+      dailyLimit: g.dailyLimit,
+      estimatedDurationSec: g.estimatedDurationSec,
+      difficulty: g.difficulty,
+      enabled: true,
+      rewardConfig: g.rewardConfig as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
   }
 
   async upsertGame(data: {

@@ -24,6 +24,13 @@ function validateProductionConfig() {
   process.exit(1);
 }
 
+process.on('uncaughtException', (err) => {
+  console.warn('[Process] Non-fatal uncaughtException:', err?.message || err);
+});
+process.on('unhandledRejection', (reason: any) => {
+  console.warn('[Process] Non-fatal unhandledRejection:', reason?.message || reason);
+});
+
 async function bootstrap() {
   validateProductionConfig();
 
