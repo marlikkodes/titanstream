@@ -106,9 +106,9 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ title, onMenuToggle })
         <button
           onClick={() => setKillModalOpen(true)}
           className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-colors ${
-            maintenanceMode
+            backendSwitches.maintenanceMode
               ? 'bg-rose-600/30 text-rose-300 border border-rose-500 animate-pulse'
-              : pauseWithdrawals || pauseDeposits
+              : backendSwitches.disableWithdrawals || backendSwitches.disablePurchases
               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
               : 'bg-usdt-green/15 text-usdt-green border border-usdt-green/30'
           }`}
@@ -116,12 +116,14 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ title, onMenuToggle })
         >
           <span className={`w-1.5 h-1.5 rounded-full ${isWarningActive ? 'bg-rose-400 animate-ping' : 'bg-usdt-green'}`} />
           <span>
-            {maintenanceMode
+            {backendSwitches.maintenanceMode
               ? '🔴 Maintenance Mode Active'
-              : pauseWithdrawals
+              : backendSwitches.disableWithdrawals
               ? '🟡 Withdrawals Paused'
-              : pauseDeposits
-              ? '🟡 Deposits Paused'
+              : backendSwitches.disablePurchases
+              ? '🟡 Purchases Paused'
+              : backendSwitches.readOnlyMode
+              ? '🟡 Read-Only Mode'
               : '🟢 All Systems Operational'}
           </span>
         </button>
