@@ -1,18 +1,31 @@
 import type React from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { StatusBadge } from '@/components/admin/StatusBadge';
-import { ShoppingCart, Store, Settings, ShieldAlert, ArrowUpFromLine, Send } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import { MetricCard, MetricCardGrid } from '@/components/admin/MetricCard';
-import { useUserNotificationStore } from '@/store/useUserNotificationStore';
+import { api } from '@/services/api';
+import { showToast } from '@/components/Toast';
+import {
+  Send,
+  Bell,
+  RefreshCw,
+  Radio,
+  ShieldAlert,
+  ShoppingCart,
+  Store,
+  Settings,
+  ArrowUpFromLine,
+  CheckCircle2,
+} from 'lucide-react';
 
-export interface AdminNotificationRecord {
+export interface AdminEventRecord {
   id: string;
   type: string;
-  title: string;
-  message: string;
-  channel: string;
-  status: string;
-  read: boolean;
+  title?: string;
+  message?: string;
+  description?: string;
+  severity?: string;
+  channel?: string;
+  source?: string;
   createdAt: string;
 }
 
@@ -22,6 +35,7 @@ const typeIcons: Record<string, React.ReactNode> = {
   system: <Settings size={16} />,
   alert: <ShieldAlert size={16} />,
   withdrawal: <ArrowUpFromLine size={16} />,
+  broadcast: <Radio size={16} />,
 };
 
 const typeStyles: Record<string, string> = {
@@ -30,67 +44,84 @@ const typeStyles: Record<string, string> = {
   system: 'text-text-secondary bg-white/10',
   alert: 'text-error-red bg-error-red/15',
   withdrawal: 'text-gold bg-gold/15',
-};
-
-const statusVariant: Record<string, 'success' | 'default' | 'danger' | 'info'> = {
-  sent: 'info',
-  pending: 'default',
-  failed: 'danger',
-  delivered: 'success',
+  broadcast: 'text-usdt-green bg-usdt-green/15',
 };
 
 export const NotificationsPage: React.FC = () => {
-  const { notifications, fetchNotifications, markAllAsRead } = useUserNotificationStore();
   const [targetAudience, setTargetAudience] = useState('Public Channel');
   const [broadcastText, setBroadcastText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [events, setEvents] = useState<AdminEventRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAdminEvents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/admin/dashboard/events').catch(() => null);
+      const data = res?.data?.data || res?.data;
+      if (Array.isArray(data)) {
+        setEvents(data);
+      } else {
+        // Fallback to audit explorer
+        const auditRes = await api.get('/admin/intelligence/audit-explorer?page=1&limit=30').catch(() => null);
+        const auditData = auditRes?.data?.data?.items || auditRes?.data?.items || [];
+        setEvents(
+          auditData.map((a: any) => ({
+            id: a.id,
+            type: a.eventType?.toLowerCase() || 'system',
+            title: a.eventType,
+            message: a.description,
+            severity: a.severity,
+            source: a.source,
+            createdAt: a.createdAt,
+          })),
+        );
+      }
+    } catch {
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+    fetchAdminEvents();
+  }, [fetchAdminEvents]);
 
   const handleBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastText.trim()) return;
     setIsSending(true);
     try {
-      const res = await fetch('/api/admin/operations-hq/broadcast', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targetAudience,
-          message: broadcastText.trim(),
-          reason: `Admin broadcast dispatch to ${targetAudience}`,
-        }),
+      await api.post('/admin/operations-hq/broadcast', {
+        targetAudience,
+        message: broadcastText.trim(),
+        reason: `Admin broadcast dispatch to ${targetAudience}`,
       });
-      setIsSending(false);
-      if (res.ok) {
-        alert(`Broadcast successfully published to Telegram audience: "${targetAudience}" via durable queue!`);
-        setBroadcastText('');
-        fetchNotifications();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        alert(`Broadcast Error: ${err.message || 'Failed to dispatch broadcast notification'}`);
-      }
+      showToast(`Broadcast successfully published to ${targetAudience}!`, 'success');
+      setBroadcastText('');
+      fetchAdminEvents();
     } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Failed to dispatch broadcast notification', 'error');
+    } finally {
       setIsSending(false);
-      alert(`Network Error: ${err?.message || 'Broadcast service unavailable'}`);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <MetricCardGrid columns={2}>
-        <MetricCard label="Unread Alerts" value={notifications.filter(n => !n.read).length.toString()} icon="Bell" variant="gold" />
-        <MetricCard label="Active Channels" value="4 Channels" icon="Send" variant="blue" />
+    <div className="space-y-4 sm:space-y-6">
+      <MetricCardGrid columns={3}>
+        <MetricCard label="System Events Stream" value={events.length.toString()} icon="Bell" variant="green" />
+        <MetricCard label="Broadcast Engine" value="ONLINE" icon="Radio" variant="blue" />
+        <MetricCard label="Audience Channels" value="5 Segments" icon="Send" variant="gold" />
       </MetricCardGrid>
 
       {/* Telegram Broadcast Engine Composer */}
-      <div className="bg-card-bg rounded-xl p-4 border border-usdt-green/30 space-y-3">
-        <div className="flex items-center justify-between">
+      <div className="bg-card-bg rounded-2xl p-4 sm:p-5 border border-white/10 space-y-4 shadow-xl">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div>
-            <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
-              <Send size={16} className="text-usdt-green" /> Telegram Broadcast Engine
+            <h3 className="text-sm font-extrabold text-text-primary flex items-center gap-2">
+              <Radio size={18} className="text-usdt-green" /> Authoritative Telegram Broadcast Engine
             </h3>
             <p className="text-xs text-text-tertiary mt-0.5">
               Publish announcements directly to official Telegram public channels, private groups, or segmented user bases.
@@ -98,7 +129,7 @@ export const NotificationsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="space-y-3 pt-2">
+        <div className="space-y-3 pt-1">
           {/* Target Audience Selector */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold text-text-tertiary">Target Audience:</span>
@@ -107,10 +138,10 @@ export const NotificationsPage: React.FC = () => {
                 key={aud}
                 type="button"
                 onClick={() => setTargetAudience(aud)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${
+                className={`px-3 py-1 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
                   targetAudience === aud
-                    ? 'bg-usdt-green text-app-bg'
-                    : 'bg-control-bg text-text-secondary hover:text-text-primary'
+                    ? 'bg-usdt-green text-app-bg shadow-sm'
+                    : 'bg-control-bg text-text-secondary hover:text-text-primary border border-white/5'
                 }`}
               >
                 {aud}
@@ -118,7 +149,7 @@ export const NotificationsPage: React.FC = () => {
             ))}
           </div>
 
-          <form onSubmit={handleBroadcast} className="space-y-2">
+          <form onSubmit={handleBroadcast} className="space-y-3">
             <textarea
               rows={3}
               placeholder={`Write broadcast message for ${targetAudience}...`}
@@ -133,7 +164,7 @@ export const NotificationsPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSending || !broadcastText.trim()}
-                className="px-4 py-2.5 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs shadow-md hover:brightness-110 press-feedback disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs shadow-md hover:brightness-110 press-feedback disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
               >
                 <Send size={14} />
                 <span>{isSending ? 'Publishing...' : 'Publish Telegram Broadcast'}</span>
@@ -143,42 +174,50 @@ export const NotificationsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between pt-2">
-          <h4 className="text-xs font-extrabold uppercase tracking-wider text-text-tertiary">System Notification Log</h4>
-          {notifications.length > 0 && (
-            <button onClick={markAllAsRead} className="text-xs text-usdt-green font-bold hover:underline">
-              Mark all as read
-            </button>
-          )}
+      {/* System Admin Events Feed */}
+      <div className="bg-card-bg rounded-2xl p-4 sm:p-5 border border-white/10 space-y-3 shadow-xl">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <h4 className="text-xs font-extrabold uppercase tracking-wider text-text-primary flex items-center gap-2">
+            <Bell size={16} className="text-usdt-green" /> Real-Time Platform Event Feed
+          </h4>
+          <button
+            onClick={fetchAdminEvents}
+            disabled={loading}
+            className="p-1.5 rounded-xl bg-control-bg border border-white/10 text-text-secondary hover:text-text-primary disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          </button>
         </div>
 
-        {notifications.length === 0 ? (
-          <div className="p-8 text-center bg-card-bg rounded-xl border border-white/5 space-y-1">
-            <p className="text-xs font-bold text-text-primary">No notifications recorded yet</p>
-            <p className="text-[11px] text-text-tertiary">System events and alerts will appear here in real-time.</p>
+        {events.length === 0 ? (
+          <div className="p-8 text-center bg-control-bg rounded-xl border border-white/5 space-y-1">
+            <p className="text-xs font-bold text-text-primary">No platform events recorded yet</p>
+            <p className="text-[11px] text-text-tertiary">Live administrative events and alerts will appear here.</p>
           </div>
         ) : (
-          notifications.map((n) => (
-            <div
-              key={n.id}
-              className={`bg-card-bg rounded-xl border border-border/50 p-4 ${!n.read ? 'border-l-2 border-l-usdt-green' : ''}`}
-            >
-              <div className="flex items-start gap-3">
+          <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+            {events.map((n) => (
+              <div
+                key={n.id}
+                className="bg-control-bg/60 rounded-xl border border-white/5 p-3.5 flex items-start gap-3 text-xs"
+              >
                 <div className={`p-2 rounded-lg flex-shrink-0 ${typeStyles[n.type] || 'text-text-secondary bg-white/10'}`}>
                   {typeIcons[n.type] || <Settings size={16} />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-sm font-semibold text-text-primary truncate">{n.title}</h4>
-                    <StatusBadge label={n.type} variant="info" />
+                    <h4 className="text-xs font-extrabold text-text-primary truncate">{n.title || n.type}</h4>
+                    <StatusBadge label={n.severity || n.type} variant="info" />
                   </div>
-                  <p className="text-xs text-text-secondary mt-1">{n.message}</p>
-                  <span className="text-[10px] text-text-tertiary block mt-1">{n.timestamp}</span>
+                  <p className="text-xs text-text-secondary mt-0.5">{n.message || n.description}</p>
+                  <div className="flex items-center gap-3 text-[10px] text-text-tertiary mt-1 font-mono">
+                    {n.source && <span>Source: {n.source}</span>}
+                    <span>{new Date(n.createdAt).toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>

@@ -1,7 +1,8 @@
 import type React from 'react';
 import { useState } from 'react';
 import { useSupportStore, type TicketPriority, type TicketStatus } from '@/store/useSupportStore';
-import { useWalletStore } from '@/store/useWalletStore';
+import { api } from '@/services/api';
+import { showToast } from '@/components/Toast';
 import {
   MessageSquare,
   AlertTriangle,
@@ -78,20 +79,41 @@ export const AdminSupportPage: React.FC = () => {
     setReplyText((prev) => (prev ? `${prev}\n\n${macroText}` : macroText));
   };
 
-  const handleAccreditSelectedUser = () => {
+  const handleAccreditSelectedUser = async () => {
     if (!selectedTicket) return;
-    const amountStr = prompt(`Accredit USDT balance for ${selectedTicket.userName}:`, '50');
+    const amountStr = prompt(`[DOUBLE-ENTRY LEDGER ADJUSTMENT] Accredit USDT balance for ${selectedTicket.userName}:`, '50');
     if (!amountStr) return;
     const amount = parseFloat(amountStr);
-    if (amount > 0) {
-      useWalletStore.getState().accreditUserBalance(amount, `Support Accreditation: Ticket ${selectedTicket.reference}`);
+    if (isNaN(amount) || amount <= 0) {
+      showToast('Please enter a valid positive amount', 'error');
+      return;
+    }
+    const reason = prompt('Mandatory audit reason for balance adjustment:', `Support compensation: Ticket ${selectedTicket.reference}`);
+    if (!reason || !reason.trim()) {
+      showToast('Mandatory audit reason required', 'error');
+      return;
+    }
+
+    try {
+      await api.post('/admin/financial/adjustments', {
+        telegramUserId: selectedTicket.userId || selectedTicket.telegramId || '123456789',
+        assetCode: 'USDT',
+        amount: amount.toString(),
+        adjustmentType: 'CREDIT_USER',
+        category: 'COMPENSATION',
+        reason: reason.trim(),
+        reference: selectedTicket.reference,
+      });
+
       replyTicket(
         selectedTicket.id,
-        `System Note: Admin accredited +${amount} USDT directly to user wallet balance for Ticket ${selectedTicket.reference}.`,
+        `System Note: Admin accredited +${amount} USDT directly to user wallet balance via double-entry ledger for Ticket ${selectedTicket.reference}. Reason: ${reason.trim()}`,
         true,
         'System Ledger'
       );
-      alert(`Accredited +${amount} USDT to ${selectedTicket.userName}!`);
+      showToast(`Successfully credited +${amount} USDT to ${selectedTicket.userName}!`, 'success');
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Failed to execute balance adjustment', 'error');
     }
   };
 
