@@ -40,6 +40,7 @@ import { UniversalSearchService } from './services/universal-search.service';
 import { FraudCenterService } from './services/fraud-center.service';
 import { FinancialSimulationLabService } from './services/financial-simulation-lab.service';
 import { DualAuthorizationService } from './services/dual-authorization.service';
+import { CentralDataSyncService } from './services/central-data-sync.service';
 import { IdentityService } from '../identity/identity.service';
 import { AuthModule } from '../auth/auth.module';
 
@@ -123,8 +124,10 @@ import { SettlementModule } from '../settlement/settlement.module';
     CommandCenterConfigService,
     AdminManagementService,
     AdminMerchantService,
+    CentralDataSyncService,
   ],
   exports: [
+    CentralDataSyncService,
     ProductionReadinessEngineService,
     ObservabilityIntelligenceEngineService,
     PlatformOperationsEngineService,

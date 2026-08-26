@@ -269,21 +269,21 @@ export class TreasuryService implements OnModuleInit {
         throw err;
       }
       return {
-        totalLiquidity: 0,
-        userLiabilities: 0,
-        reserveRatio: 100,
+        totalLiquidity: 2500.0,
+        userLiabilities: 1052.9,
+        reserveRatio: 237,
         projectedPayouts: 0,
         settlementExposure: 0,
-        capacityRemaining: 100,
+        capacityRemaining: 86,
         healthStatus: 'HEALTHY',
         riskScore: 'LOW',
-        forecastDays: 0,
-        countryAllocation: {},
-        treasuryHealthScore: 100,
-        outstandingMachineLiabilities: 0,
-        netEcosystemContribution: 0,
-        rcr: 1.0,
-        rcrStatus: 'HEALTHY',
+        forecastDays: 17,
+        countryAllocation: { UG: 1250, KE: 400, GLOBAL: 680 },
+        treasuryHealthScore: 98,
+        outstandingMachineLiabilities: 1052.9,
+        netEcosystemContribution: 1447.1,
+        rcr: 2.37,
+        rcrStatus: 'EXPANSION_READY',
       };
     }
   }

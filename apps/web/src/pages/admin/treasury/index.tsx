@@ -142,21 +142,17 @@ export const TreasuryPage: React.FC = () => {
   const fetchTreasuryData = useCallback(async () => {
     setLoading(true);
     try {
-      const [intelRes, rosterData, queueData, depRes, wthRes] = await Promise.all([
-        api.get('/admin/treasury-operators/intelligence').catch(() => null),
+      const [treasuryRes, rosterData, queueData, depRes, wthRes] = await Promise.all([
+        api.get('/admin/financial/treasury').catch(() => null),
         treasuryOperatorService.getRoster().catch(() => []),
         treasuryOperatorService.getQueue().catch(() => []),
         api.get('/admin/financial/deposits', { params: { limit: 50 } }).catch(() => null),
         api.get('/admin/financial/withdrawals', { params: { limit: 50 } }).catch(() => null),
       ]);
 
-      if (intelRes?.data?.data) {
-        const intel = intelRes.data.data;
-        if (intel.metrics) setMetrics(intel.metrics);
-        if (intel.liabilities) setLiabilities(intel.liabilities);
-      } else {
-        const healthRes = await api.get('/admin/treasury/health').catch(() => null);
-        if (healthRes?.data) setMetrics(healthRes.data);
+      const treasuryData = treasuryRes?.data?.metrics || treasuryRes?.data?.data?.metrics || treasuryRes?.data?.data || treasuryRes?.data;
+      if (treasuryData) {
+        setMetrics(treasuryData);
       }
 
       setRoster(rosterData);

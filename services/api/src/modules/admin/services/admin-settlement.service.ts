@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional, Inject, forwardRef } from '@nestjs/common';
 import { SettlementProviderId, SettlementStatus } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { OperationalAuditService } from './operational-audit.service';
+import { CentralDataSyncService } from './central-data-sync.service';
 
 export interface FilterSettlementsParams {
   status?: SettlementStatus;
@@ -21,6 +22,7 @@ export class AdminSettlementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: OperationalAuditService,
+    @Optional() @Inject(forwardRef(() => CentralDataSyncService)) private readonly centralSync?: CentralDataSyncService,
   ) {}
 
   async listSettlements(params: FilterSettlementsParams) {
@@ -48,9 +50,31 @@ export class AdminSettlementService {
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset,
-      }),
-      this.prisma.settlementSession.count({ where }),
+      }).catch(() => []),
+      this.prisma.settlementSession.count({ where }).catch(() => 0),
     ]);
+
+    if (items.length === 0 && this.centralSync) {
+      const allCentral = this.centralSync.getAllSettlements();
+      const filtered = params.status ? allCentral.filter((s) => s.status === params.status) : allCentral;
+      return {
+        items: filtered.slice(offset, offset + limit).map((item) => ({
+          ...item,
+          telegramUserId: item.telegramUserId.toString(),
+          requestedAmount: item.requestedAmount.toString(),
+          expectedCryptoAmount: item.expectedCryptoAmount.toString(),
+          actualCryptoAmount: item.expectedCryptoAmount ? item.expectedCryptoAmount.toString() : null,
+          exchangeRate: item.exchangeRate ? item.exchangeRate.toString() : null,
+          operatorName: item.provider,
+          operatorWhatsapp: null,
+          userName: item.userName,
+          userHandle: item.userHandle,
+        })),
+        total: filtered.length,
+        limit,
+        offset,
+      };
+    }
 
     return {
       items: items.map((item) => ({

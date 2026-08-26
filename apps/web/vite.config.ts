@@ -36,6 +36,17 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('error', (_err, req, res) => {
+            if (res && !('headersSent' in res && res.headersSent)) {
+              const url = req.url || '';
+              // @ts-ignore
+              res.writeHead(502, { 'Content-Type': 'application/json' });
+              // @ts-ignore
+              res.end(JSON.stringify({ success: false, error: 'API_GATEWAY_UNAVAILABLE', message: 'Backend service offline' }));
+            }
+          });
+        },
       },
     },
   },

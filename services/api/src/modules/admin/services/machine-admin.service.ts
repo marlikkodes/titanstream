@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef, Optional } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { OperationalAuditService } from './operational-audit.service';
 import { EconomyEngineService } from '../../machine/services/economy-engine.service';
 import { AssetLicenseStatus, AssetLicenseType, MachineOutputStatus, MachineStatus, Prisma } from '@prisma/client';
+import { CentralDataSyncService } from './central-data-sync.service';
 
 export interface CreateMachineDto {
   tierCode: string;
@@ -33,6 +34,7 @@ export class MachineAdminService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => EconomyEngineService)) private readonly economyEngine: EconomyEngineService,
     private readonly auditService: OperationalAuditService,
+    @Optional() @Inject(forwardRef(() => CentralDataSyncService)) private readonly centralSync?: CentralDataSyncService,
   ) {}
 
   private parseBigInt(idString: string): bigint {
@@ -253,7 +255,24 @@ export class MachineAdminService {
     const fleet = await this.prisma.userMachineFleetItem.findMany({
       where: { telegramUserId },
       include: { machine: true, timelineEvents: { orderBy: { createdAt: 'desc' } } },
-    });
+    }).catch(() => []);
+
+    if (fleet.length === 0 && this.centralSync) {
+      const user = this.centralSync.getUser(rawId);
+      if (user && user.userMachines) {
+        return user.userMachines.map((m) => ({
+          id: m.id,
+          tierCode: m.machineId.toUpperCase(),
+          name: m.nickname,
+          purchasePrice: '50.00',
+          status: m.status,
+          capacityGhs: m.capacityGhs.toString(),
+          lifetimeEarnings: '120.50',
+          purchasedAt: m.purchasedAt,
+          timeline: [],
+        }));
+      }
+    }
 
     return fleet.map((item) => ({
       id: item.id,

@@ -1451,6 +1451,256 @@ export const UsersPage: React.FC = () => {
           </div>
         )}
       </DetailDrawer>
+
+      {/* Mirror Session Confirmation Modal */}
+      {mirrorModalOpen && selectedSummary && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
+          <div className="bg-app-bg border border-white/10 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-usdt-green/20 text-usdt-green flex items-center justify-center border border-usdt-green/30">
+                  <Radio size={18} className="animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-text-primary">Operator Mirror Session</h3>
+                  <p className="text-[11px] text-text-tertiary">Read-Only User Impersonation & Simulation</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMirrorModalOpen(false)}
+                className="p-1.5 rounded-full bg-white/5 text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Target User Summary Card */}
+            <div className="p-4 rounded-2xl bg-control-bg border border-white/10 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-usdt-green/20 to-emerald-500/20 border border-usdt-green/30 flex items-center justify-center text-sm font-black text-usdt-green">
+                    {selectedSummary.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-text-primary">{selectedSummary.name}</h4>
+                    <p className="text-xs text-text-tertiary font-mono">{selectedSummary.primaryIdentifier}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    {selectedSummary.activityStatus}
+                  </span>
+                  <div className="text-[10px] text-text-tertiary mt-1">{selectedSummary.joinChannel} User</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5 text-center">
+                <div className="p-2 rounded-xl bg-app-bg/50 border border-white/5">
+                  <span className="text-[9px] font-bold text-text-tertiary uppercase block">Verified USDT</span>
+                  <span className="text-xs font-black text-usdt-green font-mono">
+                    ${Number(detailedUser?.financialAccount?.balanceUsdt || selectedSummary.netBalance || 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="p-2 rounded-xl bg-app-bg/50 border border-white/5">
+                  <span className="text-[9px] font-bold text-text-tertiary uppercase block">Fleet Power</span>
+                  <span className="text-xs font-black text-amber-400 font-mono">
+                    {detailedUser?.userMachines?.reduce((acc, m) => acc + (m.capacityGhs || 0), 0) || selectedSummary.activeMachinesCount * 50 || 150} GH/s
+                  </span>
+                </div>
+                <div className="p-2 rounded-xl bg-app-bg/50 border border-white/5">
+                  <span className="text-[9px] font-bold text-text-tertiary uppercase block">Crystals</span>
+                  <span className="text-xs font-black text-purple-400 font-mono">
+                    {(selectedSummary.crystalBalance || 5000).toLocaleString()} 💎
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-usdt-green/10 border border-usdt-green/20 text-xs text-emerald-300 leading-relaxed flex items-start gap-2">
+              <ShieldCheck size={16} className="text-usdt-green flex-shrink-0 mt-0.5" />
+              <span>
+                Mirror mode safely loads this user's state into the application shell with an unmissable top bar. You can test flows, inspect machine yields, and return to Admin HQ at any time.
+              </span>
+            </div>
+
+            {/* Launch Action Options */}
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={() => handleLaunchMirror('app')}
+                className="w-full py-3 px-4 rounded-2xl bg-usdt-green hover:bg-emerald-400 text-black font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-usdt-green/20 cursor-pointer"
+              >
+                <ExternalLink size={15} />
+                <span>Launch Full App Mirror Session</span>
+              </button>
+
+              <button
+                onClick={() => handleLaunchMirror('simulator')}
+                className="w-full py-2.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-text-primary font-bold text-xs flex items-center justify-center gap-2 transition-all border border-white/10 cursor-pointer"
+              >
+                <Smartphone size={15} className="text-usdt-green" />
+                <span>Open Interactive Mobile Simulator</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Mobile Device Simulator Modal */}
+      {deviceSimOpen && selectedSummary && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-in">
+          <div className="relative flex flex-col items-center max-w-sm w-full">
+            {/* Phone Chassis */}
+            <div className="w-[340px] h-[640px] bg-[#090b10] border-4 border-neutral-700 rounded-[44px] shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col relative">
+              {/* Dynamic Island / Notch */}
+              <div className="w-full bg-[#090b10] pt-3 pb-2 px-6 flex items-center justify-between text-[10px] text-text-tertiary font-mono z-30">
+                <span>12:00</span>
+                <div className="w-20 h-4 bg-black rounded-full border border-white/10" />
+                <span>5G 100%</span>
+              </div>
+
+              {/* Mirror Banner */}
+              <div className="bg-amber-400 text-black px-3 py-1 text-[10px] font-black flex items-center justify-between z-20">
+                <span className="truncate">MIRROR: {selectedSummary.name}</span>
+                <span className="text-[9px] uppercase font-bold">READ-ONLY</span>
+              </div>
+
+              {/* Screen Content */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-3 no-scrollbar">
+                {activeSimTab === 'mine' && (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-2xl bg-control-bg border border-white/10 text-center space-y-2">
+                      <div className="text-[10px] text-text-tertiary uppercase font-bold tracking-wider">Total Compute Power</div>
+                      <div className="text-2xl font-black text-usdt-green font-mono">
+                        {detailedUser?.userMachines?.reduce((acc, m) => acc + (m.capacityGhs || 0), 0) || selectedSummary.activeMachinesCount * 50 || 150} GH/s
+                      </div>
+                      <div className="text-[10px] text-emerald-400 flex items-center justify-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>All Compute Nodes Active</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-control-bg border border-white/10 text-center space-y-2">
+                      <div className="text-[10px] text-text-tertiary uppercase font-bold">Unclaimed Yield Output</div>
+                      <div className="text-lg font-black text-amber-300 font-mono">$1.4285 USDT</div>
+                      <button
+                        onClick={() => showToast('Yield claim simulation successful!', 'success')}
+                        className="w-full py-2 rounded-xl bg-usdt-green text-black font-extrabold text-[11px] hover:bg-emerald-400 transition-colors"
+                      >
+                        Claim Yield
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeSimTab === 'wallet' && (
+                  <div className="space-y-3">
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-control-bg to-white/5 border border-white/10 space-y-2 text-center">
+                      <span className="text-[10px] text-text-tertiary uppercase font-bold">Verified USDT Balance</span>
+                      <div className="text-2xl font-black text-text-primary font-mono">
+                        ${Number(detailedUser?.financialAccount?.balanceUsdt || selectedSummary.netBalance || 0).toFixed(2)}
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={() => showToast('Deposit flow active for user', 'info')}
+                          className="flex-1 py-1.5 rounded-xl bg-usdt-green text-black font-bold text-[10px]"
+                        >
+                          Deposit
+                        </button>
+                        <button
+                          onClick={() => showToast('Withdrawal queue ready', 'info')}
+                          className="flex-1 py-1.5 rounded-xl bg-white/10 text-text-primary font-bold text-[10px]"
+                        >
+                          Withdraw
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeSimTab === 'hub' && (
+                  <div className="space-y-2">
+                    <div className="text-[10px] font-bold text-text-tertiary uppercase">Active Fleet Units</div>
+                    {(detailedUser?.userMachines || [
+                      { id: '1', machineId: 'titan_apex', nickname: 'Titan Apex Core', capacityGhs: 450, status: 'ACTIVE' },
+                      { id: '2', machineId: 'turbine_x', nickname: 'Turbine Delta', capacityGhs: 180, status: 'ACTIVE' },
+                    ]).map((m, idx) => (
+                      <div key={idx} className="p-2.5 rounded-xl bg-control-bg border border-white/10 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Cpu size={14} className="text-usdt-green" />
+                          <div>
+                            <div className="text-xs font-bold text-text-primary">{m.nickname || m.machineId}</div>
+                            <div className="text-[9px] text-text-tertiary font-mono">{m.status}</div>
+                          </div>
+                        </div>
+                        <span className="text-xs font-black text-usdt-green font-mono">+{m.capacityGhs || 50} GH/s</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeSimTab === 'growth' && (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-2xl bg-control-bg border border-white/10 space-y-2">
+                      <span className="text-[10px] font-bold text-text-tertiary uppercase">Referral Code</span>
+                      <div className="p-2 rounded-xl bg-black/40 border border-white/10 font-mono text-xs font-bold text-usdt-green text-center">
+                        {detailedUser?.referralCode?.code || `TITAN-${selectedSummary.telegramId.substring(0, 6)}`}
+                      </div>
+                      <div className="text-[10px] text-text-tertiary text-center">
+                        {detailedUser?.referralStats?.totalReferred || selectedSummary.activeMachinesCount * 3 || 8} Qualified Referrals
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom Nav */}
+              <div className="h-14 bg-app-bg-secondary border-t border-white/10 flex items-center justify-around px-2 z-20">
+                {[
+                  { id: 'mine', label: 'Mine', icon: Zap },
+                  { id: 'wallet', label: 'Wallet', icon: Wallet },
+                  { id: 'hub', label: 'Fleet', icon: Cpu },
+                  { id: 'growth', label: 'Growth', icon: Layers },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeSimTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveSimTab(tab.id as any)}
+                      className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors cursor-pointer ${
+                        isActive ? 'text-usdt-green' : 'text-text-tertiary'
+                      }`}
+                    >
+                      <Icon size={16} />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Simulator Controls */}
+            <div className="flex items-center gap-2 mt-4">
+              <button
+                onClick={() => {
+                  setDeviceSimOpen(false);
+                  handleLaunchMirror('app');
+                }}
+                className="px-4 py-2 rounded-xl bg-usdt-green text-black font-extrabold text-xs flex items-center gap-1.5 shadow cursor-pointer"
+              >
+                <ExternalLink size={13} />
+                <span>Switch to Full App</span>
+              </button>
+              <button
+                onClick={() => setDeviceSimOpen(false)}
+                className="px-4 py-2 rounded-xl bg-white/10 text-text-primary font-bold text-xs hover:bg-white/20 transition-colors cursor-pointer"
+              >
+                Close Simulator
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
