@@ -31,7 +31,10 @@ const iconVariants: Record<string, string> = {
 export const MetricCard: React.FC<MetricCardProps> = ({
   label, value, change, changeLabel, icon, variant = 'default', className = '',
 }) => {
-  const IconComponent = icon ? Icons[icon] as React.ElementType : null;
+  const RawIcon = icon ? (Icons as Record<string, unknown>)[icon] : null;
+  const IconComponent = (RawIcon && (typeof RawIcon === 'function' || typeof RawIcon === 'object'))
+    ? (RawIcon as React.ElementType)
+    : null;
   const isPositive = change !== undefined && change >= 0;
 
   return (

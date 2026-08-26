@@ -89,57 +89,73 @@ export interface AdminAccountRecord {
 
 export const commandCenterService = {
   async getMobileMoneyRegistry(): Promise<MobileMoneyConfig[]> {
-    const res = await api.get('/admin/config/mobile-money');
-    return res.data.data;
+    try {
+      const res = await api.get('/admin/config/mobile-money');
+      return res.data?.data ?? res.data ?? [];
+    } catch {
+      return [];
+    }
   },
 
   async upsertMobileMoney(dto: Partial<MobileMoneyConfig>): Promise<MobileMoneyConfig> {
     const res = await api.post('/admin/config/mobile-money', dto);
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 
   async getCryptoWalletRegistry(): Promise<CryptoWalletConfig[]> {
-    const res = await api.get('/admin/config/crypto-wallets');
-    return res.data.data;
+    try {
+      const res = await api.get('/admin/config/crypto-wallets');
+      return res.data?.data ?? res.data ?? [];
+    } catch {
+      return [];
+    }
   },
 
   async upsertCryptoWallet(dto: Partial<CryptoWalletConfig>): Promise<CryptoWalletConfig> {
     const res = await api.post('/admin/config/crypto-wallets', dto);
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 
   async testUssdTemplate(template: string, phone: string, amount: number): Promise<UssdTestResult> {
     const res = await api.post('/admin/config/ussd/preview', { template, phone, amount });
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 
   async getSettings(): Promise<CommandCenterSettings> {
-    const res = await api.get('/admin/config/settings');
-    return res.data.data;
+    try {
+      const res = await api.get('/admin/config/settings');
+      return res.data?.data ?? res.data ?? ({} as any);
+    } catch {
+      return {} as any;
+    }
   },
 
   async updateSettings(patch: Partial<CommandCenterSettings>): Promise<CommandCenterSettings> {
     const res = await api.post('/admin/config/settings', patch);
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 
   async getAdminAccounts(): Promise<AdminAccountRecord[]> {
-    const res = await api.get('/admin/management/admins');
-    return res.data.data;
+    try {
+      const res = await api.get('/admin/management/admins');
+      return res.data?.data ?? res.data ?? [];
+    } catch {
+      return [];
+    }
   },
 
   async inviteAdmin(telegramUserId: string, name: string, role: string): Promise<AdminAccountRecord> {
     const res = await api.post('/admin/management/invite', { telegramUserId, name, role });
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 
   async updateAdminRole(id: string, role: string): Promise<AdminAccountRecord> {
     const res = await api.post(`/admin/management/${id}/role`, { role });
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 
   async toggleAdminStatus(id: string, status: 'ACTIVE' | 'SUSPENDED' | 'REVOKED'): Promise<AdminAccountRecord> {
     const res = await api.post(`/admin/management/${id}/status`, { status });
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 };

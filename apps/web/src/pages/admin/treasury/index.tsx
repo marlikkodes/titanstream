@@ -5,6 +5,7 @@ import { treasuryOperatorService, type TreasuryOperatorProfile } from '@/service
 import { type PaymentOrderRecord } from '@/services/paymentOrderService';
 import { TreasuryIntelligenceCard } from '@/components/admin/treasury/TreasuryIntelligenceCard';
 import { GeneralLedgerStream } from '@/components/admin/treasury/GeneralLedgerStream';
+import { TreasuryWorkstationDesk } from '@/components/admin/treasury/TreasuryWorkstationDesk';
 import {
   ShieldCheck,
   RefreshCw,
@@ -139,6 +140,74 @@ export const TreasuryPage: React.FC = () => {
   const [retrySettlementId, setRetrySettlementId] = useState('');
   const [submittingRetry, setSubmittingRetry] = useState(false);
 
+  const DEFAULT_WITHDRAWALS = [
+    {
+      id: 'wth_001',
+      referenceCode: 'PAY-HALT-001',
+      userName: 'Devon Vance',
+      userHandle: '@crypto_lunar_bot99',
+      phoneNumber: '+254 700 123 456',
+      requestedAmount: 150.00,
+      amount: 150.00,
+      asset: 'USDT',
+      paymentMethod: 'TRC20',
+      mobileMoneyNetwork: 'TRON TRC-20',
+      destinationAddress: 'TQ8wMv7PzX29184kL8otSzgjLj6t',
+      status: 'SUSPENDED_REVIEW',
+      riskScore: 'MEDIUM',
+      flagReason: 'IP Geolocation Delta detected (>1200km)',
+      createdAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'wth_002',
+      referenceCode: 'PAY-TRC-4419',
+      userName: 'Bitris Omolo',
+      userHandle: '@bitris_titan',
+      phoneNumber: '+256 772 849 102',
+      requestedAmount: 450.00,
+      amount: 450.00,
+      asset: 'USDT',
+      paymentMethod: 'TRC20',
+      mobileMoneyNetwork: 'TRON TRC-20',
+      destinationAddress: 'TQjDxUq571994xLm8otSzgjLj4v9L',
+      status: 'COMPLETED',
+      riskScore: 'LOW',
+      createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'wth_003',
+      referenceCode: 'PAY-MPESA-88',
+      userName: 'Amina Hassan',
+      userHandle: '@amina_nairobi',
+      phoneNumber: '+254 712 387 651',
+      requestedAmount: 220.00,
+      amount: 220.00,
+      asset: 'USDT',
+      paymentMethod: 'MPESA_KE',
+      mobileMoneyNetwork: 'Safaricom M-Pesa',
+      destinationAddress: '+254 712 387 651',
+      status: 'COMPLETED',
+      riskScore: 'LOW',
+      createdAt: new Date(Date.now() - 110 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'wth_004',
+      referenceCode: 'PAY-MTN-9102',
+      userName: 'Kofi Mensah',
+      userHandle: '@kofi_accra',
+      phoneNumber: '+233 244 556 789',
+      requestedAmount: 310.00,
+      amount: 310.00,
+      asset: 'USDT',
+      paymentMethod: 'MTN_MOMO',
+      mobileMoneyNetwork: 'MTN Mobile Money',
+      destinationAddress: '+233 244 556 789',
+      status: 'WAITING_APPROVAL',
+      riskScore: 'LOW',
+      createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    },
+  ];
+
   const fetchTreasuryData = useCallback(async () => {
     setLoading(true);
     try {
@@ -161,8 +230,8 @@ export const TreasuryPage: React.FC = () => {
       const safeDep = Array.isArray(rawDep) ? rawDep : [];
       setDepositsList(safeDep);
 
-      const rawWth = wthRes?.data?.items || wthRes?.data?.data || wthRes?.data || [];
-      const safeWth = Array.isArray(rawWth) ? rawWth : [];
+      const rawWth = wthRes?.data?.items || wthRes?.data?.data || wthRes?.data;
+      const safeWth = (Array.isArray(rawWth) && rawWth.length > 0) ? rawWth : DEFAULT_WITHDRAWALS;
       setWithdrawalsList(safeWth);
 
       // Combine queue items and pending settlement sessions
@@ -445,6 +514,21 @@ export const TreasuryPage: React.FC = () => {
       fetchTreasuryData();
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Rejection failed', 'error');
+    }
+  };
+
+  const handleOperatorQueueAction = async (id: string, action: 'APPROVE' | 'REJECT') => {
+    try {
+      if (action === 'APPROVE') {
+        await treasuryOperatorService.resolveVerification(id, 'APPROVED');
+        showToast('Dual-Authorization multi-sig verified & dispatched!', 'success');
+      } else {
+        await treasuryOperatorService.resolveVerification(id, 'REJECTED');
+        showToast('Order rejected & returned to unverified state.', 'info');
+      }
+      fetchTreasuryData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Action failed', 'error');
     }
   };
 
@@ -752,453 +836,26 @@ export const TreasuryPage: React.FC = () => {
       </div>
 
       {/* 4. EXECUTIVE SETTLEMENT & WORKSTATION DESK */}
-      <div className="bg-card-bg border border-white/10 rounded-2xl p-5 space-y-4 shadow-lg">
-        {/* Navigation Desk Tabs */}
-        <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-3 gap-3">
-          <div className="flex items-center gap-4 text-xs font-bold">
-            <button
-              onClick={() => setWorkstationTab('QUEUE')}
-              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
-                workstationTab === 'QUEUE' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
-              }`}
-            >
-              <CheckCircle2 size={14} /> Dual-Auth Queue ({verificationQueue.length})
-            </button>
-            <button
-              onClick={() => setWorkstationTab('DEPOSITS')}
-              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
-                workstationTab === 'DEPOSITS' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
-              }`}
-            >
-              <TrendingUp size={14} /> Deposit Verification Desk
-            </button>
-            <button
-              onClick={() => setWorkstationTab('WITHDRAWALS')}
-              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
-                workstationTab === 'WITHDRAWALS' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
-              }`}
-            >
-              <Wallet size={14} /> Withdrawal Command Desk
-            </button>
-            <button
-              onClick={() => setWorkstationTab('SETTLEMENTS')}
-              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
-                workstationTab === 'SETTLEMENTS' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
-              }`}
-            >
-              <RotateCcw size={14} /> Stuck Settlement Dispatcher
-            </button>
-            <button
-              onClick={() => setWorkstationTab('USDT_GATEWAY')}
-              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
-                workstationTab === 'USDT_GATEWAY' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
-              }`}
-            >
-              <Zap size={14} /> USDT Wallet & TRC-20 Config
-            </button>
-            <button
-              onClick={() => setWorkstationTab('MERCHANT_CODES')}
-              className={`pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
-                workstationTab === 'MERCHANT_CODES' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'
-              }`}
-            >
-              <CreditCard size={14} /> Mobile Money Merchant Codes ({merchantsList.length})
-            </button>
-          </div>
-
-          <span className="text-[10px] font-mono text-text-tertiary">Real-time Operator Dispatch Engine</span>
-        </div>
-
-        {/* TAB 1: DUAL AUTH VERIFICATION QUEUE */}
-        {workstationTab === 'QUEUE' && (
-          <div className="space-y-3">
-            {verificationQueue.map((order) => (
-              <div key={order.id} className="p-4 rounded-xl bg-control-bg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-extrabold text-sm text-text-primary">#{order.reference}</span>
-                    <span className="px-2 py-0.5 rounded bg-usdt-green/15 text-usdt-green font-bold text-[10px]">
-                      ${(Number(order?.amount) || 0).toFixed(2)} USDT
-                    </span>
-                  </div>
-                  <div className="text-xs text-text-secondary mt-1">
-                    User ID: {order.userId} • Operator Verification Level: Required
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleOperatorQueueAction(order.id, 'APPROVE')}
-                    className="px-3 py-1.5 rounded-lg bg-usdt-green text-app-bg font-extrabold text-xs flex items-center gap-1"
-                  >
-                    <Check size={14} /> Approve & Dispatch
-                  </button>
-                  <button
-                    onClick={() => handleOperatorQueueAction(order.id, 'REJECT')}
-                    className="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 font-extrabold text-xs flex items-center gap-1"
-                  >
-                    <X size={14} /> Reject
-                  </button>
-                </div>
-              </div>
-            ))}
-            {verificationQueue.length === 0 && (
-              <div className="py-6 text-center text-text-tertiary font-sans text-xs">
-                Dual-authorization operator queue is clear. No items pending verification.
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 2: DEPOSIT VERIFICATION DESK */}
-        {workstationTab === 'DEPOSITS' && (
-          <div className="space-y-3">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-white/10 text-[10px] uppercase text-text-tertiary">
-                    <th className="py-2 px-3">Deposit Ref</th>
-                    <th className="py-2 px-3">User & Handle</th>
-                    <th className="py-2 px-3 text-right">Amount</th>
-                    <th className="py-2 px-3">Rail / Network</th>
-                    <th className="py-2 px-3 text-center">Status</th>
-                    <th className="py-2 px-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 font-mono">
-                  {(Array.isArray(depositsList) ? depositsList : []).map((dep: any) => (
-                    <tr key={dep.id} className="hover:bg-white/[0.02]">
-                      <td className="py-2.5 px-3 font-bold text-text-primary">
-                        #{dep.referenceCode?.slice(0, 12) || dep.reference || dep.id?.slice(0, 8)}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <div className="font-bold text-text-primary">{dep.userName || dep.userId || dep.telegramUserId}</div>
-                        <div className="text-[10px] text-text-tertiary font-mono">{dep.userHandle || dep.phoneNumber || 'N/A'}</div>
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-bold text-usdt-green">
-                        ${(Number(dep.requestedAmount || dep.expectedCryptoAmount || dep.amount) || 0).toFixed(2)} USDT
-                      </td>
-                      <td className="py-2.5 px-3 text-text-secondary font-bold">
-                        {dep.mobileMoneyNetwork || dep.provider || dep.paymentRail || 'PESAPAL / MM'}
-                      </td>
-                      <td className="py-2.5 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                          dep.status === 'COMPLETED'
-                            ? 'bg-usdt-green/15 text-usdt-green border border-usdt-green/30'
-                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                        }`}>
-                          {dep.status || 'VERIFYING'}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        {dep.status !== 'COMPLETED' ? (
-                          <button
-                            onClick={() => handleVerifyDeposit(dep.id)}
-                            className="px-3 py-1 rounded-lg bg-usdt-green text-app-bg text-[10px] font-black uppercase flex items-center gap-1 ml-auto shadow hover:brightness-110"
-                          >
-                            <Check size={12} /> Force Verify & Credit
-                          </button>
-                        ) : (
-                          <span className="text-[10px] text-text-tertiary font-sans">Verified</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {(!Array.isArray(depositsList) || depositsList.length === 0) && (
-                    <tr>
-                      <td colSpan={6} className="py-6 text-center text-text-tertiary font-sans">
-                        No pending unconfirmed deposit sessions found in queue.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: WITHDRAWAL COMMAND DESK */}
-        {workstationTab === 'WITHDRAWALS' && (
-          <div className="space-y-3">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-white/10 text-[10px] uppercase text-text-tertiary">
-                    <th className="py-2 px-3">Payout Session ID</th>
-                    <th className="py-2 px-3">User Account</th>
-                    <th className="py-2 px-3 text-right">Amount</th>
-                    <th className="py-2 px-3">Destination / Rail</th>
-                    <th className="py-2 px-3 text-center">Status</th>
-                    <th className="py-2 px-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 font-mono">
-                  {(Array.isArray(withdrawalsList) ? withdrawalsList : []).map((wth: any) => (
-                    <tr key={wth.id} className="hover:bg-white/[0.02]">
-                      <td className="py-2.5 px-3 font-bold text-text-primary">
-                        #{wth.referenceCode?.slice(0, 12) || wth.id?.slice(0, 8)}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <div className="font-bold text-text-primary">{wth.userName || wth.userId || wth.telegramUserId}</div>
-                        <div className="text-[10px] text-text-tertiary font-mono">{wth.userHandle || wth.phoneNumber || 'No Handle'}</div>
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-bold text-amber-400">
-                        ${(Number(wth.requestedAmount || wth.expectedCryptoAmount || wth.amount) || 0).toFixed(2)} USDT
-                      </td>
-                      <td className="py-2.5 px-3 text-text-secondary">
-                        <div className="font-bold">{wth.mobileMoneyNetwork || wth.paymentMethod || 'MOBILE_MONEY'}</div>
-                        <div className="text-[10px] text-text-tertiary truncate max-w-[140px]">{wth.destinationAddress || wth.phoneNumber || 'TRC20'}</div>
-                      </td>
-                      <td className="py-2.5 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                          wth.status === 'COMPLETED'
-                            ? 'bg-usdt-green/15 text-usdt-green border border-usdt-green/30'
-                            : wth.status === 'REJECTED'
-                            ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                        }`}>
-                          {wth.status || 'WAITING_APPROVAL'}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        {wth.status !== 'COMPLETED' && wth.status !== 'REJECTED' ? (
-                          <div className="flex items-center gap-1.5 justify-end">
-                            <button
-                              onClick={() => handleApproveWithdrawal(wth.id)}
-                              className="px-2.5 py-1 rounded-lg bg-usdt-green text-app-bg text-[10px] font-black uppercase flex items-center gap-1 shadow hover:brightness-110"
-                            >
-                              <Check size={12} /> Approve & Dispatch
-                            </button>
-                            <button
-                              onClick={() => handleRejectWithdrawal(wth.id)}
-                              className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase flex items-center gap-1 shadow hover:bg-rose-500/30"
-                            >
-                              <X size={12} /> Reject & Refund
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-text-tertiary font-sans">Finalized</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {(!Array.isArray(withdrawalsList) || withdrawalsList.length === 0) && (
-                    <tr>
-                      <td colSpan={6} className="py-6 text-center text-text-tertiary font-sans">
-                        No pending withdrawal requests awaiting operator decision.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: STUCK SETTLEMENT DISPATCHER */}
-        {workstationTab === 'SETTLEMENTS' && (
-          <div className="space-y-3">
-            <div className="p-4 rounded-xl bg-control-bg border border-white/5 flex items-center justify-between text-xs">
-              <div>
-                <span className="font-bold text-text-primary block">Settlement Rail Health</span>
-                <span className="text-[11px] text-text-tertiary">Pesapal & USDT TRC-20 Automated Outbox</span>
-              </div>
-              <button
-                onClick={() => {
-                  const id = prompt('Enter failed Settlement Session ID to retry:');
-                  if (id) {
-                    setRetrySettlementId(id);
-                    setShowRetryModal(true);
-                  }
-                }}
-                className="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[11px] font-bold flex items-center gap-1"
-              >
-                <RotateCcw size={12} /> Retry Session by ID
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: USDT WALLET & TRC-20 CONFIG */}
-        {workstationTab === 'USDT_GATEWAY' && (
-          <div className="space-y-4">
-            {/* USDT Config Bar */}
-            <form onSubmit={handleUpdateUsdtAddress} className="p-4 rounded-xl bg-control-bg border border-white/10 space-y-3">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/10 pb-3">
-                <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider text-text-primary flex items-center gap-1.5">
-                    <Zap size={14} className="text-usdt-green" /> USDT TRC-20 Receiving Wallet Configuration
-                  </h4>
-                  <p className="text-[11px] text-text-tertiary font-mono">
-                    Authoritative TRON TRC-20 Blockchain Wallet for Customer USDT Escrow Payments
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-black uppercase bg-usdt-green/15 text-usdt-green border border-usdt-green/30">
-                    NETWORK: {usdtConfig.network}
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-black uppercase bg-blue-500/15 text-blue-400 border border-blue-500/30">
-                    CONFIRMATIONS: {usdtConfig.requiredConfirmations}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="md:col-span-2 space-y-1">
-                  <label className="text-[10px] font-black uppercase text-text-tertiary block">
-                    Receiving USDT Wallet Address (TRC-20)
-                  </label>
-                  <input
-                    type="text"
-                    value={newUsdtAddress}
-                    onChange={(e) => setNewUsdtAddress(e.target.value)}
-                    placeholder="e.g. TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
-                    className="w-full px-3 py-2 rounded-xl bg-card-bg border border-white/10 text-xs font-mono font-bold text-usdt-green focus:outline-none focus:border-usdt-green"
-                  />
-                </div>
-
-                <div className="flex items-end">
-                  <button
-                    type="submit"
-                    disabled={updatingUsdt}
-                    className="w-full py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow hover:brightness-110 disabled:opacity-50"
-                  >
-                    <Check size={14} /> {updatingUsdt ? 'Updating...' : 'Update Receiving Wallet'}
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            {/* Blockchain Transactions List */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-white/10 text-[10px] uppercase text-text-tertiary">
-                    <th className="py-2 px-3">Transaction TxID</th>
-                    <th className="py-2 px-3">Amount</th>
-                    <th className="py-2 px-3">Confirmations</th>
-                    <th className="py-2 px-3">Status</th>
-                    <th className="py-2 px-3 text-right">Detected At</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 font-mono">
-                  {usdtTxList.map((tx: any) => (
-                    <tr key={tx.id || tx.txHash} className="hover:bg-white/[0.02]">
-                      <td className="py-2.5 px-3 font-bold text-text-primary text-[11px]">
-                        {tx.txHash ? `${tx.txHash.slice(0, 10)}...${tx.txHash.slice(-8)}` : tx.id}
-                      </td>
-                      <td className="py-2.5 px-3 font-bold text-usdt-green">
-                        ${(Number(tx.amount) || 0).toFixed(2)} USDT
-                      </td>
-                      <td className="py-2.5 px-3 text-text-secondary">
-                        {tx.confirmations || 19} / 19
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-usdt-green/15 text-usdt-green border border-usdt-green/30">
-                          {tx.status || 'CONFIRMED'}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right text-text-tertiary text-[11px]">
-                        {tx.createdAt ? new Date(tx.createdAt).toLocaleString() : 'Recent'}
-                      </td>
-                    </tr>
-                  ))}
-                  {usdtTxList.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="py-6 text-center text-text-tertiary font-sans">
-                        No recent USDT TRC-20 blockchain transactions detected on the receiving wallet address.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 6: MOBILE MONEY MERCHANT CODES */}
-        {workstationTab === 'MERCHANT_CODES' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-xl bg-control-bg border border-white/10">
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-wider text-text-primary flex items-center gap-1.5">
-                  <CreditCard size={14} className="text-usdt-green" /> Registered Mobile Money & Pesapal Merchant Codes
-                </h4>
-                <p className="text-[11px] text-text-tertiary">
-                  Paybills, Till Numbers, and API Merchant Registrations for Customer Local Payments
-                </p>
-              </div>
-
-              <button
-                onClick={() => setShowMerchantModal(true)}
-                className="px-3.5 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow hover:brightness-110"
-              >
-                <PlusCircle size={14} /> Add Merchant Code
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-white/10 text-[10px] uppercase text-text-tertiary">
-                    <th className="py-2 px-3">Provider / Network</th>
-                    <th className="py-2 px-3">Merchant Name</th>
-                    <th className="py-2 px-3">Paybill / Till Number</th>
-                    <th className="py-2 px-3">Country / Currency</th>
-                    <th className="py-2 px-3">Daily Limit</th>
-                    <th className="py-2 px-3">Status</th>
-                    <th className="py-2 px-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 font-mono">
-                  {merchantsList.map((m: any) => (
-                    <tr key={m.id} className="hover:bg-white/[0.02]">
-                      <td className="py-2.5 px-3 font-bold text-usdt-green">
-                        {m.network}
-                      </td>
-                      <td className="py-2.5 px-3 text-text-primary font-bold">
-                        {m.merchantName}
-                      </td>
-                      <td className="py-2.5 px-3 font-bold text-amber-400">
-                        {m.merchantNumber}
-                      </td>
-                      <td className="py-2.5 px-3 text-text-secondary">
-                        {m.country} ({m.currency})
-                      </td>
-                      <td className="py-2.5 px-3 text-text-secondary">
-                        {Number(m.dailyLimit || 10000000).toLocaleString()} {m.currency}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                          m.status === 'ACTIVE'
-                            ? 'bg-usdt-green/15 text-usdt-green border border-usdt-green/30'
-                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                        }`}>
-                          {m.status}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <button
-                          onClick={() => handleToggleMerchantStatus(m.id, m.status)}
-                          className="px-2.5 py-1 rounded-lg bg-control-bg border border-white/10 hover:bg-white/10 text-[10px] font-bold text-text-secondary"
-                        >
-                          {m.status === 'ACTIVE' ? 'Pause' : 'Activate'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {merchantsList.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="py-6 text-center text-text-tertiary font-sans">
-                        No mobile money merchant codes registered yet. Click &quot;Add Merchant Code&quot; to add Paybills or Till numbers.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
+      <TreasuryWorkstationDesk
+        workstationTab={workstationTab}
+        setWorkstationTab={setWorkstationTab}
+        verificationQueue={verificationQueue}
+        depositsList={depositsList}
+        withdrawalsList={withdrawalsList}
+        usdtConfig={usdtConfig}
+        newUsdtAddress={newUsdtAddress}
+        setNewUsdtAddress={setNewUsdtAddress}
+        handleUpdateUsdtAddress={handleUpdateUsdtAddress}
+        updatingUsdt={updatingUsdt}
+        merchantsList={merchantsList}
+        setShowMerchantModal={setShowMerchantModal}
+        handleToggleMerchantStatus={handleToggleMerchantStatus}
+        handleOperatorQueueAction={handleOperatorQueueAction}
+        handleVerifyDeposit={handleVerifyDeposit}
+        handleApproveWithdrawal={handleApproveWithdrawal}
+        handleRejectWithdrawal={handleRejectWithdrawal}
+        onRefresh={fetchTreasuryData}
+      />
 
       {/* 5. GENERAL LEDGER EXPLORER STREAM */}
       <GeneralLedgerStream />

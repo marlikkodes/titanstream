@@ -15,11 +15,15 @@ export interface TreasuryOperatorProfile {
 
 export const treasuryOperatorService = {
   async getRoster(): Promise<TreasuryOperatorProfile[]> {
-    const res = await api.get('/admin/treasury-operators/roster');
-    const raw = res.data;
-    if (Array.isArray(raw)) return raw;
-    if (Array.isArray(raw?.data)) return raw.data;
-    return [];
+    try {
+      const res = await api.get('/admin/treasury-operators/roster');
+      const raw = res.data;
+      if (Array.isArray(raw)) return raw;
+      if (Array.isArray(raw?.data)) return raw.data;
+      return [];
+    } catch {
+      return [];
+    }
   },
 
   async setDutyStatus(dutyStatus: DutyStatus): Promise<TreasuryOperatorProfile> {
@@ -28,11 +32,15 @@ export const treasuryOperatorService = {
   },
 
   async getQueue(): Promise<PaymentOrderRecord[]> {
-    const res = await api.get('/admin/treasury-operators/queue');
-    const raw = res.data;
-    if (Array.isArray(raw)) return raw;
-    if (Array.isArray(raw?.data)) return raw.data;
-    return [];
+    try {
+      const res = await api.get('/admin/treasury-operators/queue');
+      const raw = res.data;
+      if (Array.isArray(raw)) return raw;
+      if (Array.isArray(raw?.data)) return raw.data;
+      return [];
+    } catch {
+      return [];
+    }
   },
 
   async verifyPaymentOrder(

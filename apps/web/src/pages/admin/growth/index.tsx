@@ -72,8 +72,9 @@ export const GrowthAdminPage: React.FC = () => {
   const fetchRewards = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/rewards');
-      setRewards(Array.isArray(res.data) ? res.data : res.data?.data || []);
+      const res = await api.get('/admin/rewards').catch(() => ({ data: [] }));
+      const data = res?.data?.data ?? res?.data ?? [];
+      setRewards(Array.isArray(data) ? data : []);
     } catch {
       setRewards([]);
     } finally {
@@ -84,8 +85,9 @@ export const GrowthAdminPage: React.FC = () => {
   const fetchReferrals = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/referrals/relationships');
-      setReferrals(Array.isArray(res.data) ? res.data : res.data?.data || []);
+      const res = await api.get('/admin/referrals/relationships').catch(() => ({ data: [] }));
+      const data = res?.data?.data ?? res?.data ?? [];
+      setReferrals(Array.isArray(data) ? data : []);
     } catch {
       setReferrals([]);
     } finally {
@@ -96,8 +98,8 @@ export const GrowthAdminPage: React.FC = () => {
   const fetchFraudCheck = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/referrals/fraud-check');
-      setFraudData(res.data?.data || res.data);
+      const res = await api.get('/admin/referrals/fraud-check').catch(() => ({ data: null }));
+      setFraudData(res?.data?.data ?? res?.data ?? null);
     } catch {
       setFraudData(null);
     } finally {

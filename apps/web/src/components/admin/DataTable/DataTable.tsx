@@ -1,5 +1,4 @@
-import type React from 'react';
-import { useState } from 'react';
+import React, { Component, type ErrorInfo, useState } from 'react';
 import { ChevronDown, ChevronUp, ChevronsUpDown, Search } from 'lucide-react';
 
 export interface Column<T> {
@@ -10,6 +9,51 @@ export interface Column<T> {
   width?: string;
   hideable?: boolean;
   mobile?: (item: T) => { label: string; value: React.ReactNode };
+}
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  fallbackMessage?: string;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class DataTableErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.warn('[DataTable] Render safely recovered from error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 text-center bg-card-bg rounded-xl border border-white/10 space-y-2">
+          <div className="text-xs font-bold text-text-primary">Data table safely recovered</div>
+          <div className="text-[11px] text-text-tertiary">
+            {this.props.fallbackMessage || 'The table encountered an unexpected property format and safely recovered.'}
+          </div>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="mt-2 px-3 py-1.5 rounded-lg bg-control-bg text-xs font-bold text-usdt-green border border-white/10 hover:bg-white/5"
+          >
+            Refresh Table
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 interface DataTableProps<T> {
@@ -31,8 +75,8 @@ interface DataTableProps<T> {
   emptyMessage?: string;
 }
 
-export function DataTable<T extends Record<string, unknown>>({
-  columns,
+function DataTableInner<T extends Record<string, unknown>>({
+  columns = [],
   data = [],
   keyExtractor,
   onRowClick,
@@ -49,12 +93,25 @@ export function DataTable<T extends Record<string, unknown>>({
   onPageChange,
   emptyMessage = 'No results found',
 }: DataTableProps<T>) {
+  const safeData: T[] = Array.isArray(data)
+    ? data
+    : Array.isArray((data as any)?.data)
+    ? (data as any).data
+    : Array.isArray((data as any)?.items)
+    ? (data as any).items
+    : [];
+
+  const safeColumns = Array.isArray(columns) ? columns : [];
+
   const getKey = (item: T, idx: number): string => {
     if (typeof keyExtractor === 'function') {
-      return keyExtractor(item);
+      try {
+        const k = keyExtractor(item);
+        if (k != null) return String(k);
+      } catch {}
     }
     const anyItem = item as any;
-    return String(anyItem?.id ?? anyItem?.key ?? anyItem?.telegramId ?? anyItem?.reference ?? idx);
+    return String(anyItem?.id ?? anyItem?.key ?? anyItem?.telegramId ?? anyItem?.reference ?? anyItem?.code ?? `row-${idx}`);
   };
 
   const [search, setSearch] = useState('');
@@ -64,9 +121,10 @@ export function DataTable<T extends Record<string, unknown>>({
   const isControlled = controlledPage !== undefined && typeof onPageChange === 'function';
   const page = isControlled ? (controlledPage > 0 ? controlledPage - 1 : controlledPage) : internalPage;
 
-  const filtered = data.filter((item) => {
+  const filtered = safeData.filter((item) => {
+    if (!item) return false;
     if (!search) return true;
-    return columns.some((col) => {
+    return safeColumns.some((col) => {
       const val = item[col.key];
       return val != null && String(val).toLowerCase().includes(search.toLowerCase());
     });
@@ -82,8 +140,8 @@ export function DataTable<T extends Record<string, unknown>>({
   });
 
   const totalCountFinal = totalCount !== undefined ? totalCount : sorted.length;
-  const totalPages = Math.ceil(totalCountFinal / pageSize);
-  const paged = isControlled ? data : sorted.slice(page * pageSize, (page + 1) * pageSize);
+  const totalPages = Math.max(1, Math.ceil(totalCountFinal / pageSize));
+  const paged = isControlled ? safeData : sorted.slice(page * pageSize, (page + 1) * pageSize);
 
   const handlePageChange = (newPage: number) => {
     if (isControlled && onPageChange) {
@@ -143,14 +201,19 @@ export function DataTable<T extends Record<string, unknown>>({
                       mobileCardRender(item)
                     ) : (
                       <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-sm">
-                        {columns.filter(c => c.mobile).map((col) => {
-                          const m = col.mobile!(item);
-                          return (
-                            <div key={col.key}>
-                              <span className="text-[10px] font-semibold text-text-tertiary uppercase block">{m.label}</span>
-                              <span className="text-text-primary">{m.value}</span>
-                            </div>
-                          );
+                        {safeColumns.filter(c => typeof c.mobile === 'function').map((col) => {
+                          try {
+                            const m = col.mobile!(item);
+                            if (!m) return null;
+                            return (
+                              <div key={col.key}>
+                                <span className="text-[10px] font-semibold text-text-tertiary uppercase block">{m.label}</span>
+                                <span className="text-text-primary">{m.value}</span>
+                              </div>
+                            );
+                          } catch {
+                            return null;
+                          }
                         })}
                       </div>
                     )}
@@ -165,7 +228,7 @@ export function DataTable<T extends Record<string, unknown>>({
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  {columns.map((col) => (
+                  {safeColumns.map((col) => (
                     <th
                       key={col.key}
                       className={`text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-3 py-3 ${col.sortable ? 'cursor-pointer hover:text-text-primary select-none' : ''} ${col.width || ''}`}
@@ -192,16 +255,26 @@ export function DataTable<T extends Record<string, unknown>>({
                     onClick={() => onRowClick?.(item)}
                     className={`hover:bg-white/[0.02] transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                   >
-                    {columns.map((col) => (
+                    {safeColumns.map((col) => (
                       <td key={col.key} className="px-3 py-3 text-sm text-text-primary whitespace-nowrap">
-                        {col.render ? col.render(item) : String(item[col.key] ?? '')}
+                        {col.render ? (
+                          (() => {
+                            try {
+                              return col.render(item);
+                            } catch {
+                              return String(item[col.key] ?? '');
+                            }
+                          })()
+                        ) : (
+                          String(item[col.key] ?? '')
+                        )}
                       </td>
                     ))}
                   </tr>
                 ))}
                 {paged.length === 0 && (
                   <tr>
-                    <td colSpan={columns.length} className="px-3 py-8 text-center text-sm text-text-tertiary">
+                    <td colSpan={Math.max(1, safeColumns.length)} className="px-3 py-8 text-center text-sm text-text-tertiary">
                       {emptyMessage}
                     </td>
                   </tr>
@@ -238,3 +311,12 @@ export function DataTable<T extends Record<string, unknown>>({
     </div>
   );
 }
+
+export function DataTable<T extends Record<string, unknown>>(props: DataTableProps<T>) {
+  return (
+    <DataTableErrorBoundary fallbackMessage={props.emptyMessage}>
+      <DataTableInner {...props} />
+    </DataTableErrorBoundary>
+  );
+}
+

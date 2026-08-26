@@ -28,7 +28,7 @@
     "data": "CAkIAwgL"
   },
   "advSecretKey": "JtVg9IyWQNnxzs+LysCjXfgJjBFl9F/10daNp+a36lE=",
-  "lastPropHash": "EWdhV",
+  "lastPropHash": "2h2Smq",
   "nextPreKeyId": 833,
   "signedPreKey": {
     "keyId": 1,
@@ -86,7 +86,7 @@
       "data": "YBilxW6hHAbfMhpqdTXm7Pd8omlG0uOYCMKcyz0bhUg="
     }
   },
-  "lastAccountSyncTimestamp": 1787487974,
+  "lastAccountSyncTimestamp": 1787756511,
   "processedHistoryMessages": [
     {
       "key": {

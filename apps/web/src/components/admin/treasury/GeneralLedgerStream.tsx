@@ -30,8 +30,8 @@ export const GeneralLedgerStream: React.FC = () => {
     try {
       const res = await api.get('/admin/financial/ledger', {
         params: { limit: 50, accountCode: selectedAccount !== 'ALL' ? selectedAccount : undefined },
-      });
-      const data = res.data?.data || res.data?.items || res.data;
+      }).catch(() => ({ data: [] }));
+      const data = res?.data?.data || res?.data?.items || res?.data;
       if (Array.isArray(data)) {
         setEntries(data);
       } else if (Array.isArray(data?.entries)) {
@@ -39,8 +39,8 @@ export const GeneralLedgerStream: React.FC = () => {
       } else {
         setEntries([]);
       }
-    } catch (err) {
-      console.warn('Failed to load ledger stream:', err);
+    } catch {
+      setEntries([]);
     } finally {
       setLoading(false);
     }

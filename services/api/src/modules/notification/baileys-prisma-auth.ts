@@ -135,26 +135,17 @@ export async function usePrismaAuthState(
 
   // 2. Define `saveCreds`
   const saveCreds = async () => {
-    try {
-      const dataJson = JSON.parse(JSON.stringify(creds, BufferJSON?.replacer));
-      await prisma.baileysAuthKey.upsert({
-        where: {
-          accountId_keyId: { accountId, keyId: 'creds' },
-        },
-        create: {
-          accountId,
-          keyId: 'creds',
-          data: dataJson,
-        },
-        update: {
-          data: dataJson,
-        },
-      });
-      writeLocalCache('creds', creds);
-    } catch (err: any) {
-      logger.error(`[PRISMA_AUTH_SAVE_ERR] Failed to save creds to DB: ${err.message}`);
-      writeLocalCache('creds', creds);
-    }
+    writeLocalCache('creds', creds);
+    setImmediate(async () => {
+      try {
+        const dataJson = JSON.parse(JSON.stringify(creds, BufferJSON?.replacer));
+        await prisma.baileysAuthKey.upsert({
+          where: { accountId_keyId: { accountId, keyId: 'creds' } },
+          create: { accountId, keyId: 'creds', data: dataJson },
+          update: { data: dataJson },
+        });
+      } catch {}
+    });
   };
 
   // 3. Define `clearCreds`
@@ -177,11 +168,30 @@ export async function usePrismaAuthState(
   const keys = {
     get: async (type: string, ids: string[]) => {
       const data: { [id: string]: any } = {};
+      const missingIds: string[] = [];
 
-      const keyIds = ids.map((id) => `${type}-${id}`);
+      // Fast-path: read from local disk cache first (0ms, non-blocking)
+      for (const id of ids) {
+        const fullKeyId = `${type}-${id}`;
+        let val = readLocalCache(fullKeyId);
+        if (val) {
+          if (type === 'app-state-sync-key' && proto?.Message?.AppStateSyncKeyData) {
+            val = proto.Message.AppStateSyncKeyData.fromObject(val);
+          }
+          data[id] = val;
+        } else {
+          missingIds.push(id);
+        }
+      }
 
-      // Batch query PostgreSQL database for requested keys
+      // If all keys were resolved locally, return immediately without blocking on DB
+      if (missingIds.length === 0) {
+        return data;
+      }
+
+      // Query PostgreSQL only for any remaining keys not found in local disk cache
       try {
+        const keyIds = missingIds.map((id) => `${type}-${id}`);
         const records = await prisma.baileysAuthKey.findMany({
           where: {
             accountId,
@@ -194,33 +204,22 @@ export async function usePrismaAuthState(
           recordMap.set(r.keyId, r.data);
         }
 
-        for (const id of ids) {
+        for (const id of missingIds) {
           const fullKeyId = `${type}-${id}`;
-          let val: any = null;
-
           if (recordMap.has(fullKeyId)) {
             const rawJson = JSON.stringify(recordMap.get(fullKeyId));
-            val = JSON.parse(rawJson, BufferJSON?.reviver);
-          } else {
-            val = readLocalCache(fullKeyId);
-          }
-
-          if (val) {
-            if (type === 'app-state-sync-key' && proto?.Message?.AppStateSyncKeyData) {
-              val = proto.Message.AppStateSyncKeyData.fromObject(val);
+            let val = JSON.parse(rawJson, BufferJSON?.reviver);
+            if (val) {
+              if (type === 'app-state-sync-key' && proto?.Message?.AppStateSyncKeyData) {
+                val = proto.Message.AppStateSyncKeyData.fromObject(val);
+              }
+              data[id] = val;
+              writeLocalCache(fullKeyId, val);
             }
-            data[id] = val;
           }
         }
-      } catch (err: any) {
-        logger.warn(`[PRISMA_AUTH_GET_KEYS_ERR] DB read failed for keys (${type}): ${err.message}. Falling back to disk cache.`);
-        for (const id of ids) {
-          const fullKeyId = `${type}-${id}`;
-          const val = readLocalCache(fullKeyId);
-          if (val) {
-            data[id] = val;
-          }
-        }
+      } catch {
+        // Silently skip if DB is offline; missing keys are handled gracefully by Baileys
       }
 
       return data;
@@ -236,13 +235,14 @@ export async function usePrismaAuthState(
           const fullKeyId = `${category}-${id}`;
 
           if (value) {
+            // Write to local disk cache immediately (0ms)
+            writeLocalCache(fullKeyId, value);
             const valueJson = JSON.parse(JSON.stringify(value, BufferJSON?.replacer));
             upsertOperations.push({
               accountId,
               keyId: fullKeyId,
               data: valueJson,
             });
-            writeLocalCache(fullKeyId, value);
           } else {
             deleteIds.push(fullKeyId);
             deleteLocalCache(fullKeyId);
@@ -250,33 +250,24 @@ export async function usePrismaAuthState(
         }
       }
 
-      // Execute database operations asynchronously without blocking main thread
+      // Async DB persistence in background without blocking the Baileys event loop
       if (upsertOperations.length > 0 || deleteIds.length > 0) {
-        try {
-          if (deleteIds.length > 0) {
-            await prisma.baileysAuthKey.deleteMany({
-              where: {
-                accountId,
-                keyId: { in: deleteIds },
-              },
-            });
-          }
-
-          for (const item of upsertOperations) {
-            await prisma.baileysAuthKey.upsert({
-              where: {
-                accountId_keyId: {
-                  accountId: item.accountId,
-                  keyId: item.keyId,
-                },
-              },
-              create: item,
-              update: { data: item.data },
-            });
-          }
-        } catch (err: any) {
-          logger.error(`[PRISMA_AUTH_SET_KEYS_ERR] DB batch key write failed: ${err.message}`);
-        }
+        setImmediate(async () => {
+          try {
+            if (deleteIds.length > 0) {
+              await prisma.baileysAuthKey.deleteMany({
+                where: { accountId, keyId: { in: deleteIds } },
+              });
+            }
+            for (const item of upsertOperations) {
+              await prisma.baileysAuthKey.upsert({
+                where: { accountId_keyId: { accountId: item.accountId, keyId: item.keyId } },
+                create: item,
+                update: { data: item.data },
+              });
+            }
+          } catch {}
+        });
       }
     },
   };

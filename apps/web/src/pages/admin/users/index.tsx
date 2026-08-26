@@ -244,10 +244,10 @@ const INITIAL_DETAILS: Record<string, DetailedUserObject> = {
       balance: 15200,
     },
     userMachines: [
-      { id: 'm_5387_1', machineId: 'quantum_vortex', nickname: 'Titan Apex Core', capacityGhs: 450, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
-      { id: 'm_5387_2', machineId: 'turbine_loop_x', nickname: 'Turbine Delta', capacityGhs: 180, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString() },
-      { id: 'm_5387_3', machineId: 'impulse_core', nickname: 'Impulse Unit', capacityGhs: 80, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() },
-      { id: 'm_5387_4', machineId: 'pulse_gen', nickname: 'Starter Pulse', capacityGhs: 15, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString() },
+      { id: 'm_5387_1', machineId: 'cascade-m91', nickname: 'Cascade M91', capacityGhs: 550, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
+      { id: 'm_5387_2', machineId: 'torrent-v63', nickname: 'Torrent V63', capacityGhs: 130, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString() },
+      { id: 'm_5387_3', machineId: 'surge-r28', nickname: 'Surge R28', capacityGhs: 25, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() },
+      { id: 'm_5387_4', machineId: 'free-trial', nickname: 'Titan Core', capacityGhs: 1, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString() },
     ],
     onboardingProgress: {
       step: 'COMPLETED',
@@ -312,8 +312,8 @@ const INITIAL_DETAILS: Record<string, DetailedUserObject> = {
       balance: 4350,
     },
     userMachines: [
-      { id: 'm_8921_1', machineId: 'dual_compressor', nickname: 'Nairobi Compressor', capacityGhs: 260, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString() },
-      { id: 'm_8921_2', machineId: 'pulse_gen', nickname: 'Starter Pulse', capacityGhs: 15, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString() },
+      { id: 'm_8921_1', machineId: 'torrent-v63', nickname: 'Torrent V63', capacityGhs: 130, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString() },
+      { id: 'm_8921_2', machineId: 'ripple-x14', nickname: 'Ripple X14', capacityGhs: 5, status: 'ACTIVE', purchasedAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString() },
     ],
     onboardingProgress: {
       step: 'COMPLETED',
@@ -376,7 +376,7 @@ const INITIAL_DETAILS: Record<string, DetailedUserObject> = {
       balance: 200,
     },
     userMachines: [
-      { id: 'm_6719_1', machineId: 'pulse_gen', nickname: 'Pulse Starter', capacityGhs: 15, status: 'FROZEN', purchasedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString() },
+      { id: 'm_6719_1', machineId: 'ripple-x14', nickname: 'Ripple X14', capacityGhs: 5, status: 'FROZEN', purchasedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString() },
     ],
     onboardingProgress: {
       step: 'WELCOME',
@@ -549,20 +549,169 @@ export const UsersPage: React.FC = () => {
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
 
+  // Persistent storage helper for newly registered operators
+  const getStoredRegisteredUsers = useCallback((): UserSummaryItem[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem('titan_registered_users');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const saveStoredRegisteredUser = useCallback((user: UserSummaryItem) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const existing = getStoredRegisteredUsers();
+      const updated = [user, ...existing.filter((u) => u.id !== user.id && u.telegramId !== user.telegramId && u.phoneNumber !== user.phoneNumber)];
+      localStorage.setItem('titan_registered_users', JSON.stringify(updated));
+    } catch {}
+  }, [getStoredRegisteredUsers]);
+
+  // Create Operator Modal State
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [newPhone, setNewPhone] = useState('');
+  const [newName, setNewName] = useState('');
+  const [newChannel, setNewChannel] = useState<'WHATSAPP' | 'TELEGRAM'>('WHATSAPP');
+  const [newBalance, setNewBalance] = useState('0.00');
+
+  // Handle direct operator onboarding
+  const handleRegisterOperator = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPhone.trim()) {
+      showToast('Phone number or Telegram ID is required', 'error');
+      return;
+    }
+
+    const cleanPhone = newPhone.trim();
+    const phoneDigits = cleanPhone.replace(/[^0-9]/g, '');
+    const userId = phoneDigits || String(Date.now());
+    const initialUsdt = Number(newBalance) || 0;
+    const operatorName = newName.trim() || (newChannel === 'WHATSAPP' ? `WhatsApp Operator (${cleanPhone})` : `Operator ${userId}`);
+
+    const newUser: UserSummaryItem = {
+      id: userId,
+      telegramId: userId,
+      titanId: `titan_${newChannel.toLowerCase()}_${userId}`,
+      phoneNumber: cleanPhone.startsWith('+') || cleanPhone.startsWith('0') ? cleanPhone : `+${cleanPhone}`,
+      primaryIdentifier: cleanPhone,
+      joinChannel: newChannel,
+      activityStatus: 'ACTIVE',
+      hasSharedDevice: false,
+      lastActiveIp: '102.218.42.10',
+      name: operatorName,
+      username: newChannel === 'WHATSAPP' ? cleanPhone : `@operator_${userId}`,
+      state: 'ACTIVE_USER',
+      totalVolume: initialUsdt,
+      moneyIn: initialUsdt,
+      moneyOut: 0,
+      totalDeposits: initialUsdt,
+      totalWithdrawals: 0,
+      netBalance: initialUsdt,
+      riskScore: 10,
+      flags: [],
+      wallets: [`fin_acc_${userId}`],
+      activeMachinesCount: 0,
+      crystalBalance: 50,
+      createdAt: new Date().toISOString(),
+    };
+
+    saveStoredRegisteredUser(newUser);
+    const updated = [newUser, ...userStore.filter((u) => u.id !== newUser.id && u.telegramId !== newUser.telegramId)];
+    setUserStore(updated);
+    setUsersList(updated);
+    setTotalCount(updated.length);
+    setSummaryStats((prev) => ({
+      ...prev,
+      totalUsers: updated.length,
+      activeUsers: updated.filter((u) => u.activityStatus === 'ACTIVE').length,
+      whatsappUsers: updated.filter((u) => u.joinChannel === 'WHATSAPP').length,
+      telegramUsers: updated.filter((u) => u.joinChannel === 'TELEGRAM').length,
+    }));
+
+    setCreateModalOpen(false);
+    setNewPhone('');
+    setNewName('');
+    setNewBalance('0.00');
+    showToast(`Operator ${newUser.name} successfully registered in User Intelligence!`, 'success');
+  };
+
   // Fetch paginated users directory
   const fetchUsers = useCallback(() => {
     setLoading(true);
+
+    // Retrieve locally saved operators
+    const storedUsers = getStoredRegisteredUsers();
+
+    // Check if there is an active local user session
+    const session = useAuthStore.getState().session;
+    const sessionUser = session?.user;
+    let localSessionUser: UserSummaryItem | null = null;
+
+    if (sessionUser && sessionUser.telegramUserId) {
+      const tgIdStr = String(sessionUser.telegramUserId);
+      const isWa = session.provider === 'WHATSAPP' || sessionUser.state?.includes('WHATSAPP') || Boolean((sessionUser as any).phoneNumber);
+      const phone = (sessionUser as any).phoneNumber || (isWa ? `+${tgIdStr}` : null);
+      const name = sessionUser.firstName
+        ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim()
+        : isWa ? `WhatsApp Operator (${phone || tgIdStr})` : `Operator ${tgIdStr}`;
+
+      localSessionUser = {
+        id: sessionUser.id || tgIdStr,
+        telegramId: tgIdStr,
+        titanId: sessionUser.identityId || `titan_${tgIdStr}`,
+        phoneNumber: phone,
+        primaryIdentifier: phone || (sessionUser.telegramUsername ? `@${sessionUser.telegramUsername}` : tgIdStr),
+        joinChannel: isWa ? 'WHATSAPP' : 'TELEGRAM',
+        activityStatus: 'ACTIVE',
+        hasSharedDevice: false,
+        lastActiveIp: '102.218.42.10',
+        name,
+        username: sessionUser.telegramUsername ? `@${sessionUser.telegramUsername}` : (phone || tgIdStr),
+        state: sessionUser.state || 'ACTIVE_USER',
+        totalVolume: 0,
+        moneyIn: 0,
+        moneyOut: 0,
+        totalDeposits: 0,
+        totalWithdrawals: 0,
+        netBalance: 0,
+        riskScore: 10,
+        flags: [],
+        wallets: [`fin_acc_${tgIdStr}`],
+        activeMachinesCount: 0,
+        crystalBalance: 50,
+        createdAt: sessionUser.createdAt || new Date().toISOString(),
+      };
+    }
+
     api.get('/admin/users', { params: { query: searchQuery, statusFilter, page, limit: 50 } })
       .then((res) => {
         const raw = res.data;
         const payload = raw?.data || raw;
-        const itemsList = Array.isArray(payload) ? payload : (payload?.items || []);
+        let itemsList: UserSummaryItem[] = Array.isArray(payload) ? payload : (payload?.items || []);
+
+        // Merge locally stored users & session users
+        storedUsers.forEach((su) => {
+          if (!itemsList.some((u) => u.id === su.id || u.telegramId === su.telegramId || (su.phoneNumber && u.phoneNumber === su.phoneNumber))) {
+            itemsList = [su, ...itemsList];
+          }
+        });
+
+        if (localSessionUser && !itemsList.some((u) => u.telegramId === localSessionUser!.telegramId || u.id === localSessionUser!.id)) {
+          itemsList = [localSessionUser, ...itemsList];
+        }
+
         if (itemsList && itemsList.length > 0) {
           setUsersList(itemsList);
           setUserStore(itemsList);
-          setTotalCount(payload?.pagination?.total || itemsList.length);
+          setTotalCount(payload?.pagination?.total ? Math.max(payload.pagination.total, itemsList.length) : itemsList.length);
           if (payload?.summary) {
-            setSummaryStats(payload.summary);
+            setSummaryStats({
+              ...payload.summary,
+              totalUsers: Math.max(payload.summary.totalUsers, itemsList.length),
+              whatsappUsers: itemsList.filter((u) => u.joinChannel === 'WHATSAPP').length,
+            });
           }
         } else {
           applyLocalFilter(searchQuery, statusFilter);
@@ -572,18 +721,28 @@ export const UsersPage: React.FC = () => {
         applyLocalFilter(searchQuery, statusFilter);
       })
       .finally(() => setLoading(false));
-  }, [searchQuery, statusFilter, page]);
+  }, [searchQuery, statusFilter, page, getStoredRegisteredUsers]);
 
   const applyLocalFilter = (q: string, filter: string) => {
     let filtered = [...userStore];
     if (q.trim()) {
       const cleanQ = q.toLowerCase().trim().replace(/^@/, '');
-      filtered = filtered.filter((u) =>
-        u.telegramId.includes(cleanQ) ||
-        u.name.toLowerCase().includes(cleanQ) ||
-        u.username.toLowerCase().includes(cleanQ) ||
-        (u.phoneNumber && u.phoneNumber.includes(cleanQ))
-      );
+      const digitsQ = cleanQ.replace(/[^0-9]/g, '');
+
+      filtered = filtered.filter((u) => {
+        const uPhone = (u.phoneNumber || '').toLowerCase();
+        const uPhoneDigits = uPhone.replace(/[^0-9]/g, '');
+        const uTgDigits = (u.telegramId || '').replace(/[^0-9]/g, '');
+        const digitsMatch = digitsQ.length >= 3 && (uPhoneDigits.includes(digitsQ) || uTgDigits.includes(digitsQ));
+
+        return (
+          u.telegramId.includes(cleanQ) ||
+          u.name.toLowerCase().includes(cleanQ) ||
+          u.username.toLowerCase().includes(cleanQ) ||
+          uPhone.includes(cleanQ) ||
+          digitsMatch
+        );
+      });
     }
     if (filter === 'ACTIVE') filtered = filtered.filter((u) => u.activityStatus === 'ACTIVE' || u.state === 'ACTIVE_USER');
     if (filter === 'INACTIVE') filtered = filtered.filter((u) => u.activityStatus === 'INACTIVE');
@@ -1058,23 +1217,147 @@ export const UsersPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Universal Search Input */}
-        <div className="relative flex-1 max-w-md">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary">
-            <Search size={16} />
-          </span>
-          <input
-            type="text"
-            placeholder="Search by ID, @username, name, or phone..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              applyLocalFilter(e.target.value, statusFilter);
-            }}
-            className="w-full pl-10 pr-4 py-2 rounded-xl bg-app-bg border border-white/10 text-xs placeholder-text-tertiary focus:outline-none focus:border-usdt-green/50 font-mono transition-all text-text-primary"
-          />
+        {/* Search & Onboard Actions */}
+        <div className="flex items-center gap-2.5 flex-1 max-w-lg">
+          <div className="relative flex-1">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary">
+              <Search size={16} />
+            </span>
+            <input
+              type="text"
+              placeholder="Search by Phone, ID, @username, or Name..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                applyLocalFilter(e.target.value, statusFilter);
+              }}
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-app-bg border border-white/10 text-xs placeholder-text-tertiary focus:outline-none focus:border-usdt-green/50 font-mono transition-all text-text-primary"
+            />
+          </div>
+
+          <button
+            onClick={() => setCreateModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-usdt-green text-[#06070b] font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg shadow-usdt-green/20 hover:brightness-110 transition-all shrink-0 cursor-pointer"
+          >
+            <Plus size={15} />
+            <span className="hidden sm:inline">Register Operator</span>
+          </button>
         </div>
       </div>
+
+      {/* Register / Onboard Operator Modal */}
+      {createModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="w-full max-w-md bg-[#0c0e14] border border-white/20 rounded-3xl p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Smartphone size={16} className="text-usdt-green" /> Register Operator Account
+              </h3>
+              <button
+                onClick={() => setCreateModalOpen(false)}
+                className="text-text-tertiary hover:text-white cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleRegisterOperator} className="space-y-4">
+              {/* Channel Selector */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Registration Channel</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewChannel('WHATSAPP')}
+                    className={`p-3 rounded-xl text-left border transition-all flex items-center gap-2 cursor-pointer ${
+                      newChannel === 'WHATSAPP'
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-white'
+                        : 'bg-control-bg border-white/5 text-text-tertiary hover:border-white/20'
+                    }`}
+                  >
+                    <span className="text-lg">💬</span>
+                    <div>
+                      <div className="text-xs font-bold">WhatsApp</div>
+                      <div className="text-[9px] text-text-tertiary">Phone Number ID</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewChannel('TELEGRAM')}
+                    className={`p-3 rounded-xl text-left border transition-all flex items-center gap-2 cursor-pointer ${
+                      newChannel === 'TELEGRAM'
+                        ? 'bg-blue-500/15 border-blue-500/40 text-white'
+                        : 'bg-control-bg border-white/5 text-text-tertiary hover:border-white/20'
+                    }`}
+                  >
+                    <span className="text-lg">✈️</span>
+                    <div>
+                      <div className="text-xs font-bold">Telegram</div>
+                      <div className="text-[9px] text-text-tertiary">Telegram User ID</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Phone / Telegram ID */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">
+                  {newChannel === 'WHATSAPP' ? 'WhatsApp Phone Number *' : 'Telegram User ID *'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder={newChannel === 'WHATSAPP' ? 'e.g. +254712345678 or 0712345678' : 'e.g. 88102931'}
+                  className="w-full h-10 px-3 bg-control-bg border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-usdt-green"
+                />
+              </div>
+
+              {/* Full Name */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Operator Full Name</label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g. Kevin Mutesi"
+                  className="w-full h-10 px-3 bg-control-bg border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-usdt-green"
+                />
+              </div>
+
+              {/* Initial USDT Balance */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Initial USDT Deposit</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newBalance}
+                  onChange={(e) => setNewBalance(e.target.value)}
+                  className="w-full h-10 px-3 bg-control-bg border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-usdt-green"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setCreateModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-text-secondary cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-usdt-green text-[#06070b] text-xs font-black flex items-center gap-1.5 shadow-lg hover:brightness-110 cursor-pointer"
+                >
+                  <Plus size={14} /> Onboard Operator
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Main Directory DataTable */}
       <div className="bg-card-bg border border-white/10 rounded-2xl p-4 shadow-xl">

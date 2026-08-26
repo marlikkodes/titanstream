@@ -69,37 +69,39 @@ import { ReferralLanding } from './pages/ReferralLanding';
 
 function AdminRoutes() {
   return (
-    <Suspense fallback={<DestinationLoader destination="wallet" />}>
-      <Routes>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<OverviewPage />} />
-          <Route path="orders" element={<OrdersPage />} />
-          <Route path="operations" element={<OperationsPage />} />
-          <Route path="operations-hq" element={<OperationsHqPage />} />
-          <Route path="intelligence" element={<IntelligencePage />} />
-          <Route path="readiness" element={<ReadinessPage />} />
-          <Route path="liquidity" element={<LiquidityPage />} />
-          <Route path="treasury" element={<TreasuryPage />} />
-          <Route path="financial" element={<FinancialControlCenterPage />} />
-          <Route path="machines" element={<MachineControlCenterPage />} />
-          <Route path="payment-rails" element={<PaymentRailsPage />} />
-          <Route path="withdrawals" element={<WithdrawalsPage />} />
-          <Route path="users" element={<UsersPage />} />
-          <Route path="support" element={<AdminSupportPage />} />
-          <Route path="games" element={<GamesAdminPage />} />
-          <Route path="risk" element={<RiskPage />} />
-          <Route path="automation" element={<AutomationPage />} />
-          <Route path="revenue" element={<RevenuePage />} />
-          <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="audit" element={<AuditPage />} />
-          <Route path="health" element={<HealthPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="growth" element={<GrowthAdminPage />} />
-          <Route path="whatsapp" element={<WhatsappAdminPage />} />
-          <Route path="merchants" element={<MerchantsAdminPage />} />
-        </Route>
-      </Routes>
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<DestinationLoader destination="wallet" />}>
+        <Routes>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<OverviewPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="operations" element={<OperationsPage />} />
+            <Route path="operations-hq" element={<OperationsHqPage />} />
+            <Route path="intelligence" element={<IntelligencePage />} />
+            <Route path="readiness" element={<ReadinessPage />} />
+            <Route path="liquidity" element={<LiquidityPage />} />
+            <Route path="treasury" element={<TreasuryPage />} />
+            <Route path="financial" element={<FinancialControlCenterPage />} />
+            <Route path="machines" element={<MachineControlCenterPage />} />
+            <Route path="payment-rails" element={<PaymentRailsPage />} />
+            <Route path="withdrawals" element={<WithdrawalsPage />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="support" element={<AdminSupportPage />} />
+            <Route path="games" element={<GamesAdminPage />} />
+            <Route path="risk" element={<RiskPage />} />
+            <Route path="automation" element={<AutomationPage />} />
+            <Route path="revenue" element={<RevenuePage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="audit" element={<AuditPage />} />
+            <Route path="health" element={<HealthPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="growth" element={<GrowthAdminPage />} />
+            <Route path="whatsapp" element={<WhatsappAdminPage />} />
+            <Route path="merchants" element={<MerchantsAdminPage />} />
+          </Route>
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -272,10 +274,12 @@ export function App() {
   const isRefRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/ref/');
   if (isRefRoute) {
     return (
-      <Routes>
-        <Route path="/ref/:code" element={<ReferralLanding />} />
-        <Route path="*" element={<ReferralLanding />} />
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/ref/:code" element={<ReferralLanding />} />
+          <Route path="*" element={<ReferralLanding />} />
+        </Routes>
+      </ErrorBoundary>
     );
   }
 
@@ -286,7 +290,11 @@ export function App() {
     window.location.search.includes('admin=true')
   );
   if (isAdminRoute) {
-    return <AdminRoutes />;
+    return (
+      <ErrorBoundary>
+        <AdminRoutes />
+      </ErrorBoundary>
+    );
   }
 
   // 3. AuthGate wraps the entire authenticated experience.
