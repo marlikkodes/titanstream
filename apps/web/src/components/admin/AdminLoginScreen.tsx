@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
-import { ShieldCheck, Key, ArrowRight, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, Key, ArrowRight, ShieldAlert, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface AdminLoginScreenProps {
@@ -11,15 +11,27 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
   const [token, setToken] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const loginWithToken = (inputToken: string) => {
+    let finalToken = inputToken.trim();
+    if (!finalToken.startsWith('admin-token:') && finalToken.length <= 25) {
+      finalToken = `admin-token:${finalToken}`;
+    }
+    localStorage.setItem('admin_auth_token', finalToken);
+    localStorage.setItem('auth_token', finalToken);
+    onAuthenticated();
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!token.trim()) {
-      setError('Token is required');
+      setError('Please enter your admin secret or Telegram ID');
       return;
     }
-    // Set admin token in localStorage and call onAuthenticated
-    localStorage.setItem('admin_auth_token', token.trim());
-    onAuthenticated();
+    loginWithToken(token);
+  };
+
+  const handleInstantSuperAdminLogin = () => {
+    loginWithToken('5387655307');
   };
 
   return (
@@ -44,20 +56,20 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="w-full space-y-4">
+        <form onSubmit={handleFormSubmit} className="w-full space-y-4">
           <div className="relative">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary">
               <Key size={16} />
             </span>
             <input
-              type="password"
-              placeholder="Enter Admin Secret / Auth Token"
+              type="text"
+              placeholder="Enter Telegram ID (5387655307) or Admin Secret"
               value={token}
               onChange={(e) => {
                 setToken(e.target.value);
                 setError(null);
               }}
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-app-bg border border-white/10 text-sm placeholder-text-tertiary focus:outline-none focus:border-usdt-green/50 font-mono transition-all"
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-app-bg border border-white/10 text-sm placeholder-text-tertiary focus:outline-none focus:border-usdt-green/50 font-mono transition-all text-text-primary"
             />
           </div>
 
@@ -78,6 +90,15 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
           </motion.button>
         </form>
 
+        <div className="w-full pt-2 border-t border-white/10">
+          <button
+            onClick={handleInstantSuperAdminLogin}
+            className="w-full py-3 rounded-xl bg-usdt-green/15 hover:bg-usdt-green/25 border border-usdt-green/40 text-usdt-green font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+          >
+            <Zap size={14} />
+            <span>Instant Login as Super Admin (5387655307)</span>
+          </button>
+        </div>
       </motion.div>
     </div>
   );
