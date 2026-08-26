@@ -302,6 +302,40 @@ export class BaileysAccountManagerService implements OnModuleInit {
   }
 
   /**
+   * Admin API: Returns global transport telemetry, rate-limiting queue state, and message counts.
+   */
+  getTelemetry() {
+    let totalSuccess = 0;
+    let totalFailures = 0;
+    for (const acc of this.accounts.values()) {
+      totalSuccess += acc.metrics?.messageSuccesses || 0;
+      totalFailures += acc.metrics?.messageFailures || 0;
+    }
+    const accountsList = Array.from(this.accounts.values());
+    const connectedAccounts = accountsList.filter((a) => a.state === 'CONNECTED').length;
+    const degradedAccounts = accountsList.filter((a) => a.healthState === 'DEGRADED' || a.state === 'DISCONNECTED').length;
+    const quarantinedAccounts = accountsList.filter((a) => a.isQuarantined || a.state === 'QUARANTINED').length;
+
+    return {
+      queueDepth: this.outboundQueue.length,
+      maxQueueDepth: this.maxQueueDepth,
+      activeSends: this.activeSends,
+      maxConcurrency: this.maxConcurrency,
+      minSendIntervalMs: this.minSendIntervalMs,
+      totalAccounts: this.accounts.size,
+      connectedAccounts,
+      degradedAccounts,
+      quarantinedAccounts,
+      totalDispatched: totalSuccess + totalFailures,
+      totalSuccess,
+      totalFailures,
+      successRatePercent: totalSuccess + totalFailures > 0
+        ? Math.round((totalSuccess / (totalSuccess + totalFailures)) * 100)
+        : 100,
+    };
+  }
+
+  /**
    * Admin API: Add/register or reconnect a persistent Baileys transport account.
    * Guaranteed: Re-authenticating or adding an existing phone REUSES the persistent account record.
    */

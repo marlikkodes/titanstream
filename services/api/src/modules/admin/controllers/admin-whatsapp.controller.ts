@@ -39,6 +39,23 @@ export class AdminWhatsappController {
     return { success: true, data: await this.baileysAccountManager.executeAccountAction(accountId, action) };
   }
 
+  @Get('telemetry')
+  @Permissions(AdminPermission.OPERATIONS_VIEW)
+  @ApiOperation({ summary: 'Get WhatsApp fleet queue & delivery telemetry' })
+  async getTelemetry() {
+    return { success: true, data: this.baileysAccountManager.getTelemetry() };
+  }
+
+  @Post('test-dispatch')
+  @HttpCode(HttpStatus.OK)
+  @Permissions(AdminPermission.WHATSAPP_MANAGE)
+  @ApiOperation({ summary: 'Dispatch live test message through WhatsApp fleet' })
+  async testDispatch(@Body() body: { phone: string; text?: string; priority?: 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' }) {
+    const text = body.text || 'Titan Stream 🚀 Real-Time WhatsApp Fleet Verification Ping';
+    const result = await this.baileysAccountManager.sendTextMessage(body.phone, text, body.priority || 'HIGH');
+    return { success: true, data: result };
+  }
+
   @Post(':id/pairing-code')
   @HttpCode(HttpStatus.OK)
   @Permissions(AdminPermission.WHATSAPP_MANAGE)
