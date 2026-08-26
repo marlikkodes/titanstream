@@ -55,8 +55,15 @@ interface AuthState {
   authError: string | null;
   stepUpToken: string | null;
   isStepUpModalOpen: boolean;
+  isMirrorMode: boolean;
+  mirrorTargetUser: AuthUser | null;
 
   setSession: (session: SessionData) => void;
+  startMirrorSession: (
+    user: AuthUser,
+    metrics?: { balance?: number; crystalBalance?: number; speedGhs?: number }
+  ) => void;
+  exitMirrorSession: () => void;
   clearSession: () => void;
   isSessionExpired: () => boolean;
   refreshSession: (newExpiresAt: number) => void;
@@ -88,6 +95,8 @@ export const useAuthStore = create<AuthState>()(
       authError: null,
       stepUpToken: null,
       isStepUpModalOpen: false,
+      isMirrorMode: typeof sessionStorage !== 'undefined' && sessionStorage.getItem('mirror_mode') === 'true',
+      mirrorTargetUser: null,
 
       setSession: (session) => {
         localStorage.setItem('auth_token', session.accessToken);
@@ -103,6 +112,51 @@ export const useAuthStore = create<AuthState>()(
           countrySelected: hasChosenCurrency,
           isAuthLoading: false,
           authError: null,
+        });
+      },
+
+      startMirrorSession: (targetUser) => {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('mirror_mode', 'true');
+          sessionStorage.setItem('mirror_user', JSON.stringify(targetUser));
+        }
+        localStorage.setItem('auth_token', `mirror_auth_${targetUser.id || targetUser.telegramUserId}`);
+        localStorage.setItem('has_chosen_currency', 'true');
+
+        const sessionData: SessionData = {
+          accessToken: `mirror_auth_${targetUser.id || targetUser.telegramUserId}`,
+          refreshToken: `mirror_refresh_${targetUser.id || targetUser.telegramUserId}`,
+          user: targetUser,
+          onboarding: {
+            currentStep: 'COMPLETED',
+            isCompleted: true,
+          },
+          isNewUser: false,
+          expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+          platform: 'web',
+          provider: targetUser.state?.includes('WHATSAPP') ? 'WHATSAPP' : 'TELEGRAM',
+        };
+
+        set({
+          isAuthenticated: true,
+          session: sessionData,
+          onboardingComplete: true,
+          countrySelected: true,
+          isAuthLoading: false,
+          authError: null,
+          isMirrorMode: true,
+          mirrorTargetUser: targetUser,
+        });
+      },
+
+      exitMirrorSession: () => {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('mirror_mode');
+          sessionStorage.removeItem('mirror_user');
+        }
+        set({
+          isMirrorMode: false,
+          mirrorTargetUser: null,
         });
       },
 

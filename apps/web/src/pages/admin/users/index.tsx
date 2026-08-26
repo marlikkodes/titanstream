@@ -1,10 +1,14 @@
 import type React from 'react';
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { DetailDrawer } from '@/components/admin/DetailDrawer';
 import { MetricCard, MetricCardGrid } from '@/components/admin/MetricCard';
 import { api } from '@/services/api';
 import { showToast } from '@/components/Toast';
+import { useAuthStore, type AuthUser } from '@/store/useAuthStore';
+import { useWalletStore } from '@/store/useWalletStore';
+import { useMiningStore } from '@/store/useMiningStore';
 import {
   MessageSquare,
   Plus,
@@ -21,6 +25,14 @@ import {
   Eye,
   ShieldCheck,
   Radio,
+  ExternalLink,
+  Smartphone,
+  X,
+  CheckCircle2,
+  Play,
+  Cpu,
+  Wallet,
+  Layers,
 } from 'lucide-react';
 
 export interface UserSummaryItem {
@@ -479,6 +491,51 @@ export const UsersPage: React.FC = () => {
   const [detailedUser, setDetailedUser] = useState<DetailedUserObject | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Mirror session and mobile simulation state
+  const navigate = useNavigate();
+  const [mirrorModalOpen, setMirrorModalOpen] = useState(false);
+  const [deviceSimOpen, setDeviceSimOpen] = useState(false);
+  const [activeSimTab, setActiveSimTab] = useState<'mine' | 'wallet' | 'hub' | 'growth'>('mine');
+  const startMirrorSession = useAuthStore((s) => s.startMirrorSession);
+
+  const handleLaunchMirror = (destination: 'app' | 'simulator') => {
+    if (!selectedSummary) return;
+
+    const targetUser: AuthUser = {
+      id: selectedSummary.id,
+      identityId: detailedUser?.identityId || selectedSummary.titanId || `titan_${selectedSummary.telegramId}`,
+      telegramUserId: Number(selectedSummary.telegramId) || 0,
+      telegramUsername: selectedSummary.username?.replace(/^@/, '') || null,
+      firstName: detailedUser?.firstName || selectedSummary.name.split(' ')[0] || 'Operator',
+      lastName: detailedUser?.lastName || selectedSummary.name.split(' ').slice(1).join(' ') || null,
+      photoUrl: detailedUser?.photoUrl || null,
+      languageCode: detailedUser?.languageCode || 'en',
+      state: selectedSummary.state || 'ACTIVE_USER',
+      isReady: true,
+      createdAt: selectedSummary.createdAt || new Date().toISOString(),
+    };
+
+    const balance = Number(detailedUser?.financialAccount?.balanceUsdt || selectedSummary.netBalance || 0);
+    const machinesSpeed =
+      detailedUser?.userMachines?.reduce((acc, m) => acc + (m.capacityGhs || 0), 0) ||
+      selectedSummary.activeMachinesCount * 50 ||
+      150;
+
+    startMirrorSession(targetUser, { balance, speedGhs: machinesSpeed });
+    useWalletStore.setState({ usdtBalance: balance, crystalsBalance: selectedSummary.crystalBalance || 5000 });
+    useMiningStore.setState({ baseSpeedGhs: machinesSpeed });
+
+    setMirrorModalOpen(false);
+
+    if (destination === 'app') {
+      showToast(`Mirror session active for ${selectedSummary.name}! (Read-Only)`, 'success');
+      navigate('/');
+    } else {
+      setDeviceSimOpen(true);
+      showToast(`Mobile simulator launched for ${selectedSummary.name}`, 'info');
+    }
+  };
 
   // Active drawer tab: 'OVERVIEW' | 'NOTES' | 'TIMELINE'
   const [activeDrawerTab, setActiveDrawerTab] = useState<'OVERVIEW' | 'NOTES' | 'TIMELINE'>('OVERVIEW');
@@ -1129,13 +1186,11 @@ export const UsersPage: React.FC = () => {
               )}
 
               <button
-                onClick={() => {
-                  showToast(`Mirror impersonation active for ${selectedSummary.name} (Read-Only)`, 'info');
-                }}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-text-primary text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-white/10"
+                onClick={() => setMirrorModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-usdt-green/15 hover:bg-usdt-green/25 text-usdt-green text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-usdt-green/30 shadow-md"
                 title="Open user session in read-only mirror mode"
               >
-                <Radio size={14} className="text-usdt-green" />
+                <Radio size={14} className="text-usdt-green animate-pulse" />
                 <span>Mirror User</span>
               </button>
 

@@ -7,6 +7,7 @@ describe('AdminDashboardService', () => {
     settlementSession: { count: jest.fn(), aggregate: jest.fn() },
     riskEvent: { count: jest.fn() },
     supportCase: { count: jest.fn() },
+    userMachine: { count: jest.fn(), aggregate: jest.fn() },
   };
 
   let service: AdminDashboardService;
@@ -31,6 +32,8 @@ describe('AdminDashboardService', () => {
     prisma.settlementSession.aggregate.mockResolvedValue({ _sum: { expectedCryptoAmount: '4500.50' } });
     prisma.riskEvent.count.mockResolvedValue(4);
     prisma.supportCase.count.mockResolvedValue(6);
+    prisma.userMachine.count.mockResolvedValue(25);
+    prisma.userMachine.aggregate.mockResolvedValue({ _sum: { capacityGhs: 4200 } });
 
     const result = await service.getDashboardOverview();
 
@@ -51,5 +54,8 @@ describe('AdminDashboardService', () => {
       risk_review: 4,
       support_cases: 6,
     });
+
+    expect(result.economy_status.active_fleet_nodes).toBe(25);
+    expect(result.economy_status.total_fleet_hashrate_ghs).toBe(4200);
   });
 });
