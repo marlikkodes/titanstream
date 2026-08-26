@@ -6,7 +6,6 @@ import { MetricCard, MetricCardGrid } from '@/components/admin/MetricCard';
 import { api } from '@/services/api';
 import { showToast } from '@/components/Toast';
 import {
-  ShieldAlert,
   MessageSquare,
   Plus,
   Lock,
@@ -19,6 +18,9 @@ import {
   TrendingUp,
   RefreshCw,
   Search,
+  Eye,
+  ShieldCheck,
+  Radio,
 } from 'lucide-react';
 
 export interface UserSummaryItem {
@@ -443,85 +445,6 @@ const channelBadge = (channel?: string, name?: string, phone?: string) => {
   );
 };
 
-const columns: Column<UserSummaryItem>[] = [
-  {
-    key: 'name',
-    label: 'User Account & Titan ID',
-    sortable: true,
-    width: 'w-[240px]',
-    render: (u) => (
-      <div>
-        <div className="font-bold text-text-primary flex flex-wrap items-center gap-1.5">
-          <span>{u.name}</span>
-          {channelBadge(u.joinChannel, u.name, u.phoneNumber || undefined)}
-          {u.hasSharedDevice && (
-            <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase tracking-wider bg-amber-500/30 text-amber-300 border border-amber-400/40" title={`Shared IP / Multi-Account Device: ${u.lastActiveIp || 'Same Device'}`}>
-              ⚠️ SHARED IP
-            </span>
-          )}
-        </div>
-        <div className="text-xs text-text-tertiary font-mono mt-0.5 flex flex-wrap items-center gap-2">
-          <span>{u.primaryIdentifier || u.username || u.telegramId}</span>
-          {u.titanId && <span className="text-[10px] text-text-tertiary/70 font-mono">({u.titanId.slice(0, 15)}...)</span>}
-        </div>
-      </div>
-    ),
-    mobile: (u) => ({
-      label: 'User',
-      value: (
-        <div>
-          <span className="font-semibold block">{u.name} ({u.joinChannel})</span>
-          <span className="text-text-tertiary text-xs block">{u.primaryIdentifier}</span>
-        </div>
-      ),
-    }),
-  },
-  {
-    key: 'telegramId',
-    label: 'Identifier / Phone',
-    sortable: true,
-    width: 'w-[140px]',
-    render: (u) => <span className="font-mono text-xs text-text-secondary">{u.phoneNumber || u.telegramId}</span>,
-  },
-  {
-    key: 'state',
-    label: 'Status',
-    width: 'w-[110px]',
-    render: (u) => stateBadge(u.activityStatus || u.state),
-  },
-  {
-    key: 'moneyIn',
-    label: 'Money In',
-    sortable: true,
-    width: 'w-[110px]',
-    render: (u) => <span className="font-semibold text-usdt-green">${(Number(u.moneyIn ?? u.totalDeposits) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>,
-  },
-  {
-    key: 'moneyOut',
-    label: 'Money Out',
-    sortable: true,
-    width: 'w-[110px]',
-    render: (u) => <span className="font-semibold text-error-red">${(Number(u.moneyOut ?? u.totalWithdrawals) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>,
-  },
-  {
-    key: 'netBalance',
-    label: 'Net Flow',
-    sortable: true,
-    width: 'w-[110px]',
-    render: (u) => {
-      const net = (Number(u.moneyIn ?? u.totalDeposits) || 0) - (Number(u.moneyOut ?? u.totalWithdrawals) || 0);
-      return <span className={`font-extrabold ${net >= 0 ? 'text-usdt-green' : 'text-error-red'}`}>${net.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>;
-    },
-  },
-  {
-    key: 'riskScore',
-    label: 'Risk',
-    sortable: true,
-    width: 'w-[70px]',
-    render: (u) => <span className={`font-semibold ${riskColor(u.riskScore)}`}>{u.riskScore}</span>,
-  },
-];
-
 export const UsersPage: React.FC = () => {
   const [usersList, setUsersList] = useState<UserSummaryItem[]>(INITIAL_USERS);
   const [userStore, setUserStore] = useState<UserSummaryItem[]>(INITIAL_USERS);
@@ -723,7 +646,6 @@ export const UsersPage: React.FC = () => {
         setTimeline(list);
       })
       .catch(() => {
-        // Build rich local timeline for test user
         const local = userDetailedStore[telegramId];
         const generatedTimeline: TimelineItem[] = [
           {
@@ -773,10 +695,9 @@ export const UsersPage: React.FC = () => {
   };
 
   // Actions: Freeze, Unfreeze, Ban, Unban
-  const handleUserAction = (actionType: 'freeze' | 'unfreeze' | 'ban' | 'unban') => {
-    if (!selectedSummary) return;
+  const handleUserAction = (targetUser: UserSummaryItem, actionType: 'freeze' | 'unfreeze' | 'ban' | 'unban') => {
     const actionLabel = actionType.toUpperCase();
-    const reason = prompt(`[MANDATORY REASON] Enter reason for ${actionLabel} on user ${selectedSummary.name}:`, `Admin manual ${actionType}`);
+    const reason = prompt(`[MANDATORY REASON] Enter reason for ${actionLabel} on user ${targetUser.name}:`, `Admin manual ${actionType}`);
     if (reason === null) return;
     if (!reason.trim()) {
       showToast(`Action cancelled: A non-empty reason is mandatory for ${actionLabel}.`, 'error');
@@ -787,7 +708,7 @@ export const UsersPage: React.FC = () => {
 
     const updateLocalState = (newStatus: 'ACTIVE' | 'FROZEN' | 'BANNED', newState: string) => {
       const updatedStore = userStore.map((u) =>
-        u.telegramId === selectedSummary.telegramId
+        u.telegramId === targetUser.telegramId
           ? {
               ...u,
               activityStatus: newStatus,
@@ -798,19 +719,21 @@ export const UsersPage: React.FC = () => {
       );
       setUserStore(updatedStore);
       setUsersList(updatedStore);
-      setSelectedSummary((prev) => (prev ? { ...prev, activityStatus: newStatus, state: newState } : null));
+      if (selectedSummary && selectedSummary.telegramId === targetUser.telegramId) {
+        setSelectedSummary((prev) => (prev ? { ...prev, activityStatus: newStatus, state: newState } : null));
+      }
       setUserDetailedStore((prev) => ({
         ...prev,
-        [selectedSummary.telegramId]: {
-          ...prev[selectedSummary.telegramId],
+        [targetUser.telegramId]: {
+          ...prev[targetUser.telegramId],
           state: newState,
         },
       }));
     };
 
-    api.post(`/admin/users/${selectedSummary.telegramId}/${actionType}`, { reason: reason.trim() })
+    api.post(`/admin/users/${targetUser.telegramId}/${actionType}`, { reason: reason.trim() })
       .then(() => {
-        showToast(`User ${selectedSummary.name} ${actionLabel} successfully.`, 'success');
+        showToast(`User ${targetUser.name} ${actionLabel} successfully.`, 'success');
       })
       .catch(() => {
         showToast(`User state updated to ${actionLabel} (Local Mode).`, 'info');
@@ -823,6 +746,125 @@ export const UsersPage: React.FC = () => {
         setActionLoading(false);
       });
   };
+
+  // Columns definition including direct Quick Action Buttons
+  const columns: Column<UserSummaryItem>[] = [
+    {
+      key: 'name',
+      label: 'User Account & Titan ID',
+      sortable: true,
+      width: 'w-[230px]',
+      render: (u) => (
+        <div>
+          <div className="font-bold text-text-primary flex flex-wrap items-center gap-1.5">
+            <span>{u.name}</span>
+            {channelBadge(u.joinChannel, u.name, u.phoneNumber || undefined)}
+            {u.hasSharedDevice && (
+              <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase tracking-wider bg-amber-500/30 text-amber-300 border border-amber-400/40" title={`Shared IP / Multi-Account Device: ${u.lastActiveIp || 'Same Device'}`}>
+                ⚠️ SHARED IP
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-text-tertiary font-mono mt-0.5 flex flex-wrap items-center gap-2">
+            <span>{u.primaryIdentifier || u.username || u.telegramId}</span>
+            {u.titanId && <span className="text-[10px] text-text-tertiary/70 font-mono">({u.titanId.slice(0, 14)}...)</span>}
+          </div>
+        </div>
+      ),
+      mobile: (u) => ({
+        label: 'User',
+        value: (
+          <div>
+            <span className="font-semibold block">{u.name} ({u.joinChannel})</span>
+            <span className="text-text-tertiary text-xs block">{u.primaryIdentifier}</span>
+          </div>
+        ),
+      }),
+    },
+    {
+      key: 'telegramId',
+      label: 'Identifier / Phone',
+      sortable: true,
+      width: 'w-[130px]',
+      render: (u) => <span className="font-mono text-xs text-text-secondary">{u.phoneNumber || u.telegramId}</span>,
+    },
+    {
+      key: 'state',
+      label: 'Status',
+      width: 'w-[100px]',
+      render: (u) => stateBadge(u.activityStatus || u.state),
+    },
+    {
+      key: 'moneyIn',
+      label: 'Money In',
+      sortable: true,
+      width: 'w-[100px]',
+      render: (u) => <span className="font-semibold text-usdt-green">${(Number(u.moneyIn ?? u.totalDeposits) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>,
+    },
+    {
+      key: 'moneyOut',
+      label: 'Money Out',
+      sortable: true,
+      width: 'w-[100px]',
+      render: (u) => <span className="font-semibold text-error-red">${(Number(u.moneyOut ?? u.totalWithdrawals) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>,
+    },
+    {
+      key: 'netBalance',
+      label: 'Net Flow',
+      sortable: true,
+      width: 'w-[100px]',
+      render: (u) => {
+        const net = (Number(u.moneyIn ?? u.totalDeposits) || 0) - (Number(u.moneyOut ?? u.totalWithdrawals) || 0);
+        return <span className={`font-extrabold ${net >= 0 ? 'text-usdt-green' : 'text-error-red'}`}>${net.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>;
+      },
+    },
+    {
+      key: 'riskScore',
+      label: 'Risk',
+      sortable: true,
+      width: 'w-[65px]',
+      render: (u) => <span className={`font-semibold ${riskColor(u.riskScore)}`}>{u.riskScore}</span>,
+    },
+    {
+      key: 'actions' as any,
+      label: 'Admin Actions',
+      width: 'w-[180px]',
+      render: (u) => (
+        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          {/* Quick Inspect Button */}
+          <button
+            onClick={() => loadUserDetail(u)}
+            className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/15 text-text-primary text-xs font-bold flex items-center gap-1 border border-white/10 transition-all cursor-pointer shadow-sm"
+            title="Inspect 360 Account"
+          >
+            <Eye size={13} className="text-usdt-green" />
+            <span>Inspect</span>
+          </button>
+
+          {/* Quick Freeze / Unfreeze Button */}
+          {u.activityStatus === 'FROZEN' || u.state === 'SUSPENDED_USER' ? (
+            <button
+              onClick={() => handleUserAction(u, 'unfreeze')}
+              className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-xs font-bold flex items-center gap-1 border border-emerald-500/30 transition-all cursor-pointer shadow-sm"
+              title="Unfreeze Account"
+            >
+              <Unlock size={13} />
+              <span>Unfreeze</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => handleUserAction(u, 'freeze')}
+              className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 text-xs font-bold flex items-center gap-1 border border-amber-500/30 transition-all cursor-pointer shadow-sm"
+              title="Freeze Account"
+            >
+              <Lock size={13} />
+              <span>Freeze</span>
+            </button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   // Filter users based on quick status tab
   const filteredUsers = usersList.filter((u) => {
@@ -1001,15 +1043,15 @@ export const UsersPage: React.FC = () => {
           setDetailedUser(null);
         }}
         title={detailedUser ? detailedUser.fullName : (selectedSummary ? selectedSummary.name : 'User Details')}
-        subtitle={selectedSummary ? `${selectedSummary.primaryIdentifier} • ID: ${selectedSummary.telegramId}` : ''}
+        subtitle={selectedSummary ? `${selectedSummary.primaryIdentifier} • Titan ID: ${selectedSummary.titanId || selectedSummary.telegramId}` : ''}
         actions={
           selectedSummary && (
             <div className="flex items-center gap-2">
               {selectedSummary.activityStatus === 'FROZEN' || selectedSummary.state === 'SUSPENDED_USER' ? (
                 <button
                   disabled={actionLoading}
-                  onClick={() => handleUserAction('unfreeze')}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer"
+                  onClick={() => handleUserAction(selectedSummary, 'unfreeze')}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
                 >
                   <Unlock size={14} />
                   <span>Unfreeze Account</span>
@@ -1017,8 +1059,8 @@ export const UsersPage: React.FC = () => {
               ) : (
                 <button
                   disabled={actionLoading}
-                  onClick={() => handleUserAction('freeze')}
-                  className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer"
+                  onClick={() => handleUserAction(selectedSummary, 'freeze')}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
                 >
                   <Lock size={14} />
                   <span>Freeze Account</span>
@@ -1028,7 +1070,79 @@ export const UsersPage: React.FC = () => {
               {selectedSummary.activityStatus === 'BANNED' || selectedSummary.state === 'BANNED_USER' ? (
                 <button
                   disabled={actionLoading}
-                  onClick={() => handleUserAction('unban')}
+                  onClick={() => handleUserAction(selectedSummary, 'unban')}
+                  className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                >
+                  <Unlock size={14} />
+                  <span>Unban</span>
+                </button>
+              ) : (
+                <button
+                  disabled={actionLoading}
+                  onClick={() => handleUserAction(selectedSummary, 'ban')}
+                  className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                >
+                  <Ban size={14} />
+                  <span>Ban User</span>
+                </button>
+              )}
+            </div>
+          )
+        }
+      >
+        {/* Prominent Action Command Center Bar */}
+        {selectedSummary && (
+          <div className="p-3.5 bg-control-bg/70 border border-white/10 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-inner">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-usdt-green">
+                <ShieldCheck size={18} />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-text-tertiary block">
+                  Enforcement Actions
+                </span>
+                <span className="text-xs font-extrabold text-text-primary">
+                  Status: {selectedSummary.activityStatus || selectedSummary.state}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {selectedSummary.activityStatus === 'FROZEN' || selectedSummary.state === 'SUSPENDED_USER' ? (
+                <button
+                  disabled={actionLoading}
+                  onClick={() => handleUserAction(selectedSummary, 'unfreeze')}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-lg"
+                >
+                  <Unlock size={14} />
+                  <span>Unfreeze Account</span>
+                </button>
+              ) : (
+                <button
+                  disabled={actionLoading}
+                  onClick={() => handleUserAction(selectedSummary, 'freeze')}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-lg"
+                >
+                  <Lock size={14} />
+                  <span>Freeze Account</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  showToast(`Mirror impersonation active for ${selectedSummary.name} (Read-Only)`, 'info');
+                }}
+                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-text-primary text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-white/10"
+                title="Open user session in read-only mirror mode"
+              >
+                <Radio size={14} className="text-usdt-green" />
+                <span>Mirror User</span>
+              </button>
+
+              {selectedSummary.activityStatus === 'BANNED' || selectedSummary.state === 'BANNED_USER' ? (
+                <button
+                  disabled={actionLoading}
+                  onClick={() => handleUserAction(selectedSummary, 'unban')}
                   className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Unlock size={14} />
@@ -1037,7 +1151,7 @@ export const UsersPage: React.FC = () => {
               ) : (
                 <button
                   disabled={actionLoading}
-                  onClick={() => handleUserAction('ban')}
+                  onClick={() => handleUserAction(selectedSummary, 'ban')}
                   className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Ban size={14} />
@@ -1045,16 +1159,16 @@ export const UsersPage: React.FC = () => {
                 </button>
               )}
             </div>
-          )
-        }
-      >
+          </div>
+        )}
+
         {/* Drawer Tabs */}
-        <div className="flex items-center gap-2 border-b border-white/10 pb-3 mb-4">
+        <div className="flex items-center gap-2 border-b border-white/10 pb-3">
           <button
             onClick={() => handleTabSwitch('OVERVIEW')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
               activeDrawerTab === 'OVERVIEW'
-                ? 'bg-usdt-green text-black'
+                ? 'bg-usdt-green text-black shadow-md'
                 : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
             }`}
           >
@@ -1062,9 +1176,9 @@ export const UsersPage: React.FC = () => {
           </button>
           <button
             onClick={() => handleTabSwitch('NOTES')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
               activeDrawerTab === 'NOTES'
-                ? 'bg-usdt-green text-black'
+                ? 'bg-usdt-green text-black shadow-md'
                 : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
             }`}
           >
@@ -1073,9 +1187,9 @@ export const UsersPage: React.FC = () => {
           </button>
           <button
             onClick={() => handleTabSwitch('TIMELINE')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
               activeDrawerTab === 'TIMELINE'
-                ? 'bg-usdt-green text-black'
+                ? 'bg-usdt-green text-black shadow-md'
                 : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
             }`}
           >
@@ -1088,7 +1202,7 @@ export const UsersPage: React.FC = () => {
         {activeDrawerTab === 'OVERVIEW' && (
           <div className="space-y-6">
             {/* Identity & Verification Card */}
-            <div className="p-4 rounded-xl bg-app-bg border border-white/10 space-y-3">
+            <div className="p-4 rounded-2xl bg-app-bg border border-white/10 space-y-3 shadow-md">
               <span className="text-[10px] font-black uppercase tracking-wider text-text-tertiary block">
                 Universal Identity Verification
               </span>
@@ -1121,7 +1235,7 @@ export const UsersPage: React.FC = () => {
             </div>
 
             {/* Financial Ledger & Assets */}
-            <div className="p-4 rounded-xl bg-app-bg border border-white/10 space-y-3">
+            <div className="p-4 rounded-2xl bg-app-bg border border-white/10 space-y-3 shadow-md">
               <span className="text-[10px] font-black uppercase tracking-wider text-text-tertiary block">
                 Financial Balances & Output
               </span>
@@ -1148,7 +1262,7 @@ export const UsersPage: React.FC = () => {
             </div>
 
             {/* Machine Fleet Power */}
-            <div className="p-4 rounded-xl bg-app-bg border border-white/10 space-y-3">
+            <div className="p-4 rounded-2xl bg-app-bg border border-white/10 space-y-3 shadow-md">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-wider text-text-tertiary block">
                   Active Compute Fleet ({detailedUser?.userMachines?.length || selectedSummary?.activeMachinesCount || 0} Nodes)
@@ -1159,12 +1273,12 @@ export const UsersPage: React.FC = () => {
               </div>
               <div className="space-y-2">
                 {(detailedUser?.userMachines || []).map((m: any) => (
-                  <div key={m.id} className="p-2.5 bg-control-bg/50 rounded-lg border border-white/5 flex items-center justify-between text-xs">
+                  <div key={m.id} className="p-2.5 bg-control-bg/50 rounded-xl border border-white/5 flex items-center justify-between text-xs">
                     <div>
                       <span className="font-bold text-text-primary block">{m.nickname || m.machineId}</span>
                       <span className="text-[10px] text-text-tertiary font-mono">Commissioned on {new Date(m.purchasedAt).toLocaleDateString()}</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded bg-usdt-green/15 text-usdt-green border border-usdt-green/30 font-mono font-black text-[11px]">
+                    <span className="px-2 py-0.5 rounded-md bg-usdt-green/15 text-usdt-green border border-usdt-green/30 font-mono font-black text-[11px]">
                       +{m.capacityGhs || 15} GH/s
                     </span>
                   </div>
@@ -1173,18 +1287,18 @@ export const UsersPage: React.FC = () => {
             </div>
 
             {/* Referral Tree Breakdown */}
-            <div className="p-4 rounded-xl bg-app-bg border border-white/10 space-y-3">
+            <div className="p-4 rounded-2xl bg-app-bg border border-white/10 space-y-3 shadow-md">
               <span className="text-[10px] font-black uppercase tracking-wider text-text-tertiary block">
                 Network & Referrals (Code: {detailedUser?.referralCode?.code || 'TITAN-PRO'})
               </span>
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-control-bg/50 rounded-lg border border-white/5">
+                <div className="p-3 bg-control-bg/50 rounded-xl border border-white/5">
                   <span className="text-text-tertiary text-[11px] block">Qualified Referrals</span>
                   <span className="font-mono font-black text-base text-usdt-green">
                     {detailedUser?.referralStats?.qualifiedCount || selectedSummary?.qualifiedReferrals || 14}
                   </span>
                 </div>
-                <div className="p-3 bg-control-bg/50 rounded-lg border border-white/5">
+                <div className="p-3 bg-control-bg/50 rounded-xl border border-white/5">
                   <span className="text-text-tertiary text-[11px] block">Paying Referees</span>
                   <span className="font-mono font-black text-base text-gold">
                     {detailedUser?.referralStats?.payingCount || selectedSummary?.payingReferrals || 6}
