@@ -388,4 +388,86 @@ export class CentralDataSyncService {
     user.adminNotes.unshift(createdNote);
     return createdNote;
   }
+
+  // 8. GET CATALOG ITEMS
+  getCatalog() {
+    return [
+      {
+        id: 'cat_starter_pulse',
+        tierCode: 'PULSE_GEN',
+        name: 'Pulse Gen 1.0',
+        description: 'Entry-level low-latency compute unit with guaranteed daily yield.',
+        category: 'STANDARD',
+        priceUsdt: '15.00',
+        capacityGhs: '15.0',
+        dailyYieldEstimateUsdt: '0.45',
+        displayOrder: 1,
+        icon: '⚡',
+        status: 'ACTIVE',
+        outputs: [{ assetCode: 'USDT', baseYieldRate: '0.0000052', status: 'ENABLED' }],
+        _count: { userFleet: 3 },
+      },
+      {
+        id: 'cat_impulse_core',
+        tierCode: 'IMPULSE_CORE',
+        name: 'Impulse Core Unit',
+        description: 'Mid-tier node with enhanced multi-rail throughput.',
+        category: 'PERFORMANCE',
+        priceUsdt: '50.00',
+        capacityGhs: '80.0',
+        dailyYieldEstimateUsdt: '1.80',
+        displayOrder: 2,
+        icon: '🔋',
+        status: 'ACTIVE',
+        outputs: [{ assetCode: 'USDT', baseYieldRate: '0.0000208', status: 'ENABLED' }],
+        _count: { userFleet: 2 },
+      },
+      {
+        id: 'cat_turbine_beta',
+        tierCode: 'TURBINE_LOOP_X',
+        name: 'Turbine Loop-X',
+        description: 'High-yield enterprise engine for dedicated network verification.',
+        category: 'ENTERPRISE',
+        priceUsdt: '150.00',
+        capacityGhs: '180.0',
+        dailyYieldEstimateUsdt: '5.50',
+        displayOrder: 3,
+        icon: '🚀',
+        status: 'ACTIVE',
+        outputs: [{ assetCode: 'USDT', baseYieldRate: '0.0000636', status: 'ENABLED' }],
+        _count: { userFleet: 2 },
+      },
+      {
+        id: 'cat_quantum_array',
+        tierCode: 'QUANTUM_ARRAY_9',
+        name: 'Quantum Array V9',
+        description: 'Flagship cluster computing platform with maximal capacity.',
+        category: 'FLAGSHIP',
+        priceUsdt: '500.00',
+        capacityGhs: '740.0',
+        dailyYieldEstimateUsdt: '22.00',
+        displayOrder: 4,
+        icon: '💠',
+        status: 'ACTIVE',
+        outputs: [{ assetCode: 'USDT', baseYieldRate: '0.0002546', status: 'ENABLED' }],
+        _count: { userFleet: 1 },
+      },
+    ];
+  }
+
+  // 9. GET ALL RISK EVENTS
+  getRiskEvents() {
+    const allRisk: any[] = [];
+    for (const u of this.users) {
+      for (const r of u.riskEvents) {
+        allRisk.push({
+          ...r,
+          telegramUserId: u.telegramUserId.toString(),
+          userName: `${u.firstName} ${u.lastName || ''}`.trim(),
+          userHandle: u.telegramUsername ? `@${u.telegramUsername}` : u.phoneNumber || 'No handle',
+        });
+      }
+    }
+    return allRisk;
+  }
 }

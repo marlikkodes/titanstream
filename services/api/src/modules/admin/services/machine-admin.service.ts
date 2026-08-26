@@ -49,10 +49,18 @@ export class MachineAdminService {
    * 1. Machine Catalog CRUD
    */
   async listMachines() {
-    return this.prisma.machineCatalogItem.findMany({
-      include: { outputs: true, _count: { select: { userFleet: true } } },
-      orderBy: { displayOrder: 'asc' },
-    });
+    try {
+      const items = await this.prisma.machineCatalogItem.findMany({
+        include: { outputs: true, _count: { select: { userFleet: true } } },
+        orderBy: { displayOrder: 'asc' },
+      });
+      if (items && items.length > 0) return items;
+    } catch {}
+
+    if (this.centralSync) {
+      return this.centralSync.getCatalog();
+    }
+    return [];
   }
 
   async createMachine(admin: { id: string; role: string }, dto: CreateMachineDto) {

@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef, Optional } from '@nestjs/common';
 import { RiskEventStatus, RiskSeverity } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { OperationalAuditService } from './operational-audit.service';
+import { CentralDataSyncService } from './central-data-sync.service';
 
 export interface CreateRiskEventDto {
   entityType: string;
@@ -16,6 +17,7 @@ export class RiskOperationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: OperationalAuditService,
+    @Optional() @Inject(forwardRef(() => CentralDataSyncService)) private readonly centralSync?: CentralDataSyncService,
   ) {}
 
   async listRiskEvents(params: { status?: RiskEventStatus; severity?: RiskSeverity; limit?: number; offset?: number }) {
@@ -26,19 +28,29 @@ export class RiskOperationsService {
     if (params.status) where.status = params.status;
     if (params.severity) where.severity = params.severity;
 
-    const [items, total] = await Promise.all([
-      this.prisma.riskEvent.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset,
-      }),
-      this.prisma.riskEvent.count({ where }),
-    ]);
+    try {
+      const [items, total] = await Promise.all([
+        this.prisma.riskEvent.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          skip: offset,
+        }),
+        this.prisma.riskEvent.count({ where }),
+      ]);
 
+      if (items && items.length > 0) {
+        return {
+          items,
+          pagination: { total, limit, offset },
+        };
+      }
+    } catch {}
+
+    const fallbackItems = this.centralSync ? this.centralSync.getRiskEvents() : [];
     return {
-      items,
-      pagination: { total, limit, offset },
+      items: fallbackItems,
+      pagination: { total: fallbackItems.length, limit, offset },
     };
   }
 

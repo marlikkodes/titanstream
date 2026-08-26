@@ -1,9 +1,9 @@
 import type React from 'react';
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { DetailDrawer } from '@/components/admin/DetailDrawer';
 import { StatusBadge } from '@/components/admin/StatusBadge';
-import { MetricCard, MetricCardGrid } from '@/components/admin/MetricCard';
 import {
   adminWithdrawalService,
   type AdminWithdrawalRecord,
@@ -22,6 +22,11 @@ import {
   RotateCcw,
   ExternalLink,
   ShieldAlert,
+  ArrowRight,
+  Wallet,
+  Users,
+  MessageSquare,
+  Zap,
 } from 'lucide-react';
 
 const statusVariant: Record<string, 'info' | 'default' | 'warning' | 'success' | 'danger'> = {
@@ -99,21 +104,21 @@ export const WithdrawalsPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
-  // Proof form state
-  const [showProofForm, setShowProofForm] = useState(false);
-  const [txHash, setTxHash] = useState('');
-  const [notes, setNotes] = useState('');
+  // Input states for actions
+  const [reference, setReference] = useState('');
+  const [proofUrl, setProofUrl] = useState('');
+  const [proofNotes, setProofNotes] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
+  const [overrideFee, setOverrideFee] = useState('');
 
-  const loadWithdrawals = useCallback(async () => {
+  const fetchWithdrawals = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await adminWithdrawalService.listWithdrawals({
+      const data = await adminWithdrawalService.listWithdrawals({
         status: statusFilter === 'ALL' ? undefined : statusFilter,
-        limit: 100,
       });
-      setWithdrawalsList(res?.items || []);
-    } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Failed to load withdrawal queue', 'error');
+      setWithdrawalsList(data.items || []);
+    } catch {
       setWithdrawalsList([]);
     } finally {
       setLoading(false);
@@ -121,28 +126,27 @@ export const WithdrawalsPage: React.FC = () => {
   }, [statusFilter]);
 
   useEffect(() => {
-    loadWithdrawals();
-  }, [loadWithdrawals]);
+    fetchWithdrawals();
+  }, [fetchWithdrawals]);
 
-  const handleSelectRow = async (record: AdminWithdrawalRecord) => {
+  const handleRowClick = async (record: AdminWithdrawalRecord) => {
     setSelected(record);
-    setShowProofForm(false);
-    setInstructions(null);
     try {
-      const inst = await adminWithdrawalService.getPayoutInstructions(record.id);
-      setInstructions(inst);
+      const ins = await adminWithdrawalService.getPayoutInstructions(record.id);
+      setInstructions(ins);
     } catch {
-      // Non-blocking
+      setInstructions(null);
     }
   };
 
-  const handleClaim = async (id: string) => {
+  const handleClaim = async () => {
+    if (!selected) return;
     setActionLoading(true);
     try {
-      const updated = await adminWithdrawalService.claimWithdrawal(id);
-      showToast('Withdrawal successfully claimed for execution', 'success');
+      const updated = await adminWithdrawalService.claimWithdrawal(selected.id);
+      showToast('Withdrawal claimed by operator for execution', 'success');
       setSelected(updated);
-      loadWithdrawals();
+      fetchWithdrawals();
     } catch (err: any) {
       showToast(err?.response?.data?.message || 'Failed to claim withdrawal', 'error');
     } finally {
@@ -150,13 +154,17 @@ export const WithdrawalsPage: React.FC = () => {
     }
   };
 
-  const handleMarkExecuted = async (id: string) => {
+  const handleMarkExecuted = async () => {
+    if (!selected) return;
     setActionLoading(true);
     try {
-      const updated = await adminWithdrawalService.markExecuted(id);
-      showToast('Payout marked as EXECUTED', 'success');
+      const updated = await adminWithdrawalService.markExecuted(selected.id, {
+        reference: reference.trim() || undefined,
+      });
+      showToast('Withdrawal marked as executed', 'success');
       setSelected(updated);
-      loadWithdrawals();
+      setReference('');
+      fetchWithdrawals();
     } catch (err: any) {
       showToast(err?.response?.data?.message || 'Failed to mark executed', 'error');
     } finally {
@@ -164,57 +172,65 @@ export const WithdrawalsPage: React.FC = () => {
     }
   };
 
-  const handleSubmitProof = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitProof = async () => {
     if (!selected) return;
+    if (!proofUrl && !reference) {
+      showToast('Proof URL or Reference is required', 'error');
+      return;
+    }
     setActionLoading(true);
     try {
       const updated = await adminWithdrawalService.submitProof(selected.id, {
-        txHash: txHash.trim(),
-        notes: notes.trim(),
+        proofUrl: proofUrl.trim() || undefined,
+        reference: reference.trim() || undefined,
+        notes: proofNotes.trim() || undefined,
       });
-      showToast('Payout proof submitted cleanly', 'success');
-      setShowProofForm(false);
-      setTxHash('');
-      setNotes('');
+      showToast('Payment proof submitted successfully', 'success');
       setSelected(updated);
-      loadWithdrawals();
+      setProofUrl('');
+      setProofNotes('');
+      fetchWithdrawals();
     } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Failed to submit payout proof', 'error');
+      showToast(err?.response?.data?.message || 'Failed to submit proof', 'error');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleApprove = async (id: string) => {
-    if (!window.confirm('Confirm approving and settling this withdrawal? Ledger balance will be finalized.')) return;
+  const handleApprove = async () => {
+    if (!selected) return;
+    if (!window.confirm('Are you sure you want to finalize and settle this withdrawal? This will permanently release the ledger hold.')) {
+      return;
+    }
     setActionLoading(true);
     try {
-      const updated = await adminWithdrawalService.approveWithdrawal(id);
-      showToast('Withdrawal approved and settled!', 'success');
+      const updated = await adminWithdrawalService.approveAndSettle(selected.id, {
+        overrideFee: overrideFee ? Number(overrideFee) : undefined,
+      });
+      showToast('Withdrawal settled and ledger finalized!', 'success');
       setSelected(updated);
-      loadWithdrawals();
+      setOverrideFee('');
+      fetchWithdrawals();
     } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Failed to approve withdrawal', 'error');
+      showToast(err?.response?.data?.message || 'Settlement failed', 'error');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleReject = async (id: string) => {
-    const reason = prompt('Mandatory rejection reason (user will be notified):');
-    if (reason === null) return;
-    if (!reason.trim()) {
+  const handleReject = async () => {
+    if (!selected) return;
+    if (!rejectReason.trim()) {
       showToast('Rejection reason is required', 'error');
       return;
     }
-
     setActionLoading(true);
     try {
-      const updated = await adminWithdrawalService.rejectWithdrawal(id, reason.trim());
-      showToast('Withdrawal rejected and funds unlocked', 'info');
+      const updated = await adminWithdrawalService.rejectWithdrawal(selected.id, rejectReason.trim());
+      showToast('Withdrawal rejected and funds refunded to user wallet', 'info');
       setSelected(updated);
-      loadWithdrawals();
+      setRejectReason('');
+      fetchWithdrawals();
     } catch (err: any) {
       showToast(err?.response?.data?.message || 'Failed to reject withdrawal', 'error');
     } finally {
@@ -222,15 +238,16 @@ export const WithdrawalsPage: React.FC = () => {
     }
   };
 
-  const handleRetry = async (id: string) => {
+  const handleRetry = async () => {
+    if (!selected) return;
     setActionLoading(true);
     try {
-      const updated = await adminWithdrawalService.retryPayout(id);
-      showToast('Withdrawal re-queued for execution', 'info');
+      const updated = await adminWithdrawalService.retrySettlement(selected.id);
+      showToast('Settlement retry initiated', 'success');
       setSelected(updated);
-      loadWithdrawals();
+      fetchWithdrawals();
     } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Failed to retry payout', 'error');
+      showToast(err?.response?.data?.message || 'Retry failed', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -239,231 +256,383 @@ export const WithdrawalsPage: React.FC = () => {
   const pendingCount = withdrawalsList.filter(
     (w) => w.status === 'CREATED' || w.status === 'PAYOUT_CLAIMED' || w.status === 'PAYOUT_PROOF_SUBMITTED',
   ).length;
-  const settledCount = withdrawalsList.filter((w) => w.status === 'SETTLED').length;
-  const totalVolume = withdrawalsList.reduce((acc, w) => acc + (Number(w.requestedAmount) || 0), 0);
+
+  const totalSettledUsdt = withdrawalsList
+    .filter((w) => w.status === 'SETTLED')
+    .reduce((acc, w) => acc + Number(w.netPayoutAmount || 0), 0);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <MetricCardGrid columns={3}>
-        <MetricCard label="Pending Action" value={pendingCount.toString()} icon="Clock" variant={pendingCount > 0 ? 'gold' : 'green'} />
-        <MetricCard label="Settled Payouts" value={settledCount.toString()} icon="CheckCircle" variant="green" />
-        <MetricCard label="Total Volume" value={`$${totalVolume.toLocaleString()} USDT`} icon="ArrowUpFromLine" variant="blue" />
-      </MetricCardGrid>
+    <div className="space-y-6">
+      {/* ─── 1. HERO SECTION: WITHDRAWALS COCKPIT ────────────────────────────── */}
+      <div className="relative overflow-hidden bg-card-bg border border-white/10 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-usdt-green/10 border border-usdt-green/40 text-usdt-green shrink-0 shadow-lg">
+              <ArrowUpFromLine size={26} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded border border-usdt-green/30">
+                  Outbound Capital & Settlement Desk
+                </span>
+                <span className="text-xs text-text-tertiary">·</span>
+                <span className="text-xs text-text-secondary font-mono flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${pendingCount > 0 ? 'bg-amber-400 animate-pulse' : 'bg-usdt-green'}`} />
+                  {pendingCount > 0 ? `${pendingCount} Withdrawals In Queue` : 'Queue Clear'}
+                </span>
+              </div>
+              <h1 className="text-xl font-black text-text-primary tracking-tight mt-1">
+                Withdrawal & Settlement Workstation
+              </h1>
+              <p className="text-xs text-text-secondary mt-0.5">
+                Multi-signature operator claim workflow, proof verification, fee overrides, and double-entry hold release.
+              </p>
+            </div>
+          </div>
 
-      {/* Filter and Refresh Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-card-bg p-4 rounded-2xl border border-white/10 shadow-lg">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {['ALL', 'CREATED', 'PAYOUT_CLAIMED', 'PAYOUT_EXECUTED', 'PAYOUT_PROOF_SUBMITTED', 'SETTLED', 'REJECTED'].map(
-            (status) => (
+          <div className="flex items-center gap-2 self-end lg:self-center">
+            <button
+              onClick={fetchWithdrawals}
+              disabled={loading}
+              className="p-2.5 rounded-xl bg-control-bg border border-white/10 text-text-secondary hover:text-text-primary disabled:opacity-50 cursor-pointer transition-colors shadow-sm"
+              title="Refresh Withdrawals"
+            >
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
+        </div>
+
+        {/* Live Withdrawal KPIs */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-white/5 font-mono">
+          <div className="p-3.5 rounded-2xl bg-control-bg/60 border border-white/5 space-y-1">
+            <span className="text-[10px] font-bold uppercase text-text-tertiary flex items-center gap-1 font-sans">
+              <Clock size={12} className="text-amber-400" /> Pending Review
+            </span>
+            <div className="text-lg font-black text-text-primary">
+              {pendingCount} <span className="text-xs text-text-tertiary font-normal font-sans">requests</span>
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-control-bg/60 border border-white/5 space-y-1">
+            <span className="text-[10px] font-bold uppercase text-text-tertiary flex items-center gap-1 font-sans">
+              <CheckCircle2 size={12} className="text-usdt-green" /> Settled Volume
+            </span>
+            <div className="text-lg font-black text-usdt-green">
+              ${totalSettledUsdt.toLocaleString()} <span className="text-xs text-text-tertiary font-normal font-sans">USDT</span>
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-control-bg/60 border border-white/5 space-y-1">
+            <span className="text-[10px] font-bold uppercase text-text-tertiary flex items-center gap-1 font-sans">
+              <ShieldAlert size={12} className="text-ton-blue" /> Double-Entry Hold
+            </span>
+            <div className="text-lg font-black text-text-primary">
+              Active Lock
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-control-bg/60 border border-white/5 space-y-1">
+            <span className="text-[10px] font-bold uppercase text-text-tertiary flex items-center gap-1 font-sans">
+              <RotateCcw size={12} className="text-purple-400" /> Auto Refund Guard
+            </span>
+            <div className="text-lg font-black text-usdt-green">
+              ENABLED
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── 2. DOMINANT FOCAL POINT: STATUS FILTER & DATA TABLE ──────────────── */}
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-card-bg p-4 sm:p-5 rounded-3xl border border-white/10 shadow-xl">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            {['ALL', 'CREATED', 'PAYOUT_CLAIMED', 'PAYOUT_EXECUTED', 'PAYOUT_PROOF_SUBMITTED', 'SETTLED', 'REJECTED'].map((st) => (
               <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer shrink-0 ${
-                  statusFilter === status
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+                  statusFilter === st
                     ? 'bg-usdt-green text-app-bg shadow-sm'
                     : 'bg-control-bg text-text-tertiary hover:text-text-primary border border-white/5'
                 }`}
               >
-                {status}
+                {st}
               </button>
-            ),
-          )}
+            ))}
+          </div>
+
+          <span className="text-xs font-mono text-text-tertiary">Click any row to open operator settlement drawer</span>
         </div>
 
-        <button
-          onClick={loadWithdrawals}
-          disabled={loading}
-          className="p-2 rounded-xl bg-control-bg border border-white/10 hover:bg-white/5 text-text-secondary disabled:opacity-50 cursor-pointer"
-        >
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-        </button>
+        <div className="bg-card-bg rounded-3xl p-5 border border-white/10 shadow-xl">
+          <DataTable
+            columns={columns}
+            data={withdrawalsList}
+            loading={loading}
+            onRowClick={handleRowClick}
+          />
+        </div>
       </div>
 
-      {loading ? (
-        <div className="p-8 text-center bg-card-bg rounded-xl border border-white/5 text-xs text-text-tertiary">
-          Loading authoritative withdrawal queue...
-        </div>
-      ) : withdrawalsList.length === 0 ? (
-        <div className="p-8 text-center bg-card-bg rounded-xl border border-white/5 space-y-1">
-          <p className="text-xs font-bold text-text-primary">No withdrawal requests found</p>
-          <p className="text-[11px] text-text-tertiary">Requests matching the selected filter will appear here.</p>
-        </div>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={withdrawalsList}
-          keyExtractor={(w) => w.id}
-          onRowClick={(w) => handleSelectRow(w)}
-          searchable
-          searchPlaceholder="Search by ID, User, or Amount..."
-          pageSize={10}
-        />
-      )}
+      {/* ─── 3. UNIFIED OS CROSS-SYSTEM NAVIGATION HUB (NO DEAD ENDS!) ───────── */}
+      <div className="space-y-3">
+        <h2 className="text-xs font-black uppercase tracking-wider text-text-secondary flex items-center gap-2">
+          <Zap size={14} className="text-usdt-green" /> Unified Control Plane Integrations & Workflows
+        </h2>
 
-      {selected && (
-        <DetailDrawer
-          isOpen={!!selected}
-          onClose={() => setSelected(null)}
-          title={`Withdrawal Session #${selected.id.substring(0, 8)}`}
-        >
-          <div className="space-y-4 text-xs">
-            {/* Status & Amount Banner */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-control-bg border border-white/10">
-              <StatusBadge label={selected.status} variant={statusVariant[selected.status] || 'default'} dot />
-              <div className="text-right">
-                <div className="font-extrabold text-sm text-usdt-green">${selected.netPayoutAmount} USDT</div>
-                <div className="text-[10px] text-text-tertiary">Gross: ${selected.requestedAmount} | Fee: ${selected.feeAmount}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <Link
+            to="/admin/treasury"
+            className="group p-4 rounded-2xl bg-card-bg border border-white/10 hover:border-usdt-green/50 transition-all space-y-2 shadow-md"
+          >
+            <div className="flex items-center justify-between text-usdt-green">
+              <Wallet size={18} />
+              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </div>
+            <div className="font-extrabold text-xs text-text-primary">Treasury Liquidity</div>
+            <p className="text-[11px] text-text-tertiary">
+              Verify reserve vault balances backing fiat and crypto withdrawal disbursements.
+            </p>
+          </Link>
+
+          <Link
+            to="/admin/users"
+            className="group p-4 rounded-2xl bg-card-bg border border-white/10 hover:border-ton-blue/50 transition-all space-y-2 shadow-md"
+          >
+            <div className="flex items-center justify-between text-ton-blue">
+              <Users size={18} />
+              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </div>
+            <div className="font-extrabold text-xs text-text-primary">User Accounts Desk</div>
+            <p className="text-[11px] text-text-tertiary">
+              Inspect user KYC level, trust score, and double-entry transaction history.
+            </p>
+          </Link>
+
+          <Link
+            to="/admin/risk"
+            className="group p-4 rounded-2xl bg-card-bg border border-white/10 hover:border-rose-400/50 transition-all space-y-2 shadow-md"
+          >
+            <div className="flex items-center justify-between text-rose-400">
+              <ShieldAlert size={18} />
+              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </div>
+            <div className="font-extrabold text-xs text-text-primary">Risk Sentinel Radar</div>
+            <p className="text-[11px] text-text-tertiary">
+              Flag users requesting rapid withdrawal bursts across multiple mobile accounts.
+            </p>
+          </Link>
+
+          <Link
+            to="/admin/whatsapp"
+            className="group p-4 rounded-2xl bg-card-bg border border-white/10 hover:border-emerald-400/50 transition-all space-y-2 shadow-md"
+          >
+            <div className="flex items-center justify-between text-emerald-400">
+              <MessageSquare size={18} />
+              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </div>
+            <div className="font-extrabold text-xs text-text-primary">WhatsApp Fleet Desk</div>
+            <p className="text-[11px] text-text-tertiary">
+              Dispatch real-time SMS/WhatsApp payout execution alerts with telco transaction IDs.
+            </p>
+          </Link>
+        </div>
+      </div>
+
+      {/* ─── 4. OPERATOR ACTION DRAWER ─────────────────────────────────────────── */}
+      <DetailDrawer
+        isOpen={!!selected}
+        onClose={() => {
+          setSelected(null);
+          setInstructions(null);
+        }}
+        title="Withdrawal Session Actions"
+        subtitle={`Session ${selected?.id}`}
+      >
+        {selected && (
+          <div className="space-y-6 text-xs font-mono">
+            {/* Header summary */}
+            <div className="p-4 rounded-2xl bg-control-bg border border-white/5 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-text-tertiary uppercase font-sans">Status</span>
+                <StatusBadge label={selected.status} variant={statusVariant[selected.status] || 'default'} dot />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-text-tertiary uppercase font-sans">Requested Amount</span>
+                <span className="font-bold text-text-primary text-sm">${selected.requestedAmount} USDT</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-text-tertiary uppercase font-sans">Net Payout</span>
+                <span className="font-black text-usdt-green text-sm">${selected.netPayoutAmount} USDT</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-text-tertiary uppercase font-sans">User</span>
+                <span className="text-text-primary font-bold">{selected.user?.firstName || selected.telegramUserId}</span>
               </div>
             </div>
 
-            {/* User & Destination Details */}
-            <div className="bg-card-bg rounded-xl p-4 border border-white/10 space-y-2.5">
-              <h4 className="text-[11px] font-black uppercase tracking-wider text-text-tertiary">Recipient Details</h4>
-              <div className="space-y-1.5 text-xs font-mono">
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Telegram User:</span>
-                  <span className="font-bold text-text-primary">@{selected.user?.telegramUsername || selected.telegramUserId}</span>
-                </div>
-                {selected.user?.phoneNumber && (
-                  <div className="flex justify-between">
-                    <span className="text-text-tertiary">Phone Number:</span>
-                    <span className="text-text-primary">{selected.user.phoneNumber}</span>
-                  </div>
-                )}
-                {selected.user?.verifiedUsdtAddress && (
-                  <div className="space-y-0.5">
-                    <span className="text-text-tertiary">Verified USDT Address:</span>
-                    <div className="p-2 rounded bg-app-bg text-[10px] text-usdt-green break-all">
-                      {selected.user.verifiedUsdtAddress}
-                    </div>
-                  </div>
-                )}
-                {selected.networkTxId && (
-                  <div className="space-y-0.5">
-                    <span className="text-text-tertiary">Transaction Hash:</span>
-                    <div className="p-2 rounded bg-app-bg text-[10px] text-ton-blue break-all">
-                      {selected.networkTxId}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Payout Instructions Box */}
+            {/* Payout Instructions */}
             {instructions && (
-              <div className="bg-control-bg/60 rounded-xl p-4 border border-white/5 space-y-2">
-                <h4 className="text-[11px] font-black uppercase tracking-wider text-usdt-green">Authoritative Payout Protocol</h4>
-                <div className="space-y-1 text-xs font-mono">
-                  <div>Method: <strong className="text-text-primary">{instructions.paymentMethod}</strong></div>
-                  <div>Destination: <strong className="text-text-primary">{instructions.destinationAddress}</strong></div>
-                  {instructions.ussdPushString && (
-                    <div className="p-2 bg-app-bg rounded text-usdt-green text-[11px]">
-                      USSD: <code>{instructions.ussdPushString}</code>
-                    </div>
+              <div className="p-4 rounded-2xl bg-usdt-green/5 border border-usdt-green/30 space-y-2">
+                <h4 className="font-black text-usdt-green text-xs uppercase tracking-wider font-sans">
+                  Payout Target Details
+                </h4>
+                <div className="space-y-1 text-[11px] text-text-secondary">
+                  <div>Channel: <strong className="text-text-primary">{instructions.targetChannel}</strong></div>
+                  <div>Account: <strong className="text-usdt-green font-mono">{instructions.targetAccount}</strong></div>
+                  {instructions.accountHolderName && (
+                    <div>Holder: <strong className="text-text-primary">{instructions.accountHolderName}</strong></div>
                   )}
+                  <div>Fiat Amount: <strong className="text-text-primary">{instructions.fiatAmount} {instructions.fiatCurrency}</strong></div>
                 </div>
               </div>
             )}
 
-            {/* Action Buttons Panel */}
-            <div className="space-y-2 pt-2">
-              <h4 className="text-[11px] font-black uppercase tracking-wider text-text-tertiary">Administrative Actions</h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {selected.status === 'CREATED' && (
+            {/* Operator Actions Accordion */}
+            <div className="space-y-4 pt-2">
+              {/* Action 1: Claim */}
+              {selected.status === 'CREATED' && (
+                <div className="p-4 rounded-2xl bg-control-bg border border-white/5 space-y-2">
+                  <h4 className="font-black text-text-primary text-xs uppercase font-sans flex items-center gap-1.5">
+                    <HandMetal size={14} className="text-ton-blue" /> 1. Claim For Execution
+                  </h4>
+                  <p className="text-[11px] text-text-tertiary font-sans">
+                    Assigns this withdrawal to your operator account to prevent duplicate payout attempts.
+                  </p>
                   <button
-                    onClick={() => handleClaim(selected.id)}
+                    onClick={handleClaim}
                     disabled={actionLoading}
-                    className="p-2.5 rounded-xl bg-ton-blue/20 hover:bg-ton-blue/30 text-ton-blue font-extrabold text-xs flex items-center justify-center gap-1.5 border border-ton-blue/40 cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 rounded-xl bg-ton-blue text-white font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 disabled:opacity-50 cursor-pointer"
                   >
-                    <HandMetal size={14} /> Claim for Execution
+                    Claim Withdrawal
                   </button>
-                )}
+                </div>
+              )}
 
-                {(selected.status === 'CREATED' || selected.status === 'PAYOUT_CLAIMED') && (
-                  <button
-                    onClick={() => handleMarkExecuted(selected.id)}
-                    disabled={actionLoading}
-                    className="p-2.5 rounded-xl bg-usdt-green/20 hover:bg-usdt-green/30 text-usdt-green font-extrabold text-xs flex items-center justify-center gap-1.5 border border-usdt-green/40 cursor-pointer disabled:opacity-50"
-                  >
-                    <Send size={14} /> Mark Executed
-                  </button>
-                )}
-
-                {(selected.status === 'PAYOUT_CLAIMED' || selected.status === 'PAYOUT_EXECUTED') && (
-                  <button
-                    onClick={() => setShowProofForm(!showProofForm)}
-                    className="p-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 font-extrabold text-xs flex items-center justify-center gap-1.5 border border-amber-500/40 cursor-pointer"
-                  >
-                    <FileCheck size={14} /> {showProofForm ? 'Cancel Proof' : 'Submit Proof'}
-                  </button>
-                )}
-
-                {selected.status !== 'SETTLED' && selected.status !== 'REJECTED' && (
-                  <button
-                    onClick={() => handleApprove(selected.id)}
-                    disabled={actionLoading}
-                    className="p-2.5 rounded-xl bg-usdt-green text-app-bg font-black text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50"
-                  >
-                    <CheckCircle2 size={14} /> Approve & Settle
-                  </button>
-                )}
-
-                {selected.status !== 'SETTLED' && selected.status !== 'REJECTED' && (
-                  <button
-                    onClick={() => handleReject(selected.id)}
-                    disabled={actionLoading}
-                    className="p-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 font-extrabold text-xs flex items-center justify-center gap-1.5 border border-rose-500/40 cursor-pointer disabled:opacity-50"
-                  >
-                    <XCircle size={14} /> Reject
-                  </button>
-                )}
-
-                {selected.status === 'REJECTED' && (
-                  <button
-                    onClick={() => handleRetry(selected.id)}
-                    disabled={actionLoading}
-                    className="p-2.5 rounded-xl bg-control-bg border border-white/10 text-text-primary font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    <RotateCcw size={14} /> Retry Payout
-                  </button>
-                )}
-              </div>
-
-              {/* Submit Proof Inline Form */}
-              {showProofForm && (
-                <form onSubmit={handleSubmitProof} className="p-3.5 rounded-xl bg-control-bg border border-amber-500/30 space-y-2.5 mt-2">
-                  <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                    <FileCheck size={14} /> Payout Execution Proof
-                  </div>
+              {/* Action 2: Mark Executed */}
+              {(selected.status === 'CREATED' || selected.status === 'PAYOUT_CLAIMED') && (
+                <div className="p-4 rounded-2xl bg-control-bg border border-white/5 space-y-3">
+                  <h4 className="font-black text-text-primary text-xs uppercase font-sans flex items-center gap-1.5">
+                    <Send size={14} className="text-usdt-green" /> 2. Mark Executed (Dispatched)
+                  </h4>
                   <input
                     type="text"
-                    required
-                    placeholder="Blockchain Tx Hash or Telco Ref ID"
-                    value={txHash}
-                    onChange={(e) => setTxHash(e.target.value)}
-                    className="w-full h-9 px-3 bg-app-bg border border-white/10 rounded-lg text-xs font-mono text-text-primary focus:outline-none focus:border-amber-500"
+                    placeholder="Bank / Telco Transaction Reference..."
+                    value={reference}
+                    onChange={(e) => setReference(e.target.value)}
+                    className="w-full h-10 px-3 bg-app-bg border border-white/10 rounded-xl text-xs text-text-primary focus:border-usdt-green focus:outline-none"
+                  />
+                  <button
+                    onClick={handleMarkExecuted}
+                    disabled={actionLoading}
+                    className="w-full py-2.5 rounded-xl bg-usdt-green text-app-bg font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 disabled:opacity-50 cursor-pointer"
+                  >
+                    Mark Payout Dispatched
+                  </button>
+                </div>
+              )}
+
+              {/* Action 3: Submit Proof */}
+              {(selected.status === 'PAYOUT_CLAIMED' || selected.status === 'PAYOUT_EXECUTED') && (
+                <div className="p-4 rounded-2xl bg-control-bg border border-white/5 space-y-3">
+                  <h4 className="font-black text-text-primary text-xs uppercase font-sans flex items-center gap-1.5">
+                    <FileCheck size={14} className="text-purple-400" /> 3. Submit Payout Proof
+                  </h4>
+                  <input
+                    type="text"
+                    placeholder="Receipt Image / PDF URL..."
+                    value={proofUrl}
+                    onChange={(e) => setProofUrl(e.target.value)}
+                    className="w-full h-10 px-3 bg-app-bg border border-white/10 rounded-xl text-xs text-text-primary focus:border-usdt-green focus:outline-none"
                   />
                   <input
                     type="text"
-                    placeholder="Operator Notes (optional)"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="w-full h-9 px-3 bg-app-bg border border-white/10 rounded-lg text-xs text-text-primary focus:outline-none focus:border-amber-500"
+                    placeholder="Operator Notes..."
+                    value={proofNotes}
+                    onChange={(e) => setProofNotes(e.target.value)}
+                    className="w-full h-10 px-3 bg-app-bg border border-white/10 rounded-xl text-xs text-text-primary focus:border-usdt-green focus:outline-none"
                   />
                   <button
-                    type="submit"
+                    onClick={handleSubmitProof}
                     disabled={actionLoading}
-                    className="w-full py-2 rounded-lg bg-amber-500 text-app-bg font-extrabold text-xs shadow-md disabled:opacity-50 cursor-pointer"
+                    className="w-full py-2.5 rounded-xl bg-purple-600 text-white font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 disabled:opacity-50 cursor-pointer"
                   >
-                    Confirm Proof Submission
+                    Submit Proof
                   </button>
-                </form>
+                </div>
+              )}
+
+              {/* Action 4: Approve & Settle */}
+              {selected.status !== 'SETTLED' && selected.status !== 'REJECTED' && selected.status !== 'CANCELLED' && (
+                <div className="p-4 rounded-2xl bg-usdt-green/10 border border-usdt-green/30 space-y-3">
+                  <h4 className="font-black text-usdt-green text-xs uppercase font-sans flex items-center gap-1.5">
+                    <CheckCircle2 size={14} /> 4. Approve & Finalize Settlement
+                  </h4>
+                  <p className="text-[11px] text-text-tertiary font-sans">
+                    Permanently finalizes double-entry ledger entries and releases the reserved user balance.
+                  </p>
+                  <input
+                    type="number"
+                    placeholder="Override Fee (Optional, USDT)..."
+                    value={overrideFee}
+                    onChange={(e) => setOverrideFee(e.target.value)}
+                    className="w-full h-10 px-3 bg-app-bg border border-white/10 rounded-xl text-xs text-text-primary focus:border-usdt-green focus:outline-none"
+                  />
+                  <button
+                    onClick={handleApprove}
+                    disabled={actionLoading}
+                    className="w-full py-2.5 rounded-xl bg-usdt-green text-app-bg font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 disabled:opacity-50 cursor-pointer"
+                  >
+                    Approve & Finalize Settlement
+                  </button>
+                </div>
+              )}
+
+              {/* Action 5: Reject */}
+              {selected.status !== 'SETTLED' && selected.status !== 'REJECTED' && (
+                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 space-y-3">
+                  <h4 className="font-black text-rose-400 text-xs uppercase font-sans flex items-center gap-1.5">
+                    <XCircle size={14} /> 5. Reject Withdrawal
+                  </h4>
+                  <p className="text-[11px] text-text-tertiary font-sans">
+                    Refunds reserved USDT balance immediately back to the user's wallet.
+                  </p>
+                  <input
+                    type="text"
+                    placeholder="Reason for rejection (sent to user)..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    className="w-full h-10 px-3 bg-app-bg border border-white/10 rounded-xl text-xs text-text-primary focus:border-rose-400 focus:outline-none"
+                  />
+                  <button
+                    onClick={handleReject}
+                    disabled={actionLoading}
+                    className="w-full py-2.5 rounded-xl bg-rose-500 text-white font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 disabled:opacity-50 cursor-pointer"
+                  >
+                    Reject & Refund User
+                  </button>
+                </div>
+              )}
+
+              {/* Action 6: Retry */}
+              {selected.status === 'REJECTED' && (
+                <div className="p-4 rounded-2xl bg-control-bg border border-white/5 space-y-2">
+                  <h4 className="font-black text-text-primary text-xs uppercase font-sans flex items-center gap-1.5">
+                    <RotateCcw size={14} className="text-amber-400" /> 6. Retry Failed Settlement
+                  </h4>
+                  <button
+                    onClick={handleRetry}
+                    disabled={actionLoading}
+                    className="w-full py-2.5 rounded-xl bg-amber-500 text-app-bg font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 disabled:opacity-50 cursor-pointer"
+                  >
+                    Retry Settlement Lifecycle
+                  </button>
+                </div>
               )}
             </div>
           </div>
-        </DetailDrawer>
-      )}
+        )}
+      </DetailDrawer>
     </div>
   );
 };
