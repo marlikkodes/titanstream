@@ -982,6 +982,7 @@ export const UsersPage: React.FC = () => {
         <DataTable<UserSummaryItem>
           data={filteredUsers}
           columns={columns}
+          keyExtractor={(u) => u.id || u.telegramId}
           loading={loading}
           totalCount={totalCount}
           page={page}

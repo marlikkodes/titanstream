@@ -16,10 +16,12 @@ import {
   Server,
   DollarSign,
   Key,
+  Award,
+  Download,
 } from 'lucide-react';
 
 export const ReadinessPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'RECONCILIATION' | 'SECURITY' | 'DLQ' | 'DISASTER' | 'RUNBOOKS'>('RECONCILIATION');
+  const [activeTab, setActiveTab] = useState<'RECONCILIATION' | 'SECURITY' | 'DLQ' | 'DISASTER' | 'RUNBOOKS' | 'CERTIFICATION'>('RECONCILIATION');
   const [loading, setLoading] = useState(true);
 
   // Overview State
@@ -27,6 +29,9 @@ export const ReadinessPage: React.FC = () => {
 
   // Runbooks State
   const [runbooks, setRunbooks] = useState<any>(null);
+
+  // Master Launch Certification State
+  const [certification, setCertification] = useState<any>(null);
 
   // Triggering actions
   const [runningReconciliation, setRunningReconciliation] = useState(false);
@@ -48,14 +53,24 @@ export const ReadinessPage: React.FC = () => {
       .catch(() => setRunbooks(null));
   }, []);
 
+  // Fetch Master Launch Certification
+  const fetchCertification = useCallback(() => {
+    setLoading(true);
+    api.get('/admin/readiness/launch-certification')
+      .then((res) => setCertification(res.data?.data || res.data || null))
+      .catch(() => setCertification(null))
+      .finally(() => setLoading(false));
+  }, []);
+
   useEffect(() => {
     fetchOverview();
   }, [fetchOverview]);
 
-  const handleTabChange = (tab: 'RECONCILIATION' | 'SECURITY' | 'DLQ' | 'DISASTER' | 'RUNBOOKS') => {
+  const handleTabChange = (tab: 'RECONCILIATION' | 'SECURITY' | 'DLQ' | 'DISASTER' | 'RUNBOOKS' | 'CERTIFICATION') => {
     setActiveTab(tab);
     if (tab === 'RECONCILIATION' || tab === 'SECURITY' || tab === 'DLQ' || tab === 'DISASTER') fetchOverview();
     if (tab === 'RUNBOOKS') fetchRunbooks();
+    if (tab === 'CERTIFICATION') fetchCertification();
   };
 
   // Run Manual Financial Reconciliation
@@ -209,6 +224,12 @@ export const ReadinessPage: React.FC = () => {
         >
           <FileText size={14} /> Operational Runbooks
         </button>
+        <button
+          onClick={() => handleTabChange('CERTIFICATION')}
+          className={`pb-3 border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'CERTIFICATION' ? 'border-usdt-green text-usdt-green' : 'border-transparent text-text-tertiary'}`}
+        >
+          <Award size={14} /> Master Launch Certification
+        </button>
       </div>
 
       {/* TAB 1: FINANCIAL INTEGRITY & RECONCILIATION */}
@@ -351,6 +372,56 @@ export const ReadinessPage: React.FC = () => {
               </ul>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* TAB 6: MASTER LAUNCH CERTIFICATION */}
+      {activeTab === 'CERTIFICATION' && (
+        <div className="space-y-4">
+          <div className="bg-card-bg rounded-2xl p-5 border border-white/10 space-y-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+              <div>
+                <h4 className="text-sm font-extrabold text-text-primary flex items-center gap-2">
+                  <Award size={18} className="text-usdt-green" /> Production Launch Certification & Sign-Off Matrix
+                </h4>
+                <p className="text-xs text-text-tertiary mt-0.5">
+                  Subsystem readiness verification across all platform architecture stages.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  const blob = new Blob([JSON.stringify(certification, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `titanstream-launch-certificate-${Date.now()}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  showToast('Launch Certificate JSON exported', 'success');
+                }}
+                className="px-3.5 py-2 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center gap-1.5 shadow-md cursor-pointer hover:brightness-110"
+              >
+                <Download size={14} /> Export Certificate
+              </button>
+            </div>
+
+            {/* Stage Matrix */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {(certification?.stageMatrix || []).map((st: any, i: number) => (
+                <div key={i} className="p-3.5 rounded-xl bg-control-bg border border-white/5 space-y-1 text-xs font-mono">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-text-primary">{st.stageNumber}: {st.stageName}</span>
+                    <span className="px-2 py-0.5 rounded bg-usdt-green/20 text-usdt-green font-bold text-[10px] border border-usdt-green/30">
+                      {st.status}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-text-tertiary">{st.details}</p>
+                  <div className="text-[10px] text-text-tertiary">Verified SHA: <code>{st.certifiedCommitSha}</code></div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

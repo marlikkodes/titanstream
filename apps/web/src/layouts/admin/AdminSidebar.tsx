@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Radio, Wallet, Users, Cpu, ShieldAlert, Sparkles, ChevronLeft, Gamepad2, Settings,
+  Radio, Wallet, Users, Cpu, ShieldAlert, Sparkles, ChevronLeft, Gamepad2, Settings, MessageSquare, Gift, Store,
 } from 'lucide-react';
 
 interface NavItem {
@@ -14,12 +14,15 @@ interface NavItem {
 const primaryNavItems: NavItem[] = [
   { label: 'Mission Control', icon: <Radio size={18} />, path: '/admin' },
   { label: 'Treasury & Financials', icon: <Wallet size={18} />, path: '/admin/treasury' },
+  { label: 'Merchant Settlements', icon: <Store size={18} />, path: '/admin/merchants' },
   { label: 'Users & Support', icon: <Users size={18} />, path: '/admin/users', badge: 2 },
+  { label: 'Growth & Rewards', icon: <Gift size={18} />, path: '/admin/growth' },
+  { label: 'WhatsApp Fleet', icon: <MessageSquare size={18} />, path: '/admin/whatsapp' },
   { label: 'Operations & Infra', icon: <Cpu size={18} />, path: '/admin/operations' },
   { label: 'Security & Intelligence', icon: <ShieldAlert size={18} />, path: '/admin/risk', badge: 1 },
-  { label: 'Wallet & Growth Config', icon: <Sparkles size={18} />, path: '/admin/settings' },
+  { label: 'Wallet & Settings', icon: <Sparkles size={18} />, path: '/admin/settings' },
   { label: 'Games Command', icon: <Gamepad2 size={18} />, path: '/admin/games' },
-  { label: 'Readiness', icon: <Settings size={18} />, path: '/admin/readiness' },
+  { label: 'Readiness & Cert', icon: <Settings size={18} />, path: '/admin/readiness' },
 ];
 
 interface AdminSidebarProps {

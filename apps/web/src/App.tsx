@@ -41,6 +41,9 @@ const NotificationsPage = lazy(() => import('./pages/admin/notifications').then(
 const AuditPage = lazy(() => import('./pages/admin/audit').then((m) => ({ default: m.AuditPage })));
 const HealthPage = lazy(() => import('./pages/admin/health').then((m) => ({ default: m.HealthPage })));
 const SettingsPage = lazy(() => import('./pages/admin/settings').then((m) => ({ default: m.SettingsPage })));
+const GrowthAdminPage = lazy(() => import('./pages/admin/growth').then((m) => ({ default: m.GrowthAdminPage })));
+const WhatsappAdminPage = lazy(() => import('./pages/admin/whatsapp').then((m) => ({ default: m.WhatsappAdminPage })));
+const MerchantsAdminPage = lazy(() => import('./pages/admin/merchants').then((m) => ({ default: m.MerchantsAdminPage })));
 
 import { useNavigationStore } from './store/useNavigationStore';
 import { useMissionRunnerStore } from './store/useMissionRunnerStore';
@@ -91,6 +94,9 @@ function AdminRoutes() {
           <Route path="audit" element={<AuditPage />} />
           <Route path="health" element={<HealthPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="growth" element={<GrowthAdminPage />} />
+          <Route path="whatsapp" element={<WhatsappAdminPage />} />
+          <Route path="merchants" element={<MerchantsAdminPage />} />
         </Route>
       </Routes>
     </Suspense>

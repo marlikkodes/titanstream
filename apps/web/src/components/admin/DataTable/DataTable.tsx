@@ -15,26 +15,54 @@ export interface Column<T> {
 interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
-  keyExtractor: (item: T) => string;
+  keyExtractor?: (item: T) => string;
   onRowClick?: (item: T) => void;
   searchable?: boolean;
   searchPlaceholder?: string;
+  searchKeys?: string[];
   pageSize?: number;
   className?: string;
   mobileCard?: boolean;
   mobileCardRender?: (item: T) => React.ReactNode;
+  loading?: boolean;
+  totalCount?: number;
+  page?: number;
+  onPageChange?: (page: number) => void;
+  emptyMessage?: string;
 }
 
 export function DataTable<T extends Record<string, unknown>>({
-  columns, data, keyExtractor, onRowClick,
-  searchable = false, searchPlaceholder = 'Search...',
-  pageSize = 10, className = '',
-  mobileCard = false, mobileCardRender,
+  columns,
+  data = [],
+  keyExtractor,
+  onRowClick,
+  searchable = false,
+  searchPlaceholder = 'Search...',
+  searchKeys,
+  pageSize = 10,
+  className = '',
+  mobileCard = false,
+  mobileCardRender,
+  loading = false,
+  totalCount,
+  page: controlledPage,
+  onPageChange,
+  emptyMessage = 'No results found',
 }: DataTableProps<T>) {
+  const getKey = (item: T, idx: number): string => {
+    if (typeof keyExtractor === 'function') {
+      return keyExtractor(item);
+    }
+    const anyItem = item as any;
+    return String(anyItem?.id ?? anyItem?.key ?? anyItem?.telegramId ?? anyItem?.reference ?? idx);
+  };
+
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [page, setPage] = useState(0);
+  const [internalPage, setInternalPage] = useState(0);
+  const isControlled = controlledPage !== undefined && typeof onPageChange === 'function';
+  const page = isControlled ? (controlledPage > 0 ? controlledPage - 1 : controlledPage) : internalPage;
 
   const filtered = data.filter((item) => {
     if (!search) return true;
@@ -53,8 +81,17 @@ export function DataTable<T extends Record<string, unknown>>({
     return sortDir === 'asc' ? cmp : -cmp;
   });
 
-  const totalPages = Math.ceil(sorted.length / pageSize);
-  const paged = sorted.slice(page * pageSize, (page + 1) * pageSize);
+  const totalCountFinal = totalCount !== undefined ? totalCount : sorted.length;
+  const totalPages = Math.ceil(totalCountFinal / pageSize);
+  const paged = isControlled ? data : sorted.slice(page * pageSize, (page + 1) * pageSize);
+
+  const handlePageChange = (newPage: number) => {
+    if (isControlled && onPageChange) {
+      onPageChange(newPage + 1); // 1-indexed for controlled APIs
+    } else {
+      setInternalPage(newPage);
+    }
+  };
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -74,7 +111,7 @@ export function DataTable<T extends Record<string, unknown>>({
             <input
               type="text"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+              onChange={(e) => { setSearch(e.target.value); setInternalPage(0); }}
               placeholder={searchPlaceholder}
               className="w-full bg-control-bg/50 text-text-primary rounded-lg pl-9 pr-3 py-2.5 sm:py-2 text-sm border border-white/5 focus:border-usdt-green focus:outline-none placeholder:text-text-tertiary"
             />
@@ -82,104 +119,114 @@ export function DataTable<T extends Record<string, unknown>>({
         </div>
       )}
 
-      {/* Mobile card view */}
-      {mobileCard && (
-        <div className="sm:hidden divide-y divide-border/40">
-          {paged.length === 0 ? (
-            <div className="px-3 py-8 text-center text-sm text-text-tertiary">No results found</div>
-          ) : (
-            paged.map((item) => (
-              <div
-                key={keyExtractor(item)}
-                onClick={() => onRowClick?.(item)}
-                className={`px-4 py-3 ${onRowClick ? 'cursor-pointer active:bg-white/[0.03]' : ''}`}
-              >
-                {mobileCardRender ? (
-                  mobileCardRender(item)
-                ) : (
-                  <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-sm">
-                    {columns.filter(c => c.mobile).map((col) => {
-                      const m = col.mobile!(item);
-                      return (
-                        <div key={col.key}>
-                          <span className="text-[10px] font-semibold text-text-tertiary uppercase block">{m.label}</span>
-                          <span className="text-text-primary">{m.value}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
+      {/* Loading state */}
+      {loading ? (
+        <div className="p-12 text-center space-y-2">
+          <div className="w-6 h-6 border-2 border-usdt-green border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="text-xs text-text-tertiary">Loading data...</div>
         </div>
-      )}
-
-      {/* Desktop table */}
-      <div className={`overflow-x-auto ${mobileCard ? 'hidden sm:block' : ''}`}>
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border">
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  className={`text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-3 py-3 ${col.sortable ? 'cursor-pointer hover:text-text-primary select-none' : ''} ${col.width || ''}`}
-                  onClick={() => col.sortable && handleSort(col.key)}
-                >
-                  <div className="flex items-center gap-1">
-                    {col.label}
-                    {col.sortable && (
-                      <span className="text-text-tertiary">
-                        {sortKey === col.key ? (
-                          sortDir === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
-                        ) : <ChevronsUpDown size={14} />}
-                      </span>
+      ) : (
+        <>
+          {/* Mobile card view */}
+          {mobileCard && (
+            <div className="sm:hidden divide-y divide-border/40">
+              {paged.length === 0 ? (
+                <div className="px-3 py-8 text-center text-sm text-text-tertiary">{emptyMessage}</div>
+              ) : (
+                paged.map((item, idx) => (
+                  <div
+                    key={getKey(item, idx)}
+                    onClick={() => onRowClick?.(item)}
+                    className={`px-4 py-3 ${onRowClick ? 'cursor-pointer active:bg-white/[0.03]' : ''}`}
+                  >
+                    {mobileCardRender ? (
+                      mobileCardRender(item)
+                    ) : (
+                      <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-sm">
+                        {columns.filter(c => c.mobile).map((col) => {
+                          const m = col.mobile!(item);
+                          return (
+                            <div key={col.key}>
+                              <span className="text-[10px] font-semibold text-text-tertiary uppercase block">{m.label}</span>
+                              <span className="text-text-primary">{m.value}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/40">
-            {paged.map((item) => (
-              <tr
-                key={keyExtractor(item)}
-                onClick={() => onRowClick?.(item)}
-                className={`hover:bg-white/[0.02] transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
-              >
-                {columns.map((col) => (
-                  <td key={col.key} className="px-3 py-3 text-sm text-text-primary whitespace-nowrap">
-                    {col.render ? col.render(item) : String(item[col.key] ?? '')}
-                  </td>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Desktop table */}
+          <div className={`overflow-x-auto ${mobileCard ? 'hidden sm:block' : ''}`}>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  {columns.map((col) => (
+                    <th
+                      key={col.key}
+                      className={`text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-3 py-3 ${col.sortable ? 'cursor-pointer hover:text-text-primary select-none' : ''} ${col.width || ''}`}
+                      onClick={() => col.sortable && handleSort(col.key)}
+                    >
+                      <div className="flex items-center gap-1">
+                        {col.label}
+                        {col.sortable && (
+                          <span className="text-text-tertiary">
+                            {sortKey === col.key ? (
+                              sortDir === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
+                            ) : <ChevronsUpDown size={14} />}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {paged.map((item, idx) => (
+                  <tr
+                    key={getKey(item, idx)}
+                    onClick={() => onRowClick?.(item)}
+                    className={`hover:bg-white/[0.02] transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                  >
+                    {columns.map((col) => (
+                      <td key={col.key} className="px-3 py-3 text-sm text-text-primary whitespace-nowrap">
+                        {col.render ? col.render(item) : String(item[col.key] ?? '')}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-            {paged.length === 0 && (
-              <tr>
-                <td colSpan={columns.length} className="px-3 py-8 text-center text-sm text-text-tertiary">
-                  No results found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                {paged.length === 0 && (
+                  <tr>
+                    <td colSpan={columns.length} className="px-3 py-8 text-center text-sm text-text-tertiary">
+                      {emptyMessage}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-3 py-3 border-t border-border">
           <span className="text-xs text-text-tertiary">
-            Showing {page * pageSize + 1}–{Math.min((page + 1) * pageSize, sorted.length)} of {sorted.length}
+            Showing {page * pageSize + 1}–{Math.min((page + 1) * pageSize, totalCountFinal)} of {totalCountFinal}
           </span>
           <div className="flex gap-1">
             <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              onClick={() => handlePageChange(Math.max(0, page - 1))}
               disabled={page === 0}
               className="px-3 py-1.5 min-h-[32px] text-xs rounded-lg bg-control-bg text-text-primary disabled:opacity-40 hover:bg-white/10 transition-colors"
             >
               Prev
             </button>
             <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              onClick={() => handlePageChange(Math.min(totalPages - 1, page + 1))}
               disabled={page >= totalPages - 1}
               className="px-3 py-1.5 min-h-[32px] text-xs rounded-lg bg-control-bg text-text-primary disabled:opacity-40 hover:bg-white/10 transition-colors"
             >
