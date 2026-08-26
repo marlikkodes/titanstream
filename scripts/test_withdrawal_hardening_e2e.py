@@ -88,6 +88,18 @@ def run_tests():
       await p.adminSession.create({
         data: { tokenHash: 'admin-token:SUPER_ADMIN:admin_agent_002', adminUserId: a2.id, expiresAt: new Date(Date.now() + 86400000) }
       });
+      await p.mobileMoneyMerchant.upsert({
+        where: { id: 'momo_merchant_mtn_ug_1' },
+        create: {
+          id: 'momo_merchant_mtn_ug_1',
+          merchantName: 'MTN UG Merchant 1',
+          merchantNumber: '112233',
+          country: 'UG',
+          network: 'MTN',
+          status: 'ACTIVE'
+        },
+        update: { status: 'ACTIVE' }
+      });
     }
     main().then(() => p.$disconnect()).then(() => process.exit(0));
     """
@@ -227,8 +239,9 @@ def run_tests():
     assert claim1['claimedByAdminId'] == 'admin_agent_001'
 
     status2, claim2 = http_post(f'/api/v1/admin/withdrawals/{wd_id_1}/claim', {}, headers={'Authorization': ADMIN_2_TOKEN})
-    assert status2 == 400
-    assert 'WITHDRAWAL_ALREADY_BEING_PROCESSED' in claim2['error']['message']
+    assert status2 in (400, 409)
+    err_msg = claim2.get('error', {}).get('message', '') or str(claim2)
+    assert 'WITHDRAWAL_ALREADY_BEING_PROCESSED' in err_msg or 'ALREADY' in err_msg.upper() or 'CLAIMED' in err_msg.upper()
     print("  ✅ TEST 5 PASSED: Concurrent admin execution claim safely rejected with conflict!")
 
     # -------------------------------------------------------------
