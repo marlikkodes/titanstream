@@ -1,9 +1,11 @@
 import type React from 'react';
-import { useState } from 'react';
-import { Search, Bell, Menu, X, ShieldAlert } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, Bell, Menu, X, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/Badge';
 import { useNavigate } from 'react-router-dom';
-import { useSettingsStore } from '@/store/useSettingsStore';
+import { operationsService } from '@/services/operationsService';
+import { showToast } from '@/components/Toast';
+import { api } from '@/services/api';
 
 interface AdminHeaderProps {
   title: string;
@@ -17,9 +19,59 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ title, onMenuToggle })
   const [headerSearch, setHeaderSearch] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
-  const { pauseDeposits, pauseWithdrawals, maintenanceMode, toggleKillSwitch } = useSettingsStore();
+  const [switchesLoading, setSwitchesLoading] = useState(false);
+  const [backendSwitches, setBackendSwitches] = useState<{
+    maintenanceMode?: boolean;
+    readOnlyMode?: boolean;
+    disableWithdrawals?: boolean;
+    disablePurchases?: boolean;
+    disableClaims?: boolean;
+    disableRegistrations?: boolean;
+    disableSettlements?: boolean;
+  }>({});
 
-  const isWarningActive = pauseDeposits || pauseWithdrawals || maintenanceMode;
+  const fetchSwitches = useCallback(async () => {
+    try {
+      const sw = await operationsService.getGlobalSwitches();
+      if (sw && typeof sw === 'object') {
+        setBackendSwitches(sw);
+      }
+    } catch {
+      // Non-blocking
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSwitches();
+  }, [fetchSwitches]);
+
+  const isWarningActive = Boolean(
+    backendSwitches.maintenanceMode ||
+    backendSwitches.readOnlyMode ||
+    backendSwitches.disableWithdrawals ||
+    backendSwitches.disableSettlements
+  );
+
+  const handleToggleSwitch = async (key: string, currentVal: boolean, label: string) => {
+    const action = currentVal ? 'UNLOCK / RESUME' : 'LOCK / PAUSE';
+    const reason = prompt(`[MANDATORY AUDIT REASON] Reason for ${action} on ${label}:`);
+    if (reason === null) return;
+    if (!reason.trim()) {
+      showToast('Mandatory audit reason required', 'error');
+      return;
+    }
+    setSwitchesLoading(true);
+    try {
+      const updated = { ...backendSwitches, [key]: !currentVal };
+      await operationsService.updateGlobalSwitches(updated, reason.trim());
+      setBackendSwitches(updated);
+      showToast(`${label} state updated in backend engine!`, 'success');
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Failed to update switch', 'error');
+    } finally {
+      setSwitchesLoading(false);
+    }
+  };
 
   const handleSearch = async (val: string) => {
     setHeaderSearch(val);
@@ -180,31 +232,29 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ title, onMenuToggle })
 
             <div className="space-y-3">
               {[
-                { key: 'pauseDeposits' as const, label: 'Pause Deposits', state: pauseDeposits, desc: 'Halt all incoming Pesapal and USDT deposit sessions.' },
-                { key: 'pauseWithdrawals' as const, label: 'Pause Withdrawals', state: pauseWithdrawals, desc: 'Freeze instant withdrawal executions.' },
-                { key: 'maintenanceMode' as const, label: 'Maintenance Mode', state: maintenanceMode, desc: 'Place full ecosystem in maintenance mode.' },
+                { key: 'maintenanceMode', label: 'Maintenance Mode', state: Boolean(backendSwitches.maintenanceMode), desc: 'Place full ecosystem in maintenance mode (blocks non-admin API traffic).' },
+                { key: 'disableWithdrawals', label: 'Pause Withdrawals', state: Boolean(backendSwitches.disableWithdrawals), desc: 'Halt all instant withdrawal executions and queue processing.' },
+                { key: 'readOnlyMode', label: 'Read-Only Mode', state: Boolean(backendSwitches.readOnlyMode), desc: 'Block all state-mutating requests platform-wide.' },
+                { key: 'disableSettlements', label: 'Pause Settlements', state: Boolean(backendSwitches.disableSettlements), desc: 'Halt CryptoBot & Merchant settlement execution.' },
               ].map((sw) => (
                 <div key={sw.key} className="flex items-center justify-between p-3 rounded-2xl bg-control-bg border border-white/10">
                   <div>
-                    <div className="text-xs font-bold text-text-primary">{sw.label}</div>
+                    <div className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+                      {sw.label}
+                      {sw.state && <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-500 text-white">LOCKED</span>}
+                    </div>
                     <div className="text-[11px] text-text-tertiary">{sw.desc}</div>
                   </div>
                   <button
-                    onClick={() => {
-                      const word = sw.state ? 'RESUME' : 'PAUSE';
-                      const input = prompt(`Type "${word}" to confirm changing state for ${sw.label}:`);
-                      if (input === word) {
-                        toggleKillSwitch(sw.key);
-                        alert(`${sw.label} status updated.`);
-                      }
-                    }}
-                    className={`px-3 py-1.5 rounded-xl font-extrabold text-xs transition-colors ${
+                    onClick={() => handleToggleSwitch(sw.key, sw.state, sw.label)}
+                    disabled={switchesLoading}
+                    className={`px-3 py-1.5 rounded-xl font-extrabold text-xs transition-colors cursor-pointer disabled:opacity-50 ${
                       sw.state
                         ? 'bg-rose-500 text-white shadow-md'
                         : 'bg-white/5 border border-white/10 text-text-secondary hover:text-text-primary'
                     }`}
                   >
-                    {sw.state ? 'PAUSED' : 'Active'}
+                    {sw.state ? 'ACTIVE LOCK' : 'NORMAL'}
                   </button>
                 </div>
               ))}

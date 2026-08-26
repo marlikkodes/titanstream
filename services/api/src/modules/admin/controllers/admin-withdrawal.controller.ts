@@ -60,19 +60,19 @@ export class AdminWithdrawalController {
   }
 
   @Post(':id/claim')
-  @Permissions(AdminPermission.SETTLEMENT_OVERRIDE)
+  @Permissions(AdminPermission.WITHDRAWAL_APPROVE)
   async claimWithdrawal(@CurrentAdmin() admin: AuthenticatedAdmin, @Param('id') id: string) {
     return this.withdrawalService.claimWithdrawalForExecution(admin.id, id);
   }
 
   @Post(':id/mark-executed')
-  @Permissions(AdminPermission.SETTLEMENT_OVERRIDE)
+  @Permissions(AdminPermission.WITHDRAWAL_APPROVE)
   async markPayoutExecuted(@CurrentAdmin() admin: AuthenticatedAdmin, @Param('id') id: string) {
     return this.withdrawalService.markPayoutExecuted(admin.id, id);
   }
 
   @Post(':id/submit-proof')
-  @Permissions(AdminPermission.SETTLEMENT_OVERRIDE)
+  @Permissions(AdminPermission.WITHDRAWAL_APPROVE)
   async submitPayoutProof(
     @CurrentAdmin() admin: AuthenticatedAdmin,
     @Param('id') id: string,
@@ -82,19 +82,19 @@ export class AdminWithdrawalController {
   }
 
   @Post(':id/verify-and-settle')
-  @Permissions(AdminPermission.SETTLEMENT_OVERRIDE)
+  @Permissions(AdminPermission.WITHDRAWAL_APPROVE)
   async verifyAndSettle(@CurrentAdmin() admin: AuthenticatedAdmin, @Param('id') id: string) {
     return this.withdrawalService.verifyAndSettleWithdrawal(admin.id, id);
   }
 
   @Post(':id/approve')
-  @Permissions(AdminPermission.SETTLEMENT_OVERRIDE)
+  @Permissions(AdminPermission.WITHDRAWAL_APPROVE)
   async approveWithdrawal(@CurrentAdmin() admin: AuthenticatedAdmin, @Param('id') id: string) {
     return this.withdrawalService.verifyAndSettleWithdrawal(admin.id, id);
   }
 
   @Post(':id/reject')
-  @Permissions(AdminPermission.SETTLEMENT_OVERRIDE)
+  @Permissions(AdminPermission.WITHDRAWAL_REJECT)
   async rejectWithdrawal(
     @CurrentAdmin() admin: AuthenticatedAdmin,
     @Param('id') id: string,
@@ -104,7 +104,7 @@ export class AdminWithdrawalController {
   }
 
   @Post(':id/retry')
-  @Permissions(AdminPermission.SETTLEMENT_OVERRIDE)
+  @Permissions(AdminPermission.SETTLEMENT_RETRY)
   async retryPayout(@CurrentAdmin() admin: AuthenticatedAdmin, @Param('id') id: string) {
     return this.withdrawalService.claimWithdrawalForExecution(admin.id, id);
   }

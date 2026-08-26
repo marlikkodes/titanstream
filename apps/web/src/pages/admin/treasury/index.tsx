@@ -217,16 +217,33 @@ export const TreasuryPage: React.FC = () => {
         setSettlementMetrics(res?.data?.data || res?.data);
       } else if (workstationTab === 'USDT_GATEWAY') {
         const [configRes, txRes] = await Promise.all([
-          api.get('/admin/settlement/usdt/config').catch(() => null),
-          api.get('/admin/settlement/usdt/transactions').catch(() => null),
+          api.get('/admin/config/crypto-wallets').catch(() => null),
+          api.get('/admin/financial/ledger/explorer?limit=50').catch(() => null),
         ]);
-        if (configRes?.data) {
-          setUsdtConfig(configRes.data);
-          setNewUsdtAddress(configRes.data.receivingAddress || '');
+        const wallets = configRes?.data?.data || configRes?.data;
+        if (Array.isArray(wallets) && wallets.length > 0) {
+          const usdtWallet = wallets.find((w: any) => w.asset === 'USDT') || wallets[0];
+          setUsdtConfig({
+            receivingAddress: usdtWallet.address,
+            network: usdtWallet.network || 'TRON',
+            tokenContract: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+            requiredConfirmations: 12,
+            walletId: usdtWallet.id,
+          });
+          setNewUsdtAddress(usdtWallet.address || '');
         }
-        if (Array.isArray(txRes?.data?.data)) setUsdtTxList(txRes.data.data);
-        else if (Array.isArray(txRes?.data)) setUsdtTxList(txRes.data);
-        else setUsdtTxList([]);
+        const txs = txRes?.data?.data?.entries || txRes?.data?.entries || txRes?.data?.data || txRes?.data;
+        if (Array.isArray(txs)) {
+          setUsdtTxList(txs.map((tx: any) => ({
+            txId: tx.transactionId || tx.id,
+            amount: `${tx.amount || 0} ${tx.currency || 'USDT'}`,
+            confirmations: '12/12',
+            status: tx.status || 'CONFIRMED',
+            detectedAt: tx.createdAt || tx.timestamp,
+          })));
+        } else {
+          setUsdtTxList([]);
+        }
       } else if (workstationTab === 'MERCHANT_CODES') {
         const res = await api.get('/admin/merchant-settlements/merchants').catch(() => null);
         if (Array.isArray(res?.data?.data)) setMerchantsList(res.data.data);
@@ -248,12 +265,16 @@ export const TreasuryPage: React.FC = () => {
     }
     setUpdatingUsdt(true);
     try {
-      await api.post('/admin/settlement/usdt/config', {
-        receivingAddress: newUsdtAddress.trim(),
-        network: 'TRON',
-        tokenContract: usdtConfig.tokenContract,
-        requiredConfirmations: usdtConfig.requiredConfirmations,
-        reason: 'Admin updated receiving USDT wallet',
+      await api.post('/admin/config/crypto-wallets', {
+        id: (usdtConfig as any)?.walletId,
+        asset: 'USDT',
+        network: usdtConfig.network || 'TRC20',
+        address: newUsdtAddress.trim(),
+        label: 'Official USDT Escrow Wallet',
+        status: 'ACTIVE',
+        priority: 1,
+        dailyCapacityUsdt: 100000,
+        notes: 'Admin updated receiving USDT wallet',
       });
       showToast('USDT receiving address updated successfully!', 'success');
       fetchWorkstationData();

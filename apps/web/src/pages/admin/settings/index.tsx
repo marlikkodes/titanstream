@@ -28,7 +28,7 @@ export const SettingsPage: React.FC = () => {
   // Admin Invite State
   const [inviteTgId, setInviteTgId] = useState('');
   const [inviteName, setInviteName] = useState('');
-  const [inviteRole, setInviteRole] = useState('TREASURY_OPERATOR');
+  const [inviteRole, setInviteRole] = useState('OPERATIONS_ADMIN');
 
   const loadData = async () => {
     setLoading(true);
@@ -289,12 +289,11 @@ export const SettingsPage: React.FC = () => {
                 className="h-10 px-3 bg-app-bg border border-white/10 rounded-xl text-xs text-text-primary focus:outline-none focus:border-usdt-green"
               >
                 <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-                <option value="TREASURY_MANAGER">TREASURY_MANAGER</option>
-                <option value="TREASURY_OPERATOR">TREASURY_OPERATOR</option>
-                <option value="SUPPORT">SUPPORT</option>
-                <option value="OPERATIONS">OPERATIONS</option>
-                <option value="ANALYST">ANALYST</option>
-                <option value="READ_ONLY">READ_ONLY</option>
+                <option value="OPERATIONS_ADMIN">OPERATIONS_ADMIN</option>
+                <option value="FINANCE_ADMIN">FINANCE_ADMIN</option>
+                <option value="RISK_OPERATOR">RISK_OPERATOR</option>
+                <option value="MERCHANT_MANAGER">MERCHANT_MANAGER</option>
+                <option value="SUPPORT_AGENT">SUPPORT_AGENT</option>
               </select>
             </div>
             <button
