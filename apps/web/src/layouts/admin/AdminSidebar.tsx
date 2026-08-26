@@ -1,28 +1,60 @@
 import type React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Radio, Wallet, Users, Cpu, ShieldAlert, Sparkles, ChevronLeft, Gamepad2, Settings, MessageSquare, Gift, Store,
+  Radio, Wallet, Users, Cpu, ShieldAlert, Sparkles, ChevronLeft, Gamepad2, Settings, MessageSquare,
+  Gift, Store, ShoppingCart, Activity, Zap, Bell, FileText, Headphones, BookOpen,
 } from 'lucide-react';
 
-interface NavItem {
-  label: string;
-  icon: React.ReactNode;
-  path: string;
-  badge?: number;
+interface NavSection {
+  title: string;
+  items: {
+    label: string;
+    icon: React.ReactNode;
+    path: string;
+    badge?: number;
+  }[];
 }
 
-const primaryNavItems: NavItem[] = [
-  { label: 'Mission Control', icon: <Radio size={18} />, path: '/admin' },
-  { label: 'Treasury & Financials', icon: <Wallet size={18} />, path: '/admin/treasury' },
-  { label: 'Merchant Settlements', icon: <Store size={18} />, path: '/admin/merchants' },
-  { label: 'Users & Support', icon: <Users size={18} />, path: '/admin/users', badge: 2 },
-  { label: 'Growth & Rewards', icon: <Gift size={18} />, path: '/admin/growth' },
-  { label: 'WhatsApp Fleet', icon: <MessageSquare size={18} />, path: '/admin/whatsapp' },
-  { label: 'Operations & Infra', icon: <Cpu size={18} />, path: '/admin/operations' },
-  { label: 'Security & Intelligence', icon: <ShieldAlert size={18} />, path: '/admin/risk', badge: 1 },
-  { label: 'Wallet & Settings', icon: <Sparkles size={18} />, path: '/admin/settings' },
-  { label: 'Games Command', icon: <Gamepad2 size={18} />, path: '/admin/games' },
-  { label: 'Readiness & Cert', icon: <Settings size={18} />, path: '/admin/readiness' },
+const navSections: NavSection[] = [
+  {
+    title: 'Core Control Plane',
+    items: [
+      { label: 'Mission Control', icon: <Radio size={16} />, path: '/admin' },
+      { label: 'Treasury & Reserves', icon: <Wallet size={16} />, path: '/admin/treasury' },
+      { label: 'General Ledger', icon: <BookOpen size={16} />, path: '/admin/financial' },
+      { label: 'Settlement Orders', icon: <ShoppingCart size={16} />, path: '/admin/orders' },
+      { label: 'Merchant Pools', icon: <Store size={16} />, path: '/admin/merchants' },
+    ],
+  },
+  {
+    title: 'Fleet & Operations',
+    items: [
+      { label: 'Compute Machines', icon: <Zap size={16} />, path: '/admin/machines' },
+      { label: 'Operations HQ', icon: <Cpu size={16} />, path: '/admin/operations-hq' },
+      { label: 'System Health', icon: <Activity size={16} />, path: '/admin/health' },
+      { label: 'Automation Rules', icon: <Sparkles size={16} />, path: '/admin/automation' },
+    ],
+  },
+  {
+    title: 'Users & Community',
+    items: [
+      { label: 'User Intelligence', icon: <Users size={16} />, path: '/admin/users' },
+      { label: 'Support Desk', icon: <Headphones size={16} />, path: '/admin/support' },
+      { label: 'Growth & Referrals', icon: <Gift size={16} />, path: '/admin/growth' },
+      { label: 'WhatsApp Network', icon: <MessageSquare size={16} />, path: '/admin/whatsapp' },
+      { label: 'Games Engine', icon: <Gamepad2 size={16} />, path: '/admin/games' },
+    ],
+  },
+  {
+    title: 'Security & Integrity',
+    items: [
+      { label: 'Risk & Fraud Center', icon: <ShieldAlert size={16} />, path: '/admin/risk', badge: 1 },
+      { label: 'Audit Log Explorer', icon: <FileText size={16} />, path: '/admin/audit' },
+      { label: 'System Alerts', icon: <Bell size={16} />, path: '/admin/notifications' },
+      { label: 'Launch Certification', icon: <Settings size={16} />, path: '/admin/readiness' },
+      { label: 'Platform Settings', icon: <Sparkles size={16} />, path: '/admin/settings' },
+    ],
+  },
 ];
 
 interface AdminSidebarProps {
@@ -38,25 +70,31 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle,
   if (mobile) {
     return (
       <aside className="flex flex-col h-full bg-app-bg-secondary">
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1 no-scrollbar">
-          <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-text-tertiary">Mission Operations</p>
-          {primaryNavItems.map((item) => {
-            const active = location.pathname === item.path;
-            return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-medium transition-all mb-1 min-h-[44px]
-                  ${active ? 'bg-usdt-green/15 text-usdt-green font-bold border border-usdt-green/30' : 'text-text-secondary hover:bg-white/5 hover:text-text-primary'}`}
-              >
-                <span className="flex-shrink-0">{item.icon}</span>
-                <span className="flex-1 text-left truncate">{item.label}</span>
-                {item.badge && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-error-red text-white text-[10px] font-bold">{item.badge}</span>
-                )}
-              </button>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4 no-scrollbar">
+          {navSections.map((section) => (
+            <div key={section.title} className="space-y-1">
+              <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-text-tertiary">
+                {section.title}
+              </p>
+              {section.items.map((item) => {
+                const active = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all min-h-[40px]
+                      ${active ? 'bg-usdt-green/15 text-usdt-green font-bold border border-usdt-green/30' : 'text-text-secondary hover:bg-white/5 hover:text-text-primary'}`}
+                  >
+                    <span className="flex-shrink-0">{item.icon}</span>
+                    <span className="flex-1 text-left truncate">{item.label}</span>
+                    {item.badge && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-error-red text-white text-[10px] font-bold">{item.badge}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </nav>
       </aside>
     );
@@ -79,40 +117,46 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle,
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1.5 no-scrollbar">
-        {!collapsed && (
-          <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-text-tertiary">Mission Operations</p>
-        )}
-        {primaryNavItems.map((item) => {
-          const active = location.pathname === item.path;
-          return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`relative w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-semibold transition-all
-                ${active ? 'bg-usdt-green/15 text-usdt-green border border-usdt-green/30 shadow-sm shadow-usdt-green/10' : 'text-text-secondary hover:bg-white/5 hover:text-text-primary'}
-                ${collapsed ? 'justify-center px-0' : ''}`}
-              title={collapsed ? item.label : undefined}
-            >
-              <span className="flex-shrink-0">{item.icon}</span>
-              {!collapsed && (
-                <>
-                  <span className="flex-1 text-left truncate">{item.label}</span>
-                  {item.badge && (
-                    <span className="px-2 py-0.5 rounded-full bg-error-red text-white text-[10px] font-bold">
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4 no-scrollbar">
+        {navSections.map((section) => (
+          <div key={section.title} className="space-y-1">
+            {!collapsed && (
+              <p className="px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-text-tertiary">
+                {section.title}
+              </p>
+            )}
+            {section.items.map((item) => {
+              const active = location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`relative w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all
+                    ${active ? 'bg-usdt-green/15 text-usdt-green border border-usdt-green/30 shadow-sm shadow-usdt-green/10' : 'text-text-secondary hover:bg-white/5 hover:text-text-primary'}
+                    ${collapsed ? 'justify-center px-0' : ''}`}
+                  title={collapsed ? item.label : undefined}
+                >
+                  <span className="flex-shrink-0">{item.icon}</span>
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1 text-left truncate text-[11px]">{item.label}</span>
+                      {item.badge && (
+                        <span className="px-2 py-0.5 rounded-full bg-error-red text-white text-[10px] font-bold">
+                          {item.badge}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {collapsed && item.badge && (
+                    <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-error-red text-white text-[8px] font-bold flex items-center justify-center">
                       {item.badge}
                     </span>
                   )}
-                </>
-              )}
-              {collapsed && item.badge && (
-                <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-error-red text-white text-[9px] font-bold flex items-center justify-center">
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <div className="p-3 border-t border-border">
