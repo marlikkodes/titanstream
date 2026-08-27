@@ -497,8 +497,34 @@ export class BaileysAccountManagerService implements OnModuleInit {
             if (msg.key && !msg.key.fromMe && msg.key.remoteJid) {
               const text = extractMessageText(msg);
               if (text && this.whatsappChallengeService) {
-                this.logger.log(`[BAILEYS_INBOUND] Account [${account.accountId}] received message from ${msg.key.remoteJid}: "${text}"`);
-                await this.whatsappChallengeService.handleInboundMessage(msg.key.remoteJid, text);
+                let senderJid = msg.key.remoteJid;
+
+                // 1. Check for explicit phone JID attributes on the message
+                if (msg.key.remoteJidAlt && !msg.key.remoteJidAlt.endsWith('@lid')) {
+                  senderJid = msg.key.remoteJidAlt;
+                } else if (msg.key.participant && !msg.key.participant.endsWith('@lid')) {
+                  senderJid = msg.key.participant;
+                } else if (msg.key.participantPn) {
+                  senderJid = msg.key.participantPn;
+                } else if (msg.key.senderPn) {
+                  senderJid = msg.key.senderPn;
+                }
+
+                // 2. If senderJid is a LID, perform reverse lookup via Baileys Signal LID mapping store
+                if (senderJid && senderJid.endsWith('@lid') && (socket as any).signalRepository?.lidMapping?.getPNForLID) {
+                  try {
+                    const resolvedPn = await (socket as any).signalRepository.lidMapping.getPNForLID(senderJid);
+                    if (resolvedPn) {
+                      senderJid = resolvedPn;
+                    }
+                  } catch {}
+                }
+
+                this.logger.log(`[BAILEYS_INBOUND] Account [${account.accountId}] received message from ${senderJid} (raw: ${msg.key.remoteJid}): "${text}"`);
+                await this.whatsappChallengeService.handleInboundMessage(senderJid, text, {
+                  rawJid: msg.key.remoteJid,
+                  pushName: msg.pushName || undefined,
+                });
               }
             }
           }

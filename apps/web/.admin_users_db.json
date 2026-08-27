@@ -1,16 +1,16 @@
 [
   {
-    "id": "18257320524",
-    "telegramId": "18257320524",
-    "titanId": "titan_id_18257320524",
-    "phoneNumber": "+18257320524",
-    "primaryIdentifier": "+18257320524",
+    "id": "256752762181",
+    "telegramId": "256752762181",
+    "titanId": "titan_wa_256752762181",
+    "phoneNumber": "+256752762181",
+    "primaryIdentifier": "+256752762181",
     "joinChannel": "WHATSAPP",
     "activityStatus": "ACTIVE",
     "hasSharedDevice": false,
     "lastActiveIp": "102.218.42.10",
-    "name": "WhatsApp Operator (+18257320524)",
-    "username": "+18257320524",
+    "name": "WhatsApp Operator (+256752762181)",
+    "username": "+256752762181",
     "state": "ACTIVE_USER",
     "totalVolume": 0,
     "moneyIn": 0,
@@ -21,11 +21,12 @@
     "riskScore": 10,
     "flags": [],
     "wallets": [
-      "fin_acc_18257320524"
+      "fin_acc_256752762181"
     ],
     "activeMachinesCount": 0,
     "crystalBalance": 50,
-    "createdAt": "2026-08-27T00:20:12.660Z"
+    "createdAt": "2026-08-27T00:32:39.097Z",
+    "lastLoginAt": "2026-08-27T00:36:11.473Z"
   },
   {
     "id": "5387655307",

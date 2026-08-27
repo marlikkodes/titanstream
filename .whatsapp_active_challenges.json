@@ -1,1 +1,50 @@
-{}
+{
+  "wa_chal_1787790084949": {
+    "challengeId": "wa_chal_1787790084949",
+    "shortPin": "584188",
+    "status": "APPROVED",
+    "phone": "+256752762181",
+    "deviceInfo": "Browser Session",
+    "createdAt": "2026-08-27T00:21:24.949Z",
+    "expiresAt": "2026-08-27T00:31:24.949Z",
+    "sessionTokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc3OTA5NzEsImV4cCI6MTc4Nzc5MTg3MX0.e-8pT4DwKnlyBWAtze1e9Qqrm6gJtfl_xqUXx6je08g",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4Nzc5MDk3MSwiZXhwIjoxNzkwMzgyOTcxfQ.LT0VxQYmXdNddbMna55EqHTK4YrLlZrwbgkfZis8mvg",
+      "user": {
+        "id": "titan_id_256752762181",
+        "identityId": "titan_id_256752762181",
+        "telegramUserId": 256752762181,
+        "firstName": "WhatsApp User (2181)",
+        "lastName": "",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-27T00:36:11.466Z"
+      }
+    }
+  },
+  "pin_584188": "wa_chal_1787790084949",
+  "wa_chal_1787789647809": {
+    "challengeId": "wa_chal_1787789647809",
+    "shortPin": "520394",
+    "status": "APPROVED",
+    "phone": "+256752762181",
+    "deviceInfo": "Browser Session",
+    "createdAt": "2026-08-27T00:14:07.809Z",
+    "expiresAt": "2026-08-27T00:24:07.809Z",
+    "sessionTokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc3OTA5NzEsImV4cCI6MTc4Nzc5MTg3MX0.e-8pT4DwKnlyBWAtze1e9Qqrm6gJtfl_xqUXx6je08g",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4Nzc5MDk3MSwiZXhwIjoxNzkwMzgyOTcxfQ.LT0VxQYmXdNddbMna55EqHTK4YrLlZrwbgkfZis8mvg",
+      "user": {
+        "id": "titan_id_256752762181",
+        "identityId": "titan_id_256752762181",
+        "telegramUserId": 256752762181,
+        "firstName": "WhatsApp User (2181)",
+        "lastName": "",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-27T00:36:11.466Z"
+      }
+    }
+  },
+  "pin_520394": "wa_chal_1787789647809"
+}

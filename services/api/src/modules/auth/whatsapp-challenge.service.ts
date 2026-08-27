@@ -276,14 +276,34 @@ export class WhatsappChallengeService {
   /**
    * Inbound WhatsApp message handler.
    */
-  async handleInboundMessage(senderJid: string, textInput: string): Promise<boolean> {
+  async handleInboundMessage(
+    senderJid: string,
+    textInput: string,
+    metadata?: { rawJid?: string; pushName?: string }
+  ): Promise<boolean> {
     if (!senderJid || !textInput) return false;
 
     // Clean JID to remove multi-device suffix (:12) and non-digit characters
-    const cleanDigits = senderJid.split('@')[0].split(':')[0].replace(/\D/g, '');
-    const cleanPhone = '+' + cleanDigits;
+    let cleanDigits = senderJid.split('@')[0].split(':')[0].replace(/\D/g, '');
+    let cleanPhone = '+' + cleanDigits;
     const rawText = textInput.trim();
     const upperText = rawText.toUpperCase();
+
+    // Check if rawText contains an explicit phone number (e.g. "+256752762181" or "0752762181")
+    const explicitPhoneMatch = rawText.match(/(?:\+?256|0)7\d{8}/) || rawText.match(/\+\d{10,15}/);
+    if (explicitPhoneMatch) {
+      const parsed = explicitPhoneMatch[0].replace(/\D/g, '');
+      if (parsed.startsWith('0') && parsed.length === 10) {
+        cleanPhone = '+256' + parsed.slice(1);
+        cleanDigits = cleanPhone.replace(/\D/g, '');
+      } else if (parsed.startsWith('256') && parsed.length === 12) {
+        cleanPhone = '+' + parsed;
+        cleanDigits = parsed;
+      } else if (parsed.length >= 10) {
+        cleanPhone = '+' + parsed;
+        cleanDigits = parsed;
+      }
+    }
 
     // 1. Check if user is replying 1/YES or 2/NO to an awaiting approval prompt
     const pendingChallengeId = this.phoneToActiveChallengeId.get(cleanPhone);
@@ -291,7 +311,7 @@ export class WhatsappChallengeService {
       const activeChallenge = this.challenges.get(pendingChallengeId);
       if (activeChallenge && (activeChallenge.status === 'AWAITING_APPROVAL' || activeChallenge.status === 'PENDING') && new Date() <= activeChallenge.expiresAt) {
         if (upperText === '1' || upperText === 'YES' || upperText === 'APPROVE') {
-          await this.approveChallenge(activeChallenge, cleanPhone);
+          await this.approveChallenge(activeChallenge, cleanPhone, metadata);
           await this.baileysService.sendTextMessage(
             cleanPhone,
             `Titan Stream ✅\n\nYour browser sign-in has been approved successfully!\n\n🛒 Send or share any product link (e.g. jumia.ug) here to process orders, check compute deals, or earn rewards!`
@@ -354,7 +374,7 @@ export class WhatsappChallengeService {
       // Bind phone number and approve immediately
       challenge.phone = cleanPhone;
       this.phoneToActiveChallengeId.set(cleanPhone, challenge.challengeId);
-      await this.approveChallenge(challenge, senderJid);
+      await this.approveChallenge(challenge, cleanPhone, metadata);
       return true;
     }
 
@@ -374,32 +394,45 @@ export class WhatsappChallengeService {
   /**
    * Approves login challenge and issues session.
    */
-  private async approveChallenge(challenge: WhatsappLoginChallenge, phone: string) {
+  private async approveChallenge(
+    challenge: WhatsappLoginChallenge,
+    rawPhone: string,
+    metadata?: { rawJid?: string; pushName?: string }
+  ) {
     challenge.status = 'APPROVED';
+
+    // 1. Strictly normalize phone number to E.164 format
+    let cleanDigits = rawPhone.replace(/\D/g, '');
+    let canonicalPhone = rawPhone.startsWith('+') ? rawPhone : `+${cleanDigits}`;
+    if (!canonicalPhone.startsWith('+')) {
+      canonicalPhone = `+${cleanDigits}`;
+    }
+
+    // Canonical Titanstream ID deterministically bound to the phone
+    const canonicalTitanId = `titan_wa_${cleanDigits}`;
 
     let identityContext: any = null;
     try {
       identityContext = await this.identityMasterEngine.authenticate({
         provider: IdentityProvider.WHATSAPP,
-        identifier: phone,
-        displayName: `WhatsApp User (${phone.slice(-4)})`,
-        metadata: { phone, approvedAt: new Date().toISOString(), deviceInfo: challenge.deviceInfo },
+        identifier: canonicalPhone,
+        displayName: metadata?.pushName || `WhatsApp User (${canonicalPhone.slice(-4)})`,
+        metadata: { phone: canonicalPhone, approvedAt: new Date().toISOString(), deviceInfo: challenge.deviceInfo },
       });
     } catch (err: any) {
-      this.logger.warn(`[WA_APPROVE_WARN] Identity authenticate failed (${err.message}), using fallback identity.`);
-      const canonicalId = `titan_id_${phone.replace(/\D/g, '') || Date.now()}`;
+      this.logger.warn(`[WA_APPROVE_WARN] Identity authenticate failed (${err.message}), using canonical identity.`);
       identityContext = {
-        userId: canonicalId,
-        universalIdentityId: canonicalId,
-        telegramUserId: undefined,
+        userId: cleanDigits,
+        universalIdentityId: canonicalTitanId,
+        telegramUserId: Number(cleanDigits) || undefined,
       };
     }
 
     const userPayload = {
-      id: identityContext.userId,
-      identityId: identityContext.universalIdentityId || identityContext.userId,
+      id: cleanDigits,
+      identityId: identityContext.universalIdentityId || canonicalTitanId,
       telegramUserId: identityContext.telegramUserId ? Number(identityContext.telegramUserId) : undefined,
-      firstName: `WhatsApp User (${phone.slice(-4)})`,
+      firstName: metadata?.pushName || `WhatsApp User (${canonicalPhone.slice(-4)})`,
       lastName: '',
       state: UserState.READY,
       isReady: true,
@@ -416,8 +449,8 @@ export class WhatsappChallengeService {
     } catch (tokErr: any) {
       this.logger.warn(`[WA_APPROVE_WARN] createTokensForUser failed (${tokErr.message}), generating resilient session tokens.`);
       challenge.sessionTokens = {
-        accessToken: `wa_access_${Date.now()}_${phone.replace(/\D/g, '')}`,
-        refreshToken: `wa_refresh_${Date.now()}_${phone.replace(/\D/g, '')}`,
+        accessToken: `wa_access_${Date.now()}_${cleanDigits}`,
+        refreshToken: `wa_refresh_${Date.now()}_${cleanDigits}`,
         user: userPayload,
       };
     }
@@ -426,35 +459,60 @@ export class WhatsappChallengeService {
       challengeId: challenge.challengeId,
       shortPin: challenge.shortPin,
       status: 'APPROVED',
-      phone,
+      phone: canonicalPhone,
       deviceInfo: challenge.deviceInfo,
       createdAt: challenge.createdAt ? challenge.createdAt.toISOString() : new Date().toISOString(),
       expiresAt: challenge.expiresAt ? challenge.expiresAt.toISOString() : new Date(Date.now() + 600000).toISOString(),
       sessionTokens: challenge.sessionTokens,
     });
 
-    // Automatically sync approved operator to Admin User Intelligence database
+    // Automatically sync approved operator to Admin User Intelligence database (single bound account, no duplicates)
     try {
       const adminUsersPath = resolve('/home/wendy/Desktop/tetherstream/apps/web/.admin_users_db.json');
       let adminUsers: any[] = [];
       if (existsSync(adminUsersPath)) {
         adminUsers = JSON.parse(readFileSync(adminUsersPath, 'utf-8'));
       }
-      const cleanDigits = phone.replace(/\D/g, '');
-      const formattedPhone = phone.startsWith('+') ? phone : `+${cleanDigits}`;
-      if (!adminUsers.some((u: any) => u.phoneNumber === formattedPhone || u.id === cleanDigits)) {
+
+      // Filter out raw LID placeholder entries
+      adminUsers = adminUsers.filter((u: any) => !u.phoneNumber?.includes('8660902223957') && u.id !== '8660902223957');
+
+      // Check if user already exists by phone, identifier, id, or titanId
+      const existingIdx = adminUsers.findIndex((u: any) =>
+        u.phoneNumber === canonicalPhone ||
+        u.primaryIdentifier === canonicalPhone ||
+        u.id === cleanDigits ||
+        u.titanId === canonicalTitanId ||
+        (u.phoneNumber && u.phoneNumber.replace(/\D/g, '') === cleanDigits)
+      );
+
+      if (existingIdx >= 0) {
+        // UPDATE EXISTING USER - GUARANTEE UNIQUE ACCOUNT PER NUMBER
+        adminUsers[existingIdx] = {
+          ...adminUsers[existingIdx],
+          phoneNumber: canonicalPhone,
+          primaryIdentifier: canonicalPhone,
+          titanId: adminUsers[existingIdx].titanId || canonicalTitanId,
+          name: adminUsers[existingIdx].name || metadata?.pushName || `WhatsApp Operator (${canonicalPhone})`,
+          activityStatus: adminUsers[existingIdx].activityStatus === 'FROZEN' ? 'FROZEN' : 'ACTIVE',
+          state: adminUsers[existingIdx].state || 'ACTIVE_USER',
+          lastActiveIp: '102.218.42.10',
+          lastLoginAt: new Date().toISOString(),
+        };
+      } else {
+        // REGISTER NEW OPERATOR ACCOUNT
         const newUser = {
-          id: cleanDigits || String(Date.now()),
+          id: cleanDigits,
           telegramId: cleanDigits,
-          titanId: userPayload.identityId,
-          phoneNumber: formattedPhone,
-          primaryIdentifier: formattedPhone,
+          titanId: canonicalTitanId,
+          phoneNumber: canonicalPhone,
+          primaryIdentifier: canonicalPhone,
           joinChannel: 'WHATSAPP',
           activityStatus: 'ACTIVE',
           hasSharedDevice: false,
           lastActiveIp: '102.218.42.10',
-          name: `WhatsApp Operator (${formattedPhone})`,
-          username: formattedPhone,
+          name: metadata?.pushName || `WhatsApp Operator (${canonicalPhone})`,
+          username: canonicalPhone,
           state: 'ACTIVE_USER',
           totalVolume: 0,
           moneyIn: 0,
@@ -470,21 +528,24 @@ export class WhatsappChallengeService {
           createdAt: new Date().toISOString(),
         };
         adminUsers.unshift(newUser);
-        writeFileSync(adminUsersPath, JSON.stringify(adminUsers, null, 2), 'utf-8');
       }
+
+      writeFileSync(adminUsersPath, JSON.stringify(adminUsers, null, 2), 'utf-8');
     } catch (adminErr: any) {
       this.logger.warn(`[WA_ADMIN_SYNC_WARN] Failed to sync to admin users db: ${adminErr.message}`);
     }
 
-    this.logger.log(`[WA_CHALLENGE_APPROVED] challengeId=${challenge.challengeId} phone=${phone} userId=${userPayload.id}`);
+    this.logger.log(`[WA_CHALLENGE_APPROVED] challengeId=${challenge.challengeId} phone=${canonicalPhone} titanId=${canonicalTitanId}`);
 
     // Send Instant WhatsApp Sign-In Success Confirmation Message over Baileys
     try {
-      const replyTarget = phone.includes('@') ? phone : ('+' + phone.replace(/\D/g, ''));
+      const replyTarget = metadata?.rawJid || (canonicalPhone.includes('@') ? canonicalPhone : canonicalPhone);
       const confirmText = (
         `⚡ *TITAN STREAM* — *You're Signed In!*\n\n` +
         `✅ *Login Approved*\n` +
         `• Code: *${challenge.shortPin}*\n` +
+        `• Phone: *${canonicalPhone}*\n` +
+        `• Titan ID: *${canonicalTitanId}*\n` +
         `• Connection: *Secure & Encrypted*\n` +
         `• Status: *Active & Ready*\n\n` +
         `🌐 Head back to your browser screen to start using Titan Stream!\n\n` +
@@ -496,7 +557,7 @@ export class WhatsappChallengeService {
       await this.baileysService.sendTextMessage(replyTarget, confirmText);
       this.logger.log(`[WA_CONFIRMATION_SENT] Sign-in success confirmation message sent to ${replyTarget}`);
     } catch (msgErr: any) {
-      this.logger.error(`[WA_CONFIRMATION_FAILED] Failed to send confirmation to ${phone}: ${msgErr.message}`);
+      this.logger.error(`[WA_CONFIRMATION_FAILED] Failed to send confirmation to ${canonicalPhone}: ${msgErr.message}`);
     }
   }
 

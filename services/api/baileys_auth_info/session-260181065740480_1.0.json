@@ -485,7 +485,7 @@
       "indexInfo": {
         "baseKey": "BXyysNMJYmbjw8BSyQAMmOCTX+A2pELFt9yqs/VEDdZ6",
         "baseKeyType": 1,
-        "closed": -1,
+        "closed": 1787790973095,
         "used": 1787790013736,
         "created": 1787790013736,
         "remoteIdentityKey": "Bd5s3H3Hta3YDV+DBIGoEfICcKwTagui3TmD0gGvkVQh"
@@ -493,8 +493,8 @@
       "_chains": {
         "BYVNFT+AhH00xzinpafUVZReq1Pp3TWan653xQ+5HLYs": {
           "chainKey": {
-            "counter": 0,
-            "key": "lwdSp+kO+hex5a5ooiBVbOf40b3AULMG2bY9pRpjBL4="
+            "counter": 2,
+            "key": "JK6G9A4IbotRkttvlf8Vt1ba7eMziaCZvVNBNJEHcE4="
           },
           "chainType": 1,
           "messageKeys": {}
@@ -504,6 +504,41 @@
         "signedKeyId": 3484165,
         "baseKey": "BXyysNMJYmbjw8BSyQAMmOCTX+A2pELFt9yqs/VEDdZ6",
         "preKeyId": 13597190
+      }
+    },
+    "BUQrQI+JSVggc8a+621K499wTWRFOy9IDv6JaTQA35Ud": {
+      "registrationId": 651767561,
+      "currentRatchet": {
+        "ephemeralKeyPair": {
+          "pubKey": "BUne3qa+CT6ujiPpi+W3/WjLzLZVzoHBGvuYaQJ3eTwb",
+          "privKey": "GKLXqEVHP5xtPJE+pT8IYMDUYt69UdeIcq/3mzMH01s="
+        },
+        "lastRemoteEphemeralKey": "BQIH1Svg941lzeYDyqJ5IBtfNpGDIbaQx8RwLj6Hcz9f",
+        "previousCounter": 0,
+        "rootKey": "Oz4sIoHhHIryews2A6QL69z9enp/9EPZAwaCvFC7CvM="
+      },
+      "indexInfo": {
+        "baseKey": "BUQrQI+JSVggc8a+621K499wTWRFOy9IDv6JaTQA35Ud",
+        "baseKeyType": 1,
+        "closed": -1,
+        "used": 1787790973088,
+        "created": 1787790973088,
+        "remoteIdentityKey": "Bd5s3H3Hta3YDV+DBIGoEfICcKwTagui3TmD0gGvkVQh"
+      },
+      "_chains": {
+        "BUne3qa+CT6ujiPpi+W3/WjLzLZVzoHBGvuYaQJ3eTwb": {
+          "chainKey": {
+            "counter": 0,
+            "key": "/DWPcwihqd+QC0dFriXAP5hR7vB75D7Doc6lf0moViU="
+          },
+          "chainType": 1,
+          "messageKeys": {}
+        }
+      },
+      "pendingPreKey": {
+        "signedKeyId": 3484165,
+        "baseKey": "BUQrQI+JSVggc8a+621K499wTWRFOy9IDv6JaTQA35Ud",
+        "preKeyId": 13597262
       }
     }
   },
