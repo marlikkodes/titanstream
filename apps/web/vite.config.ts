@@ -712,7 +712,172 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
-        // 0e. Machines HQ Economy Profiles
+        // 0e. Machines HQ Catalog, Stats & Fleet (Real Ownership Tracking)
+        if (url.includes('/admin/machines-hq/stats')) {
+          const allUsers = loadUsersFromDisk();
+          let totalOwned = 0;
+          let totalActive = 0;
+          let totalHashrateGhs = 0;
+          const tierCounts: Record<string, number> = {
+            PULSE_GEN: 0,
+            IMPULSE_CORE: 0,
+            TURBINE_LOOP_X: 0,
+            QUANTUM_ARRAY_9: 0,
+            TS_MINI_100: 0,
+            TS_PRO_500: 0,
+            TS_X1000: 0,
+            TS_Q2500: 0,
+          };
+          const fleetRoster: any[] = [];
+
+          for (const u of allUsers) {
+            const count = u.activeMachinesCount || (u.userMachines ? u.userMachines.length : 0) || 0;
+            totalOwned += count;
+            totalActive += count;
+
+            if (u.userMachines && Array.isArray(u.userMachines)) {
+              for (const m of u.userMachines) {
+                const code = m.machineId || m.tierCode || 'PULSE_GEN';
+                tierCounts[code] = (tierCounts[code] || 0) + 1;
+                totalHashrateGhs += Number(m.capacityGhs || 15);
+                fleetRoster.push({
+                  id: m.id || `m_${u.id}_${fleetRoster.length}`,
+                  tierCode: code,
+                  name: m.nickname || m.name || `Node #${fleetRoster.length + 1}`,
+                  ownerId: u.id,
+                  ownerName: u.name,
+                  ownerPhone: u.phoneNumber || u.username,
+                  capacityGhs: m.capacityGhs || 15,
+                  status: m.status || 'ACTIVE',
+                  purchasedAt: m.purchasedAt || u.createdAt,
+                });
+              }
+            } else if (count > 0) {
+              // Synthetic fleet generation for users with machine counts
+              for (let i = 0; i < count; i++) {
+                const code = i === 0 ? 'PULSE_GEN' : i === 1 ? 'IMPULSE_CORE' : 'TURBINE_LOOP_X';
+                tierCounts[code] = (tierCounts[code] || 0) + 1;
+                const ghs = code === 'PULSE_GEN' ? 15 : code === 'IMPULSE_CORE' ? 80 : 180;
+                totalHashrateGhs += ghs;
+                fleetRoster.push({
+                  id: `mach_${u.id}_${i + 1}`,
+                  tierCode: code,
+                  name: `${code} Unit #${i + 1}`,
+                  ownerId: u.id,
+                  ownerName: u.name,
+                  ownerPhone: u.phoneNumber || u.username,
+                  capacityGhs: ghs,
+                  status: 'ACTIVE',
+                  purchasedAt: u.createdAt,
+                });
+              }
+            }
+          }
+
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              totalOwnedMachines: totalOwned,
+              activeComputingFleet: totalActive,
+              totalNetworkHashrateGhs: Math.round(totalHashrateGhs * 10) / 10,
+              tierCounts,
+              fleetRoster: fleetRoster.slice(0, 50),
+            },
+          }));
+          return;
+        }
+
+        if (url.includes('/admin/machines-hq/catalog') && req.method === 'GET') {
+          const allUsers = loadUsersFromDisk();
+          let pulseCount = 0;
+          let impulseCount = 0;
+          let turbineCount = 0;
+          let quantumCount = 0;
+
+          for (const u of allUsers) {
+            const count = u.activeMachinesCount || 0;
+            if (count >= 1) pulseCount += 1;
+            if (count >= 2) impulseCount += 1;
+            if (count >= 3) turbineCount += 1;
+            if (count >= 4) quantumCount += (count - 3);
+          }
+
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: [
+              {
+                id: 'cat_starter_pulse',
+                tierCode: 'PULSE_GEN',
+                name: 'Pulse Gen 1.0',
+                description: 'Entry-level low-latency compute unit with guaranteed daily yield.',
+                category: 'STANDARD',
+                priceUsdt: '15.00',
+                capacityGhs: '15.0',
+                dailyYieldEstimateUsdt: '0.45',
+                displayOrder: 1,
+                icon: '⚡',
+                status: 'ACTIVE',
+                outputs: [{ id: 'out_1', assetCode: 'USDT', baseYieldRate: '0.0000052', multiplier: '1.0', status: 'ACTIVE' }],
+                _count: { userFleet: pulseCount },
+              },
+              {
+                id: 'cat_impulse_core',
+                tierCode: 'IMPULSE_CORE',
+                name: 'Impulse Core Unit',
+                description: 'Mid-tier node with enhanced multi-rail throughput.',
+                category: 'PERFORMANCE',
+                priceUsdt: '50.00',
+                capacityGhs: '80.0',
+                dailyYieldEstimateUsdt: '1.80',
+                displayOrder: 2,
+                icon: '🔋',
+                status: 'ACTIVE',
+                outputs: [{ id: 'out_2', assetCode: 'USDT', baseYieldRate: '0.0000208', multiplier: '1.0', status: 'ACTIVE' }],
+                _count: { userFleet: impulseCount },
+              },
+              {
+                id: 'cat_turbine_beta',
+                tierCode: 'TURBINE_LOOP_X',
+                name: 'Turbine Loop-X',
+                description: 'High-yield enterprise engine for dedicated network verification.',
+                category: 'ENTERPRISE',
+                priceUsdt: '150.00',
+                capacityGhs: '180.0',
+                dailyYieldEstimateUsdt: '5.50',
+                displayOrder: 3,
+                icon: '🚀',
+                status: 'ACTIVE',
+                outputs: [{ id: 'out_3', assetCode: 'USDT', baseYieldRate: '0.0000636', multiplier: '1.0', status: 'ACTIVE' }],
+                _count: { userFleet: turbineCount },
+              },
+              {
+                id: 'cat_quantum_array',
+                tierCode: 'QUANTUM_ARRAY_9',
+                name: 'Quantum Array V9',
+                description: 'Flagship cluster computing platform with maximal capacity.',
+                category: 'FLAGSHIP',
+                priceUsdt: '500.00',
+                capacityGhs: '740.0',
+                dailyYieldEstimateUsdt: '22.00',
+                displayOrder: 4,
+                icon: '💠',
+                status: 'ACTIVE',
+                outputs: [
+                  { id: 'out_4a', assetCode: 'USDT', baseYieldRate: '0.0002546', multiplier: '1.0', status: 'ACTIVE' },
+                  { id: 'out_4b', assetCode: 'TON', baseYieldRate: '0.05', multiplier: '1.2', status: 'ACTIVE' },
+                ],
+                _count: { userFleet: quantumCount },
+              },
+            ],
+          }));
+          return;
+        }
+
+        // 0f. Machines HQ Economy Profiles
         if (url.includes('/admin/machines-hq/economy/profiles')) {
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
@@ -720,6 +885,7 @@ function adminMockMiddleware(): Plugin {
             success: true,
             data: [
               { id: 'ep_1', code: 'STANDARD_PROD', name: 'Authoritative Production Matrix', version: 1, yieldMultiplier: '1.0', referralMultiplier: '1.0', rewardMultiplier: '1.0', isActive: true, priority: 1 },
+              { id: 'ep_2', code: 'WEEKEND_BOOST', name: 'Promotional Weekend Surge', version: 2, yieldMultiplier: '1.25', referralMultiplier: '1.1', rewardMultiplier: '1.5', isActive: false, priority: 2 },
             ],
           }));
           return;

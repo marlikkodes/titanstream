@@ -63,6 +63,63 @@ export class MachineAdminService {
     return [];
   }
 
+  /**
+   * 1b. Real Machine Fleet Ownership & Topology Statistics
+   */
+  async getOwnershipStats() {
+    try {
+      const dbFleet = await this.prisma.userMachineFleetItem.findMany({
+        include: { machine: true },
+      });
+      if (dbFleet && dbFleet.length > 0) {
+        let totalHashrateGhs = 0;
+        let activeCount = 0;
+        const tierCounts: Record<string, number> = {};
+        for (const item of dbFleet) {
+          if (item.status === 'ACTIVE') activeCount++;
+          const cap = Number(item.capacityGhs || 0);
+          totalHashrateGhs += cap;
+          tierCounts[item.tierCode] = (tierCounts[item.tierCode] || 0) + 1;
+        }
+        return {
+          totalOwnedMachines: dbFleet.length,
+          activeComputingFleet: activeCount,
+          totalNetworkHashrateGhs: Math.round(totalHashrateGhs * 10) / 10,
+          tierCounts,
+          recentPurchases: dbFleet.slice(0, 10),
+        };
+      }
+    } catch {}
+
+    if (this.centralSync) {
+      const allMachines = this.centralSync.getAllMachines();
+      let totalHashrateGhs = 0;
+      let activeCount = 0;
+      const tierCounts: Record<string, number> = {};
+      for (const m of allMachines) {
+        if (m.status === 'ACTIVE') activeCount++;
+        totalHashrateGhs += Number(m.capacityGhs || 0);
+        const code = m.machineId?.toUpperCase() || 'TS_MINI_100';
+        tierCounts[code] = (tierCounts[code] || 0) + 1;
+      }
+      return {
+        totalOwnedMachines: allMachines.length,
+        activeComputingFleet: activeCount,
+        totalNetworkHashrateGhs: Math.round(totalHashrateGhs * 10) / 10,
+        tierCounts,
+        recentPurchases: allMachines.slice(0, 10),
+      };
+    }
+
+    return {
+      totalOwnedMachines: 0,
+      activeComputingFleet: 0,
+      totalNetworkHashrateGhs: 0,
+      tierCounts: {},
+      recentPurchases: [],
+    };
+  }
+
   async createMachine(admin: { id: string; role: string }, dto: CreateMachineDto) {
     if (!dto.tierCode || !dto.name || dto.priceUsdt === undefined) {
       throw new BadRequestException('tierCode, name, and priceUsdt are mandatory');

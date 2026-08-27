@@ -22,6 +22,12 @@ export class AdminMachineController {
     return this.machineAdminService.listMachines();
   }
 
+  @Get('stats')
+  @Permissions(AdminPermission.MACHINE_VIEW)
+  async getOwnershipStats() {
+    return this.machineAdminService.getOwnershipStats();
+  }
+
   @Post('catalog')
   @Permissions(AdminPermission.MACHINE_CREATE)
   async createMachine(
