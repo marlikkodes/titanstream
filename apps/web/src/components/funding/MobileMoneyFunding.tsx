@@ -119,6 +119,17 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
   const [submittedRef, setSubmittedRef] = useState<string>('');
   const [showRefInput, setShowRefInput] = useState(false);
   const [elapsedDisplay, setElapsedDisplay] = useState('0s');
+  const [activeMerchants, setActiveMerchants] = useState<any[]>([]);
+
+  // Fetch registered active merchants dynamically from backend / admin config
+  useEffect(() => {
+    api.get('/settlement/merchants')
+      .then((res) => {
+        const list = res.data?.data || res.data;
+        if (Array.isArray(list)) setActiveMerchants(list);
+      })
+      .catch(() => {});
+  }, []);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -262,14 +273,26 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
 
       const sessionData = res.data?.data || res.data;
       if (sessionData?.settlementId) {
+        // Resolve dynamic fallback from live registered merchants
+        const matchedMerchant = activeMerchants.find((m: any) => {
+          const mNet = (m.network || '').toUpperCase();
+          if (network === 'AIRTEL') return mNet.includes('AIRTEL');
+          if (network === 'MTN') return mNet.includes('MTN');
+          if (network === 'SAFARICOM_MPESA') return mNet.includes('SAFARICOM') || mNet.includes('MPESA');
+          return false;
+        });
+
+        const fallbackMerchantName = matchedMerchant?.merchantName || (network === 'AIRTEL' ? 'TitanStream Escrow Airtel' : 'TitanStream Escrow MTN');
+        const fallbackMerchantNumber = matchedMerchant?.merchantNumber || (network === 'AIRTEL' ? '7183443' : '234654');
+
         const merchantSession: MerchantSession = {
           settlementId: sessionData.settlementId,
           referenceCode: sessionData.referenceCode || `MM-${sessionData.settlementId.substring(0, 6)}`,
           status: sessionData.status || 'WAITING_FOR_PAYMENT',
           network: sessionData.network || network,
-          merchantId: sessionData.merchantId || '',
-          merchantName: sessionData.merchantName || (network === 'AIRTEL' ? 'TitanStream Escrow Airtel' : 'TitanStream Escrow MTN'),
-          merchantNumber: sessionData.merchantNumber || (network === 'AIRTEL' ? '7183443' : '234654'),
+          merchantId: sessionData.merchantId || matchedMerchant?.id || '',
+          merchantName: sessionData.merchantName || fallbackMerchantName,
+          merchantNumber: sessionData.merchantNumber || fallbackMerchantNumber,
           requestedAmount: sessionData.requestedAmount || '0',
           expectedCryptoAmount: sessionData.expectedCryptoAmount || usdtAmountToSubmit.toString(),
           exchangeRate: sessionData.exchangeRate || (selectedCountry?.exchangeRate || 3774.62).toString(),

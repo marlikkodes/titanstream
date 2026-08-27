@@ -228,7 +228,12 @@ export class ProviderRegistryService implements OnModuleInit {
     const requestedNetwork = dto.mobileMoneyNetwork ? dto.mobileMoneyNetwork.toUpperCase() : undefined;
     const existingActive = await this.findActiveSettlementForProvider(telegramUserIdBig, dto.asset, providerId, requestedNetwork);
     if (existingActive) {
-      throw new BadRequestException('ACTIVE_SETTLEMENT_EXISTS: An active settlement session already exists for this provider.');
+      this.logger.log(`[SETTLEMENT] Returning existing active session [${existingActive.id}] for user ${telegramUserIdBig}`);
+      const independent = this.toProviderIndependentView(existingActive);
+      return {
+        ...independent,
+        settlementId: existingActive.id,
+      };
     }
 
     // If user is starting a session for a NEW network, cancel any active session on the old network

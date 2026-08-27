@@ -1,0 +1,142 @@
+[
+  {
+    "id": "free-trial",
+    "tierCode": "TS_TRIAL",
+    "name": "Titan Core",
+    "description": "Free starter machine that earns daily money automatically as soon as you open the app.",
+    "category": "Free Starter Machine",
+    "priceUsdt": "0.00",
+    "capacityGhs": "1.0",
+    "dailyYieldEstimateUsdt": "2.00",
+    "status": "ACTIVE",
+    "displayOrder": 1,
+    "outputs": [
+      {
+        "id": "out_free-trial_usdt",
+        "assetCode": "USDT",
+        "baseYieldRate": "1.0",
+        "multiplier": "1.0",
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  {
+    "id": "ripple-x14",
+    "tierCode": "TS_C10",
+    "name": "Ripple X14",
+    "description": "Great starter machine designed to earn steady daily money with low power.",
+    "category": "Tier 1 Machine",
+    "priceUsdt": "10.99",
+    "capacityGhs": "5.0",
+    "dailyYieldEstimateUsdt": "0.27",
+    "status": "ACTIVE",
+    "displayOrder": 2,
+    "outputs": [
+      {
+        "id": "out_ripple-x14_usdt",
+        "assetCode": "USDT",
+        "baseYieldRate": "1.0",
+        "multiplier": "1.0",
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  {
+    "id": "surge-r28",
+    "tierCode": "TS_A50",
+    "name": "Surge R28",
+    "description": "Designed for growing daily earnings with high stability.",
+    "category": "Tier 2 Machine",
+    "priceUsdt": "50.00",
+    "capacityGhs": "25.0",
+    "dailyYieldEstimateUsdt": "1.35",
+    "status": "ACTIVE",
+    "displayOrder": 3,
+    "outputs": [
+      {
+        "id": "out_surge-r28_usdt",
+        "assetCode": "USDT",
+        "baseYieldRate": "1.0",
+        "multiplier": "1.0",
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  {
+    "id": "torrent-v63",
+    "tierCode": "TS_Q250",
+    "name": "Torrent V63",
+    "description": "Heavy duty compute node engineered for steady high daily returns.",
+    "category": "Tier 3 Machine",
+    "priceUsdt": "250.00",
+    "capacityGhs": "150.0",
+    "dailyYieldEstimateUsdt": "7.50",
+    "status": "ACTIVE",
+    "displayOrder": 4,
+    "outputs": [
+      {
+        "id": "out_torrent-v63_usdt",
+        "assetCode": "USDT",
+        "baseYieldRate": "1.0",
+        "multiplier": "1.0",
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  {
+    "id": "cascade-m91",
+    "tierCode": "TS_X1000",
+    "name": "Cascade M91",
+    "description": "Industrial high-capacity processor with multi-stream TON reward output.",
+    "category": "Tier 4 Machine",
+    "priceUsdt": "1000.00",
+    "capacityGhs": "750.0",
+    "dailyYieldEstimateUsdt": "35.00",
+    "status": "ACTIVE",
+    "displayOrder": 5,
+    "outputs": [
+      {
+        "id": "out_cascade-m91_usdt",
+        "assetCode": "USDT",
+        "baseYieldRate": "1.0",
+        "multiplier": "1.0",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "out_cascade-m91_ton",
+        "assetCode": "TON",
+        "baseYieldRate": "0.05",
+        "multiplier": "1.2",
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  {
+    "id": "stream-titan-2028",
+    "tierCode": "TS_Q2500",
+    "name": "StreamTitan 2028",
+    "description": "Flagship cluster computing platform with maximal network throughput and dual yields.",
+    "category": "Tier 5 Machine",
+    "priceUsdt": "2500.00",
+    "capacityGhs": "2200.0",
+    "dailyYieldEstimateUsdt": "110.00",
+    "status": "ACTIVE",
+    "displayOrder": 6,
+    "outputs": [
+      {
+        "id": "out_stream-titan-2028_usdt",
+        "assetCode": "USDT",
+        "baseYieldRate": "1.0",
+        "multiplier": "1.0",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "out_stream-titan-2028_ton",
+        "assetCode": "TON",
+        "baseYieldRate": "0.05",
+        "multiplier": "1.2",
+        "status": "ACTIVE"
+      }
+    ]
+  }
+]

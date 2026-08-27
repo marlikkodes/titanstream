@@ -5,6 +5,8 @@ import { resolve } from 'path';
 import fs from 'fs';
 
 const USERS_DB_PATH = resolve(__dirname, '.admin_users_db.json');
+const MERCHANTS_DB_PATH = resolve(__dirname, '.admin_merchants_db.json');
+const MACHINES_DB_PATH = resolve(__dirname, '.admin_machines_db.json');
 
 function adminMockMiddleware(): Plugin {
   let mockWithdrawalsList = [
@@ -290,6 +292,170 @@ function adminMockMiddleware(): Plugin {
   // Ensure initial disk database is created
   if (!fs.existsSync(USERS_DB_PATH)) {
     saveUsersToDisk(mockRegisteredUsers);
+  }
+
+  // ─── Persistent Merchant Code Store ──────────────────────────────
+  const defaultMerchants = [
+    {
+      id: 'mm_1',
+      network: 'SAFARICOM_MPESA',
+      merchantName: 'TetherStream Kenya Ops',
+      merchantNumber: '445910',
+      country: 'KE',
+      currency: 'KES',
+      dailyLimit: 500000,
+      status: 'ACTIVE',
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'mm_2',
+      network: 'MTN_UGANDA',
+      merchantName: 'TetherStream Uganda Pay',
+      merchantNumber: '881022',
+      country: 'UG',
+      currency: 'UGX',
+      dailyLimit: 15000000,
+      status: 'ACTIVE',
+      createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+  ];
+
+  function loadMerchantsFromDisk(): any[] {
+    try {
+      if (fs.existsSync(MERCHANTS_DB_PATH)) {
+        const raw = fs.readFileSync(MERCHANTS_DB_PATH, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return defaultMerchants;
+  }
+
+  function saveMerchantsToDisk(merchants: any[]) {
+    try {
+      fs.writeFileSync(MERCHANTS_DB_PATH, JSON.stringify(merchants, null, 2), 'utf-8');
+    } catch (e) {}
+  }
+
+  if (!fs.existsSync(MERCHANTS_DB_PATH)) {
+    saveMerchantsToDisk(defaultMerchants);
+  }
+
+  // ─── Persistent Machine Catalog Store ────────────────────────────
+  const defaultMachines = [
+    {
+      id: 'free-trial',
+      tierCode: 'TS_TRIAL',
+      name: 'Titan Core',
+      description: 'Free starter machine that earns daily money automatically as soon as you open the app.',
+      category: 'Free Starter Machine',
+      priceUsdt: '0.00',
+      capacityGhs: '1.0',
+      dailyYieldEstimateUsdt: '2.00',
+      status: 'ACTIVE',
+      displayOrder: 1,
+      outputs: [
+        { id: 'out_free-trial_usdt', assetCode: 'USDT', baseYieldRate: '1.0', multiplier: '1.0', status: 'ACTIVE' },
+      ],
+    },
+    {
+      id: 'ripple-x14',
+      tierCode: 'TS_C10',
+      name: 'Ripple X14',
+      description: 'Great starter machine designed to earn steady daily money with low power.',
+      category: 'Tier 1 Machine',
+      priceUsdt: '10.99',
+      capacityGhs: '5.0',
+      dailyYieldEstimateUsdt: '0.27',
+      status: 'ACTIVE',
+      displayOrder: 2,
+      outputs: [
+        { id: 'out_ripple-x14_usdt', assetCode: 'USDT', baseYieldRate: '1.0', multiplier: '1.0', status: 'ACTIVE' },
+      ],
+    },
+    {
+      id: 'surge-r28',
+      tierCode: 'TS_A50',
+      name: 'Surge R28',
+      description: 'Designed for growing daily earnings with high stability.',
+      category: 'Tier 2 Machine',
+      priceUsdt: '50.00',
+      capacityGhs: '25.0',
+      dailyYieldEstimateUsdt: '1.35',
+      status: 'ACTIVE',
+      displayOrder: 3,
+      outputs: [
+        { id: 'out_surge-r28_usdt', assetCode: 'USDT', baseYieldRate: '1.0', multiplier: '1.0', status: 'ACTIVE' },
+      ],
+    },
+    {
+      id: 'torrent-v63',
+      tierCode: 'TS_Q250',
+      name: 'Torrent V63',
+      description: 'Heavy duty compute node engineered for steady high daily returns.',
+      category: 'Tier 3 Machine',
+      priceUsdt: '250.00',
+      capacityGhs: '150.0',
+      dailyYieldEstimateUsdt: '7.50',
+      status: 'ACTIVE',
+      displayOrder: 4,
+      outputs: [
+        { id: 'out_torrent-v63_usdt', assetCode: 'USDT', baseYieldRate: '1.0', multiplier: '1.0', status: 'ACTIVE' },
+      ],
+    },
+    {
+      id: 'cascade-m91',
+      tierCode: 'TS_X1000',
+      name: 'Cascade M91',
+      description: 'Industrial high-capacity processor with multi-stream TON reward output.',
+      category: 'Tier 4 Machine',
+      priceUsdt: '1000.00',
+      capacityGhs: '750.0',
+      dailyYieldEstimateUsdt: '35.00',
+      status: 'ACTIVE',
+      displayOrder: 5,
+      outputs: [
+        { id: 'out_cascade-m91_usdt', assetCode: 'USDT', baseYieldRate: '1.0', multiplier: '1.0', status: 'ACTIVE' },
+        { id: 'out_cascade-m91_ton', assetCode: 'TON', baseYieldRate: '0.05', multiplier: '1.2', status: 'ACTIVE' },
+      ],
+    },
+    {
+      id: 'stream-titan-2028',
+      tierCode: 'TS_Q2500',
+      name: 'StreamTitan 2028',
+      description: 'Flagship cluster computing platform with maximal network throughput and dual yields.',
+      category: 'Tier 5 Machine',
+      priceUsdt: '2500.00',
+      capacityGhs: '2200.0',
+      dailyYieldEstimateUsdt: '110.00',
+      status: 'ACTIVE',
+      displayOrder: 6,
+      outputs: [
+        { id: 'out_stream-titan-2028_usdt', assetCode: 'USDT', baseYieldRate: '1.0', multiplier: '1.0', status: 'ACTIVE' },
+        { id: 'out_stream-titan-2028_ton', assetCode: 'TON', baseYieldRate: '0.05', multiplier: '1.2', status: 'ACTIVE' },
+      ],
+    },
+  ];
+
+  function loadMachinesFromDisk(): any[] {
+    try {
+      if (fs.existsSync(MACHINES_DB_PATH)) {
+        const raw = fs.readFileSync(MACHINES_DB_PATH, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return defaultMachines;
+  }
+
+  function saveMachinesToDisk(machines: any[]) {
+    try {
+      fs.writeFileSync(MACHINES_DB_PATH, JSON.stringify(machines, null, 2), 'utf-8');
+    } catch (e) {}
+  }
+
+  if (!fs.existsSync(MACHINES_DB_PATH)) {
+    saveMachinesToDisk(defaultMachines);
   }
 
   let mockSettings = {
@@ -712,19 +878,17 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
-        // 0e. Machines HQ Catalog, Stats & Fleet (Real Ownership Tracking)
+        // 0e. Machines HQ Catalog, Stats & Fleet (Real Ownership Tracking + Full Dynamic CRUD)
         if (url.includes('/admin/machines-hq/stats')) {
           const allUsers = loadUsersFromDisk();
           let totalOwned = 0;
           let totalActive = 0;
           let totalHashrateGhs = 0;
           const tierCounts: Record<string, number> = {
-            PULSE_GEN: 0,
-            IMPULSE_CORE: 0,
-            TURBINE_LOOP_X: 0,
-            QUANTUM_ARRAY_9: 0,
-            TS_MINI_100: 0,
-            TS_PRO_500: 0,
+            TS_TRIAL: 0,
+            TS_C10: 0,
+            TS_A50: 0,
+            TS_Q250: 0,
             TS_X1000: 0,
             TS_Q2500: 0,
           };
@@ -737,27 +901,27 @@ function adminMockMiddleware(): Plugin {
 
             if (u.userMachines && Array.isArray(u.userMachines)) {
               for (const m of u.userMachines) {
-                const code = m.machineId || m.tierCode || 'PULSE_GEN';
+                const code = m.tierCode || m.machineId || 'TS_C10';
                 tierCounts[code] = (tierCounts[code] || 0) + 1;
-                totalHashrateGhs += Number(m.capacityGhs || 15);
+                totalHashrateGhs += Number(m.capacityGhs || 5.0);
                 fleetRoster.push({
                   id: m.id || `m_${u.id}_${fleetRoster.length}`,
                   tierCode: code,
-                  name: m.nickname || m.name || `Node #${fleetRoster.length + 1}`,
+                  name: m.nickname || m.name || `${code} Unit`,
                   ownerId: u.id,
                   ownerName: u.name,
                   ownerPhone: u.phoneNumber || u.username,
-                  capacityGhs: m.capacityGhs || 15,
+                  capacityGhs: m.capacityGhs || 5.0,
                   status: m.status || 'ACTIVE',
                   purchasedAt: m.purchasedAt || u.createdAt,
                 });
               }
             } else if (count > 0) {
-              // Synthetic fleet generation for users with machine counts
+              // Map counts to standard tiers
               for (let i = 0; i < count; i++) {
-                const code = i === 0 ? 'PULSE_GEN' : i === 1 ? 'IMPULSE_CORE' : 'TURBINE_LOOP_X';
+                const code = i === 0 ? 'TS_TRIAL' : i === 1 ? 'TS_C10' : i === 2 ? 'TS_A50' : 'TS_Q250';
                 tierCounts[code] = (tierCounts[code] || 0) + 1;
-                const ghs = code === 'PULSE_GEN' ? 15 : code === 'IMPULSE_CORE' ? 80 : 180;
+                const ghs = code === 'TS_TRIAL' ? 1.0 : code === 'TS_C10' ? 5.0 : code === 'TS_A50' ? 25.0 : 150.0;
                 totalHashrateGhs += ghs;
                 fleetRoster.push({
                   id: `mach_${u.id}_${i + 1}`,
@@ -789,90 +953,122 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
-        if (url.includes('/admin/machines-hq/catalog') && req.method === 'GET') {
+        if (url.includes('/admin/machines-hq/catalog')) {
+          // PUT: Update an existing machine
+          if (req.method === 'PUT') {
+            let bodyStr = '';
+            req.on('data', chunk => { bodyStr += chunk; });
+            req.on('end', () => {
+              try {
+                const body = JSON.parse(bodyStr || '{}');
+                const parts = url.split('/');
+                const machineId = parts[parts.length - 1].split('?')[0];
+                const machines = loadMachinesFromDisk();
+                const idx = machines.findIndex((m: any) => m.id === machineId || m.tierCode === machineId);
+                if (idx >= 0) {
+                  machines[idx] = {
+                    ...machines[idx],
+                    ...(body.name ? { name: body.name.trim() } : {}),
+                    ...(body.description !== undefined ? { description: body.description.trim() } : {}),
+                    ...(body.priceUsdt !== undefined ? { priceUsdt: parseFloat(body.priceUsdt).toFixed(2) } : {}),
+                    ...(body.capacityGhs !== undefined ? { capacityGhs: parseFloat(body.capacityGhs).toFixed(1) } : {}),
+                    ...(body.dailyYieldEstimateUsdt !== undefined ? { dailyYieldEstimateUsdt: parseFloat(body.dailyYieldEstimateUsdt).toFixed(2) } : {}),
+                    ...(body.status ? { status: body.status } : {}),
+                    ...(body.category ? { category: body.category } : {}),
+                    updatedAt: new Date().toISOString(),
+                  };
+                  saveMachinesToDisk(machines);
+                  res.setHeader('Content-Type', 'application/json');
+                  res.statusCode = 200;
+                  res.end(JSON.stringify({ success: true, data: machines[idx] }));
+                } else {
+                  res.statusCode = 404;
+                  res.end(JSON.stringify({ success: false, message: 'Machine not found' }));
+                }
+              } catch (e) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ success: false, message: 'Invalid payload' }));
+              }
+            });
+            return;
+          }
+
+          // POST: Create a new machine
+          if (req.method === 'POST') {
+            let bodyStr = '';
+            req.on('data', chunk => { bodyStr += chunk; });
+            req.on('end', () => {
+              try {
+                const body = JSON.parse(bodyStr || '{}');
+                const machines = loadMachinesFromDisk();
+                const newMachine = {
+                  id: body.id || `mach_${Date.now().toString(36)}`,
+                  tierCode: (body.tierCode || `TS_CUSTOM_${machines.length + 1}`).trim(),
+                  name: (body.name || 'Custom Computing Unit').trim(),
+                  description: (body.description || '').trim(),
+                  category: body.category || 'Custom Machine',
+                  priceUsdt: (parseFloat(body.priceUsdt) || 0).toFixed(2),
+                  capacityGhs: (parseFloat(body.capacityGhs) || 10).toFixed(1),
+                  dailyYieldEstimateUsdt: (parseFloat(body.dailyYieldEstimateUsdt) || 0.5).toFixed(2),
+                  status: body.status || 'ACTIVE',
+                  displayOrder: machines.length + 1,
+                  outputs: [
+                    { id: `out_${Date.now()}_usdt`, assetCode: 'USDT', baseYieldRate: '1.0', multiplier: '1.0', status: 'ACTIVE' },
+                  ],
+                  createdAt: new Date().toISOString(),
+                };
+                machines.push(newMachine);
+                saveMachinesToDisk(machines);
+                res.setHeader('Content-Type', 'application/json');
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true, data: newMachine }));
+              } catch (e) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ success: false, message: 'Invalid payload' }));
+              }
+            });
+            return;
+          }
+
+          // GET: List all machines from disk + attach real userFleet counts
           const allUsers = loadUsersFromDisk();
-          let pulseCount = 0;
-          let impulseCount = 0;
-          let turbineCount = 0;
-          let quantumCount = 0;
+          const tierCounts: Record<string, number> = {
+            TS_TRIAL: 0,
+            TS_C10: 0,
+            TS_A50: 0,
+            TS_Q250: 0,
+            TS_X1000: 0,
+            TS_Q2500: 0,
+          };
 
           for (const u of allUsers) {
-            const count = u.activeMachinesCount || 0;
-            if (count >= 1) pulseCount += 1;
-            if (count >= 2) impulseCount += 1;
-            if (count >= 3) turbineCount += 1;
-            if (count >= 4) quantumCount += (count - 3);
+            const count = u.activeMachinesCount || (u.userMachines ? u.userMachines.length : 0) || 0;
+            if (u.userMachines && Array.isArray(u.userMachines)) {
+              for (const m of u.userMachines) {
+                const code = m.tierCode || m.machineId || 'TS_C10';
+                tierCounts[code] = (tierCounts[code] || 0) + 1;
+              }
+            } else if (count > 0) {
+              for (let i = 0; i < count; i++) {
+                const code = i === 0 ? 'TS_TRIAL' : i === 1 ? 'TS_C10' : i === 2 ? 'TS_A50' : 'TS_Q250';
+                tierCounts[code] = (tierCounts[code] || 0) + 1;
+              }
+            }
           }
+
+          const diskMachines = loadMachinesFromDisk();
+          const catalogWithCounts = diskMachines.map((m: any) => ({
+            ...m,
+            _count: {
+              userFleet: tierCounts[m.tierCode] || 0,
+            },
+          }));
 
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
-            data: [
-              {
-                id: 'cat_starter_pulse',
-                tierCode: 'PULSE_GEN',
-                name: 'Pulse Gen 1.0',
-                description: 'Entry-level low-latency compute unit with guaranteed daily yield.',
-                category: 'STANDARD',
-                priceUsdt: '15.00',
-                capacityGhs: '15.0',
-                dailyYieldEstimateUsdt: '0.45',
-                displayOrder: 1,
-                icon: '⚡',
-                status: 'ACTIVE',
-                outputs: [{ id: 'out_1', assetCode: 'USDT', baseYieldRate: '0.0000052', multiplier: '1.0', status: 'ACTIVE' }],
-                _count: { userFleet: pulseCount },
-              },
-              {
-                id: 'cat_impulse_core',
-                tierCode: 'IMPULSE_CORE',
-                name: 'Impulse Core Unit',
-                description: 'Mid-tier node with enhanced multi-rail throughput.',
-                category: 'PERFORMANCE',
-                priceUsdt: '50.00',
-                capacityGhs: '80.0',
-                dailyYieldEstimateUsdt: '1.80',
-                displayOrder: 2,
-                icon: '🔋',
-                status: 'ACTIVE',
-                outputs: [{ id: 'out_2', assetCode: 'USDT', baseYieldRate: '0.0000208', multiplier: '1.0', status: 'ACTIVE' }],
-                _count: { userFleet: impulseCount },
-              },
-              {
-                id: 'cat_turbine_beta',
-                tierCode: 'TURBINE_LOOP_X',
-                name: 'Turbine Loop-X',
-                description: 'High-yield enterprise engine for dedicated network verification.',
-                category: 'ENTERPRISE',
-                priceUsdt: '150.00',
-                capacityGhs: '180.0',
-                dailyYieldEstimateUsdt: '5.50',
-                displayOrder: 3,
-                icon: '🚀',
-                status: 'ACTIVE',
-                outputs: [{ id: 'out_3', assetCode: 'USDT', baseYieldRate: '0.0000636', multiplier: '1.0', status: 'ACTIVE' }],
-                _count: { userFleet: turbineCount },
-              },
-              {
-                id: 'cat_quantum_array',
-                tierCode: 'QUANTUM_ARRAY_9',
-                name: 'Quantum Array V9',
-                description: 'Flagship cluster computing platform with maximal capacity.',
-                category: 'FLAGSHIP',
-                priceUsdt: '500.00',
-                capacityGhs: '740.0',
-                dailyYieldEstimateUsdt: '22.00',
-                displayOrder: 4,
-                icon: '💠',
-                status: 'ACTIVE',
-                outputs: [
-                  { id: 'out_4a', assetCode: 'USDT', baseYieldRate: '0.0002546', multiplier: '1.0', status: 'ACTIVE' },
-                  { id: 'out_4b', assetCode: 'TON', baseYieldRate: '0.05', multiplier: '1.2', status: 'ACTIVE' },
-                ],
-                _count: { userFleet: quantumCount },
-              },
-            ],
+            data: catalogWithCounts,
           }));
           return;
         }
@@ -975,36 +1171,257 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
-        // 5. Mobile Money Config & Merchants
+        // 5. Mobile Money Config & Merchants — FULL CRUD (Persistent)
         if (url.includes('/admin/config/mobile-money') || url.includes('/admin/merchant-settlements/merchants')) {
+          // DELETE: Remove merchant
+          if (req.method === 'DELETE') {
+            const parts = url.split('/');
+            const merchantId = parts[parts.indexOf('merchants') + 1]?.split('?')[0];
+            const merchants = loadMerchantsFromDisk();
+            const filtered = merchants.filter((m: any) => m.id !== merchantId);
+            saveMerchantsToDisk(filtered);
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({ success: true, message: 'Merchant removed' }));
+            return;
+          }
+
+          // POST: Toggle merchant status
+          if (url.includes('/status') && req.method === 'POST') {
+            let bodyStr = '';
+            req.on('data', chunk => { bodyStr += chunk; });
+            req.on('end', () => {
+              try {
+                const body = JSON.parse(bodyStr || '{}');
+                const parts = url.split('/');
+                const merchantId = parts[parts.indexOf('merchants') + 1]?.split('?')[0];
+                const merchants = loadMerchantsFromDisk();
+                const idx = merchants.findIndex((m: any) => m.id === merchantId);
+                if (idx >= 0) {
+                  merchants[idx].status = body.status || (merchants[idx].status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE');
+                  merchants[idx].updatedAt = new Date().toISOString();
+                  saveMerchantsToDisk(merchants);
+                }
+                res.setHeader('Content-Type', 'application/json');
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true, data: merchants[idx] || null }));
+              } catch (e) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ success: false, message: 'Invalid request' }));
+              }
+            });
+            return;
+          }
+
+          // PUT: Update merchant details
+          if (req.method === 'PUT') {
+            let bodyStr = '';
+            req.on('data', chunk => { bodyStr += chunk; });
+            req.on('end', () => {
+              try {
+                const body = JSON.parse(bodyStr || '{}');
+                const parts = url.split('/');
+                const merchantId = parts[parts.indexOf('merchants') + 1]?.split('?')[0];
+                const merchants = loadMerchantsFromDisk();
+                const idx = merchants.findIndex((m: any) => m.id === merchantId);
+                if (idx >= 0) {
+                  merchants[idx] = {
+                    ...merchants[idx],
+                    ...(body.merchantName ? { merchantName: body.merchantName.trim() } : {}),
+                    ...(body.merchantNumber ? { merchantNumber: body.merchantNumber.trim() } : {}),
+                    ...(body.network ? { network: body.network } : {}),
+                    ...(body.country ? { country: body.country } : {}),
+                    ...(body.currency ? { currency: body.currency } : {}),
+                    ...(body.dailyLimit ? { dailyLimit: Number(body.dailyLimit) } : {}),
+                    ...(body.status ? { status: body.status } : {}),
+                    updatedAt: new Date().toISOString(),
+                  };
+                  saveMerchantsToDisk(merchants);
+                  res.setHeader('Content-Type', 'application/json');
+                  res.statusCode = 200;
+                  res.end(JSON.stringify({ success: true, data: merchants[idx] }));
+                } else {
+                  res.statusCode = 404;
+                  res.end(JSON.stringify({ success: false, message: 'Merchant not found' }));
+                }
+              } catch (e) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ success: false, message: 'Invalid request body' }));
+              }
+            });
+            return;
+          }
+
+          // POST: Create new merchant
+          if (req.method === 'POST') {
+            let bodyStr = '';
+            req.on('data', chunk => { bodyStr += chunk; });
+            req.on('end', () => {
+              try {
+                const body = JSON.parse(bodyStr || '{}');
+                const merchants = loadMerchantsFromDisk();
+                const newMerchant = {
+                  id: `mm_${Date.now().toString(36)}`,
+                  network: (body.network || 'MTN_UGANDA').trim(),
+                  merchantName: (body.merchantName || 'New Merchant').trim(),
+                  merchantNumber: (body.merchantNumber || '000000').trim(),
+                  country: body.country || 'UG',
+                  currency: body.currency || 'UGX',
+                  dailyLimit: body.dailyLimit || 5000000,
+                  status: 'ACTIVE',
+                  createdAt: new Date().toISOString(),
+                };
+                merchants.push(newMerchant);
+                saveMerchantsToDisk(merchants);
+                res.setHeader('Content-Type', 'application/json');
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true, data: newMerchant }));
+              } catch (e) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ success: false, message: 'Invalid request body' }));
+              }
+            });
+            return;
+          }
+
+          // GET: List all merchants from disk
+          const merchants = loadMerchantsFromDisk();
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
-          res.end(JSON.stringify({
-            success: true,
-            data: [
-              {
-                id: 'mm_1',
-                network: 'SAFARICOM_MPESA',
-                merchantName: 'TetherStream Kenya Ops',
-                merchantNumber: '445910',
-                country: 'KE',
-                currency: 'KES',
-                dailyLimit: 500000,
-                status: 'ACTIVE',
-              },
-              {
-                id: 'mm_2',
-                network: 'MTN_UGANDA',
-                merchantName: 'TetherStream Uganda Pay',
-                merchantNumber: '881022',
-                country: 'UG',
-                currency: 'UGX',
-                dailyLimit: 15000000,
-                status: 'ACTIVE',
-              },
-            ],
-          }));
+          res.end(JSON.stringify({ success: true, data: merchants }));
           return;
+        }
+
+        // 5b. Public merchant list for user portal payment flow
+        if (url.includes('/settlement/merchants') || url.includes('/config/merchants/active')) {
+          const merchants = loadMerchantsFromDisk();
+          const active = merchants.filter((m: any) => m.status === 'ACTIVE');
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({ success: true, data: active }));
+          return;
+        }
+
+        // 5c. User Portal Dynamic Settlement Session (Uses Admin Merchants)
+        if (url.includes('/settlement/session')) {
+          // POST /settlement/session/:id/submit-reference
+          if (url.includes('/submit-reference') && req.method === 'POST') {
+            let bodyStr = '';
+            req.on('data', chunk => { bodyStr += chunk; });
+            req.on('end', () => {
+              try {
+                const body = JSON.parse(bodyStr || '{}');
+                res.setHeader('Content-Type', 'application/json');
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true, data: { status: 'VERIFYING', reference: body.reference } }));
+              } catch (_) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ success: false, message: 'Invalid request' }));
+              }
+            });
+            return;
+          }
+
+          // GET /settlement/session/:id
+          if (req.method === 'GET') {
+            const parts = url.split('/');
+            const sId = parts[parts.indexOf('session') + 1]?.split('?')[0];
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              success: true,
+              data: {
+                settlementId: sId || `set_${Date.now()}`,
+                status: 'WAITING_FOR_PAYMENT',
+              },
+            }));
+            return;
+          }
+
+          // POST /settlement/session -> Create session with live active merchant
+          if (req.method === 'POST') {
+            let bodyStr = '';
+            req.on('data', chunk => { bodyStr += chunk; });
+            req.on('end', () => {
+              try {
+                const body = JSON.parse(bodyStr || '{}');
+                const reqNetwork = (body.mobileMoneyNetwork || 'MTN').toUpperCase();
+                const country = (body.country || 'UG').toUpperCase();
+                const usdtAmt = Number(body.requestedAmount || body.expectedCryptoAmount || 10);
+                const rate = country === 'KE' ? 129.5 : 3774.62;
+                const localCurrency = country === 'KE' ? 'KES' : 'UGX';
+                const localAmt = Math.round(usdtAmt * rate);
+
+                // Match against live merchants stored by admin
+                const merchants = loadMerchantsFromDisk();
+                const activeMerchants = merchants.filter((m: any) => m.status === 'ACTIVE');
+                
+                let selectedMerchant = activeMerchants.find((m: any) => {
+                  const mNet = (m.network || '').toUpperCase();
+                  if (reqNetwork.includes('AIRTEL')) return mNet.includes('AIRTEL');
+                  if (reqNetwork.includes('MTN')) return mNet.includes('MTN');
+                  if (reqNetwork.includes('MPESA') || reqNetwork.includes('SAFARICOM')) return mNet.includes('MPESA') || mNet.includes('SAFARICOM');
+                  return false;
+                });
+
+                if (!selectedMerchant) {
+                  selectedMerchant = activeMerchants[0] || {
+                    id: 'mm_default',
+                    network: reqNetwork,
+                    merchantName: `TitanStream Escrow ${reqNetwork}`,
+                    merchantNumber: reqNetwork.includes('AIRTEL') ? '7183443' : '234654',
+                  };
+                }
+
+                const settlementId = `stl_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+                const refCode = `MM-${Date.now().toString(36).substring(2, 8).toUpperCase()}`;
+                const mNum = selectedMerchant.merchantNumber;
+                
+                let ussdCode = `*165*1*1*${mNum}*${localAmt}#`;
+                if (reqNetwork.includes('AIRTEL')) {
+                  ussdCode = `*185*9*${mNum}*${localAmt}#`;
+                } else if (reqNetwork.includes('MPESA') || reqNetwork.includes('SAFARICOM')) {
+                  ussdCode = `*334*1*${mNum}*${refCode}*${localAmt}#`;
+                }
+
+                res.setHeader('Content-Type', 'application/json');
+                res.statusCode = 200;
+                res.end(JSON.stringify({
+                  success: true,
+                  data: {
+                    settlementId,
+                    referenceCode: refCode,
+                    status: 'WAITING_FOR_PAYMENT',
+                    network: reqNetwork,
+                    merchantId: selectedMerchant.id,
+                    merchantName: selectedMerchant.merchantName,
+                    merchantNumber: mNum,
+                    requestedAmount: localAmt.toString(),
+                    expectedCryptoAmount: usdtAmt.toString(),
+                    exchangeRate: rate.toString(),
+                    asset: 'USDT',
+                    paymentCurrency: localCurrency,
+                    paymentAmount: localAmt.toString(),
+                    submittedReference: null,
+                    expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+                    createdAt: new Date().toISOString(),
+                    instructions: {
+                      title: `Pay with ${selectedMerchant.merchantName}`,
+                      network: reqNetwork,
+                      merchantName: selectedMerchant.merchantName,
+                      merchantNumber: mNum,
+                      amountUgx: localAmt.toString(),
+                      ussdCode,
+                    },
+                  },
+                }));
+              } catch (e) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ success: false, message: 'Failed to create settlement session' }));
+              }
+            });
+            return;
+          }
         }
 
         // 6. Admin Management

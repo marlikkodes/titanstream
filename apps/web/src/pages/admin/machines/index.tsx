@@ -22,6 +22,7 @@ import {
   Clock,
   Calendar,
   Tag,
+  Edit3,
 } from 'lucide-react';
 
 export interface MachineCatalogItemRecord {
@@ -89,7 +90,7 @@ const DEFAULT_MACHINES: MachineCatalogItemRecord[] = MACHINE_CATALOG.map((m, idx
       ? [{ id: `out_${m.id}_ton`, assetCode: 'TON', baseYieldRate: '0.05', multiplier: '1.2', status: 'ACTIVE' }]
       : []),
   ],
-  _count: { userFleet: idx === 0 ? 120 : (6 - idx) * 14 },
+  _count: { userFleet: 0 },
 }));
 
 const DEFAULT_PROFILES: EconomyProfileRecord[] = [
@@ -132,6 +133,14 @@ export const MachineControlCenterPage: React.FC = () => {
   // Machine Catalog State
   const [machines, setMachines] = useState<MachineCatalogItemRecord[]>(DEFAULT_MACHINES);
 
+  // Real Ownership Statistics (live from backend / user DB)
+  const [ownershipStats, setOwnershipStats] = useState<{
+    totalOwnedMachines: number;
+    activeComputingFleet: number;
+    totalNetworkHashrateGhs: number;
+    tierCounts: Record<string, number>;
+  }>({ totalOwnedMachines: 0, activeComputingFleet: 0, totalNetworkHashrateGhs: 0, tierCounts: {} });
+
   // Asset Licenses State
   const [licenses, setLicenses] = useState<UserAssetLicenseRecord[]>([]);
 
@@ -156,6 +165,10 @@ export const MachineControlCenterPage: React.FC = () => {
   const [dailyYield, setDailyYield] = useState('');
   const [submittingMachine, setSubmittingMachine] = useState(false);
 
+  // Edit Machine Modal State
+  const [editingMachine, setEditingMachine] = useState<MachineCatalogItemRecord | null>(null);
+  const [submittingEdit, setSubmittingEdit] = useState(false);
+
   // Grant License Modal State
   const [showGrantLicenseModal, setShowGrantLicenseModal] = useState(false);
   const [grantUserId, setGrantUserId] = useState('');
@@ -164,13 +177,38 @@ export const MachineControlCenterPage: React.FC = () => {
   const [grantReason, setGrantReason] = useState('');
   const [submittingGrant, setSubmittingGrant] = useState(false);
 
-  // Fetch Machine Catalog
+  // Fetch Machine Catalog + Real Ownership Stats
   const fetchMachines = useCallback(() => {
     setLoading(true);
-    api.get('/admin/machines-hq/catalog')
-      .then((res) => setMachines(extractArray(res.data, DEFAULT_MACHINES)))
-      .catch(() => setMachines(DEFAULT_MACHINES))
-      .finally(() => setLoading(false));
+
+    // Fetch catalog and real stats in parallel
+    Promise.all([
+      api.get('/admin/machines-hq/catalog').catch(() => null),
+      api.get('/admin/machines-hq/stats').catch(() => null),
+    ]).then(([catalogRes, statsRes]) => {
+      // Process catalog
+      const catalogData = extractArray(catalogRes?.data, DEFAULT_MACHINES);
+
+      // Process real ownership stats
+      const statsData = statsRes?.data?.data || statsRes?.data || {};
+      const tierCounts: Record<string, number> = statsData.tierCounts || {};
+
+      setOwnershipStats({
+        totalOwnedMachines: statsData.totalOwnedMachines || 0,
+        activeComputingFleet: statsData.activeComputingFleet || 0,
+        totalNetworkHashrateGhs: statsData.totalNetworkHashrateGhs || 0,
+        tierCounts,
+      });
+
+      // Merge real ownership counts into catalog items
+      const mergedCatalog = catalogData.map((m: MachineCatalogItemRecord) => ({
+        ...m,
+        _count: { userFleet: tierCounts[m.tierCode] || m._count?.userFleet || 0 },
+      }));
+      setMachines(mergedCatalog);
+    }).catch(() => {
+      setMachines(DEFAULT_MACHINES);
+    }).finally(() => setLoading(false));
   }, []);
 
   // Fetch Asset Licenses
@@ -230,6 +268,34 @@ export const MachineControlCenterPage: React.FC = () => {
       })
       .catch((err) => showToast(err.response?.data?.message || 'Failed to create machine', 'error'))
       .finally(() => setSubmittingMachine(false));
+  };
+
+  // Submit Edit Machine
+  const handleSaveEditMachine = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMachine) return;
+    if (!editingMachine.name.trim() || !editingMachine.priceUsdt) {
+      showToast('Machine Name and Price are mandatory', 'error');
+      return;
+    }
+
+    setSubmittingEdit(true);
+    api.put(`/admin/machines-hq/catalog/${editingMachine.id}`, {
+      name: editingMachine.name.trim(),
+      description: (editingMachine.description || '').trim(),
+      category: editingMachine.category,
+      priceUsdt: parseFloat(editingMachine.priceUsdt),
+      capacityGhs: parseFloat(editingMachine.capacityGhs) || 1.0,
+      dailyYieldEstimateUsdt: parseFloat(editingMachine.dailyYieldEstimateUsdt) || 0.5,
+      status: editingMachine.status,
+    })
+      .then(() => {
+        showToast(`Machine specifications for "${editingMachine.name}" updated successfully.`, 'success');
+        setEditingMachine(null);
+        fetchMachines();
+      })
+      .catch((err) => showToast(err.response?.data?.message || 'Failed to update machine specifications', 'error'))
+      .finally(() => setSubmittingEdit(false));
   };
 
   // Submit Grant License
@@ -326,32 +392,32 @@ export const MachineControlCenterPage: React.FC = () => {
       {/* Top Metrics Cards */}
       <MetricCardGrid columns={4}>
         <MetricCard
-          label="Database Machines"
-          value={String(machines.length)}
+          label="Total Owned Machines"
+          value={String(ownershipStats.totalOwnedMachines)}
           change={0}
           icon="Cpu"
           variant="green"
         />
         <MetricCard
-          label="Active Asset Licenses"
-          value={String(licenses.filter((l) => l.status === 'ACTIVE').length)}
-          change={0}
-          icon="Key"
-          variant="default"
-        />
-        <MetricCard
-          label="Economy Profiles"
-          value={String(profiles.length)}
-          change={0}
-          icon="Sliders"
-          variant="gold"
-        />
-        <MetricCard
-          label="Active Profile Code"
-          value={profiles.find((p) => p.isActive)?.code || 'DEFAULT'}
+          label="Active Computing Fleet"
+          value={String(ownershipStats.activeComputingFleet)}
           change={0}
           icon="Zap"
           variant="green"
+        />
+        <MetricCard
+          label="Network Hashrate"
+          value={`${ownershipStats.totalNetworkHashrateGhs.toFixed(1)} GH/s`}
+          change={0}
+          icon="TrendingUp"
+          variant="gold"
+        />
+        <MetricCard
+          label="Catalog Tiers"
+          value={String(machines.length)}
+          change={0}
+          icon="Sliders"
+          variant="default"
         />
       </MetricCardGrid>
 
@@ -387,13 +453,22 @@ export const MachineControlCenterPage: React.FC = () => {
       {activeTab === 'CATALOG' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {machines.map((m) => (
-            <div key={m.id} className="p-5 rounded-xl bg-card-bg border border-white/10 space-y-4 shadow-lg flex flex-col justify-between">
+            <div key={m.id} className="p-5 rounded-xl bg-card-bg border border-white/10 space-y-4 shadow-lg flex flex-col justify-between hover:border-white/20 transition-colors">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs font-bold text-usdt-green">{m.tierCode}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-usdt-green/10 text-usdt-green border border-usdt-green/30 uppercase">
-                    {m.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-usdt-green/10 text-usdt-green border border-usdt-green/30 uppercase">
+                      {m.status}
+                    </span>
+                    <button
+                      onClick={() => setEditingMachine({ ...m })}
+                      className="p-1 rounded-md bg-control-bg hover:bg-usdt-green/20 border border-white/10 text-text-secondary hover:text-usdt-green transition-colors cursor-pointer"
+                      title="Edit Machine Specifications"
+                    >
+                      <Edit3 size={13} />
+                    </button>
+                  </div>
                 </div>
                 <h4 className="font-extrabold text-text-primary text-base">{m.name}</h4>
                 <p className="text-xs text-text-tertiary">{m.description || 'No description'}</p>
@@ -417,9 +492,14 @@ export const MachineControlCenterPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="text-[11px] text-text-tertiary border-t border-white/5 pt-2 flex justify-between">
-                <span>Fleet Owned: <strong>{m._count?.userFleet || 0}</strong></span>
-                <span>ID: {m.id.substring(0, 8)}...</span>
+              <div className="text-[11px] text-text-tertiary border-t border-white/5 pt-2 flex items-center justify-between">
+                <span>Fleet Owned: <strong className="text-text-primary font-mono">{m._count?.userFleet || 0}</strong></span>
+                <button
+                  onClick={() => setEditingMachine({ ...m })}
+                  className="text-[11px] font-bold text-usdt-green hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Edit3 size={12} /> Edit Specs
+                </button>
               </div>
             </div>
           ))}
@@ -677,6 +757,136 @@ export const MachineControlCenterPage: React.FC = () => {
                   className="flex-1 py-2.5 rounded-xl bg-usdt-green text-app-bg text-xs font-black uppercase tracking-wider"
                 >
                   {submittingMachine ? 'Creating...' : 'Create Machine'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT MACHINE MODAL */}
+      {editingMachine && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-app-bg-secondary border border-usdt-green/40 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-extrabold text-text-primary uppercase tracking-wider flex items-center gap-2">
+                <Edit3 size={18} className="text-usdt-green" /> Edit Machine Specs ({editingMachine.tierCode})
+              </h3>
+              <button onClick={() => setEditingMachine(null)} className="text-text-tertiary hover:text-text-primary cursor-pointer">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveEditMachine} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Tier Code</label>
+                  <input
+                    type="text"
+                    value={editingMachine.tierCode}
+                    disabled
+                    className="w-full bg-control-bg text-text-tertiary font-mono text-xs rounded-xl p-3 border border-white/5 opacity-70 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Machine Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Ripple X14"
+                    value={editingMachine.name}
+                    onChange={(e) => setEditingMachine({ ...editingMachine, name: e.target.value })}
+                    className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10 focus:border-usdt-green"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Category / Tier Label</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Tier 1 Machine"
+                  value={editingMachine.category}
+                  onChange={(e) => setEditingMachine({ ...editingMachine, category: e.target.value })}
+                  className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10 focus:border-usdt-green"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Description</label>
+                <textarea
+                  placeholder="Machine technical description..."
+                  value={editingMachine.description}
+                  onChange={(e) => setEditingMachine({ ...editingMachine, description: e.target.value })}
+                  className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10 focus:border-usdt-green"
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Price (USDT)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="10.99"
+                    value={editingMachine.priceUsdt}
+                    onChange={(e) => setEditingMachine({ ...editingMachine, priceUsdt: e.target.value })}
+                    className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10 focus:border-usdt-green"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Capacity (GH/s)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="5.0"
+                    value={editingMachine.capacityGhs}
+                    onChange={(e) => setEditingMachine({ ...editingMachine, capacityGhs: e.target.value })}
+                    className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10 focus:border-usdt-green"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Est. Daily Yield ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.27"
+                    value={editingMachine.dailyYieldEstimateUsdt}
+                    onChange={(e) => setEditingMachine({ ...editingMachine, dailyYieldEstimateUsdt: e.target.value })}
+                    className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10 focus:border-usdt-green"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-text-tertiary block mb-1">Status</label>
+                <select
+                  value={editingMachine.status}
+                  onChange={(e) => setEditingMachine({ ...editingMachine, status: e.target.value })}
+                  className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10 focus:border-usdt-green"
+                >
+                  <option value="ACTIVE">ACTIVE (Available for Purchase & Computing)</option>
+                  <option value="AVAILABLE">AVAILABLE</option>
+                  <option value="PAUSED">PAUSED (Temporarily Maintenance)</option>
+                  <option value="COMING_SOON">COMING_SOON</option>
+                  <option value="ARCHIVED">ARCHIVED</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingMachine(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-control-bg border border-white/10 text-xs font-bold text-text-secondary cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingEdit}
+                  className="flex-1 py-2.5 rounded-xl bg-usdt-green text-app-bg text-xs font-black uppercase tracking-wider cursor-pointer hover:brightness-110 disabled:opacity-50"
+                >
+                  {submittingEdit ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

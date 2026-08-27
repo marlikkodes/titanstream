@@ -19,13 +19,15 @@ export class UniversalSettlementController {
   }
 
   @Post('session')
-  create(@CanonicalUserId() userId: string, @Body() dto: CreateSettlementSessionDto) {
-    return this.registry.routeCreate(userId, dto);
+  async create(@CanonicalUserId() userId: string, @Body() dto: CreateSettlementSessionDto) {
+    const result = await this.registry.routeCreate(userId, dto);
+    return { success: true, data: result, ...result };
   }
 
   @Get(['session/:id', 'session/:settlementId'])
-  get(@CanonicalUserId() userId: string, @Param('id') id: string, @Param('settlementId') settlementId: string) {
-    return this.registry.getSession(userId, id || settlementId);
+  async get(@CanonicalUserId() userId: string, @Param('id') id: string, @Param('settlementId') settlementId: string) {
+    const result = await this.registry.getSession(userId, id || settlementId);
+    return { success: true, data: result, ...result };
   }
 
   @Post('session/:settlementId/submit-reference')

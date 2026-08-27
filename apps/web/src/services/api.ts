@@ -27,9 +27,14 @@ api.interceptors.request.use((config) => {
   if (initData) {
     config.headers['X-Telegram-Init-Data'] = initData;
   }
-  const token = localStorage.getItem('auth_token');
+  const session = useAuthStore.getState().session;
+  const token = localStorage.getItem('auth_token') || session?.accessToken;
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  const userId = session?.user?.id || session?.user?.identityId || (session?.user?.telegramUserId ? String(session.user.telegramUserId) : null);
+  if (userId) {
+    config.headers['X-User-Id'] = userId;
   }
   const adminToken = localStorage.getItem('admin_auth_token') || 'adm_sess_super_admin_5387655307';
   if (String(config.url || '').includes('/admin/')) {
