@@ -493,9 +493,9 @@ export class WhatsappChallengeService {
     }
 
     const userPayload = {
-      id: cleanDigits,
-      identityId: identityContext.universalIdentityId || canonicalTitanId,
-      telegramUserId: identityContext.telegramUserId ? Number(identityContext.telegramUserId) : undefined,
+      id: identityContext?.userId || cleanDigits,
+      identityId: identityContext?.universalIdentityId || canonicalTitanId,
+      telegramUserId: identityContext?.telegramUserId ? Number(identityContext.telegramUserId) : undefined,
       firstName,
       lastName,
       state: UserState.READY,
@@ -550,6 +550,8 @@ export class WhatsappChallengeService {
         (u.phoneNumber && u.phoneNumber.replace(/\D/g, '') === cleanDigits)
       );
 
+      const isNewUser = existingIdx < 0;
+
       if (existingIdx >= 0) {
         // UPDATE EXISTING USER - GUARANTEE UNIQUE ACCOUNT PER NUMBER
         const existingName = adminUsers[existingIdx].name;
@@ -601,38 +603,55 @@ export class WhatsappChallengeService {
       }
 
       writeFileSync(adminUsersPath, JSON.stringify(adminUsers, null, 2), 'utf-8');
+
+      // Send Instant WhatsApp Sign-In / Sign-Up Success Confirmation Message over Baileys
+      try {
+        const phoneClean = canonicalPhone.replace(/\D/g, '');
+        const primaryTarget = `${phoneClean}@s.whatsapp.net`;
+        const confirmText = isNewUser
+          ? (
+              `⚡ *TITAN STREAM* — *Welcome to Titan Stream!*\n\n` +
+              `🎉 *Signup Approved & Account Created*\n` +
+              `• Status: *Active & Verified*\n` +
+              `• Phone: *${canonicalPhone}*\n` +
+              `• Titan ID: *${canonicalTitanId}*\n` +
+              `• Welcome Bonus: *+50 Energy Crystals Credited*\n\n` +
+              `🌐 *Browser Authenticated*: Your browser window is now unlocked and ready to stream!\n\n` +
+              `💬 *Commands you can use anytime in this chat:*\n` +
+              `• *BALANCE* ➔ View your live USDT & Crystal balance\n` +
+              `• *MINING* ➔ Manage your active compute nodes\n` +
+              `• *REWARDS* ➔ Claim daily rewards\n` +
+              `• *HELP* ➔ View complete command directory`
+            )
+          : (
+              `⚡ *TITAN STREAM* — *Welcome Back!*\n\n` +
+              `✅ *Login Approved*\n` +
+              `• Status: *Active & Online*\n` +
+              `• Phone: *${canonicalPhone}*\n` +
+              `• Titan ID: *${canonicalTitanId}*\n` +
+              `• Security: *Browser Session Authorized*\n\n` +
+              `🌐 *Browser Authenticated*: Head back to your browser screen to continue using Titan Stream!\n\n` +
+              `💬 *Commands you can use anytime in this chat:*\n` +
+              `• *BALANCE* ➔ Check your live USDT & Crystal balance\n` +
+              `• *MINING* ➔ Compute nodes status & yield\n` +
+              `• *REWARDS* ➔ Claim daily rewards\n` +
+              `• *HELP* ➔ View command directory`
+            );
+
+        await this.baileysService.sendTextMessage(primaryTarget, confirmText, 'CRITICAL');
+        this.logger.log(`[WA_CONFIRMATION_SENT] ${isNewUser ? 'Signup' : 'Login'} approval confirmation sent to ${primaryTarget}`);
+
+        if (metadata?.rawJid && metadata.rawJid !== primaryTarget) {
+          await this.baileysService.sendTextMessage(metadata.rawJid, confirmText, 'CRITICAL').catch(() => null);
+        }
+      } catch (msgErr: any) {
+        this.logger.error(`[WA_CONFIRMATION_FAILED] Failed to send confirmation to ${canonicalPhone}: ${msgErr.message}`);
+      }
     } catch (adminErr: any) {
       this.logger.warn(`[WA_ADMIN_SYNC_WARN] Failed to sync to admin users db: ${adminErr.message}`);
     }
 
     this.logger.log(`[WA_CHALLENGE_APPROVED] challengeId=${challenge.challengeId} phone=${canonicalPhone} titanId=${canonicalTitanId}`);
-
-    // Send Instant WhatsApp Sign-In Success Confirmation Message over Baileys
-    try {
-      const phoneClean = canonicalPhone.replace(/\D/g, '');
-      const primaryTarget = `${phoneClean}@s.whatsapp.net`;
-      const confirmText = (
-        `⚡ *TITAN STREAM* — *You're Signed In!*\n\n` +
-        `✅ *Login Approved*\n` +
-        `• Code: *${challenge.shortPin}*\n` +
-        `• Phone: *${canonicalPhone}*\n` +
-        `• Titan ID: *${canonicalTitanId}*\n` +
-        `• Status: *Active & Ready*\n\n` +
-        `🌐 Head back to your browser screen to start using Titan Stream!\n\n` +
-        `💬 *Try typing these commands:*\n` +
-        `• *BALANCE* ➔ Check your USDT balance\n` +
-        `• *MISSIONS* ➔ See active compute tasks\n` +
-        `• *HELP* ➔ View all commands`
-      );
-      await this.baileysService.sendTextMessage(primaryTarget, confirmText);
-      this.logger.log(`[WA_CONFIRMATION_SENT] Sign-in success confirmation message sent to ${primaryTarget}`);
-
-      if (metadata?.rawJid && metadata.rawJid !== primaryTarget) {
-        await this.baileysService.sendTextMessage(metadata.rawJid, confirmText).catch(() => null);
-      }
-    } catch (msgErr: any) {
-      this.logger.error(`[WA_CONFIRMATION_FAILED] Failed to send confirmation to ${canonicalPhone}: ${msgErr.message}`);
-    }
   }
 
   /**

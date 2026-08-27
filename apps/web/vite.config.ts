@@ -456,9 +456,12 @@ function adminMockMiddleware(): Plugin {
             const allUsers = loadUsersFromDisk();
 
             // Check if user already exists or create new
-            let existingUser = allUsers.find((u: any) => u.phoneNumber === phone || u.id === userId || (u.phoneNumber && u.phoneNumber.replace(/[^0-9]/g, '') === phoneClean));
-            if (!existingUser) {
-              existingUser = {
+            const existingUser = allUsers.find((u: any) => u.phoneNumber === phone || u.id === userId || (u.phoneNumber && u.phoneNumber.replace(/[^0-9]/g, '') === phoneClean));
+            const isNewUser = !existingUser;
+            let activeUser = existingUser;
+
+            if (!activeUser) {
+              activeUser = {
                 id: userId,
                 telegramId: userId,
                 titanId: `titan_wa_${userId}`,
@@ -484,7 +487,7 @@ function adminMockMiddleware(): Plugin {
                 crystalBalance: 50,
                 createdAt: new Date().toISOString(),
               };
-              allUsers.unshift(existingUser);
+              allUsers.unshift(activeUser);
               saveUsersToDisk(allUsers);
             }
 
@@ -496,20 +499,20 @@ function adminMockMiddleware(): Plugin {
                 accessToken: `wa_token_${userId}`,
                 refreshToken: `wa_refresh_${userId}`,
                 user: {
-                  id: existingUser.id,
-                  identityId: existingUser.titanId,
-                  telegramUserId: Number(existingUser.telegramId) || 0,
+                  id: activeUser.id,
+                  identityId: activeUser.titanId,
+                  telegramUserId: Number(activeUser.telegramId) || 0,
                   telegramUsername: null,
-                  firstName: existingUser.name,
+                  firstName: activeUser.name,
                   lastName: null,
                   photoUrl: null,
                   languageCode: 'en',
                   state: 'ACTIVE_USER',
                   isReady: true,
-                  createdAt: existingUser.createdAt,
+                  createdAt: activeUser.createdAt,
                 },
                 onboarding: { currentStep: 'COMPLETED', isCompleted: true },
-                isNewUser: true,
+                isNewUser,
               },
             }));
           });
@@ -540,9 +543,12 @@ function adminMockMiddleware(): Plugin {
                   const cleanDigits = senderPhone.replace(/\D/g, '') || '18257320524';
                   const userId = cleanDigits;
                   const allUsers = loadUsersFromDisk();
-                  let existingUser = allUsers.find((u: any) => u.phoneNumber === senderPhone || u.id === userId);
-                  if (!existingUser) {
-                    existingUser = {
+                  const existingUser = allUsers.find((u: any) => u.phoneNumber === senderPhone || u.id === userId);
+                  const isNewUser = !existingUser;
+                  let activeUser = existingUser;
+
+                  if (!activeUser) {
+                    activeUser = {
                       id: userId,
                       telegramId: userId,
                       titanId: `titan_wa_${userId}`,
@@ -568,7 +574,7 @@ function adminMockMiddleware(): Plugin {
                       crystalBalance: 50,
                       createdAt: new Date().toISOString(),
                     };
-                    allUsers.unshift(existingUser);
+                    allUsers.unshift(activeUser);
                     saveUsersToDisk(allUsers);
                   }
 
@@ -577,20 +583,20 @@ function adminMockMiddleware(): Plugin {
                     accessToken: `wa_token_${userId}`,
                     refreshToken: `wa_refresh_${userId}`,
                     user: {
-                      id: existingUser.id,
-                      identityId: existingUser.titanId,
-                      telegramUserId: Number(existingUser.telegramId) || 0,
+                      id: activeUser.id,
+                      identityId: activeUser.titanId,
+                      telegramUserId: Number(activeUser.telegramId) || 0,
                       telegramUsername: null,
-                      firstName: existingUser.name,
+                      firstName: activeUser.name,
                       lastName: null,
                       photoUrl: null,
                       languageCode: 'en',
                       state: 'ACTIVE_USER',
                       isReady: true,
-                      createdAt: existingUser.createdAt,
+                      createdAt: activeUser.createdAt,
                     },
                     onboarding: { currentStep: 'COMPLETED', isCompleted: true },
-                    isNewUser: true,
+                    isNewUser,
                   };
                   fs.writeFileSync(sharedPath, JSON.stringify(shared, null, 2), 'utf-8');
                 }
@@ -1173,7 +1179,8 @@ function adminMockMiddleware(): Plugin {
           return;
         }
         if (url.includes('/admin/intelligence') || url.includes('/admin/users')) {
-          const allUsers = loadUsersFromDisk();
+          const rawUsers = loadUsersFromDisk();
+          const allUsers = rawUsers.filter((u: any) => !u.name?.includes('@lid') && !u.id?.startsWith('86609') && !u.primaryIdentifier?.includes('@lid'));
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           const activeCount = allUsers.filter((u: any) => u.activityStatus === 'ACTIVE').length;

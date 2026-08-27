@@ -434,7 +434,7 @@ const stateBadge = (state: string) => {
 };
 
 const channelBadge = (channel?: string, name?: string, phone?: string) => {
-  const isWa = channel === 'WHATSAPP' || (name && name.toLowerCase().includes('whatsapp')) || Boolean(phone && phone.length > 5 && !name?.includes('@'));
+  const isWa = channel === 'WHATSAPP' || (channel !== 'TELEGRAM' && channel !== 'WEB' && Boolean(name?.toLowerCase().includes('whatsapp')));
   if (isWa) {
     return (
       <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 w-fit shadow-sm">
@@ -554,7 +554,14 @@ export const UsersPage: React.FC = () => {
     if (typeof window === 'undefined') return [];
     try {
       const raw = localStorage.getItem('titan_registered_users');
-      return raw ? JSON.parse(raw) : [];
+      if (!raw) return [];
+      const parsed: UserSummaryItem[] = JSON.parse(raw);
+      // Clean out any raw LID mock artifacts
+      const cleaned = parsed.filter((u) => !u.name?.includes('@lid') && !u.id?.startsWith('86609') && !u.primaryIdentifier?.includes('@lid'));
+      if (cleaned.length !== parsed.length) {
+        localStorage.setItem('titan_registered_users', JSON.stringify(cleaned));
+      }
+      return cleaned;
     } catch {
       return [];
     }
@@ -637,6 +644,38 @@ export const UsersPage: React.FC = () => {
     showToast(`Operator ${newUser.name} successfully registered in User Intelligence!`, 'success');
   };
 
+  const filterUsersArray = (arr: UserSummaryItem[], q: string, filter: string) => {
+    let filtered = arr.filter((u) => !u.name?.includes('@lid') && !u.id?.startsWith('86609') && !u.primaryIdentifier?.includes('@lid'));
+
+    if (q.trim()) {
+      const cleanQ = q.toLowerCase().trim().replace(/^@/, '');
+      const digitsQ = cleanQ.replace(/[^0-9]/g, '');
+
+      filtered = filtered.filter((u) => {
+        const uPhone = (u.phoneNumber || '').toLowerCase();
+        const uPhoneDigits = uPhone.replace(/[^0-9]/g, '');
+        const uTgDigits = (u.telegramId || '').replace(/[^0-9]/g, '');
+        const digitsMatch = digitsQ.length >= 3 && (uPhoneDigits.includes(digitsQ) || uTgDigits.includes(digitsQ));
+
+        return (
+          u.telegramId.includes(cleanQ) ||
+          u.name.toLowerCase().includes(cleanQ) ||
+          u.username.toLowerCase().includes(cleanQ) ||
+          uPhone.includes(cleanQ) ||
+          digitsMatch
+        );
+      });
+    }
+
+    if (filter === 'ACTIVE') filtered = filtered.filter((u) => u.activityStatus === 'ACTIVE' || u.state === 'ACTIVE_USER');
+    if (filter === 'INACTIVE') filtered = filtered.filter((u) => u.activityStatus === 'INACTIVE');
+    if (filter === 'WHATSAPP') filtered = filtered.filter((u) => u.joinChannel === 'WHATSAPP' || u.username.startsWith('+') || u.name.toLowerCase().includes('whatsapp'));
+    if (filter === 'TELEGRAM') filtered = filtered.filter((u) => u.joinChannel === 'TELEGRAM' || (!u.name.toLowerCase().includes('whatsapp') && !u.username.startsWith('+') && u.joinChannel !== 'WHATSAPP'));
+    if (filter === 'FROZEN') filtered = filtered.filter((u) => u.activityStatus === 'FROZEN' || u.state === 'SUSPENDED_USER' || u.state === 'BANNED_USER');
+
+    return filtered;
+  };
+
   // Fetch paginated users directory
   const fetchUsers = useCallback(() => {
     setLoading(true);
@@ -691,6 +730,9 @@ export const UsersPage: React.FC = () => {
         const payload = raw?.data || raw;
         let itemsList: UserSummaryItem[] = Array.isArray(payload) ? payload : (payload?.items || []);
 
+        // Filter out any stale @lid artifacts
+        itemsList = itemsList.filter((u) => !u.name?.includes('@lid') && !u.id?.startsWith('86609') && !u.primaryIdentifier?.includes('@lid'));
+
         // Merge locally stored users & session users
         storedUsers.forEach((su) => {
           if (!itemsList.some((u) => u.id === su.id || u.telegramId === su.telegramId || (su.phoneNumber && u.phoneNumber === su.phoneNumber))) {
@@ -703,14 +745,16 @@ export const UsersPage: React.FC = () => {
         }
 
         if (itemsList && itemsList.length > 0) {
-          setUsersList(itemsList);
           setUserStore(itemsList);
-          setTotalCount(payload?.pagination?.total ? Math.max(payload.pagination.total, itemsList.length) : itemsList.length);
+          const filtered = filterUsersArray(itemsList, searchQuery, statusFilter);
+          setUsersList(filtered);
+          setTotalCount(filtered.length);
           if (payload?.summary) {
             setSummaryStats({
               ...payload.summary,
-              totalUsers: Math.max(payload.summary.totalUsers, itemsList.length),
+              totalUsers: itemsList.length,
               whatsappUsers: itemsList.filter((u) => u.joinChannel === 'WHATSAPP').length,
+              telegramUsers: itemsList.filter((u) => u.joinChannel === 'TELEGRAM').length,
             });
           }
         } else {
@@ -724,32 +768,7 @@ export const UsersPage: React.FC = () => {
   }, [searchQuery, statusFilter, page, getStoredRegisteredUsers]);
 
   const applyLocalFilter = (q: string, filter: string) => {
-    let filtered = [...userStore];
-    if (q.trim()) {
-      const cleanQ = q.toLowerCase().trim().replace(/^@/, '');
-      const digitsQ = cleanQ.replace(/[^0-9]/g, '');
-
-      filtered = filtered.filter((u) => {
-        const uPhone = (u.phoneNumber || '').toLowerCase();
-        const uPhoneDigits = uPhone.replace(/[^0-9]/g, '');
-        const uTgDigits = (u.telegramId || '').replace(/[^0-9]/g, '');
-        const digitsMatch = digitsQ.length >= 3 && (uPhoneDigits.includes(digitsQ) || uTgDigits.includes(digitsQ));
-
-        return (
-          u.telegramId.includes(cleanQ) ||
-          u.name.toLowerCase().includes(cleanQ) ||
-          u.username.toLowerCase().includes(cleanQ) ||
-          uPhone.includes(cleanQ) ||
-          digitsMatch
-        );
-      });
-    }
-    if (filter === 'ACTIVE') filtered = filtered.filter((u) => u.activityStatus === 'ACTIVE' || u.state === 'ACTIVE_USER');
-    if (filter === 'INACTIVE') filtered = filtered.filter((u) => u.activityStatus === 'INACTIVE');
-    if (filter === 'WHATSAPP') filtered = filtered.filter((u) => u.joinChannel === 'WHATSAPP');
-    if (filter === 'TELEGRAM') filtered = filtered.filter((u) => u.joinChannel === 'TELEGRAM');
-    if (filter === 'FROZEN') filtered = filtered.filter((u) => u.activityStatus === 'FROZEN' || u.state === 'SUSPENDED_USER' || u.state === 'BANNED_USER');
-
+    const filtered = filterUsersArray(userStore, q, filter);
     setUsersList(filtered);
     setTotalCount(filtered.length);
   };

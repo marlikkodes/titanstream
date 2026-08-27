@@ -1,5 +1,34 @@
 [
   {
+    "id": "256770000000",
+    "telegramId": "256770000000",
+    "titanId": "titan_wa_256770000000",
+    "phoneNumber": "+256770000000",
+    "primaryIdentifier": "+256770000000",
+    "joinChannel": "WHATSAPP",
+    "activityStatus": "ACTIVE",
+    "hasSharedDevice": false,
+    "lastActiveIp": "102.218.42.10",
+    "name": "David Mugisha",
+    "username": "+256770000000",
+    "state": "ACTIVE_USER",
+    "totalVolume": 0,
+    "moneyIn": 0,
+    "moneyOut": 0,
+    "totalDeposits": 0,
+    "totalWithdrawals": 0,
+    "netBalance": 0,
+    "riskScore": 10,
+    "flags": [],
+    "wallets": [
+      "fin_acc_256770000000"
+    ],
+    "activeMachinesCount": 0,
+    "crystalBalance": 50,
+    "createdAt": "2026-08-27T09:55:09.960Z",
+    "lastLoginAt": "2026-08-27T09:56:35.009Z"
+  },
+  {
     "id": "256752762181",
     "telegramId": "256752762181",
     "titanId": "titan_wa_256752762181",

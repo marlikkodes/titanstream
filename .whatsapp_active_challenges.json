@@ -3,22 +3,21 @@
     "challengeId": "wa_chal_1787790084949",
     "shortPin": "584188",
     "status": "APPROVED",
-    "phone": "+256752762181",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:21:24.949Z",
     "expiresAt": "2026-08-27T00:31:24.949Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc4MjM1MzAsImV4cCI6MTc4NzgyNDQzMH0.jcieMthILbNY575qUzXz6V6taTsv7rgbvIdfNqnk_Vk",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4NzgyMzUzMCwiZXhwIjoxNzkwNDE1NTMwfQ.XKj7S5BanG8ytbFy6SzIcx6XOekMLBISgnmyueeZV68",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256752762181",
-        "identityId": "titan_wa_256752762181",
-        "telegramUserId": 256752762181,
-        "firstName": "Marlik",
-        "lastName": "Marvin",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-27T09:38:50.345Z"
+        "createdAt": "2026-08-27T09:56:35.008Z"
       }
     }
   },
@@ -27,22 +26,21 @@
     "challengeId": "wa_chal_1787789647809",
     "shortPin": "520394",
     "status": "APPROVED",
-    "phone": "+256752762181",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:14:07.809Z",
     "expiresAt": "2026-08-27T00:24:07.809Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc4MjM1MzAsImV4cCI6MTc4NzgyNDQzMH0.jcieMthILbNY575qUzXz6V6taTsv7rgbvIdfNqnk_Vk",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4NzgyMzUzMCwiZXhwIjoxNzkwNDE1NTMwfQ.XKj7S5BanG8ytbFy6SzIcx6XOekMLBISgnmyueeZV68",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256752762181",
-        "identityId": "titan_wa_256752762181",
-        "telegramUserId": 256752762181,
-        "firstName": "Marlik",
-        "lastName": "Marvin",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-27T09:38:50.345Z"
+        "createdAt": "2026-08-27T09:56:35.008Z"
       }
     }
   },
@@ -51,22 +49,21 @@
     "challengeId": "wa_chal_1787791077195",
     "shortPin": "436605",
     "status": "APPROVED",
-    "phone": "+256752762181",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:37:57.195Z",
     "expiresAt": "2026-08-27T00:47:57.195Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc4MjM1MzAsImV4cCI6MTc4NzgyNDQzMH0.jcieMthILbNY575qUzXz6V6taTsv7rgbvIdfNqnk_Vk",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4NzgyMzUzMCwiZXhwIjoxNzkwNDE1NTMwfQ.XKj7S5BanG8ytbFy6SzIcx6XOekMLBISgnmyueeZV68",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256752762181",
-        "identityId": "titan_wa_256752762181",
-        "telegramUserId": 256752762181,
-        "firstName": "Marlik",
-        "lastName": "Marvin",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-27T09:38:50.345Z"
+        "createdAt": "2026-08-27T09:56:35.008Z"
       }
     }
   },
@@ -78,19 +75,18 @@
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:45:24.691Z",
     "expiresAt": "2026-08-27T00:55:24.691Z",
-    "phone": "+256752762181",
+    "phone": "+256770000000",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc4MjM1MzAsImV4cCI6MTc4NzgyNDQzMH0.jcieMthILbNY575qUzXz6V6taTsv7rgbvIdfNqnk_Vk",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4NzgyMzUzMCwiZXhwIjoxNzkwNDE1NTMwfQ.XKj7S5BanG8ytbFy6SzIcx6XOekMLBISgnmyueeZV68",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256752762181",
-        "identityId": "titan_wa_256752762181",
-        "telegramUserId": 256752762181,
-        "firstName": "Marlik",
-        "lastName": "Marvin",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-27T09:38:50.345Z"
+        "createdAt": "2026-08-27T09:56:35.008Z"
       }
     }
   },
@@ -102,19 +98,18 @@
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:51:05.322Z",
     "expiresAt": "2026-08-27T01:01:05.322Z",
-    "phone": "+256752762181",
+    "phone": "+256770000000",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc4MjM1MzAsImV4cCI6MTc4NzgyNDQzMH0.jcieMthILbNY575qUzXz6V6taTsv7rgbvIdfNqnk_Vk",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4NzgyMzUzMCwiZXhwIjoxNzkwNDE1NTMwfQ.XKj7S5BanG8ytbFy6SzIcx6XOekMLBISgnmyueeZV68",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256752762181",
-        "identityId": "titan_wa_256752762181",
-        "telegramUserId": 256752762181,
-        "firstName": "Marlik",
-        "lastName": "Marvin",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-27T09:38:50.345Z"
+        "createdAt": "2026-08-27T09:56:35.008Z"
       }
     }
   },
@@ -123,22 +118,21 @@
     "challengeId": "wa_chal_1787791876115",
     "shortPin": "472305",
     "status": "APPROVED",
-    "phone": "+256752762181",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:51:16.116Z",
     "expiresAt": "2026-08-27T01:01:16.116Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc4MjM1MzAsImV4cCI6MTc4NzgyNDQzMH0.jcieMthILbNY575qUzXz6V6taTsv7rgbvIdfNqnk_Vk",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4NzgyMzUzMCwiZXhwIjoxNzkwNDE1NTMwfQ.XKj7S5BanG8ytbFy6SzIcx6XOekMLBISgnmyueeZV68",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256752762181",
-        "identityId": "titan_wa_256752762181",
-        "telegramUserId": 256752762181,
-        "firstName": "Marlik",
-        "lastName": "Marvin",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-27T09:38:50.345Z"
+        "createdAt": "2026-08-27T09:56:35.008Z"
       }
     }
   },
@@ -147,22 +141,21 @@
     "challengeId": "wa_chal_1787792408723",
     "shortPin": "353179",
     "status": "APPROVED",
-    "phone": "+256752762181",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T01:00:08.723Z",
     "expiresAt": "2026-08-27T01:10:08.723Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc4MjM1MzAsImV4cCI6MTc4NzgyNDQzMH0.jcieMthILbNY575qUzXz6V6taTsv7rgbvIdfNqnk_Vk",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4NzgyMzUzMCwiZXhwIjoxNzkwNDE1NTMwfQ.XKj7S5BanG8ytbFy6SzIcx6XOekMLBISgnmyueeZV68",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256752762181",
-        "identityId": "titan_wa_256752762181",
-        "telegramUserId": 256752762181,
-        "firstName": "Marlik",
-        "lastName": "Marvin",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-27T09:38:50.345Z"
+        "createdAt": "2026-08-27T09:56:35.008Z"
       }
     }
   },
@@ -171,22 +164,21 @@
     "challengeId": "wa_chal_1787793884760",
     "shortPin": "791800",
     "status": "APPROVED",
-    "phone": "+256752762181",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T01:24:44.760Z",
     "expiresAt": "2026-08-27T01:34:44.760Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc4MjM1MzAsImV4cCI6MTc4NzgyNDQzMH0.jcieMthILbNY575qUzXz6V6taTsv7rgbvIdfNqnk_Vk",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4NzgyMzUzMCwiZXhwIjoxNzkwNDE1NTMwfQ.XKj7S5BanG8ytbFy6SzIcx6XOekMLBISgnmyueeZV68",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256752762181",
-        "identityId": "titan_wa_256752762181",
-        "telegramUserId": 256752762181,
-        "firstName": "Marlik",
-        "lastName": "Marvin",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-27T09:38:50.345Z"
+        "createdAt": "2026-08-27T09:56:35.008Z"
       }
     }
   },
@@ -198,19 +190,18 @@
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T05:31:34.943Z",
     "expiresAt": "2026-08-27T05:41:34.941Z",
-    "phone": "+256752762181",
+    "phone": "+256770000000",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc4MjM1MzAsImV4cCI6MTc4NzgyNDQzMH0.jcieMthILbNY575qUzXz6V6taTsv7rgbvIdfNqnk_Vk",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4NzgyMzUzMCwiZXhwIjoxNzkwNDE1NTMwfQ.XKj7S5BanG8ytbFy6SzIcx6XOekMLBISgnmyueeZV68",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256752762181",
-        "identityId": "titan_wa_256752762181",
-        "telegramUserId": 256752762181,
-        "firstName": "Marlik",
-        "lastName": "Marvin",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-27T09:38:50.345Z"
+        "createdAt": "2026-08-27T09:56:35.008Z"
       }
     }
   },
@@ -219,24 +210,149 @@
     "challengeId": "wa_chal_1787808740240",
     "shortPin": "985707",
     "status": "APPROVED",
-    "phone": "+256752762181",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T05:32:20.241Z",
     "expiresAt": "2026-08-27T05:44:22.937Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ0aXRhblVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInVzZXJJZCI6IjI1Njc1Mjc2MjE4MSIsInRlbGVncmFtVXNlcklkIjoyNTY3NTI3NjIxODEsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODc4MjM1MzAsImV4cCI6MTc4NzgyNDQzMH0.jcieMthILbNY575qUzXz6V6taTsv7rgbvIdfNqnk_Vk",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTI3NjIxODEiLCJ1c2VySWQiOiIyNTY3NTI3NjIxODEiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzUyNzYyMTgxLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4NzgyMzUzMCwiZXhwIjoxNzkwNDE1NTMwfQ.XKj7S5BanG8ytbFy6SzIcx6XOekMLBISgnmyueeZV68",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256752762181",
-        "identityId": "titan_wa_256752762181",
-        "telegramUserId": 256752762181,
-        "firstName": "Marlik",
-        "lastName": "Marvin",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-27T09:38:50.345Z"
+        "createdAt": "2026-08-27T09:56:35.008Z"
       }
     }
   },
-  "pin_985707": "wa_chal_1787808740240"
+  "pin_985707": "wa_chal_1787808740240",
+  "wa_chal_1787823899600": {
+    "challengeId": "wa_chal_1787823899600",
+    "shortPin": "509904",
+    "status": "APPROVED",
+    "deviceInfo": "Browser Session",
+    "createdAt": "2026-08-27T09:44:59.601Z",
+    "expiresAt": "2026-08-27T09:54:59.600Z",
+    "phone": "+256770000000",
+    "sessionTokens": {
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
+      "user": {
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-27T09:56:35.008Z"
+      }
+    }
+  },
+  "pin_509904": "wa_chal_1787823899600",
+  "wa_ch_mtbcjwlo_8d90564e2c90": {
+    "challengeId": "wa_ch_mtbcjwlo_8d90564e2c90",
+    "shortPin": "897440",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Chrome 120 Linux",
+    "createdAt": "2026-08-27T09:55:09.901Z",
+    "expiresAt": "2026-08-27T10:05:09.901Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_897440": "wa_ch_mtbcjwlo_8d90564e2c90",
+  "wa_ch_mtbcjwo0_ea5e2581056b": {
+    "challengeId": "wa_ch_mtbcjwo0_ea5e2581056b",
+    "shortPin": "587141",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Mobile Chrome",
+    "createdAt": "2026-08-27T09:55:09.984Z",
+    "expiresAt": "2026-08-27T10:05:09.984Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_587141": "wa_ch_mtbcjwo0_ea5e2581056b",
+  "wa_ch_mtbcjy2z_de3854737635": {
+    "challengeId": "wa_ch_mtbcjy2z_de3854737635",
+    "shortPin": "771404",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Desktop Chrome 120",
+    "createdAt": "2026-08-27T09:55:11.820Z",
+    "expiresAt": "2026-08-27T10:05:11.820Z",
+    "sessionTokens": {
+      "accessToken": "at_test_256770000000",
+      "refreshToken": "rt_test_256770000000",
+      "user": {
+        "id": "256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-27T09:55:11.841Z"
+      }
+    }
+  },
+  "pin_771404": "wa_ch_mtbcjy2z_de3854737635",
+  "wa_ch_mtbclq9g_cfbfec10c336": {
+    "challengeId": "wa_ch_mtbclq9g_cfbfec10c336",
+    "shortPin": "144814",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Desktop Chrome 120",
+    "createdAt": "2026-08-27T09:56:34.997Z",
+    "expiresAt": "2026-08-27T10:06:34.997Z",
+    "sessionTokens": {
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
+      "user": {
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-27T09:56:35.003Z"
+      }
+    }
+  },
+  "pin_144814": "wa_ch_mtbclq9g_cfbfec10c336",
+  "wa_ch_mtbclq9r_162d965482a9": {
+    "challengeId": "wa_ch_mtbclq9r_162d965482a9",
+    "shortPin": "462328",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Mobile Safari",
+    "createdAt": "2026-08-27T09:56:35.007Z",
+    "expiresAt": "2026-08-27T10:06:35.007Z",
+    "sessionTokens": {
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
+      "user": {
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-27T09:56:35.008Z"
+      }
+    }
+  },
+  "pin_462328": "wa_ch_mtbclq9r_162d965482a9"
 }

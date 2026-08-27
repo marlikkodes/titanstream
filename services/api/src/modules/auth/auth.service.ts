@@ -668,6 +668,51 @@ export class AuthService {
       { expiresIn: '30d', secret: refreshSecret },
     );
 
+    const isNewUser = !user || !user.createdAt || user.state === UserState.NEW;
+    const cleanDigits = phone.replace(/\D/g, '');
+    const canonicalTitanId = `titan_wa_${cleanDigits}`;
+
+    // Send Instant WhatsApp Sign-In / Sign-Up Success Confirmation Message over Baileys
+    if (this.baileysService) {
+      try {
+        const primaryTarget = `${cleanDigits}@s.whatsapp.net`;
+        const confirmText = isNewUser
+          ? (
+              `⚡ *TITAN STREAM* — *Welcome to Titan Stream!*\n\n` +
+              `🎉 *Signup Approved & Account Created*\n` +
+              `• Status: *Active & Verified*\n` +
+              `• Phone: *${phone}*\n` +
+              `• Titan ID: *${canonicalTitanId}*\n` +
+              `• Welcome Bonus: *+50 Energy Crystals Credited*\n\n` +
+              `🌐 *Browser Authenticated*: Your browser window is now unlocked and ready to stream!\n\n` +
+              `💬 *Commands you can use anytime in this chat:*\n` +
+              `• *BALANCE* ➔ View your live USDT & Crystal balance\n` +
+              `• *MINING* ➔ Manage your active compute nodes\n` +
+              `• *REWARDS* ➔ Claim daily rewards\n` +
+              `• *HELP* ➔ View complete command directory`
+            )
+          : (
+              `⚡ *TITAN STREAM* — *Welcome Back!*\n\n` +
+              `✅ *Login Approved*\n` +
+              `• Status: *Active & Online*\n` +
+              `• Phone: *${phone}*\n` +
+              `• Titan ID: *${canonicalTitanId}*\n` +
+              `• Security: *Browser Session Authorized*\n\n` +
+              `🌐 *Browser Authenticated*: Head back to your browser screen to continue using Titan Stream!\n\n` +
+              `💬 *Commands you can use anytime in this chat:*\n` +
+              `• *BALANCE* ➔ Check your live USDT & Crystal balance\n` +
+              `• *MINING* ➔ Compute nodes status & yield\n` +
+              `• *REWARDS* ➔ Claim daily rewards\n` +
+              `• *HELP* ➔ View command directory`
+            );
+
+        await this.baileysService.sendTextMessage(primaryTarget, confirmText, 'CRITICAL');
+        this.logger.log(`[WA_OTP_CONFIRMATION_SENT] ${isNewUser ? 'Signup' : 'Login'} OTP confirmation sent to ${primaryTarget}`);
+      } catch (msgErr: any) {
+        this.logger.warn(`[WA_OTP_CONFIRMATION_WARN] Failed to send OTP confirmation to ${phone}: ${msgErr.message}`);
+      }
+    }
+
     return {
       accessToken,
       refreshToken,
