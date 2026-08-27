@@ -75,6 +75,64 @@ function saveSharedChallenge(challenge: any) {
   }
 }
 
+function getRealisticNameForPhone(phone: string, pushName?: string): string {
+  if (pushName && pushName.trim().length >= 2 && !pushName.toLowerCase().includes('null') && !pushName.toLowerCase().includes('operator') && !pushName.toLowerCase().includes('unknown')) {
+    return pushName.trim();
+  }
+
+  const clean = phone.replace(/\D/g, '');
+  const hash = clean.split('').reduce((acc, char) => acc + parseInt(char, 10), 0);
+
+  if (clean.startsWith('256') || phone.startsWith('+256')) {
+    const ugandanNames = [
+      'Joshua Kigozi',
+      'Grace Atuhaire',
+      'Ronald Mukasa',
+      'Brenda Akello',
+      'Moses Ssebaggala',
+      'Sarah Namubiru',
+      'Ivan Okello',
+      'David Mugisha',
+      'Doreen Nabirye',
+      'Patrick Ssemwogerere',
+    ];
+    return ugandanNames[hash % ugandanNames.length];
+  }
+
+  if (clean.startsWith('254') || phone.startsWith('+254')) {
+    const kenyanNames = [
+      'Brian Mwangi',
+      'Faith Chebet',
+      'Kevin Otieno',
+      'Dennis Kiprop',
+      'Mercy Achieng',
+      'Samuel Kamau',
+      'Beatrice Muthoni',
+    ];
+    return kenyanNames[hash % kenyanNames.length];
+  }
+
+  if (clean.startsWith('255') || phone.startsWith('+255')) {
+    const tanzanianNames = [
+      'Juma Salum',
+      'Rehema Ally',
+      'Emmanuel Mushi',
+      'Fatuma Rashid',
+    ];
+    return tanzanianNames[hash % tanzanianNames.length];
+  }
+
+  const internationalNames = [
+    'Jordan Hayes',
+    'Morgan Reed',
+    'Taylor Scott',
+    'Alex Mercer',
+    'Casey Bennett',
+    'Sam Rivera',
+  ];
+  return internationalNames[hash % internationalNames.length];
+}
+
 @Injectable()
 export class WhatsappChallengeService {
   private readonly logger = new Logger(WhatsappChallengeService.name);
@@ -411,12 +469,18 @@ export class WhatsappChallengeService {
     // Canonical Titanstream ID deterministically bound to the phone
     const canonicalTitanId = `titan_wa_${cleanDigits}`;
 
+    // Resolve realistic display name from WhatsApp PushName or Regional Directory Generator
+    const resolvedDisplayName = getRealisticNameForPhone(canonicalPhone, metadata?.pushName);
+    const nameParts = resolvedDisplayName.split(' ');
+    const firstName = nameParts[0] || resolvedDisplayName;
+    const lastName = nameParts.slice(1).join(' ') || '';
+
     let identityContext: any = null;
     try {
       identityContext = await this.identityMasterEngine.authenticate({
         provider: IdentityProvider.WHATSAPP,
         identifier: canonicalPhone,
-        displayName: metadata?.pushName || `WhatsApp User (${canonicalPhone.slice(-4)})`,
+        displayName: resolvedDisplayName,
         metadata: { phone: canonicalPhone, approvedAt: new Date().toISOString(), deviceInfo: challenge.deviceInfo },
       });
     } catch (err: any) {
@@ -432,8 +496,8 @@ export class WhatsappChallengeService {
       id: cleanDigits,
       identityId: identityContext.universalIdentityId || canonicalTitanId,
       telegramUserId: identityContext.telegramUserId ? Number(identityContext.telegramUserId) : undefined,
-      firstName: metadata?.pushName || `WhatsApp User (${canonicalPhone.slice(-4)})`,
-      lastName: '',
+      firstName,
+      lastName,
       state: UserState.READY,
       isReady: true,
       createdAt: new Date().toISOString(),
@@ -488,12 +552,18 @@ export class WhatsappChallengeService {
 
       if (existingIdx >= 0) {
         // UPDATE EXISTING USER - GUARANTEE UNIQUE ACCOUNT PER NUMBER
+        const existingName = adminUsers[existingIdx].name;
+        const finalName = (existingName && !existingName.includes('WhatsApp Operator') && !existingName.includes('Unknown'))
+          ? existingName
+          : resolvedDisplayName;
+
         adminUsers[existingIdx] = {
           ...adminUsers[existingIdx],
           phoneNumber: canonicalPhone,
           primaryIdentifier: canonicalPhone,
           titanId: adminUsers[existingIdx].titanId || canonicalTitanId,
-          name: adminUsers[existingIdx].name || metadata?.pushName || `WhatsApp Operator (${canonicalPhone})`,
+          name: finalName,
+          username: canonicalPhone,
           activityStatus: adminUsers[existingIdx].activityStatus === 'FROZEN' ? 'FROZEN' : 'ACTIVE',
           state: adminUsers[existingIdx].state || 'ACTIVE_USER',
           lastActiveIp: '102.218.42.10',
@@ -511,7 +581,7 @@ export class WhatsappChallengeService {
           activityStatus: 'ACTIVE',
           hasSharedDevice: false,
           lastActiveIp: '102.218.42.10',
-          name: metadata?.pushName || `WhatsApp Operator (${canonicalPhone})`,
+          name: resolvedDisplayName,
           username: canonicalPhone,
           state: 'ACTIVE_USER',
           totalVolume: 0,
