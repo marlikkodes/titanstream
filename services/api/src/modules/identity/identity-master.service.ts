@@ -9,6 +9,8 @@ import {
   Optional,
   Inject,
 } from '@nestjs/common';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { resolve } from 'path';
 import { IdentityProvider, UserState, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -91,9 +93,79 @@ export class IdentityMasterEngineService {
         user,
       };
     } catch (err: any) {
-      this.logger.warn(`[IDENTITY_ENGINE] DB unreachable during resolveByChannel (${err.message}). Checking in-memory fallback.`);
+      this.logger.warn(`[IDENTITY_ENGINE] DB unreachable during resolveByChannel (${err.message}). Checking disk database.`);
       const mem = this.inMemoryIdentities.get(key);
       if (mem) return { channelIdentity: mem.channelIdentity, identity: mem.identity, user: mem.user };
+
+      // Check authoritative .admin_users_db.json on disk
+      try {
+        const dbPath = resolve('/home/wendy/Desktop/tetherstream/apps/web/.admin_users_db.json');
+        if (existsSync(dbPath)) {
+          const raw = readFileSync(dbPath, 'utf-8');
+          const users = JSON.parse(raw);
+          const cleanDigits = identifier.replace(/\D/g, '');
+          const canonicalPhone = identifier.startsWith('+') ? identifier : `+${cleanDigits}`;
+
+          const match = users.find((u: any) => {
+            if (provider === IdentityProvider.WHATSAPP) {
+              return u.phoneNumber === canonicalPhone ||
+                     (u.phoneNumber && u.phoneNumber.replace(/\D/g, '') === cleanDigits) ||
+                     u.id === cleanDigits ||
+                     u.titanId === `titan_wa_${cleanDigits}`;
+            }
+            if (provider === IdentityProvider.TELEGRAM) {
+              return u.telegramId === identifier ||
+                     u.id === identifier ||
+                     u.primaryIdentifier === identifier ||
+                     u.primaryIdentifier === `@${identifier.replace(/^@/, '')}`;
+            }
+            return u.id === identifier || u.titanId === identifier;
+          });
+
+          if (match) {
+            const canonicalTitanId = match.titanId || (provider === IdentityProvider.WHATSAPP ? `titan_wa_${cleanDigits}` : `titan_tg_${match.id}`);
+            const isTelegram = provider === IdentityProvider.TELEGRAM;
+            const tgUserId = match.telegramId && /^\d+$/.test(match.telegramId) ? BigInt(match.telegramId) : (isTelegram ? BigInt(match.id) : undefined);
+
+            const userObj = {
+              id: match.id,
+              identityId: canonicalTitanId,
+              telegramUserId: tgUserId,
+              firstName: match.name,
+              lastName: '',
+              state: match.state === 'SUSPENDED_USER' ? UserState.SUSPENDED_USER : UserState.READY,
+              isReady: true,
+              createdAt: new Date(match.createdAt || Date.now()),
+              updatedAt: new Date(),
+            };
+
+            const identityObj = { id: canonicalTitanId, displayName: match.name, users: [userObj] };
+            const chanObj = { id: `chan_${canonicalTitanId}`, identityId: canonicalTitanId, provider, identifier };
+
+            const context: IdentityContext = {
+              userId: match.id,
+              universalIdentityId: canonicalTitanId,
+              channel: provider,
+              channelIdentityId: chanObj.id,
+              providerSubject: identifier,
+              assuranceLevel: 'MEDIUM',
+              role: 'USER',
+              userState: userObj.state,
+              telegramUserId: tgUserId,
+            };
+
+            this.inMemoryIdentities.set(key, {
+              channelIdentity: chanObj,
+              identity: identityObj,
+              user: userObj,
+              context,
+            });
+
+            return { channelIdentity: chanObj, identity: identityObj, user: userObj };
+          }
+        }
+      } catch {}
+
       return null;
     }
   }
@@ -252,14 +324,17 @@ export class IdentityMasterEngineService {
         }
       }
       if (err instanceof ConflictException || err.message?.startsWith('FAIL_AT_') || err.message?.includes('DATABASE_WRITE_ERROR')) throw err;
-      this.logger.warn(`[IDENTITY_ENGINE] DB unreachable during register (${err.message}). Using in-memory fallback identity.`);
+      this.logger.warn(`[IDENTITY_ENGINE] DB unreachable during register (${err.message}). Using deterministic fallback identity.`);
 
-      const identityId = `titan_id_${normalizedId.replace(/\D/g, '') || Date.now()}`;
+      const isWhatsapp = dto.provider === IdentityProvider.WHATSAPP;
       const isTelegram = dto.provider === IdentityProvider.TELEGRAM;
-      const telegramUserIdBig = isTelegram && /^\d+$/.test(normalizedId) ? BigInt(normalizedId) : BigInt(normalizedId.replace(/\D/g, '').slice(0, 15) || Date.now());
+      const cleanDigits = normalizedId.replace(/\D/g, '');
+      const identityId = isWhatsapp ? `titan_wa_${cleanDigits}` : (isTelegram ? `titan_tg_${normalizedId}` : `titan_id_${cleanDigits || Date.now()}`);
+      const userId = isWhatsapp ? cleanDigits : (isTelegram ? normalizedId : identityId);
+      const telegramUserIdBig = isTelegram && /^\d+$/.test(normalizedId) ? BigInt(normalizedId) : (cleanDigits.length > 0 ? BigInt(cleanDigits.slice(0, 15)) : undefined);
 
       const mockUser = {
-        id: identityId,
+        id: userId,
         identityId,
         telegramUserId: telegramUserIdBig,
         firstName: dto.displayName || `${dto.provider}_User`,
@@ -278,7 +353,7 @@ export class IdentityMasterEngineService {
       const mockChannelIdentity = { id: `chan_${identityId}`, identityId, provider: dto.provider, identifier: normalizedId };
 
       const context: IdentityContext = {
-        userId: identityId,
+        userId,
         universalIdentityId: identityId,
         channel: dto.provider,
         channelIdentityId: mockChannelIdentity.id,

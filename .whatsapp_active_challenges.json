@@ -79,5 +79,23 @@
     "createdAt": "2026-08-27T00:45:24.691Z",
     "expiresAt": "2026-08-27T00:55:24.691Z"
   },
-  "pin_598633": "wa_chal_1787791524691"
+  "pin_598633": "wa_chal_1787791524691",
+  "wa_chal_1787791865322": {
+    "challengeId": "wa_chal_1787791865322",
+    "shortPin": "225888",
+    "status": "PENDING",
+    "deviceInfo": "Browser Session",
+    "createdAt": "2026-08-27T00:51:05.322Z",
+    "expiresAt": "2026-08-27T01:01:05.322Z"
+  },
+  "pin_225888": "wa_chal_1787791865322",
+  "wa_chal_1787791876115": {
+    "challengeId": "wa_chal_1787791876115",
+    "shortPin": "472305",
+    "status": "PENDING",
+    "deviceInfo": "Browser Session",
+    "createdAt": "2026-08-27T00:51:16.116Z",
+    "expiresAt": "2026-08-27T01:01:16.116Z"
+  },
+  "pin_472305": "wa_chal_1787791876115"
 }
