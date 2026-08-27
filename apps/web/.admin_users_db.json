@@ -1,5 +1,33 @@
 [
   {
+    "id": "18257320524",
+    "telegramId": "18257320524",
+    "titanId": "titan_id_18257320524",
+    "phoneNumber": "+18257320524",
+    "primaryIdentifier": "+18257320524",
+    "joinChannel": "WHATSAPP",
+    "activityStatus": "ACTIVE",
+    "hasSharedDevice": false,
+    "lastActiveIp": "102.218.42.10",
+    "name": "WhatsApp Operator (+18257320524)",
+    "username": "+18257320524",
+    "state": "ACTIVE_USER",
+    "totalVolume": 0,
+    "moneyIn": 0,
+    "moneyOut": 0,
+    "totalDeposits": 0,
+    "totalWithdrawals": 0,
+    "netBalance": 0,
+    "riskScore": 10,
+    "flags": [],
+    "wallets": [
+      "fin_acc_18257320524"
+    ],
+    "activeMachinesCount": 0,
+    "crystalBalance": 50,
+    "createdAt": "2026-08-27T00:20:12.660Z"
+  },
+  {
     "id": "5387655307",
     "telegramId": "5387655307",
     "titanId": "titan_5387655307_apex",

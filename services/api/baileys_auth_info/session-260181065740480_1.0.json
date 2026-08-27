@@ -405,7 +405,7 @@
       "indexInfo": {
         "baseKey": "BfATlcCQgULif1p2lQHljSDgNQDeE2G1L+oUZt4gwaBJ",
         "baseKeyType": 1,
-        "closed": -1,
+        "closed": 1787790013749,
         "used": 1787758297587,
         "created": 1787665752837,
         "remoteIdentityKey": "Bd5s3H3Hta3YDV+DBIGoEfICcKwTagui3TmD0gGvkVQh"
@@ -428,8 +428,8 @@
         },
         "BcDGwGjb1q0BwdpyTsBWPd+EJXGvUcZkC/Fuv9HAxMIg": {
           "chainKey": {
-            "counter": 8,
-            "key": "9vny8xxR2f02HWhwQ02Un2GPBvuKGhsraQTd8QJSivQ="
+            "counter": 13,
+            "key": "PDjFGcyeyqa4GfvKZ9Gx3IoD5/+BTYZuL9CA4Jiw1CU="
           },
           "chainType": 1,
           "messageKeys": {}
@@ -469,6 +469,41 @@
         "baseKey": "BfAcjPO2Qc0rELhq+MjPjOWgcxFVLEM/mfy97LN+X1Ev",
         "preKeyId": 13597171,
         "signedKeyId": 3484165
+      }
+    },
+    "BXyysNMJYmbjw8BSyQAMmOCTX+A2pELFt9yqs/VEDdZ6": {
+      "registrationId": 651767561,
+      "currentRatchet": {
+        "ephemeralKeyPair": {
+          "pubKey": "BYVNFT+AhH00xzinpafUVZReq1Pp3TWan653xQ+5HLYs",
+          "privKey": "yL/6JdvU7mWJHeu2q0NE21lIPYjisb691YSFwRLgBUY="
+        },
+        "lastRemoteEphemeralKey": "BQIH1Svg941lzeYDyqJ5IBtfNpGDIbaQx8RwLj6Hcz9f",
+        "previousCounter": 0,
+        "rootKey": "qplZjjgp9oEhAWia5AZYg09l1q32p2l/cW+jNT7es18="
+      },
+      "indexInfo": {
+        "baseKey": "BXyysNMJYmbjw8BSyQAMmOCTX+A2pELFt9yqs/VEDdZ6",
+        "baseKeyType": 1,
+        "closed": -1,
+        "used": 1787790013736,
+        "created": 1787790013736,
+        "remoteIdentityKey": "Bd5s3H3Hta3YDV+DBIGoEfICcKwTagui3TmD0gGvkVQh"
+      },
+      "_chains": {
+        "BYVNFT+AhH00xzinpafUVZReq1Pp3TWan653xQ+5HLYs": {
+          "chainKey": {
+            "counter": 0,
+            "key": "lwdSp+kO+hex5a5ooiBVbOf40b3AULMG2bY9pRpjBL4="
+          },
+          "chainType": 1,
+          "messageKeys": {}
+        }
+      },
+      "pendingPreKey": {
+        "signedKeyId": 3484165,
+        "baseKey": "BXyysNMJYmbjw8BSyQAMmOCTX+A2pELFt9yqs/VEDdZ6",
+        "preKeyId": 13597190
       }
     }
   },

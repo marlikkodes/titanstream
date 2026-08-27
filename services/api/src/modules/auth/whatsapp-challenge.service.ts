@@ -1,7 +1,8 @@
 import { Injectable, Logger, Inject, Optional, forwardRef } from '@nestjs/common';
 import { randomBytes, randomInt } from 'crypto';
 import { resolve } from 'path';
-import fs from 'fs';
+import * as fs from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { IdentityMasterEngineService } from '../identity/identity-master.service';
 import { AuthService } from './auth.service';
 import { BaileysService } from '../notification/baileys.service';
@@ -30,7 +31,7 @@ const ROOT_CHALLENGES_FILE = resolve('/home/wendy/Desktop/tetherstream/.whatsapp
 
 function getChallengesPath(): string {
   try {
-    if (fs.existsSync(ROOT_CHALLENGES_FILE)) return ROOT_CHALLENGES_FILE;
+    if (existsSync(ROOT_CHALLENGES_FILE)) return ROOT_CHALLENGES_FILE;
   } catch {}
   return SHARED_CHALLENGES_FILE;
 }
@@ -38,10 +39,12 @@ function getChallengesPath(): string {
 function loadSharedChallenges(): Record<string, any> {
   try {
     const p = getChallengesPath();
-    if (fs.existsSync(p)) {
-      return JSON.parse(fs.readFileSync(p, 'utf-8'));
+    if (existsSync(p)) {
+      return JSON.parse(readFileSync(p, 'utf-8'));
     }
-  } catch {}
+  } catch (err: any) {
+    console.error('[WA_CHAL_ERR] Failed to load shared challenges:', err.message);
+  }
   return {};
 }
 
@@ -66,8 +69,10 @@ function saveSharedChallenge(challenge: any) {
       }
     }
 
-    fs.writeFileSync(p, JSON.stringify(all, null, 2), 'utf-8');
-  } catch {}
+    writeFileSync(p, JSON.stringify(all, null, 2), 'utf-8');
+  } catch (err: any) {
+    console.error('[WA_CHAL_ERR] Failed to save shared challenge:', err.message);
+  }
 }
 
 @Injectable()
@@ -432,8 +437,8 @@ export class WhatsappChallengeService {
     try {
       const adminUsersPath = resolve('/home/wendy/Desktop/tetherstream/apps/web/.admin_users_db.json');
       let adminUsers: any[] = [];
-      if (fs.existsSync(adminUsersPath)) {
-        adminUsers = JSON.parse(fs.readFileSync(adminUsersPath, 'utf-8'));
+      if (existsSync(adminUsersPath)) {
+        adminUsers = JSON.parse(readFileSync(adminUsersPath, 'utf-8'));
       }
       const cleanDigits = phone.replace(/\D/g, '');
       const formattedPhone = phone.startsWith('+') ? phone : `+${cleanDigits}`;
@@ -465,9 +470,11 @@ export class WhatsappChallengeService {
           createdAt: new Date().toISOString(),
         };
         adminUsers.unshift(newUser);
-        fs.writeFileSync(adminUsersPath, JSON.stringify(adminUsers, null, 2), 'utf-8');
+        writeFileSync(adminUsersPath, JSON.stringify(adminUsers, null, 2), 'utf-8');
       }
-    } catch (e) {}
+    } catch (adminErr: any) {
+      this.logger.warn(`[WA_ADMIN_SYNC_WARN] Failed to sync to admin users db: ${adminErr.message}`);
+    }
 
     this.logger.log(`[WA_CHALLENGE_APPROVED] challengeId=${challenge.challengeId} phone=${phone} userId=${userPayload.id}`);
 
