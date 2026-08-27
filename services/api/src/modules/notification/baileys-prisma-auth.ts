@@ -93,6 +93,8 @@ export async function usePrismaAuthState(
     } catch {}
   };
 
+  let isDbAvailable = true;
+
   // 1. Load or initialize `creds`
   let creds: any = null;
   try {
@@ -111,22 +113,26 @@ export async function usePrismaAuthState(
       logger.log(`[PRISMA_AUTH] Loaded existing WhatsApp credentials from PostgreSQL for [${accountId}] (registered: ${creds.registered})`);
     }
   } catch (err: any) {
-    logger.warn(`[PRISMA_AUTH] Failed to fetch creds from DB: ${err.message}. Checking local cache...`);
+    isDbAvailable = false;
+    logger.warn(`[PRISMA_AUTH] PostgreSQL offline/unreachable: ${err.message}. Running in fast local disk cache mode.`);
   }
 
   if (!creds) {
     creds = readLocalCache('creds');
     if (creds) {
       logger.log(`[PRISMA_AUTH] Loaded credentials from local fallback cache for [${accountId}]`);
-      // Sync loaded local creds back to DB
-      try {
-        const dataJson = JSON.parse(JSON.stringify(creds, BufferJSON?.replacer));
-        await prisma.baileysAuthKey.upsert({
-          where: { accountId_keyId: { accountId, keyId: 'creds' } },
-          create: { accountId, keyId: 'creds', data: dataJson },
-          update: { data: dataJson },
-        });
-      } catch {}
+      if (isDbAvailable) {
+        try {
+          const dataJson = JSON.parse(JSON.stringify(creds, BufferJSON?.replacer));
+          await prisma.baileysAuthKey.upsert({
+            where: { accountId_keyId: { accountId, keyId: 'creds' } },
+            create: { accountId, keyId: 'creds', data: dataJson },
+            update: { data: dataJson },
+          });
+        } catch {
+          isDbAvailable = false;
+        }
+      }
     } else {
       logger.log(`[PRISMA_AUTH] Initializing fresh WhatsApp auth credentials for [${accountId}]`);
       creds = initAuthCreds();
@@ -136,6 +142,7 @@ export async function usePrismaAuthState(
   // 2. Define `saveCreds`
   const saveCreds = async () => {
     writeLocalCache('creds', creds);
+    if (!isDbAvailable) return;
     setImmediate(async () => {
       try {
         const dataJson = JSON.parse(JSON.stringify(creds, BufferJSON?.replacer));
@@ -144,18 +151,22 @@ export async function usePrismaAuthState(
           create: { accountId, keyId: 'creds', data: dataJson },
           update: { data: dataJson },
         });
-      } catch {}
+      } catch {
+        isDbAvailable = false;
+      }
     });
   };
 
   // 3. Define `clearCreds`
   const clearCreds = async () => {
-    try {
-      await prisma.baileysAuthKey.deleteMany({
-        where: { accountId },
-      });
-    } catch (err: any) {
-      logger.error(`[PRISMA_AUTH_CLEAR_ERR] Failed to clear creds from DB: ${err.message}`);
+    if (isDbAvailable) {
+      try {
+        await prisma.baileysAuthKey.deleteMany({
+          where: { accountId },
+        });
+      } catch (err: any) {
+        logger.error(`[PRISMA_AUTH_CLEAR_ERR] Failed to clear creds from DB: ${err.message}`);
+      }
     }
     if (localCacheDir && fs.existsSync(localCacheDir)) {
       try {
@@ -184,12 +195,12 @@ export async function usePrismaAuthState(
         }
       }
 
-      // If all keys were resolved locally, return immediately without blocking on DB
-      if (missingIds.length === 0) {
+      // If all keys were resolved locally or DB is offline, return immediately (0ms)
+      if (missingIds.length === 0 || !isDbAvailable) {
         return data;
       }
 
-      // Query PostgreSQL only for any remaining keys not found in local disk cache
+      // Query PostgreSQL only if DB is healthy and keys are missing from disk
       try {
         const keyIds = missingIds.map((id) => `${type}-${id}`);
         const records = await prisma.baileysAuthKey.findMany({
@@ -219,7 +230,7 @@ export async function usePrismaAuthState(
           }
         }
       } catch {
-        // Silently skip if DB is offline; missing keys are handled gracefully by Baileys
+        isDbAvailable = false;
       }
 
       return data;
@@ -237,12 +248,14 @@ export async function usePrismaAuthState(
           if (value) {
             // Write to local disk cache immediately (0ms)
             writeLocalCache(fullKeyId, value);
-            const valueJson = JSON.parse(JSON.stringify(value, BufferJSON?.replacer));
-            upsertOperations.push({
-              accountId,
-              keyId: fullKeyId,
-              data: valueJson,
-            });
+            if (isDbAvailable) {
+              const valueJson = JSON.parse(JSON.stringify(value, BufferJSON?.replacer));
+              upsertOperations.push({
+                accountId,
+                keyId: fullKeyId,
+                data: valueJson,
+              });
+            }
           } else {
             deleteIds.push(fullKeyId);
             deleteLocalCache(fullKeyId);
@@ -251,7 +264,7 @@ export async function usePrismaAuthState(
       }
 
       // Async DB persistence in background without blocking the Baileys event loop
-      if (upsertOperations.length > 0 || deleteIds.length > 0) {
+      if (isDbAvailable && (upsertOperations.length > 0 || deleteIds.length > 0)) {
         setImmediate(async () => {
           try {
             if (deleteIds.length > 0) {
@@ -266,7 +279,9 @@ export async function usePrismaAuthState(
                 update: { data: item.data },
               });
             }
-          } catch {}
+          } catch {
+            isDbAvailable = false;
+          }
         });
       }
     },

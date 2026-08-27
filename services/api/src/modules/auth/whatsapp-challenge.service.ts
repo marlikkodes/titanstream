@@ -609,14 +609,14 @@ export class WhatsappChallengeService {
 
     // Send Instant WhatsApp Sign-In Success Confirmation Message over Baileys
     try {
-      const replyTarget = metadata?.rawJid || (canonicalPhone.includes('@') ? canonicalPhone : canonicalPhone);
+      const phoneClean = canonicalPhone.replace(/\D/g, '');
+      const primaryTarget = `${phoneClean}@s.whatsapp.net`;
       const confirmText = (
         `⚡ *TITAN STREAM* — *You're Signed In!*\n\n` +
         `✅ *Login Approved*\n` +
         `• Code: *${challenge.shortPin}*\n` +
         `• Phone: *${canonicalPhone}*\n` +
         `• Titan ID: *${canonicalTitanId}*\n` +
-        `• Connection: *Secure & Encrypted*\n` +
         `• Status: *Active & Ready*\n\n` +
         `🌐 Head back to your browser screen to start using Titan Stream!\n\n` +
         `💬 *Try typing these commands:*\n` +
@@ -624,8 +624,12 @@ export class WhatsappChallengeService {
         `• *MISSIONS* ➔ See active compute tasks\n` +
         `• *HELP* ➔ View all commands`
       );
-      await this.baileysService.sendTextMessage(replyTarget, confirmText);
-      this.logger.log(`[WA_CONFIRMATION_SENT] Sign-in success confirmation message sent to ${replyTarget}`);
+      await this.baileysService.sendTextMessage(primaryTarget, confirmText);
+      this.logger.log(`[WA_CONFIRMATION_SENT] Sign-in success confirmation message sent to ${primaryTarget}`);
+
+      if (metadata?.rawJid && metadata.rawJid !== primaryTarget) {
+        await this.baileysService.sendTextMessage(metadata.rawJid, confirmText).catch(() => null);
+      }
     } catch (msgErr: any) {
       this.logger.error(`[WA_CONFIRMATION_FAILED] Failed to send confirmation to ${canonicalPhone}: ${msgErr.message}`);
     }
