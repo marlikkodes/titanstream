@@ -1894,7 +1894,8 @@ function adminMockMiddleware(): Plugin {
         if (url.includes('/financial/balance')) {
           const allUsers = loadUsersFromDisk();
           const primaryUser = allUsers[0];
-          const usdtBal = primaryUser?.netBalance != null ? Number(primaryUser.netBalance).toFixed(2) : '0.00';
+          const baseBal = primaryUser?.netBalance != null ? Number(primaryUser.netBalance) : 0;
+          const totalUsdt = (baseBal + (globalThis as any).__mockRewardBalance || 0).toFixed(2);
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
@@ -1902,7 +1903,7 @@ function adminMockMiddleware(): Plugin {
             data: {
               financialAccountId: 'fin_acc_user',
               balances: [
-                { assetCode: 'USDT', name: 'Tether USD', symbol: 'USDT', decimals: 2, availableBalance: usdtBal, pendingBalance: '0.00', reservedBalance: '0.00' },
+                { assetCode: 'USDT', name: 'Tether USD', symbol: 'USDT', decimals: 2, availableBalance: totalUsdt, pendingBalance: '0.00', reservedBalance: '0.00' },
                 { assetCode: 'TON', name: 'The Open Network', symbol: 'TON', decimals: 4, availableBalance: '0.0000', pendingBalance: '0.0000', reservedBalance: '0.0000' },
               ],
             },
@@ -1912,13 +1913,44 @@ function adminMockMiddleware(): Plugin {
 
         // User Financial Transactions
         if (url.includes('/financial/transactions')) {
+          const txs = (globalThis as any).__mockFinancialTransactions || [];
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              items: [],
-              pagination: { limit: 50, offset: 0 },
+              items: txs,
+              pagination: { limit: 50, offset: 0, total: txs.length },
+            },
+          }));
+          return;
+        }
+
+        // Growth Profile
+        if (url.includes('/growth/profile')) {
+          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              userId: 'usr_canonical_operator',
+              trustScore: 85 + (claimedSet.size * 2),
+              level: 'VERIFIED',
+              levelName: 'Verified Operator',
+              benefits: ['1.0x Base Rate', 'Standard Instant Settlements'],
+              nextLevel: { level: 'TRUSTED', name: 'Trusted Member' },
+              completedSettlements: 1,
+              accountAgeDays: 7,
+              totalVolumeUSDT: 50,
+              referrals: {
+                code: 'TITAN888',
+                link: 'https://t.me/titanstream_bot?start=ref_TITAN888',
+                totalInvited: 0,
+                qualifiedCount: 0,
+                totalEarnedUSDT: 0,
+              },
+              rewardsCount: claimedSet.size,
             },
           }));
           return;
@@ -1962,17 +1994,18 @@ function adminMockMiddleware(): Plugin {
 
         // Growth Progress
         if (url.includes('/growth/progress')) {
+          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
               streakDays: 1,
-              completedMissions: 0,
-              totalMissions: 5,
-              levelName: 'Initiate',
-              progressPercent: 20,
-              nextTier: 'Builder I',
+              completedMissions: claimedSet.size,
+              totalMissions: 2,
+              levelName: 'Verified Operator',
+              progressPercent: Math.min(100, (claimedSet.size / 2) * 100),
+              nextTier: 'Trusted Member',
             },
           }));
           return;
@@ -2020,19 +2053,23 @@ function adminMockMiddleware(): Plugin {
 
         // Next Best Action Engine
         if (url.includes('/growth/next-best-action')) {
+          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
+          const hasUnclaimed = !claimedSet.has('starter_welcome') || !claimedSet.has('starter_security');
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              actionType: 'CLAIM_REWARD',
-              title: 'Claim Your Unlocked Rewards',
-              description: 'You have verified reward badge(s) waiting in your queue to be credited to your ledger balance.',
-              reason: 'UNCLAIMED_INCENTIVES',
-              destinationTab: 'rewards',
-              priority: 'URGENT',
-              potentialUnlockUsdt: 1.5,
-              badge: 'Claimable',
+              actionType: hasUnclaimed ? 'CLAIM_REWARD' : 'COMMISSION_FLEET',
+              title: hasUnclaimed ? 'Claim Your Unlocked Rewards' : 'Expand Hardware Fleet',
+              description: hasUnclaimed
+                ? 'You have verified reward badge(s) ready to be credited to your available wallet balance.'
+                : 'Commission additional compute power to increase recurring daily yield.',
+              reason: hasUnclaimed ? 'UNCLAIMED_INCENTIVES' : 'FLEET_EXPANSION',
+              destinationTab: hasUnclaimed ? 'rewards' : 'shop',
+              priority: hasUnclaimed ? 'URGENT' : 'NORMAL',
+              potentialUnlockUsdt: hasUnclaimed ? 1.5 : 5.0,
+              badge: hasUnclaimed ? 'Claimable' : 'Recommended',
             },
           }));
           return;
@@ -2040,15 +2077,17 @@ function adminMockMiddleware(): Plugin {
 
         // Growth Achievements (12 Canonical Achievements)
         if (url.includes('/growth/achievements')) {
+          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
+          const hasClaimedAny = claimedSet.size > 0;
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
               achievements: [
-                { code: 'FIRST_REWARD', name: 'First Victory', description: 'Claim your first reward.', tier: 'BRONZE', icon: '🏆', target: 1, progress: 1, achieved: true, achievedAt: new Date().toISOString() },
-                { code: 'REWARD_HUNTER', name: 'Reward Hunter', description: 'Claim 5 rewards.', tier: 'SILVER', icon: '🎯', target: 5, progress: 2, achieved: false, achievedAt: null },
-                { code: 'TITAN_PATRON', name: 'Titan Patron', description: 'Claim 10 rewards.', tier: 'GOLD', icon: '💎', target: 10, progress: 2, achieved: false, achievedAt: null },
+                { code: 'FIRST_REWARD', name: 'First Victory', description: 'Claim your first reward.', tier: 'BRONZE', icon: '🏆', target: 1, progress: hasClaimedAny ? 1 : 0, achieved: hasClaimedAny, achievedAt: hasClaimedAny ? new Date().toISOString() : null },
+                { code: 'REWARD_HUNTER', name: 'Reward Hunter', description: 'Claim 5 rewards.', tier: 'SILVER', icon: '🎯', target: 5, progress: claimedSet.size, achieved: claimedSet.size >= 5, achievedAt: null },
+                { code: 'TITAN_PATRON', name: 'Titan Patron', description: 'Claim 10 rewards.', tier: 'GOLD', icon: '💎', target: 10, progress: claimedSet.size, achieved: false, achievedAt: null },
                 { code: 'FIRST_REFERRAL', name: 'First Invite', description: 'Invite your first friend to qualify.', tier: 'BRONZE', icon: '🤝', target: 1, progress: 0, achieved: false, achievedAt: null },
                 { code: 'NETWORK_BUILDER', name: 'Network Builder', description: 'Qualify 3 referrals.', tier: 'SILVER', icon: '🌐', target: 3, progress: 0, achieved: false, achievedAt: null },
                 { code: 'REFERRAL_MAGNET', name: 'Referral Magnet', description: 'Qualify 10 referrals.', tier: 'PLATINUM', icon: '🧲', target: 10, progress: 0, achieved: false, achievedAt: null },
@@ -2059,7 +2098,7 @@ function adminMockMiddleware(): Plugin {
                 { code: 'TRUSTED_MEMBER', name: 'Trusted Member', description: 'Reach the Trusted level.', tier: 'SILVER', icon: '🛡️', target: 2, progress: 1, achieved: false, achievedAt: null },
                 { code: 'WEEKLY_WARRIOR', name: 'Weekly Warrior', description: 'Claim rewards 3 days in a row.', tier: 'SILVER', icon: '🔥', target: 3, progress: 1, achieved: false, achievedAt: null },
               ],
-              totalUnlocked: 3,
+              totalUnlocked: (hasClaimedAny ? 1 : 0) + 2, // First Reward (if claimed) + Core Operator + First Settlement
               total: 12,
               justUnlocked: [],
             },
@@ -2069,6 +2108,13 @@ function adminMockMiddleware(): Plugin {
 
         // Growth Missions Queue
         if (url.includes('/growth/rewards/missions')) {
+          if (!(globalThis as any).__mockClaimedRewardIds) {
+            (globalThis as any).__mockClaimedRewardIds = new Set<string>();
+          }
+          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds;
+          const isWelcomeClaimed = claimedSet.has('starter_welcome') || claimedSet.has('RULE_STARTER_WELCOME');
+          const isSecurityClaimed = claimedSet.has('starter_security') || claimedSet.has('RULE_STARTER_SECURITY');
+
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
@@ -2081,18 +2127,18 @@ function adminMockMiddleware(): Plugin {
                   rewardType: 'MILESTONE',
                   amount: '0.50',
                   assetCode: 'USDT',
-                  status: 'AVAILABLE',
+                  status: isWelcomeClaimed ? 'CLAIMED' : 'AVAILABLE',
                   reference: 'REF-STARTER-1',
                   createdAt: new Date().toISOString(),
-                  ruleName: 'Activate Mining Core',
-                  description: 'Start your first mining cycle on Titan Hub',
-                  requirement: { key: 'mining_cycle', label: 'Mining Cycle', required: 1, current: 1, unit: 'core', completed: true },
-                  reason: 'Ready to claim starter bonus',
-                  eligible: true,
+                  ruleName: 'Activate Hardware Core',
+                  description: 'Commission your first compute engine on Titan Hub',
+                  requirement: { key: 'mining_cycle', label: 'Hardware Core', required: 1, current: 1, unit: 'core', completed: true },
+                  reason: isWelcomeClaimed ? 'Claimed bonus' : 'Ready to claim starter bonus',
+                  eligible: !isWelcomeClaimed,
                   category: 'machine',
                   difficulty: 'EASY',
                   progressPercent: 100,
-                  estimatedRemaining: 'Claim now',
+                  estimatedRemaining: isWelcomeClaimed ? 'Claimed' : 'Claim now',
                 },
                 {
                   id: 'starter_security',
@@ -2100,18 +2146,18 @@ function adminMockMiddleware(): Plugin {
                   rewardType: 'MILESTONE',
                   amount: '1.00',
                   assetCode: 'USDT',
-                  status: 'AVAILABLE',
+                  status: isSecurityClaimed ? 'CLAIMED' : 'AVAILABLE',
                   reference: 'REF-STARTER-2',
                   createdAt: new Date().toISOString(),
                   ruleName: 'Security Configuration',
                   description: 'Verify Telegram session & configure security settings',
                   requirement: { key: 'security_config', label: 'Security Verified', required: 1, current: 1, unit: 'shield', completed: true },
-                  reason: 'Ready to claim security bonus',
-                  eligible: true,
+                  reason: isSecurityClaimed ? 'Claimed bonus' : 'Ready to claim security bonus',
+                  eligible: !isSecurityClaimed,
                   category: 'profile',
                   difficulty: 'EASY',
                   progressPercent: 100,
-                  estimatedRemaining: 'Claim now',
+                  estimatedRemaining: isSecurityClaimed ? 'Claimed' : 'Claim now',
                 },
               ],
             },
@@ -2119,40 +2165,115 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
-        // Growth Rewards Claim and Details
+        // Growth Rewards Claim (POST /growth/rewards/:id/claim)
         if (url.includes('/growth/rewards/') && (url.includes('/claim') || req.method === 'POST')) {
+          if (!(globalThis as any).__mockClaimedRewardIds) {
+            (globalThis as any).__mockClaimedRewardIds = new Set<string>();
+          }
+          if (!(globalThis as any).__mockFinancialTransactions) {
+            (globalThis as any).__mockFinancialTransactions = [];
+          }
+          if (typeof (globalThis as any).__mockRewardBalance !== 'number') {
+            (globalThis as any).__mockRewardBalance = 0;
+          }
+
+          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds;
+          const match = url.match(/\/growth\/rewards\/([^/?#]+)\/claim/) || url.match(/\/growth\/rewards\/([^/?#]+)/);
+          const rawId = match ? match[1] : 'starter_welcome';
+          const rewardId = rawId.replace(/^rule:/, '');
+
+          // Disallow duplicate claim
+          if (claimedSet.has(rewardId) || (rewardId.includes('welcome') && claimedSet.has('starter_welcome')) || (rewardId.includes('security') && claimedSet.has('starter_security'))) {
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 400;
+            res.end(JSON.stringify({
+              success: false,
+              statusCode: 400,
+              error: 'Bad Request',
+              message: 'This reward has already been claimed.',
+            }));
+            return;
+          }
+
+          claimedSet.add(rewardId);
+          if (rewardId.includes('welcome')) claimedSet.add('starter_welcome');
+          if (rewardId.includes('security')) claimedSet.add('starter_security');
+
+          const amountVal = rewardId.includes('security') ? 1.00 : 0.50;
+          (globalThis as any).__mockRewardBalance += amountVal;
+
+          const rewardData = {
+            id: rewardId,
+            amount: amountVal.toFixed(2),
+            assetCode: 'USDT',
+            status: 'CLAIMED',
+            reference: `ref_reward_${rewardId}_${Date.now()}`,
+            processedAt: new Date().toISOString(),
+          };
+
+          const txRecord = {
+            id: 'tx_rwd_' + Date.now(),
+            type: 'REWARD',
+            amount: amountVal,
+            assetCode: 'USDT',
+            status: 'COMPLETED',
+            reference: rewardData.reference,
+            createdAt: new Date().toISOString(),
+            description: rewardId.includes('security') ? 'Security Configuration Reward' : 'Hardware Core Starter Reward',
+          };
+          (globalThis as any).__mockFinancialTransactions.unshift(txRecord);
+
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
               success: true,
-              reward: {
-                id: 'r_claimed_' + Date.now(),
-                amount: '0.50',
-                assetCode: 'USDT',
-                status: 'CLAIMED',
-                processedAt: new Date().toISOString(),
-              },
+              reward: rewardData,
             },
           }));
           return;
         }
 
+        // Exact GET /growth/rewards
+        if (url === '/api/v1/growth/rewards' || url === '/growth/rewards') {
+          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
+          const list: any[] = [];
+          if (claimedSet.has('starter_welcome')) {
+            list.push({ id: 'starter_welcome', amount: '0.50', assetCode: 'USDT', status: 'CLAIMED', processedAt: new Date().toISOString() });
+          }
+          if (claimedSet.has('starter_security')) {
+            list.push({ id: 'starter_security', amount: '1.00', assetCode: 'USDT', status: 'CLAIMED', processedAt: new Date().toISOString() });
+          }
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: list,
+          }));
+          return;
+        }
+
+        // Single reward detail
         if (url.includes('/growth/rewards/') && !url.includes('/missions') && !url.includes('/history') && !url.includes('/available')) {
+          const match = url.match(/\/growth\/rewards\/([^/?#]+)/);
+          const rawId = match ? match[1] : 'starter_welcome';
+          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
+          const isClaimed = claimedSet.has(rawId);
+
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              id: 'starter_welcome',
-              ruleName: 'Activate Mining Core',
-              description: 'Start your first mining cycle on Titan Hub',
-              amount: '0.50',
+              id: rawId,
+              ruleName: rawId.includes('security') ? 'Security Configuration' : 'Activate Hardware Core',
+              description: rawId.includes('security') ? 'Verify Telegram session & configure security settings' : 'Start your first compute cycle on Titan Hub',
+              amount: rawId.includes('security') ? '1.00' : '0.50',
               assetCode: 'USDT',
-              status: 'AVAILABLE',
-              reason: 'Starter Bonus',
-              requirement: { key: 'mining_cycle', label: 'Mining Cycle', required: 1, current: 1, unit: 'core', completed: true },
+              status: isClaimed ? 'CLAIMED' : 'AVAILABLE',
+              reason: isClaimed ? 'Already claimed' : 'Starter Bonus',
+              requirement: { key: 'action', label: 'Requirement Met', required: 1, current: 1, unit: 'check', completed: true },
             },
           }));
           return;
@@ -2160,12 +2281,20 @@ function adminMockMiddleware(): Plugin {
 
         // Growth Reward History
         if (url.includes('/growth/rewards/history')) {
+          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
+          const historyList: any[] = [];
+          if (claimedSet.has('starter_welcome')) {
+            historyList.push({ id: 'starter_welcome', amount: '0.50', assetCode: 'USDT', status: 'CLAIMED', processedAt: new Date().toISOString(), reference: 'REF-STARTER-1' });
+          }
+          if (claimedSet.has('starter_security')) {
+            historyList.push({ id: 'starter_security', amount: '1.00', assetCode: 'USDT', status: 'CLAIMED', processedAt: new Date().toISOString(), reference: 'REF-STARTER-2' });
+          }
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              history: [],
+              history: historyList,
             },
           }));
           return;

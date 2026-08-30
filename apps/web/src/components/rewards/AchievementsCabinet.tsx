@@ -77,48 +77,45 @@ export const AchievementsCabinet: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                <AnimatePresence mode="popLayout">
-                  {sortedAchievements.map((a, idx) => {
-                    const style = TIER_STYLE[a.tier] || TIER_STYLE.BRONZE;
-                    const pct = Math.min(100, (a.progress / Math.max(1, a.target)) * 100);
-                    return (
-                      <motion.div
-                        key={a.code}
-                        layout
-                        initial={{ opacity: 0, scale: 0.9, y: 8 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        transition={{ delay: Math.min(idx * 0.03, 0.4), duration: 0.25 }}
-                        className={`relative rounded-2xl border p-2.5 text-center flex flex-col items-center ${
-                          a.achieved
-                            ? `bg-gradient-to-b from-white/[0.05] to-transparent ${style.border} ${style.glow}`
-                            : 'border-white/5 bg-control-bg/20 opacity-60'
-                        }`}
-                      >
-                        <div className={`text-2xl ${a.achieved ? '' : 'grayscale'}`}>{a.icon || '🏅'}</div>
-                        <div className={`mt-1 text-[9px] font-black uppercase tracking-wide ${a.achieved ? 'text-text-primary' : 'text-text-tertiary'}`}>
+                {sortedAchievements.map((a) => {
+                  const style = TIER_STYLE[a.tier] || TIER_STYLE.BRONZE;
+                  const pct = Math.min(100, ((a.progress || 0) / Math.max(1, a.target || 1)) * 100);
+                  return (
+                    <div
+                      key={a.code}
+                      className={`relative rounded-2xl border p-2.5 text-center flex flex-col items-center justify-between min-h-[96px] transition-all ${
+                        a.achieved
+                          ? `bg-gradient-to-b from-white/[0.05] to-transparent ${style.border} ${style.glow}`
+                          : 'border-white/5 bg-control-bg/20 opacity-60'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center w-full">
+                        <div className={`text-2xl ${a.achieved ? '' : 'grayscale opacity-75'}`}>{a.icon || '🏅'}</div>
+                        <div className={`mt-1 text-[9px] font-black uppercase tracking-wide leading-tight line-clamp-1 w-full ${a.achieved ? 'text-text-primary' : 'text-text-tertiary'}`}>
                           {a.name}
                         </div>
+                      </div>
+                      
+                      <div className="w-full flex flex-col items-center mt-1">
                         {a.achieved ? (
-                          <div className={`text-[8px] font-extrabold uppercase mt-0.5 ${style.text}`}>
+                          <div className={`text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-white/5 border ${style.border} ${style.text}`}>
                             {a.tier}
                           </div>
                         ) : (
                           <>
-                            <div className="mt-1 w-full h-1 bg-control-bg rounded-full overflow-hidden">
+                            <div className="w-full h-1 bg-control-bg rounded-full overflow-hidden">
                               <div className="h-full bg-sky-400/70 rounded-full" style={{ width: `${pct}%` }} />
                             </div>
-                            <div className="text-[8px] text-text-tertiary font-mono mt-0.5">
-                              {a.progress}/{a.target}
+                            <div className="flex items-center justify-center gap-1 text-[8px] text-text-tertiary font-mono mt-0.5">
+                              <Lock size={8} className="text-text-tertiary" />
+                              <span>{a.progress || 0}/{a.target}</span>
                             </div>
                           </>
                         )}
-                        {!a.achieved && (
-                          <Lock size={9} className="text-text-tertiary mt-0.5" />
-                        )}
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </motion.div>
