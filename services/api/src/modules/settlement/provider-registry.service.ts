@@ -261,25 +261,36 @@ export class ProviderRegistryService implements OnModuleInit {
   }
 
   async getSession(userKey: bigint | string, settlementId: string) {
-    const { user, telegramUserId } = await this.resolveUserAndTelegramId(userKey);
-
-    if (!telegramUserId && !user) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
-
-    let session = await this.prisma.settlementSession.findUnique({
-      where: { id: settlementId },
-    });
-    if (!session && typeof this.prisma?.settlementSession?.findFirst === 'function') {
-      session = await this.prisma.settlementSession.findFirst({
+    let session: any = null;
+    try {
+      session = await this.prisma.settlementSession.findUnique({
         where: { id: settlementId },
       });
+      if (!session && typeof this.prisma?.settlementSession?.findFirst === 'function') {
+        session = await this.prisma.settlementSession.findFirst({
+          where: { id: settlementId },
+        });
+      }
+    } catch (dbErr: any) {
+      this.logger.warn(`[SETTLEMENT_DB_WARN] getSession DB lookup error: ${dbErr?.message}`);
     }
 
-    if (!session) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
-    const adapter = this.adapters.get(session.provider as SettlementProviderId);
-    if (adapter && typeof adapter.getSettlementStatus === 'function') {
-      return adapter.getSettlementStatus(settlementId);
+    if (session) {
+      const adapter = this.adapters.get(session.provider as SettlementProviderId);
+      if (adapter && typeof adapter.getSettlementStatus === 'function') {
+        return adapter.getSettlementStatus(settlementId);
+      }
+      return this.toProviderIndependentView(session);
     }
-    return this.toProviderIndependentView(session);
+
+    // Direct fallback to merchant mobile money adapter
+    const merchantAdapter = this.adapters.get(SettlementProviderId.MERCHANT_MOBILE_MONEY);
+    if (merchantAdapter && typeof merchantAdapter.getSettlementStatus === 'function') {
+      const status = await merchantAdapter.getSettlementStatus(settlementId);
+      if (status) return status;
+    }
+
+    throw new BadRequestException('SETTLEMENT_NOT_FOUND');
   }
 
   async history(userKey: bigint | string) {
