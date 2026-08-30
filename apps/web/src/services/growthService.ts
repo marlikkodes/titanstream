@@ -269,13 +269,8 @@ export const growthService = {
   },
 
   async getMissions(): Promise<MissionItem[]> {
-    try {
-      const res = await api.get('/growth/rewards/missions');
-      const data = res.data?.data ?? res.data;
-      return data?.missions ?? (Array.isArray(data) ? data : []);
-    } catch {
-      return [];
-    }
+    const res = await api.get('/growth/rewards/missions');
+    return res.data.data.missions;
   },
 
   async getProgressOverview(): Promise<ProgressOverview> {
@@ -289,16 +284,8 @@ export const growthService = {
     total: number;
     justUnlocked: Array<{ code: string; name: string; tier: string }>;
   }> {
-    try {
-      const res = await api.get('/growth/achievements');
-      const data = res.data?.data ?? res.data;
-      if (data && Array.isArray(data.achievements)) {
-        return data;
-      }
-      return { achievements: [], totalUnlocked: 0, total: 0, justUnlocked: [] };
-    } catch {
-      return { achievements: [], totalUnlocked: 0, total: 0, justUnlocked: [] };
-    }
+    const res = await api.get('/growth/achievements');
+    return res.data?.data ?? res.data ?? { achievements: [], totalUnlocked: 0, total: 0, justUnlocked: [] };
   },
 
   async getRewardDetail(id: string): Promise<RewardQueueItem> {
@@ -312,23 +299,18 @@ export const growthService = {
   },
 
   async getRewardHistory(): Promise<RewardHistoryItem[]> {
-    try {
-      const res = await api.get('/growth/rewards/history');
-      const data = res.data?.data ?? res.data;
-      return data?.history ?? (Array.isArray(data) ? data : []);
-    } catch {
-      return [];
-    }
+    const res = await api.get('/growth/rewards/history');
+    return res.data?.data?.history ?? res.data?.history ?? res.data?.data ?? [];
   },
 
   async getQualification(): Promise<QualificationStatus> {
     const res = await api.get('/growth/qualification');
-    return res.data?.data ?? res.data;
+    return res.data.data;
   },
 
   async getDashboard(): Promise<any> {
     const res = await api.get('/growth/dashboard');
-    return res.data?.data ?? res.data;
+    return res.data.data;
   },
 
   async getTrustCenter(): Promise<any> {

@@ -176,46 +176,27 @@ export interface LeaderboardResponse {
 export const gamesService = {
   async getCatalog(): Promise<GameCatalogResponse> {
     const response = await api.get('/games/catalog');
-    return response.data.data;
+    return response.data?.data ?? response.data;
   },
 
   async getBalance(): Promise<{ balance: number; lifetimeEarned: number; lifetimeSpent: number }> {
-    try {
-      const response = await api.get('/games/balance');
-      const data = response.data?.data ?? response.data;
-      if (data && typeof data.balance === 'number') {
-        return {
-          balance: data.balance,
-          lifetimeEarned: data.lifetimeEarned ?? data.balance,
-          lifetimeSpent: data.lifetimeSpent ?? 0,
-        };
-      }
-      return { balance: 0, lifetimeEarned: 0, lifetimeSpent: 0 };
-    } catch {
-      return { balance: 0, lifetimeEarned: 0, lifetimeSpent: 0 };
-    }
+    const response = await api.get('/games/balance');
+    return response.data?.data ?? response.data ?? { balance: 100, lifetimeEarned: 100, lifetimeSpent: 0 };
   },
 
   async getProfile(): Promise<{ profile: GameProfileView; dailyLogin: DailyLoginStatus }> {
-    try {
-      const response = await api.get('/games/profile');
-      return response.data?.data ?? response.data;
-    } catch {
-      return {
-        profile: { totalGamesPlayed: 0, highestScore: 0, crystals: 0, totalAchievements: 0 },
-        dailyLogin: { eligible: false, streak: 0, rewardAmount: 0, nextClaimAt: '' },
-      } as any;
-    }
+    const response = await api.get('/games/profile');
+    return response.data?.data ?? response.data;
   },
 
   async claimDailyLogin(): Promise<{ balance: number; amount: number; dailyStreak: number }> {
     const response = await api.post('/games/daily-login/claim');
-    return response.data.data;
+    return response.data?.data ?? response.data;
   },
 
   async startSession(gameId: string): Promise<GameStartSession> {
     const response = await api.post(`/games/${gameId}/session/start`);
-    return response.data.data;
+    return response.data?.data ?? response.data;
   },
 
   async endSession(

@@ -28,36 +28,13 @@ export class GamesController {
   ) {}
 
   private async resolveTelegramUserId(userId: string): Promise<bigint> {
-    if (/^\d+$/.test(userId)) {
-      const tgId = BigInt(userId);
-      const user = await this.prisma.user.findUnique({ where: { telegramUserId: tgId } });
-      if (!user) {
-        await this.prisma.user.create({
-          data: {
-            telegramUserId: tgId,
-            firstName: 'Operator',
-            state: 'ACTIVE_USER',
-          },
-        });
-      }
-      return tgId;
-    }
+    if (/^\d+$/.test(userId)) return BigInt(userId);
     let user = await this.prisma.user.findFirst({
       where: { OR: [{ id: userId }, { identityId: userId }] },
       select: { id: true, telegramUserId: true },
     });
     if (!user) {
-      const fallbackTgId = BigInt('900' + Math.floor(100000000 + Math.random() * 900000000));
-      user = await this.prisma.user.create({
-        data: {
-          id: userId,
-          telegramUserId: fallbackTgId,
-          firstName: 'Operator',
-          state: 'ACTIVE_USER',
-        },
-        select: { id: true, telegramUserId: true },
-      });
-      return user.telegramUserId!;
+      throw new BadRequestException('USER_IDENTITY_NOT_FOUND');
     }
     if (!user.telegramUserId) {
       const fallbackTgId = BigInt('900' + Math.floor(100000000 + Math.random() * 900000000));

@@ -1978,7 +1978,47 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
-        // Growth Next Best Action
+        // Games Crystal Balance & Catalog
+        if (url.includes('/games/balance')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              balance: 150,
+              lifetimeEarned: 250,
+              lifetimeSpent: 100,
+            },
+          }));
+          return;
+        }
+
+        if (url.includes('/games/profile')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              profile: {
+                level: 1,
+                xp: 150,
+                nextLevelXp: 500,
+                highestScore: 0,
+                gamesPlayed: 0,
+                crystalsBalance: 150,
+              },
+              dailyLogin: {
+                day: 1,
+                streak: 1,
+                claimedToday: true,
+                canClaim: false,
+              },
+            },
+          }));
+          return;
+        }
+
+        // Next Best Action Engine
         if (url.includes('/growth/next-best-action')) {
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
@@ -1987,7 +2027,7 @@ function adminMockMiddleware(): Plugin {
             data: {
               actionType: 'CLAIM_REWARD',
               title: 'Claim Your Unlocked Rewards',
-              description: 'You have 2 verified reward badges waiting in your queue to be credited to your ledger balance.',
+              description: 'You have verified reward badge(s) waiting in your queue to be credited to your ledger balance.',
               reason: 'UNCLAIMED_INCENTIVES',
               destinationTab: 'rewards',
               priority: 'URGENT',
@@ -1998,28 +2038,7 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
-        // Growth Referral Assistance
-        if (url.includes('/growth/referrals/') && url.includes('/assistance')) {
-          const refereeId = url.split('/growth/referrals/')[1]?.split('/assistance')[0] || '1';
-          res.setHeader('Content-Type', 'application/json');
-          res.statusCode = 200;
-          res.end(JSON.stringify({
-            success: true,
-            data: {
-              relationshipId: `rel_${refereeId}`,
-              refereeId,
-              name: 'Operator',
-              username: `@operator_${refereeId}`,
-              status: 'REGISTERED',
-              isQualified: false,
-              missingStep: 'Link Mobile Money Rail',
-              helperMessage: 'Hey there! Make sure to select your country & mobile money rail in Titan Stream to activate your account: https://tetherstream.io',
-            },
-          }));
-          return;
-        }
-
-        // Growth Achievements
+        // Growth Achievements (12 Canonical Achievements)
         if (url.includes('/growth/achievements')) {
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
@@ -2027,65 +2046,22 @@ function adminMockMiddleware(): Plugin {
             success: true,
             data: {
               achievements: [
-                { code: 'FIRST_REWARD', name: 'First Victory', description: 'Claim your first reward.', tier: 'BRONZE', icon: '🏆', progress: 0, target: 1, achieved: false },
-                { code: 'FIRST_MACHINE', name: 'Miner', description: 'Own your first active mining machine.', tier: 'BRONZE', icon: '⛏️', progress: 1, target: 1, achieved: true },
-                { code: 'FIRST_SETTLEMENT', name: 'First Settlement', description: 'Complete your first settlement.', tier: 'BRONZE', icon: '✅', progress: 0, target: 1, achieved: false },
-                { code: 'FIRST_REFERRAL', name: 'First Invite', description: 'Invite your first friend to qualify.', tier: 'BRONZE', icon: '🤝', progress: 0, target: 1, achieved: false },
-                { code: 'REWARD_HUNTER', name: 'Reward Hunter', description: 'Claim 5 rewards.', tier: 'SILVER', icon: '🎯', progress: 0, target: 5, achieved: false },
-                { code: 'NETWORK_BUILDER', name: 'Network Builder', description: 'Qualify 3 referrals.', tier: 'SILVER', icon: '🌐', progress: 0, target: 3, achieved: false },
-                { code: 'SETTLEMENT_VETERAN', name: 'Settlement Veteran', description: 'Complete 10 settlements.', tier: 'SILVER', icon: '📊', progress: 0, target: 10, achieved: false },
-                { code: 'TRUSTED_MEMBER', name: 'Trusted Member', description: 'Reach the Trusted level.', tier: 'SILVER', icon: '🛡️', progress: 1, target: 2, achieved: false },
-                { code: 'MACHINE_COLLECTOR', name: 'Machine Collector', description: 'Own 3 active mining machines.', tier: 'GOLD', icon: '🏭', progress: 1, target: 3, achieved: false },
-                { code: 'PREMIUM_MEMBER', name: 'Premium Member', description: 'Reach the Premium level.', tier: 'GOLD', icon: '👑', progress: 0, target: 3, achieved: false },
-                { code: 'TITAN_PATRON', name: 'Titan Patron', description: 'Claim 10 rewards.', tier: 'GOLD', icon: '💎', progress: 0, target: 10, achieved: false },
-                { code: 'REFERRAL_MAGNET', name: 'Referral Magnet', description: 'Qualify 10 referrals.', tier: 'PLATINUM', icon: '🧲', progress: 0, target: 10, achieved: false },
+                { code: 'FIRST_REWARD', name: 'First Victory', description: 'Claim your first reward.', tier: 'BRONZE', icon: '🏆', target: 1, progress: 1, achieved: true, achievedAt: new Date().toISOString() },
+                { code: 'REWARD_HUNTER', name: 'Reward Hunter', description: 'Claim 5 rewards.', tier: 'SILVER', icon: '🎯', target: 5, progress: 2, achieved: false, achievedAt: null },
+                { code: 'TITAN_PATRON', name: 'Titan Patron', description: 'Claim 10 rewards.', tier: 'GOLD', icon: '💎', target: 10, progress: 2, achieved: false, achievedAt: null },
+                { code: 'FIRST_REFERRAL', name: 'First Invite', description: 'Invite your first friend to qualify.', tier: 'BRONZE', icon: '🤝', target: 1, progress: 0, achieved: false, achievedAt: null },
+                { code: 'NETWORK_BUILDER', name: 'Network Builder', description: 'Qualify 3 referrals.', tier: 'SILVER', icon: '🌐', target: 3, progress: 0, achieved: false, achievedAt: null },
+                { code: 'REFERRAL_MAGNET', name: 'Referral Magnet', description: 'Qualify 10 referrals.', tier: 'PLATINUM', icon: '🧲', target: 10, progress: 0, achieved: false, achievedAt: null },
+                { code: 'FIRST_MACHINE', name: 'Core Operator', description: 'Commission your first active compute engine.', tier: 'BRONZE', icon: '⚡', target: 1, progress: 1, achieved: true, achievedAt: new Date().toISOString() },
+                { code: 'MACHINE_COLLECTOR', name: 'Fleet Architect', description: 'Deploy 3 active compute engines in your fleet.', tier: 'GOLD', icon: '🖥️', target: 3, progress: 1, achieved: false, achievedAt: null },
+                { code: 'FIRST_SETTLEMENT', name: 'First Settlement', description: 'Complete your first settlement.', tier: 'BRONZE', icon: '✅', target: 1, progress: 1, achieved: true, achievedAt: new Date().toISOString() },
+                { code: 'SETTLEMENT_VETERAN', name: 'Settlement Veteran', description: 'Complete 10 settlements.', tier: 'SILVER', icon: '📊', target: 10, progress: 1, achieved: false, achievedAt: null },
+                { code: 'TRUSTED_MEMBER', name: 'Trusted Member', description: 'Reach the Trusted level.', tier: 'SILVER', icon: '🛡️', target: 2, progress: 1, achieved: false, achievedAt: null },
+                { code: 'WEEKLY_WARRIOR', name: 'Weekly Warrior', description: 'Claim rewards 3 days in a row.', tier: 'SILVER', icon: '🔥', target: 3, progress: 1, achieved: false, achievedAt: null },
               ],
-              totalUnlocked: 1,
+              totalUnlocked: 3,
               total: 12,
-            },
-          }));
-          return;
-        }
-
-        // Growth Claim Reward
-        if (url.match(/\/growth\/rewards\/[^/]+\/claim/) && req.method === 'POST') {
-          const rewardId = url.split('/growth/rewards/')[1]?.split('/claim')[0] || 'starter_welcome';
-          res.setHeader('Content-Type', 'application/json');
-          res.statusCode = 200;
-          res.end(JSON.stringify({
-            success: true,
-            data: {
-              reward: {
-                id: rewardId,
-                status: 'CLAIMED',
-                amount: rewardId === 'starter_security' ? '1.00' : '0.50',
-                assetCode: 'USDT',
-                claimedAt: new Date().toISOString(),
-              },
-            },
-          }));
-          return;
-        }
-
-        // Growth Reward Detail
-        if (url.match(/\/growth\/rewards\/[^/]+$/) && req.method === 'GET') {
-          const rewardId = url.split('/growth/rewards/')[1];
-          res.setHeader('Content-Type', 'application/json');
-          res.statusCode = 200;
-          res.end(JSON.stringify({
-            success: true,
-            data: {
-              id: rewardId,
-              ruleCode: rewardId === 'starter_security' ? 'RULE_STARTER_SECURITY' : 'RULE_STARTER_WELCOME',
-              rewardType: 'MILESTONE',
-              amount: rewardId === 'starter_security' ? '1.00' : '0.50',
-              assetCode: 'USDT',
-              status: 'AVAILABLE',
-              ruleName: rewardId === 'starter_security' ? 'Security Configuration' : 'Activate Mining Core',
-              description: rewardId === 'starter_security' ? 'Verify Telegram session & configure security settings' : 'Start your first mining cycle on Titan Hub',
-              reason: 'Ready to claim starter bonus',
-              eligible: true,
-              requirement: rewardId === 'starter_security' ? { key: 'security_config', label: 'Security Verified', required: 1, current: 1, unit: 'shield', completed: true } : { key: 'mining_cycle', label: 'Mining Cycle', required: 1, current: 1, unit: 'core', completed: true },
+              justUnlocked: [],
             },
           }));
           return;
@@ -2143,53 +2119,40 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
-        // Games Balance
-        if (url.includes('/games/balance')) {
+        // Growth Rewards Claim and Details
+        if (url.includes('/growth/rewards/') && (url.includes('/claim') || req.method === 'POST')) {
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              balance: 150,
-              lifetimeEarned: 350,
-              lifetimeSpent: 200,
-            },
-          }));
-          return;
-        }
-
-        // Games Profile
-        if (url.includes('/games/profile')) {
-          res.setHeader('Content-Type', 'application/json');
-          res.statusCode = 200;
-          res.end(JSON.stringify({
-            success: true,
-            data: {
-              profile: {
-                crystals: 150,
-                xp: 450,
-                level: 2,
-                rank: 142,
-              },
-              dailyLogin: {
-                canClaim: false,
-                currentDay: 1,
-                streakCount: 3,
+              success: true,
+              reward: {
+                id: 'r_claimed_' + Date.now(),
+                amount: '0.50',
+                assetCode: 'USDT',
+                status: 'CLAIMED',
+                processedAt: new Date().toISOString(),
               },
             },
           }));
           return;
         }
 
-        // Games Catalog
-        if (url.includes('/games/catalog')) {
+        if (url.includes('/growth/rewards/') && !url.includes('/missions') && !url.includes('/history') && !url.includes('/available')) {
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              games: [],
-              activeEvents: [],
+              id: 'starter_welcome',
+              ruleName: 'Activate Mining Core',
+              description: 'Start your first mining cycle on Titan Hub',
+              amount: '0.50',
+              assetCode: 'USDT',
+              status: 'AVAILABLE',
+              reason: 'Starter Bonus',
+              requirement: { key: 'mining_cycle', label: 'Mining Cycle', required: 1, current: 1, unit: 'core', completed: true },
             },
           }));
           return;

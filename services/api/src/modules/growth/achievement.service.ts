@@ -70,7 +70,12 @@ export class AchievementService {
             where: { telegramUserId: id },
             select: { qualifiedReferrals: true },
           });
-          return user?.qualifiedReferrals ?? 0;
+          if (user && typeof user.qualifiedReferrals === 'number' && user.qualifiedReferrals > 0) {
+            return user.qualifiedReferrals;
+          }
+          return this.prisma.referralRelationship.count({
+            where: { referrerId: id, status: { in: ['QUALIFIED', 'REWARDED'] } },
+          });
         },
       },
       {
@@ -85,7 +90,12 @@ export class AchievementService {
             where: { telegramUserId: id },
             select: { qualifiedReferrals: true },
           });
-          return user?.qualifiedReferrals ?? 0;
+          if (user && typeof user.qualifiedReferrals === 'number' && user.qualifiedReferrals > 0) {
+            return user.qualifiedReferrals;
+          }
+          return this.prisma.referralRelationship.count({
+            where: { referrerId: id, status: { in: ['QUALIFIED', 'REWARDED'] } },
+          });
         },
       },
       {
@@ -100,28 +110,37 @@ export class AchievementService {
             where: { telegramUserId: id },
             select: { qualifiedReferrals: true },
           });
-          return user?.qualifiedReferrals ?? 0;
+          if (user && typeof user.qualifiedReferrals === 'number' && user.qualifiedReferrals > 0) {
+            return user.qualifiedReferrals;
+          }
+          return this.prisma.referralRelationship.count({
+            where: { referrerId: id, status: { in: ['QUALIFIED', 'REWARDED'] } },
+          });
         },
       },
       {
         code: 'FIRST_MACHINE',
-        name: 'Miner',
-        description: 'Own your first active mining machine.',
+        name: 'Core Operator',
+        description: 'Commission your first active compute engine.',
         tier: 'BRONZE',
-        icon: '⛏️',
+        icon: '⚡',
         target: 1,
         compute: async (id) =>
-          this.prisma.userMachine.count({ where: { telegramUserId: id, status: 'ACTIVE' } }),
+          this.prisma.userMachine.count({
+            where: { telegramUserId: id, status: { in: ['ACTIVE', 'RUNNING'] } },
+          }),
       },
       {
         code: 'MACHINE_COLLECTOR',
-        name: 'Machine Collector',
-        description: 'Own 3 active mining machines.',
+        name: 'Fleet Architect',
+        description: 'Deploy 3 active compute engines in your fleet.',
         tier: 'GOLD',
-        icon: '🏭',
+        icon: '🖥️',
         target: 3,
         compute: async (id) =>
-          this.prisma.userMachine.count({ where: { telegramUserId: id, status: 'ACTIVE' } }),
+          this.prisma.userMachine.count({
+            where: { telegramUserId: id, status: { in: ['ACTIVE', 'RUNNING'] } },
+          }),
       },
       {
         code: 'FIRST_SETTLEMENT',

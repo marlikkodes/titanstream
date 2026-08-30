@@ -27,20 +27,28 @@ export const AchievementsCabinet: React.FC = () => {
     }
     // If both achieved or both not achieved, sort by tier
     const tierOrder = ['DIAMOND', 'PLATINUM', 'GOLD', 'SILVER', 'BRONZE'];
-    const tierA = tierOrder.indexOf(a.tier);
-    const tierB = tierOrder.indexOf(b.tier);
+    const idxA = tierOrder.indexOf((a.tier || '').toUpperCase());
+    const idxB = tierOrder.indexOf((b.tier || '').toUpperCase());
+    const tierA = idxA === -1 ? 99 : idxA;
+    const tierB = idxB === -1 ? 99 : idxB;
     if (tierA !== tierB) {
       return tierA - tierB;
     }
     // Finally sort by progress (descending)
-    return b.progress - a.progress;
+    return (b.progress || 0) - (a.progress || 0);
   });
 
   const unlocked = sortedAchievements.filter((a) => a.achieved);
 
   return (
     <div className="web3-card rounded-2xl p-4 relative overflow-hidden space-y-3">
-      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+      <div
+        onClick={() => setIsExpanded((prev) => !prev)}
+        className="flex items-center justify-between border-b border-white/5 pb-2 cursor-pointer select-none hover:opacity-90 transition-opacity"
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+      >
         <div className="flex items-center gap-1.5">
           <Trophy size={16} className="text-gold" />
           <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">ACHIEVEMENTS</h2>
@@ -49,12 +57,9 @@ export const AchievementsCabinet: React.FC = () => {
           <span className="text-[10px] font-mono font-bold text-gold bg-gold/10 border border-gold/20 px-2 py-0.5 rounded-full">
             {isLoading ? 'Syncing…' : `${totalAchievementsUnlocked}/${totalAchievements}`}
           </span>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-          >
+          <div className="p-1 rounded-full bg-white/5 border border-white/10">
             {isExpanded ? <ChevronUp size={12} className="text-text-tertiary" /> : <ChevronDown size={12} className="text-text-tertiary" />}
-          </button>
+          </div>
         </div>
       </div>
 
@@ -69,12 +74,6 @@ export const AchievementsCabinet: React.FC = () => {
             {isLoading && safeAchievements.length === 0 ? (
               <div className="flex items-center justify-center gap-2 py-5 text-text-tertiary text-xs">
                 <Loader2 size={13} className="animate-spin" /> Loading cabinet…
-              </div>
-            ) : safeAchievements.length === 0 ? (
-              <div className="text-center py-6 text-text-tertiary text-xs space-y-1">
-                <Trophy size={20} className="mx-auto text-gold/40 mb-1" />
-                <div className="font-bold text-text-secondary">No achievements available</div>
-                <div className="text-[10px]">Complete missions to unlock badges.</div>
               </div>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
