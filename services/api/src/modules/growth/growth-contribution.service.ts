@@ -13,6 +13,8 @@ export interface RecordContributionDto {
   directCostUsdt?: string | number;
   rewardCostUsdt?: string | number;
   fraudProvisionUsdt?: string | number;
+  costBasis?: 'EXACT_LEDGER' | 'ESTIMATED_RAIL_35PCT' | 'ESTIMATED_HARDWARE_70PCT' | 'ZERO_COST' | 'ESTIMATED';
+  isCostEstimated?: boolean;
 }
 
 @Injectable()
@@ -22,10 +24,26 @@ export class GrowthContributionService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Core immutable economic contribution logger.
+   * Core immutable economic contribution logger with strict event idempotency.
    */
   async recordContribution(dto: RecordContributionDto) {
     try {
+      // 1. Strict Event Idempotency Check
+      if (dto.economicEventType && dto.economicEventId) {
+        const existing = await this.prisma.growthContribution.findFirst({
+          where: {
+            economicEventType: dto.economicEventType,
+            economicEventId: dto.economicEventId,
+          },
+        });
+        if (existing) {
+          this.logger.debug(
+            `[GrowthContributionService] Idempotency hit: ${dto.economicEventType}:${dto.economicEventId} already recorded. Skipping.`,
+          );
+          return existing;
+        }
+      }
+
       const gross = new Prisma.Decimal(dto.grossRevenueUsdt || 0);
       const direct = new Prisma.Decimal(dto.directCostUsdt || 0);
       const reward = new Prisma.Decimal(dto.rewardCostUsdt || 0);
@@ -65,6 +83,8 @@ export class GrowthContributionService {
           rewardCostUsdt: reward,
           fraudProvisionUsdt: fraud,
           netContributionUsdt: net,
+          costBasis: dto.costBasis || (dto.isCostEstimated === false ? 'EXACT_LEDGER' : 'ESTIMATED'),
+          isCostEstimated: dto.isCostEstimated ?? true,
         },
       });
 
@@ -94,6 +114,8 @@ export class GrowthContributionService {
       economicEventId: settlementId,
       grossRevenueUsdt: feeDecimal.toString(),
       directCostUsdt: directCost.toString(),
+      costBasis: 'ESTIMATED_RAIL_35PCT',
+      isCostEstimated: true,
     });
   }
 
@@ -116,6 +138,8 @@ export class GrowthContributionService {
       economicEventId: machineId,
       grossRevenueUsdt: price.toString(),
       directCostUsdt: directCost.toString(),
+      costBasis: 'ESTIMATED_HARDWARE_70PCT',
+      isCostEstimated: true,
     });
   }
 
@@ -134,6 +158,8 @@ export class GrowthContributionService {
       economicEventId: rewardId,
       grossRevenueUsdt: 0,
       rewardCostUsdt: amount,
+      costBasis: 'EXACT_LEDGER',
+      isCostEstimated: false,
     });
   }
 

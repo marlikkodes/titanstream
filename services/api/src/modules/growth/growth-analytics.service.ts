@@ -151,6 +151,21 @@ export class GrowthAnalyticsService {
       },
     });
 
+    const railCostSum = await this.prisma.growthContribution.aggregate({
+      where: { costBasis: 'ESTIMATED_RAIL_35PCT' },
+      _sum: { directCostUsdt: true },
+    });
+
+    const hardwareCostSum = await this.prisma.growthContribution.aggregate({
+      where: { costBasis: 'ESTIMATED_HARDWARE_70PCT' },
+      _sum: { directCostUsdt: true },
+    });
+
+    const exactRewardSpend = await this.prisma.growthContribution.aggregate({
+      where: { costBasis: 'EXACT_LEDGER' },
+      _sum: { rewardCostUsdt: true },
+    });
+
     const grossRevenue = Number(totalContribs._sum.grossRevenueUsdt || 0);
     const directCost = Number(totalContribs._sum.directCostUsdt || 0);
     const rewardSpend = Number(totalContribs._sum.rewardCostUsdt || 0);
@@ -187,6 +202,14 @@ export class GrowthAnalyticsService {
         const cac = acquiredCount > 0 ? Number((cReward / acquiredCount).toFixed(2)) : 0;
         const ltv = acquiredCount > 0 ? Number((cGross / acquiredCount).toFixed(2)) : 0;
         const roi = cReward > 0 ? Number((cNet / cReward).toFixed(2)) : cNet > 0 ? 5.0 : 0;
+
+        // Daily contribution per acquired customer & payback days
+        const avgDailyContribution = acquiredCount > 0 ? (cNet / acquiredCount) / 30 : 0;
+        const paybackPeriodDays = avgDailyContribution > 0 ? Number((cac / avgDailyContribution).toFixed(1)) : null;
+
+        // Estimated incremental lift (85% incremental baseline assumption for targeted campaigns)
+        const incrementalContributionUsdt = Number((cNet * 0.85).toFixed(2));
+
         const status = roi >= 3.0 ? 'PROFITABLE' : roi >= 1.0 ? 'OPTIMIZE' : 'UNPROFITABLE';
 
         return {
@@ -198,8 +221,10 @@ export class GrowthAnalyticsService {
           directCostUsdt: cDirect,
           rewardSpendUsdt: cReward,
           netContributionUsdt: cNet,
+          incrementalContributionUsdt,
           cacUsdt: cac,
           ltvUsdt: ltv,
+          paybackPeriodDays,
           roi,
           status,
         };
@@ -298,6 +323,11 @@ export class GrowthAnalyticsService {
       totalRewardSpendUsdt: rewardSpend,
       netGrowthContributionUsdt: netContribution,
       overallGrowthRoi: overallRoi,
+      costBreakdown: {
+        exactDisbursedRewardsUsdt: Number(exactRewardSpend._sum.rewardCostUsdt || 0),
+        estimatedRailCostsUsdt: Number(railCostSum._sum.directCostUsdt || 0),
+        estimatedHardwareCostsUsdt: Number(hardwareCostSum._sum.directCostUsdt || 0),
+      },
       campaigns: campaignMetrics,
       channelBreakdown,
       topEconomicReferrers: topEconomicReferrers.sort((a, b) => b.netContributionUsdt - a.netContributionUsdt),

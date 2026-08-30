@@ -44,6 +44,7 @@ describe('Growth Economy & Value Attribution Engine (E2E Unit Certification)', (
     },
     growthContribution: {
       create: jest.fn(),
+      findFirst: jest.fn(),
       aggregate: jest.fn(),
     },
     rewardRule: {
@@ -203,6 +204,26 @@ describe('Growth Economy & Value Attribution Engine (E2E Unit Certification)', (
           economicEventId: 'mach_pro_500',
         }),
       });
+    });
+
+    it('should enforce strict event idempotency on duplicate event recording', async () => {
+      mockPrisma.growthContribution.findFirst.mockResolvedValue({
+        id: 'gc_existing_1',
+        economicEventType: 'SETTLEMENT_FEE',
+        economicEventId: 'settle_session_101',
+        netContributionUsdt: '6.50',
+      });
+
+      const res = await contributionService.recordSettlementContribution(
+        'settle_session_101',
+        BigInt(9999),
+        '10.00',
+        '100.00',
+      );
+
+      expect(res).toBeDefined();
+      expect(res?.id).toBe('gc_existing_1');
+      expect(mockPrisma.growthContribution.create).not.toHaveBeenCalled();
     });
   });
 
