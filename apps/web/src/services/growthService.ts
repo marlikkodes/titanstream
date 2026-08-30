@@ -51,6 +51,15 @@ export interface ReferralSummary {
   qualifiedCount: number;
   payingCount: number;
   totalEarnedUSDT: number;
+  networkContributionUsdt?: number;
+  networkGrossVolumeUsdt?: number;
+  qualificationStatus?: {
+    qualifiedCount: number;
+    payingCount: number;
+    withdrawalRequired: number;
+    withdrawalRemaining: number;
+    isWithdrawalUnlocked: boolean;
+  };
   referredBy?: ReferredByInfo | null;
   referrals: ReferralSummaryItem[];
 }

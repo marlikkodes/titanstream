@@ -22,9 +22,20 @@ interface ReferredByInfo {
 
 interface ReferralState {
   invitedCount: number;
+  qualifiedCount: number;
+  payingCount: number;
   computeBoost: number;
   earnedUsdt: number;
   earnedTon: number;
+  networkContributionUsdt: number;
+  networkGrossVolumeUsdt: number;
+  qualificationStatus: {
+    qualifiedCount: number;
+    payingCount: number;
+    withdrawalRequired: number;
+    withdrawalRemaining: number;
+    isWithdrawalUnlocked: boolean;
+  } | null;
   referralLink: string;
   webReferralLink: string;
   telegramReferralLink: string;
@@ -60,9 +71,14 @@ export const useReferralStore = create<ReferralState>((set, get) => {
 
   return {
     invitedCount: 0,
+    qualifiedCount: 0,
+    payingCount: 0,
     computeBoost: 1.0,
     earnedUsdt: 0,
     earnedTon: 0,
+    networkContributionUsdt: 0,
+    networkGrossVolumeUsdt: 0,
+    qualificationStatus: null,
     referralLink: fallback.primaryLink,
     webReferralLink: fallback.webLink,
     telegramReferralLink: fallback.tgLink,
@@ -81,6 +97,8 @@ export const useReferralStore = create<ReferralState>((set, get) => {
         const boost = Number((1 + (summary.totalInvited || 0) * 0.02).toFixed(2));
 
         const count = summary.totalInvited || 0;
+        const qualifiedCount = summary.qualifiedCount || 0;
+        const payingCount = summary.payingCount || 0;
         const rawCode = summary.referralCode || currentFallback.code;
         const cleanCode = extractReferralCode(rawCode);
         const isTgApp = Boolean((window as any).Telegram?.WebApp?.initData);
@@ -91,9 +109,20 @@ export const useReferralStore = create<ReferralState>((set, get) => {
 
         set({
           invitedCount: count,
+          qualifiedCount,
+          payingCount,
           computeBoost: boost,
           earnedUsdt: summary.totalEarnedUSDT || 0,
           earnedTon: 0,
+          networkContributionUsdt: summary.networkContributionUsdt || 0,
+          networkGrossVolumeUsdt: summary.networkGrossVolumeUsdt || 0,
+          qualificationStatus: summary.qualificationStatus || {
+            qualifiedCount,
+            payingCount,
+            withdrawalRequired: 5,
+            withdrawalRemaining: Math.max(0, 5 - qualifiedCount),
+            isWithdrawalUnlocked: qualifiedCount >= 5,
+          },
           referralLink: primaryLink,
           webReferralLink: webLink,
           telegramReferralLink: tgLink,

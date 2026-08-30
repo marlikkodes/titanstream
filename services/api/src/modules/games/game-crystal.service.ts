@@ -20,27 +20,40 @@ export class GameCrystalService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getOrCreateAccount(userKey: bigint | string, client: TxClient = this.prisma) {
-    const isUuid = typeof userKey === 'string' && userKey.includes('-');
-    let user: any = null;
-
-    if (isUuid) {
-      user = await client.user.findUnique({ where: { id: userKey as string } });
+    let telegramUserId: bigint;
+    if (typeof userKey === 'bigint') {
+      telegramUserId = userKey;
     } else {
-      const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
-      user = await client.user.findUnique({ where: { telegramUserId } });
+      const keyStr = String(userKey);
+      if (/^\d+$/.test(keyStr)) {
+        telegramUserId = BigInt(keyStr);
+      } else {
+        let user = await client.user.findFirst({
+          where: { OR: [{ id: keyStr }, { identityId: keyStr }] },
+          select: { id: true, telegramUserId: true },
+        });
+        if (!user) throw new BadRequestException('USER_NOT_FOUND');
+        if (!user.telegramUserId) {
+          const fallbackTgId = BigInt('900' + Math.floor(100000000 + Math.random() * 900000000));
+          user = await client.user.update({
+            where: { id: user.id },
+            data: { telegramUserId: fallbackTgId },
+            select: { id: true, telegramUserId: true },
+          });
+        }
+        telegramUserId = user.telegramUserId!;
+      }
     }
 
-    if (!user) throw new BadRequestException('USER_NOT_FOUND');
-
-    let existing = await client.crystalAccount.findFirst({
-      where: { telegramUserId: user.telegramUserId || undefined },
+    const existing = await client.crystalAccount.findUnique({
+      where: { telegramUserId },
     });
 
     if (existing) return existing;
 
     return client.crystalAccount.create({
       data: {
-        telegramUserId: user.telegramUserId || BigInt(0),
+        telegramUserId,
         balance: 100,
       },
     });

@@ -386,6 +386,22 @@ export class ReferralService {
       });
     });
 
+    // Compute downline economic net contribution from analytical GrowthContribution ledger
+    const refereeIds = relationships.map((r) => r.refereeId);
+    let networkContributionUsdt = 0;
+    let networkGrossVolumeUsdt = 0;
+    if (refereeIds.length > 0) {
+      const downlineContribs = await this.prisma.growthContribution.aggregate({
+        where: { telegramUserId: { in: refereeIds } },
+        _sum: {
+          grossRevenueUsdt: true,
+          netContributionUsdt: true,
+        },
+      });
+      networkContributionUsdt = Number(downlineContribs._sum.netContributionUsdt || 0);
+      networkGrossVolumeUsdt = Number(downlineContribs._sum.grossRevenueUsdt || 0);
+    }
+
     // Find who referred this user (upline)
     const uplineRelationship = await this.prisma.referralRelationship.findUnique({
       where: { refereeId: telegramUserId },
@@ -407,6 +423,15 @@ export class ReferralService {
       qualifiedCount,
       payingCount,
       totalEarnedUSDT,
+      networkContributionUsdt,
+      networkGrossVolumeUsdt,
+      qualificationStatus: {
+        qualifiedCount,
+        payingCount,
+        withdrawalRequired: 5,
+        withdrawalRemaining: Math.max(0, 5 - qualifiedCount),
+        isWithdrawalUnlocked: qualifiedCount >= 5,
+      },
       referredBy: uplineRelationship
         ? {
             referrerId: uplineRelationship.referrerId.toString(),
