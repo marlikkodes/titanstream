@@ -1,7 +1,7 @@
 # Antigravity Superengineering Operating System (Agent OS)
-## Architectural & Operational Guide
+## Global Autonomous Multi-Agent Control Plane & Operational Guide
 
-The **Antigravity Superengineering Operating System** is an autonomous, multi-agent software-engineering operating system designed to automate end-to-end development, testing, debugging, and verification with minimal human intervention, optimized token economy, and strict safety guardrails.
+The **Antigravity Superengineering Operating System** is a global, reusable control plane designed to automate software engineering workflows across any repository with minimal human interaction, strict token economics, deterministic verification gates, auto-repair, and native Antigravity primitives.
 
 ---
 
@@ -16,27 +16,35 @@ The **Antigravity Superengineering Operating System** is an autonomous, multi-ag
                                ┌──────────────────────────┐
                                │     AGENT COMMANDER      │
                                │ - Intent Interpretation  │
+                               │ - Domain Classification  │
                                │ - Repo Intelligence AST │
-                               │ - Failure Memory Query   │
-                               │ - Task DAG Planner       │
+                               │ - Failure Memory Lookup  │
+                               │ - Task DAG Waves         │
                                └────────────┬─────────────┘
                                             │
                ┌────────────────────────────┼───────────────────────────┐
                ▼                            ▼                           ▼
       ┌──────────────────┐        ┌──────────────────┐        ┌──────────────────┐
       │    Architect     │        │Frontend Engineer │        │Backend Engineer  │
-      │  (L0/L1 Tier)    │        │   (L2/L3 Tier)   │        │   (L2/L3 Tier)   │
-      └────────┬─────────┘        └────────┬─────────┘        └────────┬─────────┘
+      │  (L0/L1 Tier)    │        │   (L2/L3 Tier)   │        │   (L2/L3 Tier)   │  (19 Specialized
+      └────────┬─────────┘        └────────┬─────────┘        └────────┬─────────┘     Roles)
                │                           │                           │
                └───────────────────────────┼───────────────────────────┘
                                            ▼
                                ┌──────────────────────────┐
+                               │      MERGE GUARDIAN      │
+                               │ - Conflict Detection     │
+                               │ - Workspace Isolation    │
+                               └────────────┬─────────────┘
+                                            │
+                                            ▼
+                               ┌──────────────────────────┐
                                │  DETERMINISTIC GATES     │
                                │ - Typecheck / Syntax     │
-                               │ - Lint / Clean code      │
+                               │ - Lint / Project Style   │
                                │ - Unit / Integration     │
-                               │ - Security & Secret Scan │
-                               │ - Red-Team Audit         │
+                               │ - Secret Redaction/Scan  │
+                               │ - Adversarial Red-Team   │
                                └────────────┬─────────────┘
                                             │
                        ┌────────────────────┴────────────────────┐
@@ -44,114 +52,104 @@ The **Antigravity Superengineering Operating System** is an autonomous, multi-ag
                        ▼                                         ▼
          ┌──────────────────────────┐              ┌──────────────────────────┐
          │         DELIVERY         │              │      AUTO-DEBUGGER       │
-         │ - Mission Checkpoint     │              │ - 8-Step Repair Loop     │
-         │ - Metrics Telemetry      │              │ - Max 3 Repair Attempts  │
-         │ - Concise UI Report      │              │ - Regression Test & Mem  │
+         │ - Event-Sourced Log      │              │ - 8-Step Repair Loop     │
+         │ - Telemetry & Metrics    │              │ - Max 3 Repair Attempts  │
+         │ - Concise UI Result      │              │ - Regression Test & Mem  │
          └──────────────────────────┘              └──────────────────────────┘
 ```
 
 ---
 
-## 2. Global Agent Directory Layout
+## 2. Directory Layout: Global vs Project Separation
 
-- `.agents/`
-  - `bin/agent-commander`: Executable CLI facilitating all workflows and commands.
-  - `engine/`: Core Python engine modules:
-    - `agent_os_core.py`: Data models, contracts, enums, and schemas.
-    - `repo_intelligence.py`: Autonomous repository intelligence and symbol mapping.
-    - `context_tier.py`: Context economy manager (L0–L4) and log compressor.
-    - `failure_memory.py`: Persistent defect and fix database.
-    - `task_graph.py`: DAG constructor, dynamic routing, and parallel execution waves.
-    - `auto_debugger.py`: 8-step evidence-based repair loop with repair limits.
-    - `verification_gates.py`: Deterministic verification and red-team review.
-    - `mission_state.py`: Machine-readable mission state and checkpointing.
-    - `observability.py`: Telemetry, token usage, and latency tracking.
-    - `agent_commander.py`: Unified orchestrator.
-  - `agents/`: 15 specialized JSON agent manifests.
-  - `config/`: Safety policies, permission limits, and routing matrices.
-  - `workflows/`: Reusable multi-phase DAG templates.
-  - `memory/`: Persistent failure database (`failure_memory.json`).
-  - `knowledge/`: Cached repository intelligence maps (`repo_map.json`, `architecture_map.json`, etc.).
-  - `state/`: Mission execution checkpoints and metrics telemetry.
+### Reusable Global Control Plane (`AgentOS/`):
+- `engine/`
+  - `orchestration/`: Task DAG waves, dependency resolver, Merge Guardian conflict detector.
+  - `repository/`: AST parser, symbol graph, dependency tree, API & database schema discovery.
+  - `context/`: Context economy manager (L0–L4) and log compressor.
+  - `memory/`: Persistent defect database (`failure_memory.json`).
+  - `routing/`: Domain detector and smallest competent agent routing.
+  - `mission/`: Event-sourced store (`events.jsonl`, `checkpoint.json`, `evidence/`).
+  - `verification/`: Multi-gate determinism (Typecheck, Lint, Security, Red-Team).
+  - `diagnostics/`: 8-step evidence-based auto-repair loop.
+  - `economics/`: Token budgets, latency metrics, and observability.
+  - `safety/`: Policy guard, secret redaction, lifecycle hooks (`pre_tool`, `post_tool`, `tool_failure`).
+  - `reporting/`: Clean user interface presentation.
+- `agents/`: 19 specialized JSON agent manifests.
+- `workflows/`: 9 native Antigravity Markdown workflows (`fix.md`, `debug.md`, `finish.md`, etc.).
+- `policies/`: Tool profiles and safety policies.
+- `tests/`: 20-point comprehensive automated acceptance suite.
+- `bin/agent-commander`: Executable CLI.
 
----
-
-## 3. Specialized Agents
-
-| Agent Name | Role | Autonomy Level | Allowed Tools | Input Contract | Output Contract |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **`architect`** | Software Architect | L1_LOCAL_DEV | Repo Intel, View, Grep, Find | Objective, Constraints | Architecture Plan, Component DAG |
-| **`repo_analyst`** | Repo Intelligence Analyst | L0_READ_ONLY | View, Grep, Find, ListDir | Target Symbol/File | Affected Subsystems, Test Map |
-| **`frontend_engineer`** | Frontend Engineer | L1_LOCAL_DEV | Filesystem, Run, View | UI Spec, Criteria | Files Changed, Tests Executed |
-| **`backend_engineer`** | Backend Engineer | L1_LOCAL_DEV | Filesystem, Run, View | API Spec, Criteria | Files Changed, Unit Tests Run |
-| **`database_engineer`** | Database Engineer | L1_LOCAL_DEV | Filesystem, DB Tools | Data Model, Migration | Migration Files, Rollback Plan |
-| **`integration_engineer`** | Integration Engineer | L1_LOCAL_DEV | Filesystem, Run | Services, Schemas | Integration Tests, Status |
-| **`devops_engineer`** | DevOps & Release | L2_STAGING_PR | Workflows, Docker, Run | Pipeline Spec, Envs | Workflow Files, Build Status |
-| **`qa_engineer`** | QA Engineer | L1_LOCAL_DEV | Test Runner, View, Grep | Feature Scope, Test Plan | Test Results, Coverage Report |
-| **`browser_engineer`** | Browser & E2E Engineer | L1_LOCAL_DEV | Browser Automation, Run | URL/Flow, Target DOM | Console Errors, Screenshots |
-| **`debugger`** | Autonomous Debugger | L1_LOCAL_DEV | Filesystem, Run, Grep | Symptom, Reproducer | Root Cause, Patch, Reg Test |
-| **`security_engineer`** | Security Engineer | L1_LOCAL_DEV | Secret Scanner, Grep | Diff, Files to Audit | Vulnerabilities, Secret Leaks |
-| **`performance_engineer`**| Performance Engineer | L1_LOCAL_DEV | Profiler, Filesystem | Latency Spec, Subsystem | Bottlenecks, Optimizations |
-| **`code_reviewer`** | Code Reviewer | L0_READ_ONLY | Diff Viewer, Grep | Git Diff, Changed Files | Review Status, Critique |
-| **`test_engineer`** | Test Engineer | L1_LOCAL_DEV | Filesystem, Test Runner | Function/Module | Test Files, Assertions |
-| **`doc_engineer`** | Documentation Engineer| L1_LOCAL_DEV | Doc Writer, View | Feature/Release Spec | Documentation Markdown |
+### Lightweight Repository Configuration (`.agents/`):
+- `AGENTS.md`: Workspace operating principles and conventions.
+- `workflows/`: Project workflow aliases.
+- `missions/`: Event-sourced execution directories per mission (`<timestamp>-<name>/`).
+- `knowledge/`: Cached repository intelligence maps (`repo_map.json`, `architecture_map.json`, etc.).
+- `state/`: Mission checkpoints and telemetry metrics (`metrics.json`).
+- `memory/`: Repository-specific failure memory.
 
 ---
 
-## 4. Context Economy Tiers
+## 3. 19 Specialized Agent Roles
 
-To maximize token efficiency, context is compartmentalized into 5 progressive tiers:
-- **L0: Metadata**: Stack, repository name, language, core dependencies (~100–300 tokens).
-- **L1: Architecture**: Subsystems, design patterns, entrypoints (~500–1,500 tokens).
-- **L2: Subsystem**: Targeted directory structure and file listings (~1,000–3,000 tokens).
-- **L3: Exact Code**: Precise targeted source files and function definitions (~2,000–8,000 tokens).
-- **L4: History**: Historical context, Git diffs, and matching failure memory signatures (~1,000–4,000 tokens).
-
----
-
-## 5. 8-Step Auto-Debugger Repair Protocol
-
-```
-[1. OBSERVE]     --> Parse symptom and error signature
-[2. REPRODUCE]   --> Execute deterministic test / reproducer command
-[3. TRACE]       --> Compress raw logs & isolate exception stack trace
-[4. ISOLATE]     --> Identify target function / file boundary
-[5. HYPOTHESIZE] --> Formulate concrete fix hypothesis (Attempt N / 3)
-[6. PATCH]       --> Apply targeted minimal code modification
-[7. TEST]        --> Execute reproduction command to confirm resolution
-[8. REGRESSION]  --> Author permanent regression test & persist to Failure Memory
-```
-
-If 3 repair attempts fail, the debugger halts immediately, preserves workspace state, records telemetry, and escalates to the human operator with a concise diagnostic report.
+1. **`architect`**: System design, module boundaries, architectural specifications, and migration blueprints.
+2. **`repo_analyst`**: Explores, maps, and analyzes codebase symbols, dependencies, and impact zones.
+3. **`frontend_engineer`**: UI components, responsive styling, client state, web standards, and visual performance budgets.
+4. **`backend_engineer`**: API endpoints, server business logic, middleware, authentication, and service integrations.
+5. **`database_engineer`**: Data schema design, database migrations, SQL query optimization, and data integrity guarantees.
+6. **`integration_engineer`**: Cross-service glue, external webhook contracts, messaging flows, and end-to-end service wiring.
+7. **`devops_engineer`**: CI/CD pipelines, containerization, build scripts, deployment configs, and environment setup.
+8. **`qa_engineer`**: Test plans, boundary/edge case testing, suite execution, and test gap analysis.
+9. **`browser_engineer`**: Headless browser automation, UI state validation, console error capture, and E2E verification.
+10. **`debugger`**: 8-step root cause analysis, hypothesis testing, minimal targeted patches, and regression test authoring.
+11. **`security_engineer`**: Static vulnerability scanning, secret leakage prevention, OWASP compliance, and threat audits.
+12. **`performance_engineer`**: Execution profiling, memory leak detection, bundle size analysis, and latency optimization.
+13. **`code_reviewer`**: Architectural adherence, coding style enforcement, maintainability review, and clean code standards.
+14. **`test_engineer`**: Unit test generation, test fixture creation, mock scaffolding, and regression test suites.
+15. **`doc_engineer`**: API documentation, architecture runbooks, changelog generation, and user guides.
+16. **`mission_controller`** *(Meta)*: Owns execution state, DAG wave transitions, event stream appending, and checkpoint persistence.
+17. **`context_engineer`** *(Meta)*: Owns tiered context retrieval (L0–L4), log compression, token budgeting, and relevance scoring.
+18. **`merge_guardian`** *(Meta)*: Owns multi-agent workspace conflict detection, branch isolation, diff reconciliation, and merge safety.
+19. **`escalation_manager`** *(Meta)*: Owns human interaction gating, policy violation analysis, and missing credential verification.
 
 ---
 
-## 6. Global CLI & Commands
+## 4. Native Markdown Workflows
 
-Run commands via `.agents/bin/agent-commander <command> [objective]`:
+- `/fix`: Autonomous defect repair via 8-step debugger loop.
+- `/debug`: Evidence-based diagnostic and root cause isolation.
+- `/finish`: Universal finish-this mode across all layers.
+- `/audit`: Code quality, complexity, and maintainability audit.
+- `/security`: Secret leakage scan and red-team vulnerability audit.
+- `/review`: Independent diff review and architectural conformance.
+- `/ship`: Full deterministic gate verification and release staging.
+- `/recover`: Event stream replay and post-crash state restoration.
+- `/status`: Real-time mission progress and telemetry metrics.
 
-```bash
-# Execute Fix Workflow
-.agents/bin/agent-commander fix "Fix token expiration in auth service"
+---
 
-# Execute Debug Workflow
-.agents/bin/agent-commander debug "Investigate 500 error in /api/checkout"
+## 5. 20-Point Acceptance Test Summary
 
-# Run Finish-This Universal Mode
-.agents/bin/agent-commander finish "Complete withdrawal hardening flow"
-
-# Check Current Mission Status
-.agents/bin/agent-commander status
-
-# Resume Interrupted Mission
-.agents/bin/agent-commander resume
-
-# Re-index Repository Intelligence
-.agents/bin/agent-commander index
-
-# Search Persistent Failure Memory
-.agents/bin/agent-commander memory "timeout"
-
-# Display Telemetry Metrics
-.agents/bin/agent-commander metrics
-```
+| # | Test Scenario | Verified Capability | Status |
+| :- | :--- | :--- | :-: |
+| **1** | Simple frontend bug | Auto-routing, local fix, and verification gates | **PASSED** |
+| **2** | Backend bug | AST tracing, targeted patch, unit test verification | **PASSED** |
+| **3** | Database bug | Schema alignment and migration safety verification | **PASSED** |
+| **4** | Cross-system feature | DAG construction with parallel wave execution | **PASSED** |
+| **5** | Introduced test failure | 8-step repair loop and regression test authoring | **PASSED** |
+| **6** | Browser-visible bug | Headless browser verification and UI state assertion | **PASSED** |
+| **7** | Security-sensitive change | Automated secret scanning and red-team audit | **PASSED** |
+| **8** | CI failure | Raw log ingestion, compression, and error extraction | **PASSED** |
+| **9** | Agent interruption | Checkpoint resumption without starting over | **PASSED** |
+| **10** | Ambiguous/high-risk op | Clean escalation to human operator | **PASSED** |
+| **11** | Repeated failure | Clean halt after MAX_REPAIR_ATTEMPTS (3) | **PASSED** |
+| **12** | Token efficiency | Strict L0–L4 tiered context loading | **PASSED** |
+| **13** | Agent conflict | Merge Guardian detects multi-agent file overlaps | **PASSED** |
+| **14** | MCP tool outage | Transient error detection and automatic fallback | **PASSED** |
+| **15** | Context overflow | Log compression reduces 5,500 lines to 20 lines | **PASSED** |
+| **16** | Secret exposure | Automatic regex redaction of credentials/tokens | **PASSED** |
+| **17** | Dangerous command | Safety policy blocks destructive bash/SQL commands | **PASSED** |
+| **18** | False claim of success | Deterministic syntax/type gate rejects bad claims | **PASSED** |
+| **19** | Concurrent missions | Isolated event streams and mission directories | **PASSED** |
+| **20** | Process crash | Complete state reconstruction from `events.jsonl` | **PASSED** |

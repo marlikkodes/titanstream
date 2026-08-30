@@ -1,0 +1,36 @@
+{
+  "root": "/home/wendy/Desktop/tetherstream/AgentOS/benchmarks/node_backend",
+  "total_files": 6,
+  "files": [
+    {
+      "path": "package.json",
+      "extension": ".json",
+      "size_bytes": 82
+    },
+    {
+      "path": ".agents/state/metrics.json",
+      "extension": ".json",
+      "size_bytes": 150
+    },
+    {
+      "path": ".agents/state/current_mission.json",
+      "extension": ".json",
+      "size_bytes": 55
+    },
+    {
+      "path": ".agents/state/mission_1788118520_5bc6e8.json",
+      "extension": ".json",
+      "size_bytes": 548
+    },
+    {
+      "path": ".agents/memory/failure_memory.json",
+      "extension": ".json",
+      "size_bytes": 2
+    },
+    {
+      "path": "src/auth.js",
+      "extension": ".js",
+      "size_bytes": 202
+    }
+  ]
+}

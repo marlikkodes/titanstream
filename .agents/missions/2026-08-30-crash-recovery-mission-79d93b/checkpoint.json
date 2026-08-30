@@ -1,0 +1,28 @@
+{
+  "mission_id": "2026-08-30-crash-recovery-mission-79d93b",
+  "objective": "Crash Recovery Mission",
+  "status": "ACTIVE",
+  "tasks": {
+    "task_auth": {
+      "id": "task_auth",
+      "title": "Implement Auth",
+      "role": "backend_engineer",
+      "status": "COMPLETED",
+      "dependencies": [],
+      "output": "Done"
+    }
+  },
+  "completed_tasks": [
+    "task_auth"
+  ],
+  "failed_tasks": [],
+  "repair_attempts": 0,
+  "test_results": {
+    "test_auth_jwt": true
+  },
+  "escalated": false,
+  "escalation_reason": null,
+  "tokens_consumed": 1200,
+  "created_at": 1788112953.9232461,
+  "completed_at": null
+}

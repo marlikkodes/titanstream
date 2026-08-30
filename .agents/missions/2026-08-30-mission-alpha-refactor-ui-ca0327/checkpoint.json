@@ -1,0 +1,15 @@
+{
+  "mission_id": "2026-08-30-mission-alpha-refactor-ui-ca0327",
+  "objective": "Mission Alpha: Refactor UI",
+  "status": "ACTIVE",
+  "tasks": {},
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": 0,
+  "test_results": {},
+  "escalated": false,
+  "escalation_reason": null,
+  "tokens_consumed": 0,
+  "created_at": 1788112922.6946502,
+  "completed_at": null
+}

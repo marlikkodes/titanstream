@@ -1,0 +1,5 @@
+{
+  "name": "mission_controller",
+  "role": "Mission Controller",
+  "description": "Owns execution state, DAG wave transitions, event stream appending, and checkpoint persistence."
+}

@@ -1,0 +1,278 @@
+{
+  "mission_id": "mission_1788112950_d2f7e1",
+  "objective": "Fix prisma database migration column naming mismatch in transactions table",
+  "status": "COMPLETED",
+  "current_phase": "DELIVERY",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 3400,
+  "tasks": {
+    "task_plan_cd819f": {
+      "id": "task_plan_cd819f",
+      "title": "Architecture & Analysis for: Fix prisma database migration column nam",
+      "description": "Analyze requirements and plan implementation for Fix prisma database migration column naming mismatch in transactions table",
+      "agent_role": "database_engineer",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_cd819f",
+        "objective": "Fix prisma database migration column naming mismatch in transactions table",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_cd819f",
+        "agent_role": "database_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "database_engineer completed Architecture & Analysis for: Fix prisma database migration column nam",
+        "tokens_consumed": 850,
+        "duration_seconds": 3.0994415283203125e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788112951.4268494,
+      "completed_at": 1788112951.427622
+    },
+    "task_database_engineer_aeb32a": {
+      "id": "task_database_engineer_aeb32a",
+      "title": "Database Engineer Implementation",
+      "description": "Execute database_engineer scope for Fix prisma database migration column naming mismatch in transactions table",
+      "agent_role": "database_engineer",
+      "dependencies": [
+        "task_plan_cd819f"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_database_engineer_aeb32a",
+        "objective": "Fix prisma database migration column naming mismatch in transactions table",
+        "scope": [
+          "database_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_cd819f"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_database_engineer_aeb32a",
+        "agent_role": "database_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "database_engineer completed Database Engineer Implementation",
+        "tokens_consumed": 850,
+        "duration_seconds": 2.6226043701171875e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788112951.42688,
+      "completed_at": 1788112951.4279385
+    },
+    "task_backend_engineer_50795f": {
+      "id": "task_backend_engineer_50795f",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Fix prisma database migration column naming mismatch in transactions table",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_cd819f"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_backend_engineer_50795f",
+        "objective": "Fix prisma database migration column naming mismatch in transactions table",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_cd819f"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_backend_engineer_50795f",
+        "agent_role": "backend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "backend_engineer completed Backend Engineer Implementation",
+        "tokens_consumed": 850,
+        "duration_seconds": 2.384185791015625e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788112951.4268975,
+      "completed_at": 1788112951.428019
+    },
+    "task_qa_082261": {
+      "id": "task_qa_082261",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_database_engineer_aeb32a",
+        "task_backend_engineer_50795f"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_qa_082261",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_database_engineer_aeb32a",
+          "task_backend_engineer_50795f"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_qa_082261",
+        "agent_role": "qa_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "packages/core/src/index.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "qa_engineer completed QA & Regression Verification",
+        "tokens_consumed": 850,
+        "duration_seconds": 2.384185791015625e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788112951.426913,
+      "completed_at": 1788112951.4281592
+    }
+  },
+  "completed_tasks": [
+    "task_plan_cd819f",
+    "task_database_engineer_aeb32a",
+    "task_backend_engineer_50795f",
+    "task_qa_082261"
+  ],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {
+    "typecheck": true,
+    "lint": true,
+    "unit_tests": true,
+    "security": true,
+    "red_team": true
+  },
+  "active_branches": [
+    "agent/mission_1788112950_d2f7e1"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788112950.4340422,
+  "updated_at": 1788112951.4336805
+}

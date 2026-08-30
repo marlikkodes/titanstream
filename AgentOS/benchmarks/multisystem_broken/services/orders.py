@@ -1,0 +1,1 @@
+def process_order(order): return {"order_id": order.get("id"), "valid": True}

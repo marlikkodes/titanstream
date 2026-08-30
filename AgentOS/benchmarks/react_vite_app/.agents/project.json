@@ -1,0 +1,8 @@
+{
+  "name": "react_vite_app",
+  "language": "javascript",
+  "framework": "react",
+  "package_manager": "npm",
+  "test_runner": "jest",
+  "auto_generated": true
+}

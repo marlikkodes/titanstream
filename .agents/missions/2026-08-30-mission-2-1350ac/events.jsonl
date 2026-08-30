@@ -1,0 +1,1 @@
+{"event_id": "evt_2a5fe899", "mission_id": "2026-08-30-mission-2-1350ac", "type": "MISSION_CREATED", "timestamp": 1788118484.5022936, "payload": {"objective": "Mission 2", "autonomy_level": "L1_LOCAL_DEV", "token_budget": 50000}}

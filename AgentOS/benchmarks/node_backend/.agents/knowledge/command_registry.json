@@ -1,0 +1,9 @@
+{
+  "build": "pnpm build",
+  "test": "pnpm test",
+  "lint": "pnpm lint",
+  "typecheck": "pnpm typecheck",
+  "format": "pnpm prettier --write .",
+  "dev": "pnpm dev",
+  "git_commit": "python3 scripts/git_plumbing_commit.py"
+}

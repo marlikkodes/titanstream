@@ -1,0 +1,5 @@
+{
+  "name": "debugger",
+  "role": "Autonomous Debugger",
+  "description": "8-step root cause analysis, hypothesis testing, minimal targeted patches, and regression test authoring."
+}

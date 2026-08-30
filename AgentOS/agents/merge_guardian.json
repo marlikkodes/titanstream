@@ -1,0 +1,5 @@
+{
+  "name": "merge_guardian",
+  "role": "Merge Guardian",
+  "description": "Owns multi-agent workspace conflict detection, branch isolation, diff reconciliation, and merge safety."
+}

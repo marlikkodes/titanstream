@@ -1,0 +1,5 @@
+{"event_id": "evt_a5c666ef", "mission_id": "2026-08-30-crash-recovery-mission-79d93b", "type": "MISSION_CREATED", "timestamp": 1788112953.9232461, "payload": {"objective": "Crash Recovery Mission", "autonomy_level": "L1_LOCAL_DEV", "token_budget": 50000}}
+{"event_id": "evt_1124965a", "mission_id": "2026-08-30-crash-recovery-mission-79d93b", "type": "TASK_CREATED", "timestamp": 1788112953.9241493, "payload": {"task_id": "task_auth", "title": "Implement Auth", "role": "backend_engineer"}}
+{"event_id": "evt_a8e08a51", "mission_id": "2026-08-30-crash-recovery-mission-79d93b", "type": "AGENT_STARTED", "timestamp": 1788112953.9251325, "payload": {"task_id": "task_auth"}}
+{"event_id": "evt_cea52de0", "mission_id": "2026-08-30-crash-recovery-mission-79d93b", "type": "AGENT_COMPLETED", "timestamp": 1788112953.925979, "payload": {"task_id": "task_auth", "tokens": 1200, "output": "Done"}}
+{"event_id": "evt_d27f3d2d", "mission_id": "2026-08-30-crash-recovery-mission-79d93b", "type": "TEST_PASSED", "timestamp": 1788112953.9266036, "payload": {"test_name": "test_auth_jwt"}}

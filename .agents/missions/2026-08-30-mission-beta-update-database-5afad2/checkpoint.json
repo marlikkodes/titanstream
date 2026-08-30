@@ -1,0 +1,15 @@
+{
+  "mission_id": "2026-08-30-mission-beta-update-database-5afad2",
+  "objective": "Mission Beta: Update Database",
+  "status": "ACTIVE",
+  "tasks": {},
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": 0,
+  "test_results": {},
+  "escalated": false,
+  "escalation_reason": null,
+  "tokens_consumed": 0,
+  "created_at": 1788112953.9141004,
+  "completed_at": null
+}

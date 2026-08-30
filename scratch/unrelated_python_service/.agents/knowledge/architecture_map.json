@@ -1,0 +1,25 @@
+{
+  "primary_stack": [
+    "Node.js/TypeScript",
+    "Python"
+  ],
+  "subsystems": {
+    "tests": {
+      "path": "tests",
+      "type": "core_directory",
+      "components": [
+        "tests"
+      ]
+    }
+  },
+  "design_patterns": [
+    "Monorepo",
+    "Microservices/Modular Apps",
+    "Event/Message-Driven"
+  ],
+  "entrypoints": [
+    "apps/",
+    "services/",
+    "scripts/"
+  ]
+}

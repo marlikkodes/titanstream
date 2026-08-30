@@ -1,0 +1,5 @@
+{
+  "name": "escalation_manager",
+  "role": "Escalation Manager",
+  "description": "Owns human interaction gating, policy violation analysis, and missing credential verification."
+}

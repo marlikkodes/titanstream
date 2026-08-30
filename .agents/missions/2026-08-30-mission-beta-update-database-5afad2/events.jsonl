@@ -1,0 +1,2 @@
+{"event_id": "evt_0e37be94", "mission_id": "2026-08-30-mission-beta-update-database-5afad2", "type": "MISSION_CREATED", "timestamp": 1788112953.9141004, "payload": {"objective": "Mission Beta: Update Database", "autonomy_level": "L1_LOCAL_DEV", "token_budget": 50000}}
+{"event_id": "evt_a0fffc6d", "mission_id": "2026-08-30-mission-beta-update-database-5afad2", "type": "AGENT_STARTED", "timestamp": 1788112953.9177978, "payload": {"task_id": "t2"}}

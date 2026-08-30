@@ -1,0 +1,9 @@
+{
+  "root_package_json": {
+    "dependencies": {},
+    "devDependencies": {},
+    "scripts": {
+      "test": "pytest tests"
+    }
+  }
+}

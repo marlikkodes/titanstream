@@ -1,0 +1,2 @@
+{"event_id": "evt_02d20271", "mission_id": "2026-08-30-mission-alpha-refactor-ui-ca0327", "type": "MISSION_CREATED", "timestamp": 1788112922.6946502, "payload": {"objective": "Mission Alpha: Refactor UI", "autonomy_level": "L1_LOCAL_DEV", "token_budget": 50000}}
+{"event_id": "evt_76c3f5b6", "mission_id": "2026-08-30-mission-alpha-refactor-ui-ca0327", "type": "AGENT_STARTED", "timestamp": 1788112922.69811, "payload": {"task_id": "t1"}}

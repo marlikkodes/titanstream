@@ -1,0 +1,340 @@
+{
+  "mission_id": "mission_1788118480_2bd59b",
+  "objective": "Fix API route returning 500 on missing payload in services/api",
+  "status": "COMPLETED",
+  "current_phase": "DELIVERY",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 4250,
+  "tasks": {
+    "task_plan_090f87": {
+      "id": "task_plan_090f87",
+      "title": "Architecture & Analysis for: Fix API route returning 500 on missing p",
+      "description": "Analyze requirements and plan implementation for Fix API route returning 500 on missing payload in services/api",
+      "agent_role": "architect",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_090f87",
+        "objective": "Fix API route returning 500 on missing payload in services/api",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_090f87",
+        "agent_role": "architect",
+        "status": "COMPLETED",
+        "files_changed": [
+          "packages/core/src/index.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "architect completed Architecture & Analysis for: Fix API route returning 500 on missing p",
+        "tokens_consumed": 850,
+        "duration_seconds": 1.9073486328125e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788118480.8472302,
+      "completed_at": 1788118480.847627
+    },
+    "task_frontend_engineer_4db308": {
+      "id": "task_frontend_engineer_4db308",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Fix API route returning 500 on missing payload in services/api",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_090f87"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_4db308",
+        "objective": "Fix API route returning 500 on missing payload in services/api",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_090f87"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_frontend_engineer_4db308",
+        "agent_role": "frontend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "apps/web/src/components/MainSpinner.tsx"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "frontend_engineer completed Frontend Engineer Implementation",
+        "tokens_consumed": 850,
+        "duration_seconds": 2.384185791015625e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788118480.8472471,
+      "completed_at": 1788118480.8479335
+    },
+    "task_backend_engineer_2f9efc": {
+      "id": "task_backend_engineer_2f9efc",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Fix API route returning 500 on missing payload in services/api",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_090f87"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_backend_engineer_2f9efc",
+        "objective": "Fix API route returning 500 on missing payload in services/api",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_090f87"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_backend_engineer_2f9efc",
+        "agent_role": "backend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "backend_engineer completed Backend Engineer Implementation",
+        "tokens_consumed": 850,
+        "duration_seconds": 2.384185791015625e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788118480.847254,
+      "completed_at": 1788118480.8479807
+    },
+    "task_integ_2f7254": {
+      "id": "task_integ_2f7254",
+      "title": "Cross-System Integration Verification",
+      "description": "Verify module interfaces, contracts, and data flows",
+      "agent_role": "integration_engineer",
+      "dependencies": [
+        "task_frontend_engineer_4db308",
+        "task_backend_engineer_2f9efc"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_integ_2f7254",
+        "objective": "Verify integration",
+        "scope": [
+          "integration"
+        ],
+        "constraints": [
+          "no contract breaks"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_4db308",
+          "task_backend_engineer_2f9efc"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_integ_2f7254",
+        "agent_role": "integration_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "packages/core/src/index.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "integration_engineer completed Cross-System Integration Verification",
+        "tokens_consumed": 850,
+        "duration_seconds": 1.430511474609375e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788118480.847259,
+      "completed_at": 1788118480.8480206
+    },
+    "task_qa_d7b70e": {
+      "id": "task_qa_d7b70e",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_integ_2f7254"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_qa_d7b70e",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_integ_2f7254"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_qa_d7b70e",
+        "agent_role": "qa_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "packages/core/src/index.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "qa_engineer completed QA & Regression Verification",
+        "tokens_consumed": 850,
+        "duration_seconds": 4.76837158203125e-07
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788118480.847264,
+      "completed_at": 1788118480.848024
+    }
+  },
+  "completed_tasks": [
+    "task_plan_090f87",
+    "task_frontend_engineer_4db308",
+    "task_backend_engineer_2f9efc",
+    "task_integ_2f7254",
+    "task_qa_d7b70e"
+  ],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {
+    "typecheck": true,
+    "lint": true,
+    "unit_tests": true,
+    "security": true,
+    "red_team": true
+  },
+  "active_branches": [
+    "agent/mission_1788118480_2bd59b"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788118480.3794096,
+  "updated_at": 1788118480.8509207
+}

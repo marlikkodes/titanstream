@@ -1,0 +1,36 @@
+{
+  "root": "/home/wendy/Desktop/tetherstream/AgentOS/benchmarks/python_flask",
+  "total_files": 6,
+  "files": [
+    {
+      "path": ".agents/project.json",
+      "extension": ".json",
+      "size_bytes": 157
+    },
+    {
+      "path": ".agents/state/metrics.json",
+      "extension": ".json",
+      "size_bytes": 150
+    },
+    {
+      "path": ".agents/state/mission_1788118520_3c2c87.json",
+      "extension": ".json",
+      "size_bytes": 546
+    },
+    {
+      "path": ".agents/state/current_mission.json",
+      "extension": ".json",
+      "size_bytes": 55
+    },
+    {
+      "path": ".agents/memory/failure_memory.json",
+      "extension": ".json",
+      "size_bytes": 2
+    },
+    {
+      "path": "src/app.py",
+      "extension": ".py",
+      "size_bytes": 218
+    }
+  ]
+}

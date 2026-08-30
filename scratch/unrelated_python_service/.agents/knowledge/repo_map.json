@@ -1,0 +1,41 @@
+{
+  "root": "/home/wendy/Desktop/tetherstream/scratch/unrelated_python_service",
+  "total_files": 7,
+  "files": [
+    {
+      "path": "package.json",
+      "extension": ".json",
+      "size_bytes": 111
+    },
+    {
+      "path": ".agents/state/mission_1788112965_4ec360.json",
+      "extension": ".json",
+      "size_bytes": 553
+    },
+    {
+      "path": ".agents/state/metrics.json",
+      "extension": ".json",
+      "size_bytes": 150
+    },
+    {
+      "path": ".agents/state/current_mission.json",
+      "extension": ".json",
+      "size_bytes": 55
+    },
+    {
+      "path": ".agents/memory/failure_memory.json",
+      "extension": ".json",
+      "size_bytes": 2
+    },
+    {
+      "path": "src/app.py",
+      "extension": ".py",
+      "size_bytes": 441
+    },
+    {
+      "path": "tests/test_app.py",
+      "extension": ".py",
+      "size_bytes": 35
+    }
+  ]
+}

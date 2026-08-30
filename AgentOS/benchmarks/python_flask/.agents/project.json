@@ -1,0 +1,8 @@
+{
+  "name": "python_flask",
+  "language": "python",
+  "framework": "flask",
+  "package_manager": "pip",
+  "test_runner": "pytest",
+  "auto_generated": true
+}

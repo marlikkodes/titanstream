@@ -1,0 +1,1 @@
+export async function fetchUser(id: string) { return { id, role: 'admin' }; }

@@ -1,0 +1,19 @@
+{
+  "total_missions": 1,
+  "total_tasks_executed": 4,
+  "total_tokens_consumed": 3400,
+  "total_repairs": 0,
+  "total_escalations": 0,
+  "missions": [
+    {
+      "mission_id": "mission_1788118520_3c2c87",
+      "timestamp": 1788118520.0900922,
+      "duration_seconds": 0.01,
+      "tokens_consumed": 3400,
+      "tasks_count": 4,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 8
+    }
+  ]
+}

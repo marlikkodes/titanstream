@@ -1,7 +1,7 @@
 {
-  "total_missions": 7,
-  "total_tasks_executed": 24,
-  "total_tokens_consumed": 17850,
+  "total_missions": 34,
+  "total_tasks_executed": 122,
+  "total_tokens_consumed": 101150,
   "total_repairs": 0,
   "total_escalations": 0,
   "missions": [
@@ -69,6 +69,276 @@
       "mission_id": "mission_1788112738_c89122",
       "timestamp": 1788112739.842317,
       "duration_seconds": 1.11,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788112917_3880c8",
+      "timestamp": 1788112918.4177158,
+      "duration_seconds": 1.28,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788112918_76443d",
+      "timestamp": 1788112919.3091083,
+      "duration_seconds": 0.89,
+      "tokens_consumed": 4250,
+      "tasks_count": 5,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 10
+    },
+    {
+      "mission_id": "mission_1788112919_8cf766",
+      "timestamp": 1788112920.3777914,
+      "duration_seconds": 1.07,
+      "tokens_consumed": 3400,
+      "tasks_count": 4,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 8
+    },
+    {
+      "mission_id": "mission_1788112920_c1be94",
+      "timestamp": 1788112921.3298333,
+      "duration_seconds": 0.94,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788112921_f9646b",
+      "timestamp": 1788112922.625496,
+      "duration_seconds": 1.29,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788112948_1eacd5",
+      "timestamp": 1788112949.423671,
+      "duration_seconds": 1.2,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788112949_e89637",
+      "timestamp": 1788112950.4307225,
+      "duration_seconds": 1.0,
+      "tokens_consumed": 4250,
+      "tasks_count": 5,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 10
+    },
+    {
+      "mission_id": "mission_1788112950_d2f7e1",
+      "timestamp": 1788112951.4345844,
+      "duration_seconds": 1.0,
+      "tokens_consumed": 3400,
+      "tasks_count": 4,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 8
+    },
+    {
+      "mission_id": "mission_1788112951_e3a75a",
+      "timestamp": 1788112952.5289655,
+      "duration_seconds": 1.08,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788112952_2a8256",
+      "timestamp": 1788112953.823994,
+      "duration_seconds": 1.29,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788114948_b41bd0",
+      "timestamp": 1788114958.6188407,
+      "duration_seconds": 10.34,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788114963_661158",
+      "timestamp": 1788114973.1743398,
+      "duration_seconds": 9.93,
+      "tokens_consumed": 4250,
+      "tasks_count": 5,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 10
+    },
+    {
+      "mission_id": "mission_1788118478_c48be1",
+      "timestamp": 1788118480.2642174,
+      "duration_seconds": 1.4,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788118480_2bd59b",
+      "timestamp": 1788118480.8517,
+      "duration_seconds": 0.47,
+      "tokens_consumed": 4250,
+      "tasks_count": 5,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 10
+    },
+    {
+      "mission_id": "mission_1788118480_cb8b3d",
+      "timestamp": 1788118481.55821,
+      "duration_seconds": 0.59,
+      "tokens_consumed": 3400,
+      "tasks_count": 4,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 8
+    },
+    {
+      "mission_id": "mission_1788118481_aeb0bc",
+      "timestamp": 1788118482.4591596,
+      "duration_seconds": 0.54,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788118482_48a52c",
+      "timestamp": 1788118483.0715044,
+      "duration_seconds": 0.48,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788118505_a9a4df",
+      "timestamp": 1788118505.5343914,
+      "duration_seconds": 0.53,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788118505_7de7c5",
+      "timestamp": 1788118506.1964934,
+      "duration_seconds": 0.53,
+      "tokens_consumed": 4250,
+      "tasks_count": 5,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 10
+    },
+    {
+      "mission_id": "mission_1788118506_5c911b",
+      "timestamp": 1788118506.8153734,
+      "duration_seconds": 0.5,
+      "tokens_consumed": 3400,
+      "tasks_count": 4,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 8
+    },
+    {
+      "mission_id": "mission_1788118507_6b0032",
+      "timestamp": 1788118507.6261601,
+      "duration_seconds": 0.45,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788118507_b9f6ca",
+      "timestamp": 1788118508.216375,
+      "duration_seconds": 0.47,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788118594_7cd365",
+      "timestamp": 1788118595.461735,
+      "duration_seconds": 0.77,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788118595_21ca35",
+      "timestamp": 1788118596.1152446,
+      "duration_seconds": 0.52,
+      "tokens_consumed": 4250,
+      "tasks_count": 5,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 10
+    },
+    {
+      "mission_id": "mission_1788118596_03cf61",
+      "timestamp": 1788118596.7294729,
+      "duration_seconds": 0.49,
+      "tokens_consumed": 3400,
+      "tasks_count": 4,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 8
+    },
+    {
+      "mission_id": "mission_1788118597_ef51a5",
+      "timestamp": 1788118597.7346191,
+      "duration_seconds": 0.61,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788118597_63c940",
+      "timestamp": 1788118598.74435,
+      "duration_seconds": 0.88,
       "tokens_consumed": 2550,
       "tasks_count": 3,
       "repair_attempts": 0,

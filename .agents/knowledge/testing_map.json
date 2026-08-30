@@ -57,7 +57,10 @@
     "services/api/src/modules/treasury/treasury.service.spec.ts",
     "services/api/src/modules/treasury/services/operator-intelligence.spec.ts",
     "services/api/src/modules/notification/baileys-persistence-certification.spec.ts",
+    "scratch/unrelated_python_service/tests/test_app.py",
     "tests/stage12a.spec.ts",
-    "tests/agent_os/test_suite_all_12.py"
+    "tests/agent_os/test_suite_all_12.py",
+    "tests/agent_os/test_suite_all_40.py",
+    "tests/agent_os/test_suite_all_20.py"
   ]
 }

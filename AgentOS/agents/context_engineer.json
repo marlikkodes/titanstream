@@ -1,0 +1,5 @@
+{
+  "name": "context_engineer",
+  "role": "Context Economy Engineer",
+  "description": "Owns tiered context retrieval (L0-L4), log compression, token budgeting, and relevance scoring."
+}
