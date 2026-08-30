@@ -1,6 +1,28 @@
 [
   {
-    "id": "mm_1",
+    "id": "mm_mtn_ug_1",
+    "network": "MTN",
+    "merchantName": "TitanStream Escrow MTN",
+    "merchantNumber": "234654",
+    "country": "UG",
+    "currency": "UGX",
+    "dailyLimit": 50000000,
+    "status": "ACTIVE",
+    "createdAt": "2026-07-28T10:20:19.711Z"
+  },
+  {
+    "id": "mm_airtel_ug_1",
+    "network": "AIRTEL",
+    "merchantName": "TitanStream Escrow Airtel",
+    "merchantNumber": "7183443",
+    "country": "UG",
+    "currency": "UGX",
+    "dailyLimit": 50000000,
+    "status": "ACTIVE",
+    "createdAt": "2026-07-28T10:20:19.711Z"
+  },
+  {
+    "id": "mm_safaricom_ke_1",
     "network": "SAFARICOM_MPESA",
     "merchantName": "TetherStream Kenya Ops",
     "merchantNumber": "445910",
@@ -9,16 +31,5 @@
     "dailyLimit": 500000,
     "status": "ACTIVE",
     "createdAt": "2026-07-28T10:20:19.711Z"
-  },
-  {
-    "id": "mm_2",
-    "network": "MTN_UGANDA",
-    "merchantName": "TetherStream Uganda Pay",
-    "merchantNumber": "881022",
-    "country": "UG",
-    "currency": "UGX",
-    "dailyLimit": 15000000,
-    "status": "ACTIVE",
-    "createdAt": "2026-08-02T10:20:19.711Z"
   }
 ]

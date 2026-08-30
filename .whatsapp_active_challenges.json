@@ -374,5 +374,14 @@
     "createdAt": "2026-08-30T10:54:22.051Z",
     "expiresAt": "2026-08-30T11:04:22.050Z"
   },
-  "pin_533035": "wa_chal_1788087262050"
+  "pin_533035": "wa_chal_1788087262050",
+  "wa_chal_1788087986915": {
+    "challengeId": "wa_chal_1788087986915",
+    "shortPin": "881459",
+    "status": "PENDING",
+    "deviceInfo": "Browser Session",
+    "createdAt": "2026-08-30T11:06:26.916Z",
+    "expiresAt": "2026-08-30T11:16:26.915Z"
+  },
+  "pin_881459": "wa_chal_1788087986915"
 }

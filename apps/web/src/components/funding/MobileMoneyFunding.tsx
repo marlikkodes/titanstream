@@ -273,17 +273,36 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
 
       const sessionData = res.data?.data || res.data;
       if (sessionData?.settlementId) {
-        // Resolve dynamic fallback from live registered merchants
+        // Resolve dynamic fallback from live registered merchants strictly by country and network
+        const userCountry = (selectedCountry?.code || 'UG').toUpperCase();
         const matchedMerchant = activeMerchants.find((m: any) => {
           const mNet = (m.network || '').toUpperCase();
+          const mCountry = (m.country || 'UG').toUpperCase();
+          if (mCountry !== userCountry) return false;
           if (network === 'AIRTEL') return mNet.includes('AIRTEL');
           if (network === 'MTN') return mNet.includes('MTN');
-          if (network === 'SAFARICOM_MPESA') return mNet.includes('SAFARICOM') || mNet.includes('MPESA');
+          if (network === 'SAFARICOM_MPESA' || network === 'MPESA') return mNet.includes('SAFARICOM') || mNet.includes('MPESA');
           return false;
         });
 
-        const fallbackMerchantName = matchedMerchant?.merchantName || (network === 'AIRTEL' ? 'TitanStream Escrow Airtel' : 'TitanStream Escrow MTN');
-        const fallbackMerchantNumber = matchedMerchant?.merchantNumber || (network === 'AIRTEL' ? '7183443' : '234654');
+        const isAirtel = network === 'AIRTEL';
+        const isKenya = userCountry === 'KE' || network === 'SAFARICOM_MPESA' || network === 'MPESA';
+        const defaultName = isKenya ? 'TetherStream Kenya Ops' : isAirtel ? 'TitanStream Escrow Airtel' : 'TitanStream Escrow MTN';
+        const defaultNum = isKenya ? '445910' : isAirtel ? '7183443' : '234654';
+
+        const fallbackMerchantName = matchedMerchant?.merchantName || defaultName;
+        const fallbackMerchantNumber = matchedMerchant?.merchantNumber || defaultNum;
+
+        // Guard against mismatched cross-border merchant metadata
+        const rawMName = sessionData.merchantName;
+        const cleanMerchantName = (!isKenya && rawMName && rawMName.toLowerCase().includes('kenya'))
+          ? fallbackMerchantName
+          : (rawMName || fallbackMerchantName);
+
+        const rawMNum = sessionData.merchantNumber;
+        const cleanMerchantNumber = (!isKenya && rawMNum === '445910')
+          ? fallbackMerchantNumber
+          : (rawMNum || fallbackMerchantNumber);
 
         const merchantSession: MerchantSession = {
           settlementId: sessionData.settlementId,
@@ -291,8 +310,8 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
           status: sessionData.status || 'WAITING_FOR_PAYMENT',
           network: sessionData.network || network,
           merchantId: sessionData.merchantId || matchedMerchant?.id || '',
-          merchantName: sessionData.merchantName || fallbackMerchantName,
-          merchantNumber: sessionData.merchantNumber || fallbackMerchantNumber,
+          merchantName: cleanMerchantName,
+          merchantNumber: cleanMerchantNumber,
           requestedAmount: sessionData.requestedAmount || '0',
           expectedCryptoAmount: sessionData.expectedCryptoAmount || usdtAmountToSubmit.toString(),
           exchangeRate: sessionData.exchangeRate || (selectedCountry?.exchangeRate || 3774.62).toString(),

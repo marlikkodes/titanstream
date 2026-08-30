@@ -297,7 +297,29 @@ function adminMockMiddleware(): Plugin {
   // ─── Persistent Merchant Code Store ──────────────────────────────
   const defaultMerchants = [
     {
-      id: 'mm_1',
+      id: 'mm_mtn_ug_1',
+      network: 'MTN',
+      merchantName: 'TitanStream Escrow MTN',
+      merchantNumber: '234654',
+      country: 'UG',
+      currency: 'UGX',
+      dailyLimit: 50000000,
+      status: 'ACTIVE',
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'mm_airtel_ug_1',
+      network: 'AIRTEL',
+      merchantName: 'TitanStream Escrow Airtel',
+      merchantNumber: '7183443',
+      country: 'UG',
+      currency: 'UGX',
+      dailyLimit: 50000000,
+      status: 'ACTIVE',
+      createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'mm_safaricom_ke_1',
       network: 'SAFARICOM_MPESA',
       merchantName: 'TetherStream Kenya Ops',
       merchantNumber: '445910',
@@ -305,18 +327,7 @@ function adminMockMiddleware(): Plugin {
       currency: 'KES',
       dailyLimit: 500000,
       status: 'ACTIVE',
-      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'mm_2',
-      network: 'MTN_UGANDA',
-      merchantName: 'TetherStream Uganda Pay',
-      merchantNumber: '881022',
-      country: 'UG',
-      currency: 'UGX',
-      dailyLimit: 15000000,
-      status: 'ACTIVE',
-      createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
     },
   ];
 
@@ -1352,12 +1363,15 @@ function adminMockMiddleware(): Plugin {
                 const localCurrency = country === 'KE' ? 'KES' : 'UGX';
                 const localAmt = Math.round(usdtAmt * rate);
 
-                // Match against live merchants stored by admin
+                // Match against live merchants stored by admin strictly by country and network
                 const merchants = loadMerchantsFromDisk();
                 const activeMerchants = merchants.filter((m: any) => m.status === 'ACTIVE');
                 
                 let selectedMerchant = activeMerchants.find((m: any) => {
                   const mNet = (m.network || '').toUpperCase();
+                  const mCountry = (m.country || 'UG').toUpperCase();
+                  if (mCountry !== country) return false;
+
                   if (reqNetwork.includes('AIRTEL')) return mNet.includes('AIRTEL');
                   if (reqNetwork.includes('MTN')) return mNet.includes('MTN');
                   if (reqNetwork.includes('MPESA') || reqNetwork.includes('SAFARICOM')) return mNet.includes('MPESA') || mNet.includes('SAFARICOM');
@@ -1365,11 +1379,15 @@ function adminMockMiddleware(): Plugin {
                 });
 
                 if (!selectedMerchant) {
-                  selectedMerchant = activeMerchants[0] || {
-                    id: 'mm_default',
-                    network: reqNetwork,
-                    merchantName: `TitanStream Escrow ${reqNetwork}`,
-                    merchantNumber: reqNetwork.includes('AIRTEL') ? '7183443' : '234654',
+                  const isAirtel = reqNetwork.includes('AIRTEL');
+                  const isKenya = country === 'KE' || reqNetwork.includes('MPESA') || reqNetwork.includes('SAFARICOM');
+                  selectedMerchant = {
+                    id: isKenya ? 'mm_safaricom_ke_1' : isAirtel ? 'mm_airtel_ug_1' : 'mm_mtn_ug_1',
+                    network: isKenya ? 'SAFARICOM_MPESA' : isAirtel ? 'AIRTEL' : 'MTN',
+                    merchantName: isKenya ? 'TetherStream Kenya Ops' : isAirtel ? 'TitanStream Escrow Airtel' : 'TitanStream Escrow MTN',
+                    merchantNumber: isKenya ? '445910' : isAirtel ? '7183443' : '234654',
+                    country: isKenya ? 'KE' : 'UG',
+                    currency: isKenya ? 'KES' : 'UGX',
                   };
                 }
 
