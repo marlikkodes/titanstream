@@ -122,7 +122,9 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
   const isEligible = !!liveMission.eligible;
   const isProcessing = isEligible && (liveMission.status === 'CLAIM_PENDING' || (claimingId === liveMission.id && isClaiming));
   const tab = requirement?.actionTab || 'rewards';
-  const shareText = `🚀 TITAN MISSION 🚀\nI'm completing the "${liveMission.ruleName}" on Titan Stream — ${liveMission.amount} ${liveMission.assetCode} on the line!\nJoin me: https://t.me/tetherstream_bot`;
+  const missionAmt = liveMission.amount ?? liveMission.rewardAmount ?? '0.50';
+  const missionAsset = liveMission.assetCode || 'USDT';
+  const shareText = `🚀 TITAN MISSION 🚀\nI'm completing the "${liveMission.ruleName || liveMission.title || 'Mission'}" on Titan Stream — ${missionAmt} ${missionAsset} on the line!\nJoin me: https://t.me/tetherstream_bot`;
 
   const handleNavigate = () => {
     hapticFeedback.impactOccurred('light');
@@ -217,7 +219,7 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
           <div className="mt-3 flex items-center justify-between bg-control-bg/40 border border-white/5 rounded-xl px-3 py-2">
             <span className="text-[10px] text-text-secondary">{liveMission.description}</span>
             <span className="text-xs font-black font-mono text-usdt-green flex-shrink-0 ml-2">
-              +{Number(liveMission.amount)?.toFixed(2)} {liveMission.assetCode}
+              +{Number(liveMission.amount ?? liveMission.rewardAmount ?? 0.50).toFixed(2)} {liveMission.assetCode || 'USDT'}
             </span>
           </div>
 
