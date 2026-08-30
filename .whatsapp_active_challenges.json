@@ -365,5 +365,14 @@
       }
     }
   },
-  "pin_462328": "wa_ch_mtbclq9r_162d965482a9"
+  "pin_462328": "wa_ch_mtbclq9r_162d965482a9",
+  "wa_chal_1788087262050": {
+    "challengeId": "wa_chal_1788087262050",
+    "shortPin": "533035",
+    "status": "PENDING",
+    "deviceInfo": "Browser Session",
+    "createdAt": "2026-08-30T10:54:22.051Z",
+    "expiresAt": "2026-08-30T11:04:22.050Z"
+  },
+  "pin_533035": "wa_chal_1788087262050"
 }
