@@ -45,50 +45,30 @@ export class GameCrystalService {
       }
     }
 
-    try {
-      const existing = await client.crystalAccount.findUnique({
-        where: { telegramUserId },
-      });
+    const existing = await client.crystalAccount.findUnique({
+      where: { telegramUserId },
+    });
 
-      if (existing) return existing;
+    if (existing) return existing;
 
-      // Ensure base User record exists to satisfy foreign key constraint
-      let user = await client.user.findUnique({
-        where: { telegramUserId },
-        select: { telegramUserId: true },
-      });
-      if (!user) {
-        try {
-          user = await client.user.create({
-            data: {
-              telegramUserId,
-              firstName: 'Operator',
-            },
-            select: { telegramUserId: true },
-          });
-        } catch {
-          user = await client.user.findUnique({ where: { telegramUserId }, select: { telegramUserId: true } });
-        }
-      }
-
-      return await client.crystalAccount.create({
+    // Ensure User record exists to satisfy foreign key constraint on crystal_accounts
+    const userExists = await client.user.findUnique({ where: { telegramUserId } });
+    if (!userExists) {
+      await client.user.create({
         data: {
           telegramUserId,
-          balance: 100,
+          firstName: 'Operator',
+          state: 'ACTIVE_USER',
         },
       });
-    } catch (err: any) {
-      this.logger.warn(`[GameCrystalService] Crystal account lookup fallback for ${telegramUserId}: ${err?.message}`);
-      return {
-        id: `fallback_${telegramUserId}`,
+    }
+
+    return client.crystalAccount.create({
+      data: {
         telegramUserId,
         balance: 100,
-        lifetimeEarned: 100,
-        lifetimeSpent: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-    }
+      },
+    });
   }
 
   async getAccount(userKey: bigint | string) {
@@ -96,12 +76,8 @@ export class GameCrystalService {
   }
 
   async getBalance(userKey: bigint | string): Promise<number> {
-    try {
-      const account = await this.getAccount(userKey);
-      return account.balance;
-    } catch {
-      return 100;
-    }
+    const account = await this.getAccount(userKey);
+    return account.balance;
   }
 
   async getTransactions(userKey: bigint | string, limit = 50, offset = 0) {

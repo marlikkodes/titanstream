@@ -1924,6 +1924,334 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
+        // Growth Referrals
+        if (url.includes('/growth/referrals')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              referralCode: 'TITAN888',
+              referralLink: 'https://t.me/titanstream_bot?start=ref_TITAN888',
+              totalInvited: 0,
+              qualifiedCount: 0,
+              totalEarnedUSDT: 0,
+              totalEarnedTon: 0,
+              directReferrals: [],
+              tierBreakdown: { tier1: 0, tier2: 0, tier3: 0 },
+            },
+          }));
+          return;
+        }
+
+        // Growth Qualifications
+        if (url.includes('/growth/qualification')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              withdrawalEligible: true,
+              discountEligible: true,
+              discountPercent: 0,
+              requirements: [],
+            },
+          }));
+          return;
+        }
+
+        // Growth Progress
+        if (url.includes('/growth/progress')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              streakDays: 1,
+              completedMissions: 0,
+              totalMissions: 5,
+              levelName: 'Initiate',
+              progressPercent: 20,
+              nextTier: 'Builder I',
+            },
+          }));
+          return;
+        }
+
+        // Growth Next Best Action
+        if (url.includes('/growth/next-best-action')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              actionType: 'CLAIM_REWARD',
+              title: 'Claim Your Unlocked Rewards',
+              description: 'You have 2 verified reward badges waiting in your queue to be credited to your ledger balance.',
+              reason: 'UNCLAIMED_INCENTIVES',
+              destinationTab: 'rewards',
+              priority: 'URGENT',
+              potentialUnlockUsdt: 1.5,
+              badge: 'Claimable',
+            },
+          }));
+          return;
+        }
+
+        // Growth Referral Assistance
+        if (url.includes('/growth/referrals/') && url.includes('/assistance')) {
+          const refereeId = url.split('/growth/referrals/')[1]?.split('/assistance')[0] || '1';
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              relationshipId: `rel_${refereeId}`,
+              refereeId,
+              name: 'Operator',
+              username: `@operator_${refereeId}`,
+              status: 'REGISTERED',
+              isQualified: false,
+              missingStep: 'Link Mobile Money Rail',
+              helperMessage: 'Hey there! Make sure to select your country & mobile money rail in Titan Stream to activate your account: https://tetherstream.io',
+            },
+          }));
+          return;
+        }
+
+        // Growth Achievements
+        if (url.includes('/growth/achievements')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              achievements: [
+                { code: 'FIRST_REWARD', name: 'First Victory', description: 'Claim your first reward.', tier: 'BRONZE', icon: '🏆', progress: 0, target: 1, achieved: false },
+                { code: 'FIRST_MACHINE', name: 'Miner', description: 'Own your first active mining machine.', tier: 'BRONZE', icon: '⛏️', progress: 1, target: 1, achieved: true },
+                { code: 'FIRST_SETTLEMENT', name: 'First Settlement', description: 'Complete your first settlement.', tier: 'BRONZE', icon: '✅', progress: 0, target: 1, achieved: false },
+                { code: 'FIRST_REFERRAL', name: 'First Invite', description: 'Invite your first friend to qualify.', tier: 'BRONZE', icon: '🤝', progress: 0, target: 1, achieved: false },
+                { code: 'REWARD_HUNTER', name: 'Reward Hunter', description: 'Claim 5 rewards.', tier: 'SILVER', icon: '🎯', progress: 0, target: 5, achieved: false },
+                { code: 'NETWORK_BUILDER', name: 'Network Builder', description: 'Qualify 3 referrals.', tier: 'SILVER', icon: '🌐', progress: 0, target: 3, achieved: false },
+                { code: 'SETTLEMENT_VETERAN', name: 'Settlement Veteran', description: 'Complete 10 settlements.', tier: 'SILVER', icon: '📊', progress: 0, target: 10, achieved: false },
+                { code: 'TRUSTED_MEMBER', name: 'Trusted Member', description: 'Reach the Trusted level.', tier: 'SILVER', icon: '🛡️', progress: 1, target: 2, achieved: false },
+                { code: 'MACHINE_COLLECTOR', name: 'Machine Collector', description: 'Own 3 active mining machines.', tier: 'GOLD', icon: '🏭', progress: 1, target: 3, achieved: false },
+                { code: 'PREMIUM_MEMBER', name: 'Premium Member', description: 'Reach the Premium level.', tier: 'GOLD', icon: '👑', progress: 0, target: 3, achieved: false },
+                { code: 'TITAN_PATRON', name: 'Titan Patron', description: 'Claim 10 rewards.', tier: 'GOLD', icon: '💎', progress: 0, target: 10, achieved: false },
+                { code: 'REFERRAL_MAGNET', name: 'Referral Magnet', description: 'Qualify 10 referrals.', tier: 'PLATINUM', icon: '🧲', progress: 0, target: 10, achieved: false },
+              ],
+              totalUnlocked: 1,
+              total: 12,
+            },
+          }));
+          return;
+        }
+
+        // Growth Claim Reward
+        if (url.match(/\/growth\/rewards\/[^/]+\/claim/) && req.method === 'POST') {
+          const rewardId = url.split('/growth/rewards/')[1]?.split('/claim')[0] || 'starter_welcome';
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              reward: {
+                id: rewardId,
+                status: 'CLAIMED',
+                amount: rewardId === 'starter_security' ? '1.00' : '0.50',
+                assetCode: 'USDT',
+                claimedAt: new Date().toISOString(),
+              },
+            },
+          }));
+          return;
+        }
+
+        // Growth Reward Detail
+        if (url.match(/\/growth\/rewards\/[^/]+$/) && req.method === 'GET') {
+          const rewardId = url.split('/growth/rewards/')[1];
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              id: rewardId,
+              ruleCode: rewardId === 'starter_security' ? 'RULE_STARTER_SECURITY' : 'RULE_STARTER_WELCOME',
+              rewardType: 'MILESTONE',
+              amount: rewardId === 'starter_security' ? '1.00' : '0.50',
+              assetCode: 'USDT',
+              status: 'AVAILABLE',
+              ruleName: rewardId === 'starter_security' ? 'Security Configuration' : 'Activate Mining Core',
+              description: rewardId === 'starter_security' ? 'Verify Telegram session & configure security settings' : 'Start your first mining cycle on Titan Hub',
+              reason: 'Ready to claim starter bonus',
+              eligible: true,
+              requirement: rewardId === 'starter_security' ? { key: 'security_config', label: 'Security Verified', required: 1, current: 1, unit: 'shield', completed: true } : { key: 'mining_cycle', label: 'Mining Cycle', required: 1, current: 1, unit: 'core', completed: true },
+            },
+          }));
+          return;
+        }
+
+        // Growth Missions Queue
+        if (url.includes('/growth/rewards/missions')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              missions: [
+                {
+                  id: 'starter_welcome',
+                  ruleCode: 'RULE_STARTER_WELCOME',
+                  rewardType: 'MILESTONE',
+                  amount: '0.50',
+                  assetCode: 'USDT',
+                  status: 'AVAILABLE',
+                  reference: 'REF-STARTER-1',
+                  createdAt: new Date().toISOString(),
+                  ruleName: 'Activate Mining Core',
+                  description: 'Start your first mining cycle on Titan Hub',
+                  requirement: { key: 'mining_cycle', label: 'Mining Cycle', required: 1, current: 1, unit: 'core', completed: true },
+                  reason: 'Ready to claim starter bonus',
+                  eligible: true,
+                  category: 'machine',
+                  difficulty: 'EASY',
+                  progressPercent: 100,
+                  estimatedRemaining: 'Claim now',
+                },
+                {
+                  id: 'starter_security',
+                  ruleCode: 'RULE_STARTER_SECURITY',
+                  rewardType: 'MILESTONE',
+                  amount: '1.00',
+                  assetCode: 'USDT',
+                  status: 'AVAILABLE',
+                  reference: 'REF-STARTER-2',
+                  createdAt: new Date().toISOString(),
+                  ruleName: 'Security Configuration',
+                  description: 'Verify Telegram session & configure security settings',
+                  requirement: { key: 'security_config', label: 'Security Verified', required: 1, current: 1, unit: 'shield', completed: true },
+                  reason: 'Ready to claim security bonus',
+                  eligible: true,
+                  category: 'profile',
+                  difficulty: 'EASY',
+                  progressPercent: 100,
+                  estimatedRemaining: 'Claim now',
+                },
+              ],
+            },
+          }));
+          return;
+        }
+
+        // Games Balance
+        if (url.includes('/games/balance')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              balance: 150,
+              lifetimeEarned: 350,
+              lifetimeSpent: 200,
+            },
+          }));
+          return;
+        }
+
+        // Games Profile
+        if (url.includes('/games/profile')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              profile: {
+                crystals: 150,
+                xp: 450,
+                level: 2,
+                rank: 142,
+              },
+              dailyLogin: {
+                canClaim: false,
+                currentDay: 1,
+                streakCount: 3,
+              },
+            },
+          }));
+          return;
+        }
+
+        // Games Catalog
+        if (url.includes('/games/catalog')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              games: [],
+              activeEvents: [],
+            },
+          }));
+          return;
+        }
+
+        // Growth Reward History
+        if (url.includes('/growth/rewards/history')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              history: [],
+            },
+          }));
+          return;
+        }
+
+        // Growth Dashboard & Overview
+        if (url.includes('/growth/dashboard') || url.includes('/growth/overview')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              growthScore: 850,
+              trustScore: 85,
+              communityRank: '#412',
+              rewardMultiplier: 1.0,
+              referralMultiplier: 1.0,
+              withdrawalLimit: 100,
+              currentTier: 'Seed',
+              nextUnlock: 'Builder I',
+              totalVerifiedTransactions: 24582,
+              trustChecklist: [
+                { id: 't1', label: 'Verified account', completed: true },
+                { id: 't2', label: 'First payment completed', completed: false },
+                { id: 't3', label: 'Invite trusted users', completed: false },
+                { id: 't4', label: 'Complete transactions', completed: false },
+              ],
+              availableRewards: [],
+              todaysMissions: [],
+              referralSummary: {
+                code: 'TITAN888',
+                link: 'https://t.me/titanstream_bot?start=ref_TITAN888',
+                totalInvited: 0,
+                qualifiedCount: 0,
+                qualityScore: 100,
+                totalEarnedUSDT: 0,
+              },
+              seasonProgress: {
+                seasonNumber: 1,
+                seasonTitle: 'Treasury Expansion',
+                seasonProgressPower: 850,
+                seasonTargetPower: 10000,
+                daysRemaining: 18,
+              },
+            },
+          }));
+          return;
+        }
+
         // Settlement History
         if (url.includes('/settlement/history')) {
           res.setHeader('Content-Type', 'application/json');
@@ -1997,42 +2325,6 @@ export default defineConfig({
                 ];
               } else if (url.includes('/admin/users')) {
                 responseData = { items: [], pagination: { total: 3, page: 1, limit: 50 } };
-              } else if (url.includes('/games/balance')) {
-                responseData = { balance: 100, lifetimeEarned: 100, lifetimeSpent: 0 };
-              } else if (url.includes('/growth/next-best-action')) {
-                responseData = {
-                  actionType: 'COMPLETE_ONBOARDING',
-                  title: 'Complete Operator Verification',
-                  description: 'Verify your preferred country and mobile money rail to activate direct cashout.',
-                  reason: 'PENDING_ONBOARDING',
-                  destinationTab: 'wallet',
-                  priority: 'HIGH',
-                  potentialUnlockUsdt: 2.0,
-                  badge: 'Activation',
-                };
-              } else if (url.includes('/growth/rewards/missions')) {
-                responseData = { missions: [] };
-              } else if (url.includes('/growth/rewards/available')) {
-                responseData = { queue: [] };
-              } else if (url.includes('/growth/rewards/history')) {
-                responseData = { history: [] };
-              } else if (url.includes('/growth/dashboard') || url.includes('/growth/overview')) {
-                responseData = {
-                  growthScore: 100,
-                  trustScore: 85,
-                  communityRank: '#1000',
-                  rewardMultiplier: 1.0,
-                  referralMultiplier: 1.0,
-                  withdrawalLimit: 100,
-                  currentTier: 'Seed',
-                  nextUnlock: 'Builder I',
-                  totalVerifiedTransactions: 0,
-                  trustChecklist: [],
-                  availableRewards: [],
-                  todaysMissions: [],
-                  referralSummary: { code: '', link: '', totalInvited: 0, qualifiedCount: 0, qualityScore: 100, totalEarnedUSDT: 0 },
-                  seasonProgress: { seasonNumber: 1, seasonTitle: 'Treasury Expansion', seasonProgressPower: 100, seasonTargetPower: 10000, daysRemaining: 18 },
-                };
               }
 
               // @ts-ignore

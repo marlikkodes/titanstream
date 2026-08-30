@@ -70,6 +70,12 @@ export const AchievementsCabinet: React.FC = () => {
               <div className="flex items-center justify-center gap-2 py-5 text-text-tertiary text-xs">
                 <Loader2 size={13} className="animate-spin" /> Loading cabinet…
               </div>
+            ) : safeAchievements.length === 0 ? (
+              <div className="text-center py-6 text-text-tertiary text-xs space-y-1">
+                <Trophy size={20} className="mx-auto text-gold/40 mb-1" />
+                <div className="font-bold text-text-secondary">No achievements available</div>
+                <div className="text-[10px]">Complete missions to unlock badges.</div>
+              </div>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 <AnimatePresence mode="popLayout">

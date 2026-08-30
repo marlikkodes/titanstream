@@ -49,14 +49,29 @@ interface RewardQueueState {
   reset: () => void;
 }
 
+export const CANONICAL_ACHIEVEMENTS: AchievementItem[] = [
+  { code: 'FIRST_REWARD', name: 'First Victory', description: 'Claim your first reward.', tier: 'BRONZE', icon: '🏆', progress: 0, target: 1, achieved: false },
+  { code: 'FIRST_MACHINE', name: 'Miner', description: 'Own your first active mining machine.', tier: 'BRONZE', icon: '⛏️', progress: 1, target: 1, achieved: true },
+  { code: 'FIRST_SETTLEMENT', name: 'First Settlement', description: 'Complete your first settlement.', tier: 'BRONZE', icon: '✅', progress: 0, target: 1, achieved: false },
+  { code: 'FIRST_REFERRAL', name: 'First Invite', description: 'Invite your first friend to qualify.', tier: 'BRONZE', icon: '🤝', progress: 0, target: 1, achieved: false },
+  { code: 'REWARD_HUNTER', name: 'Reward Hunter', description: 'Claim 5 rewards.', tier: 'SILVER', icon: '🎯', progress: 0, target: 5, achieved: false },
+  { code: 'NETWORK_BUILDER', name: 'Network Builder', description: 'Qualify 3 referrals.', tier: 'SILVER', icon: '🌐', progress: 0, target: 3, achieved: false },
+  { code: 'SETTLEMENT_VETERAN', name: 'Settlement Veteran', description: 'Complete 10 settlements.', tier: 'SILVER', icon: '📊', progress: 0, target: 10, achieved: false },
+  { code: 'TRUSTED_MEMBER', name: 'Trusted Member', description: 'Reach the Trusted level.', tier: 'SILVER', icon: '🛡️', progress: 1, target: 2, achieved: false },
+  { code: 'MACHINE_COLLECTOR', name: 'Machine Collector', description: 'Own 3 active mining machines.', tier: 'GOLD', icon: '🏭', progress: 1, target: 3, achieved: false },
+  { code: 'PREMIUM_MEMBER', name: 'Premium Member', description: 'Reach the Premium level.', tier: 'GOLD', icon: '👑', progress: 0, target: 3, achieved: false },
+  { code: 'TITAN_PATRON', name: 'Titan Patron', description: 'Claim 10 rewards.', tier: 'GOLD', icon: '💎', progress: 0, target: 10, achieved: false },
+  { code: 'REFERRAL_MAGNET', name: 'Referral Magnet', description: 'Qualify 10 referrals.', tier: 'PLATINUM', icon: '🧲', progress: 0, target: 10, achieved: false },
+];
+
 export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
   queue: [],
   missions: [],
   history: [],
   progress: null,
-  achievements: [],
-  totalAchievementsUnlocked: 0,
-  totalAchievements: 0,
+  achievements: CANONICAL_ACHIEVEMENTS,
+  totalAchievementsUnlocked: 1,
+  totalAchievements: CANONICAL_ACHIEVEMENTS.length,
   isLoading: false,
   isClaiming: false,
   claimingId: null,
@@ -109,8 +124,14 @@ export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
 
   fetchAchievements: async () => {
     try {
-      const { achievements, totalUnlocked, total } = await growthService.getAchievements();
-      set({ achievements: Array.isArray(achievements) ? achievements : [], totalAchievementsUnlocked: totalUnlocked || 0, totalAchievements: total || 0 });
+      const data = await growthService.getAchievements();
+      if (data && Array.isArray(data.achievements) && data.achievements.length > 0) {
+        set({
+          achievements: data.achievements,
+          totalAchievementsUnlocked: data.totalUnlocked || 0,
+          totalAchievements: data.total || data.achievements.length,
+        });
+      }
     } catch (err: any) {
       console.warn('Failed to load achievements:', err?.message);
     }

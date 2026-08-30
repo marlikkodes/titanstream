@@ -28,13 +28,36 @@ export class GamesController {
   ) {}
 
   private async resolveTelegramUserId(userId: string): Promise<bigint> {
-    if (/^\d+$/.test(userId)) return BigInt(userId);
+    if (/^\d+$/.test(userId)) {
+      const tgId = BigInt(userId);
+      const user = await this.prisma.user.findUnique({ where: { telegramUserId: tgId } });
+      if (!user) {
+        await this.prisma.user.create({
+          data: {
+            telegramUserId: tgId,
+            firstName: 'Operator',
+            state: 'ACTIVE_USER',
+          },
+        });
+      }
+      return tgId;
+    }
     let user = await this.prisma.user.findFirst({
       where: { OR: [{ id: userId }, { identityId: userId }] },
       select: { id: true, telegramUserId: true },
     });
     if (!user) {
-      throw new BadRequestException('USER_IDENTITY_NOT_FOUND');
+      const fallbackTgId = BigInt('900' + Math.floor(100000000 + Math.random() * 900000000));
+      user = await this.prisma.user.create({
+        data: {
+          id: userId,
+          telegramUserId: fallbackTgId,
+          firstName: 'Operator',
+          state: 'ACTIVE_USER',
+        },
+        select: { id: true, telegramUserId: true },
+      });
+      return user.telegramUserId!;
     }
     if (!user.telegramUserId) {
       const fallbackTgId = BigInt('900' + Math.floor(100000000 + Math.random() * 900000000));
@@ -108,23 +131,14 @@ export class GamesController {
   @Get('balance')
   @ApiOperation({ summary: 'Crystal balance and ledger totals' })
   async getBalance(@CanonicalUserId() userId: string) {
-    try {
-      const telegramUserId = await this.resolveTelegramUserId(userId);
-      const account = await this.crystals.getAccount(telegramUserId);
-      return {
-        balance: account?.balance ?? 100,
-        lifetimeEarned: account?.lifetimeEarned ?? 100,
-        lifetimeSpent: account?.lifetimeSpent ?? 0,
-        userId: userId || 'anonymous',
-      };
-    } catch {
-      return {
-        balance: 100,
-        lifetimeEarned: 100,
-        lifetimeSpent: 0,
-        userId: userId || 'anonymous',
-      };
-    }
+    const telegramUserId = await this.resolveTelegramUserId(userId);
+    const account = await this.crystals.getAccount(telegramUserId);
+    return {
+      balance: account.balance,
+      lifetimeEarned: account.lifetimeEarned,
+      lifetimeSpent: account.lifetimeSpent,
+      userId,
+    };
   }
 
   @Get('transactions')

@@ -148,7 +148,7 @@ export const useReferralStore = create<ReferralState>((set, get) => {
           webReferralLink: currentFallback.webLink,
           telegramReferralLink: currentFallback.tgLink,
           referralCode: currentFallback.code,
-          error: null,
+          error: err?.message || 'Failed to load referral data',
           isLoading: false,
         });
       }

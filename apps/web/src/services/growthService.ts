@@ -269,13 +269,18 @@ export const growthService = {
   },
 
   async getMissions(): Promise<MissionItem[]> {
-    const res = await api.get('/growth/rewards/missions');
-    return res.data.data.missions;
+    try {
+      const res = await api.get('/growth/rewards/missions');
+      const data = res.data?.data ?? res.data;
+      return data?.missions ?? (Array.isArray(data) ? data : []);
+    } catch {
+      return [];
+    }
   },
 
   async getProgressOverview(): Promise<ProgressOverview> {
     const res = await api.get('/growth/progress');
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 
   async getAchievements(): Promise<{
@@ -284,33 +289,46 @@ export const growthService = {
     total: number;
     justUnlocked: Array<{ code: string; name: string; tier: string }>;
   }> {
-    const res = await api.get('/growth/achievements');
-    return res.data.data;
+    try {
+      const res = await api.get('/growth/achievements');
+      const data = res.data?.data ?? res.data;
+      if (data && Array.isArray(data.achievements)) {
+        return data;
+      }
+      return { achievements: [], totalUnlocked: 0, total: 0, justUnlocked: [] };
+    } catch {
+      return { achievements: [], totalUnlocked: 0, total: 0, justUnlocked: [] };
+    }
   },
 
   async getRewardDetail(id: string): Promise<RewardQueueItem> {
     const res = await api.get(`/growth/rewards/${id}`);
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 
   async claimReward(id: string): Promise<ClaimResult> {
     const res = await api.post(`/growth/rewards/${id}/claim`);
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 
   async getRewardHistory(): Promise<RewardHistoryItem[]> {
-    const res = await api.get('/growth/rewards/history');
-    return res.data.data.history;
+    try {
+      const res = await api.get('/growth/rewards/history');
+      const data = res.data?.data ?? res.data;
+      return data?.history ?? (Array.isArray(data) ? data : []);
+    } catch {
+      return [];
+    }
   },
 
   async getQualification(): Promise<QualificationStatus> {
     const res = await api.get('/growth/qualification');
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 
   async getDashboard(): Promise<any> {
     const res = await api.get('/growth/dashboard');
-    return res.data.data;
+    return res.data?.data ?? res.data;
   },
 
   async getTrustCenter(): Promise<any> {
