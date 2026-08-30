@@ -48,7 +48,7 @@ export const RewardQueue: React.FC<RewardQueueProps> = ({ compact = false }) => 
     useWalletStore.getState().fetchBalanceFromEngine();
   };
 
-  const safeMissions = Array.isArray(missions) ? missions : [];
+  const safeMissions = (Array.isArray(missions) ? missions : []).filter((m) => m.status !== 'CLAIMED');
   const claimableCount = safeMissions.filter((m) => m.eligible).length;
 
   return (

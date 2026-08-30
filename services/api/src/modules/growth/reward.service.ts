@@ -63,16 +63,30 @@ export class RewardService {
   async ensureDefaultRules() {
     const defaultRules = [
       {
-        code: 'REFERRAL_DEFAULT_5USDT',
-        name: 'Referral Reward',
-        rewardType: RewardType.REFERRAL,
-        amount: '5.000000',
+        code: 'RULE_STARTER_WELCOME',
+        name: 'Activate Hardware Core',
+        rewardType: RewardType.MILESTONE,
+        amount: '0.500000',
         assetCode: 'USDT',
         parameters: {
-          description: 'Earn 5 USDT for each friend who joins, completes onboarding and settles.',
-          requirementType: 'REFERRAL_QUALIFIED',
+          description: 'Commission your first compute engine on Titan Hub.',
+          requirementType: 'MACHINE_CAPACITY',
           requirementCount: 1,
-          actionTab: 'friends',
+          actionTab: 'hub',
+          expiresInDays: 30,
+        },
+      },
+      {
+        code: 'RULE_STARTER_SECURITY',
+        name: 'Security Configuration',
+        rewardType: RewardType.MILESTONE,
+        amount: '1.000000',
+        assetCode: 'USDT',
+        parameters: {
+          description: 'Verify Telegram session & configure security settings.',
+          requirementType: 'USER_LEVEL',
+          requirementCount: 1,
+          actionTab: 'wallet',
           expiresInDays: 30,
         },
       },
@@ -88,6 +102,48 @@ export class RewardService {
           requirementCount: 1,
           actionTab: 'wallet',
           expiresInDays: 90,
+        },
+      },
+      {
+        code: 'MILESTONE_FLEET_EXPANSION',
+        name: 'Fleet Expansion',
+        rewardType: RewardType.MILESTONE,
+        amount: '2.500000',
+        assetCode: 'USDT',
+        parameters: {
+          description: 'Deploy 3 active compute engines in your fleet.',
+          requirementType: 'MACHINE_CAPACITY',
+          requirementCount: 3,
+          actionTab: 'shop',
+          expiresInDays: 90,
+        },
+      },
+      {
+        code: 'MILESTONE_TRUST_UPGRADE',
+        name: 'Trusted Operator Promotion',
+        rewardType: RewardType.MILESTONE,
+        amount: '2.000000',
+        assetCode: 'USDT',
+        parameters: {
+          description: 'Reach the Trusted member tier with 50+ safety score.',
+          requirementType: 'USER_LEVEL',
+          requirementCount: 2,
+          actionTab: 'wallet',
+          expiresInDays: 90,
+        },
+      },
+      {
+        code: 'REFERRAL_DEFAULT_5USDT',
+        name: 'Referral Reward',
+        rewardType: RewardType.REFERRAL,
+        amount: '5.000000',
+        assetCode: 'USDT',
+        parameters: {
+          description: 'Earn 5 USDT for each friend who joins, completes onboarding and settles.',
+          requirementType: 'REFERRAL_QUALIFIED',
+          requirementCount: 1,
+          actionTab: 'friends',
+          expiresInDays: 30,
         },
       },
     ];
@@ -709,7 +765,6 @@ export class RewardService {
 
         const eligibility = await this.evaluateRuleEligibility(telegramUserId, rule);
         if (eligibility.eligible) continue;
-        if ((eligibility.requirement?.current || 0) <= 0) continue;
 
         queue.push({
           id: `rule:${rule.id}`,
