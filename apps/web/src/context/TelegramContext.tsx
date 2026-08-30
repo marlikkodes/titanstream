@@ -94,17 +94,40 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const isMiniApp = platform === 'telegram';
 
-  const hapticFeedback = {
-    impactOccurred: useCallback((style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => {
-      (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred(style);
-    }, []),
-    notificationOccurred: useCallback((type: 'error' | 'success' | 'warning') => {
-      (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type);
-    }, []),
-    selectionChanged: useCallback(() => {
-      (window as any).Telegram?.WebApp?.HapticFeedback?.selectionChanged();
-    }, []),
-  };
+  const hapticFeedback = useMemo(() => {
+    const isSupported = () => {
+      const tg = (window as any).Telegram?.WebApp;
+      if (!tg) return false;
+      if (typeof tg.isVersionAtLeast === 'function') {
+        return tg.isVersionAtLeast('6.1');
+      }
+      return false;
+    };
+
+    return {
+      impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => {
+        try {
+          if (isSupported()) {
+            (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred(style);
+          }
+        } catch (_) {}
+      },
+      notificationOccurred: (type: 'error' | 'success' | 'warning') => {
+        try {
+          if (isSupported()) {
+            (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type);
+          }
+        } catch (_) {}
+      },
+      selectionChanged: () => {
+        try {
+          if (isSupported()) {
+            (window as any).Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+          }
+        } catch (_) {}
+      },
+    };
+  }, []);
 
   return (
     <TelegramContext.Provider value={{ webApp, user, isReady, platform, isMiniApp, hapticFeedback, logout }}>

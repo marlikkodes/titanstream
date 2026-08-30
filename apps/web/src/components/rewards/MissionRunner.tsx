@@ -80,7 +80,7 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
     return () => clearInterval(poll);
   }, [isOpen, fetchMissions]);
 
-  // Auto-claim the instant the requirement is met (fires exactly once).
+  // Auto-claim the instant the requirement is met (fires exactly once per mission).
   useEffect(() => {
     if (!isOpen || !liveMission || autoClaimed) return;
     if (!liveMission.eligible || liveMission.status === 'CLAIM_PENDING' || liveMission.status === 'CLAIMED') return;
@@ -95,15 +95,12 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
           showToast(`Mission complete — ${Number(res.reward?.amount)?.toFixed(2)} USDT claimed!`, 'success');
           onClaimed({ ...liveMission, status: 'CLAIMED' });
           onClose();
-        } else {
-          setAutoClaimed(false);
-          claimedForRef.current = null;
-          showToast(res.error || 'Auto-claim failed. Tap Claim to retry.', 'error');
+        } else if (res.error) {
+          showToast(res.error, 'error');
         }
       })
-      .catch(() => {
-        setAutoClaimed(false);
-        claimedForRef.current = null;
+      .catch((err: any) => {
+        console.warn('Auto-claim error:', err);
       });
   }, [
     isOpen,
@@ -114,7 +111,6 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
     autoClaim,
     onClaimed,
     onClose,
-    hapticFeedback,
   ]);
 
   if (!isOpen || !liveMission) return null;
