@@ -6,6 +6,8 @@ import { useNavigationStore } from '../../store/useNavigationStore';
 import { showToast } from '../../components/Toast';
 import { EmptyState } from '../../components/EmptyState';
 import { DestinationLoader } from '../../components/DestinationLoader';
+import { NextBestActionCard } from '../../components/NextBestActionCard';
+import { ReferralAssistanceModal } from '../../components/ReferralAssistanceModal';
 import { 
   Copy, 
   Share2, 
@@ -26,7 +28,8 @@ import {
   ArrowRight,
   ShieldCheck,
   Zap,
-  RefreshCw
+  RefreshCw,
+  Send
 } from 'lucide-react';
 import { CurrencyDisplay } from '../../components/DualCurrencyDisplay';
 
@@ -82,6 +85,7 @@ export const GrowScreen: React.FC = () => {
 
   const { setActiveTab } = useNavigationStore();
   const [copied, setCopied] = useState(false);
+  const [selectedRefereeId, setSelectedRefereeId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReferrals();
@@ -152,6 +156,9 @@ export const GrowScreen: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* NEXT BEST ACTION CARD */}
+      <NextBestActionCard />
 
       {/* HERO SECTION — Network Performance & Economic Progression */}
       <motion.div
@@ -343,9 +350,10 @@ export const GrowScreen: React.FC = () => {
               const hint = getStatusHint(item.status);
               const name = item.refereeName || 'Operator';
               const username = item.refereeUsername ? `@${item.refereeUsername}` : null;
+              const isUnqualified = item.status === 'REGISTERED' || item.status === 'ONBOARDED';
 
               return (
-                <div key={item.id} className="p-3.5 flex flex-col gap-2.5 text-xs">
+                <div key={item.id} className="p-3.5 flex flex-col gap-2.5 text-xs hover:bg-white/[0.02] transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center font-black text-cyan-400 text-xs">
@@ -364,18 +372,31 @@ export const GrowScreen: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase font-mono border ${
-                        item.status === 'PAYING' || item.status === 'REWARDED'
-                          ? 'bg-usdt-green/15 text-usdt-green border-usdt-green/30'
-                          : item.status === 'QUALIFIED'
-                          ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
-                          : 'bg-white/10 text-text-secondary border-white/10'
-                      }`}>
-                        {item.status}
-                      </span>
-                      <div className="text-[10px] text-text-tertiary font-mono mt-1">
-                        {hint}
+                    <div className="flex items-center gap-2">
+                      {isUnqualified && (
+                        <button
+                          onClick={() => setSelectedRefereeId(item.refereeId)}
+                          className="py-1 px-2 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-bold hover:bg-cyan-500/25 transition-colors press-feedback flex items-center gap-1 text-[10px] font-mono"
+                          title="Send setup instructions"
+                        >
+                          <Send size={11} />
+                          <span>Guide</span>
+                        </button>
+                      )}
+
+                      <div className="text-right">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase font-mono border ${
+                          item.status === 'PAYING' || item.status === 'REWARDED'
+                            ? 'bg-usdt-green/15 text-usdt-green border-usdt-green/30'
+                            : item.status === 'QUALIFIED'
+                            ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
+                            : 'bg-white/10 text-text-secondary border-white/10'
+                        }`}>
+                          {item.status}
+                        </span>
+                        <div className="text-[10px] text-text-tertiary font-mono mt-1">
+                          {hint}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -424,6 +445,12 @@ export const GrowScreen: React.FC = () => {
           />
         )}
       </div>
+
+      {/* REFERRAL ASSISTANCE MODAL */}
+      <ReferralAssistanceModal
+        refereeId={selectedRefereeId}
+        onClose={() => setSelectedRefereeId(null)}
+      />
 
       {/* DISCOVERY & CROSS-PAGE ACTION FOOTER */}
       <div className="p-4 rounded-2xl bg-card-bg border border-white/10 flex items-center justify-between">

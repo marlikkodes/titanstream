@@ -18,6 +18,7 @@ import { UserLevelService } from './user-level.service';
 import { GrowthNotificationService } from './growth-notification.service';
 import { TrustCenterService } from './trust-center.service';
 import { GrowthEventService } from './growth-event.service';
+import { GrowthAnalyticsService } from './growth-analytics.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../database/prisma.service';
@@ -280,6 +281,7 @@ describe('POST-REMEDIATION FORENSIC CERTIFICATION SUITE', () => {
         GrowthNotificationService,
         TrustCenterService,
         GrowthEventService,
+        GrowthAnalyticsService,
         FinancialAccountService,
         {
           provide: FinancialAccountRepository,

@@ -22,6 +22,7 @@ import { MachineActivationModal } from './components/MachineActivationModal';
 import { MachineCertificateModal } from './components/MachineCertificateModal';
 import { MachineHealthModal } from './components/MachineHealthModal';
 import { FleetOverviewCard } from './components/FleetOverviewCard';
+import { NextBestActionCard } from '../../components/NextBestActionCard';
 import { formatCurrencyWithLocalFallback } from '../../store/useCountryStore';
 
 export const TitanHubScreen: React.FC = () => {
@@ -218,6 +219,9 @@ export const TitanHubScreen: React.FC = () => {
         <MiningSpinner />
         <BalanceDisplay />
       </div>
+
+      {/* CANONICAL NEXT BEST ACTION */}
+      <NextBestActionCard />
 
       {/* DYNAMIC PRIORITY BANNER: Unclaimed Yield Ready */}
       {unclaimedBalance > 0 && (

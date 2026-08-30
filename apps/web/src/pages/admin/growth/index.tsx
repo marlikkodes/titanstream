@@ -2,7 +2,17 @@ import type React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '@/services/api';
-import { growthService, type GrowthEconomyMetrics, type AttributionHealthMetrics } from '@/services/growthService';
+import { 
+  growthService, 
+  type GrowthEconomyMetrics, 
+  type AttributionHealthMetrics,
+  type CanonicalFunnelStage,
+  type EconomicLeakItem,
+  type RevenueOpportunityItem,
+  type CohortEconomicsItem,
+  type RewardLiabilityBreakdown,
+  type ReferrerQualityItem
+} from '@/services/growthService';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { showToast } from '@/components/Toast';
 import {
@@ -29,6 +39,10 @@ import {
   BarChart3,
   Activity,
   Info,
+  Target,
+  Filter,
+  AlertOctagon,
+  LineChart
 } from 'lucide-react';
 
 interface RewardItem {
@@ -55,9 +69,15 @@ interface ReferralRelationship {
 }
 
 export const GrowthAdminPage: React.FC = () => {
-  const [tab, setTab] = useState<'ECONOMICS' | 'REWARDS' | 'REFERRALS' | 'FRAUD' | 'RULES'>('ECONOMICS');
+  const [tab, setTab] = useState<'ECONOMICS' | 'FUNNEL' | 'OPPORTUNITIES' | 'REWARDS' | 'REFERRALS' | 'FRAUD' | 'RULES'>('ECONOMICS');
   const [economics, setEconomics] = useState<GrowthEconomyMetrics | null>(null);
   const [attributionHealth, setAttributionHealth] = useState<AttributionHealthMetrics | null>(null);
+  const [funnelStages, setFunnelStages] = useState<CanonicalFunnelStage[]>([]);
+  const [economicLeaks, setEconomicLeaks] = useState<EconomicLeakItem[]>([]);
+  const [opportunities, setOpportunities] = useState<RevenueOpportunityItem[]>([]);
+  const [cohorts, setCohorts] = useState<CohortEconomicsItem[]>([]);
+  const [liabilities, setLiabilities] = useState<RewardLiabilityBreakdown | null>(null);
+  const [referrerQuality, setReferrerQuality] = useState<ReferrerQualityItem[]>([]);
   const [economicsError, setEconomicsError] = useState<string | null>(null);
   const [rewards, setRewards] = useState<RewardItem[]>([]);
   const [referrals, setReferrals] = useState<ReferralRelationship[]>([]);
@@ -80,9 +100,10 @@ export const GrowthAdminPage: React.FC = () => {
     setLoading(true);
     setEconomicsError(null);
     try {
-      const [ecoData, healthData] = await Promise.all([
+      const [ecoData, healthData, liabilitiesData] = await Promise.all([
         growthService.getGrowthEconomyMetrics().catch(() => null),
         growthService.getAttributionHealth().catch(() => null),
+        growthService.getRewardLiabilities().catch(() => null),
       ]);
       if (!ecoData) {
         setEconomicsError('Unable to load canonical growth economics data from backend.');
@@ -90,8 +111,43 @@ export const GrowthAdminPage: React.FC = () => {
         setEconomics(ecoData);
       }
       setAttributionHealth(healthData);
+      setLiabilities(liabilitiesData);
     } catch (err: any) {
       setEconomicsError(err?.message || 'Failed to fetch economics metrics');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchFunnel = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [funnelRes, leaksRes] = await Promise.all([
+        growthService.getEconomicFunnel().catch(() => ({ stages: [] })),
+        growthService.getEconomicLeaks().catch(() => []),
+      ]);
+      setFunnelStages(funnelRes.stages || []);
+      setEconomicLeaks(leaksRes || []);
+    } catch {
+      setFunnelStages([]);
+      setEconomicLeaks([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchOpportunities = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [oppsRes, cohortsRes] = await Promise.all([
+        growthService.getRevenueOpportunities().catch(() => []),
+        growthService.getCohortEconomics().catch(() => []),
+      ]);
+      setOpportunities(oppsRes || []);
+      setCohorts(cohortsRes || []);
+    } catch {
+      setOpportunities([]);
+      setCohorts([]);
     } finally {
       setLoading(false);
     }
@@ -100,9 +156,13 @@ export const GrowthAdminPage: React.FC = () => {
   const fetchRewards = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/rewards').catch(() => ({ data: [] }));
+      const [res, liab] = await Promise.all([
+        api.get('/admin/rewards').catch(() => ({ data: [] })),
+        growthService.getRewardLiabilities().catch(() => null),
+      ]);
       const data = res?.data?.data ?? res?.data ?? [];
       setRewards(Array.isArray(data) ? data : []);
+      setLiabilities(liab);
     } catch {
       setRewards([]);
     } finally {
@@ -113,11 +173,16 @@ export const GrowthAdminPage: React.FC = () => {
   const fetchReferrals = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/referrals/relationships').catch(() => ({ data: [] }));
+      const [res, qualityRes] = await Promise.all([
+        api.get('/admin/referrals/relationships').catch(() => ({ data: [] })),
+        growthService.getReferrerQualityRankings().catch(() => []),
+      ]);
       const data = res?.data?.data ?? res?.data ?? [];
       setReferrals(Array.isArray(data) ? data : []);
+      setReferrerQuality(qualityRes || []);
     } catch {
       setReferrals([]);
+      setReferrerQuality([]);
     } finally {
       setLoading(false);
     }
@@ -137,10 +202,12 @@ export const GrowthAdminPage: React.FC = () => {
 
   useEffect(() => {
     if (tab === 'ECONOMICS') fetchEconomics();
+    if (tab === 'FUNNEL') fetchFunnel();
+    if (tab === 'OPPORTUNITIES') fetchOpportunities();
     if (tab === 'REWARDS') fetchRewards();
     if (tab === 'REFERRALS') fetchReferrals();
     if (tab === 'FRAUD') fetchFraudCheck();
-  }, [tab, fetchEconomics, fetchRewards, fetchReferrals, fetchFraudCheck]);
+  }, [tab, fetchEconomics, fetchFunnel, fetchOpportunities, fetchRewards, fetchReferrals, fetchFraudCheck]);
 
   const handleApproveReward = async (id: string) => {
     setApprovingId(id);
@@ -295,6 +362,26 @@ export const GrowthAdminPage: React.FC = () => {
           Economics & ROI
         </button>
         <button
+          onClick={() => setTab('FUNNEL')}
+          className={`px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+            tab === 'FUNNEL'
+              ? 'bg-usdt-green text-app-bg shadow-lg shadow-usdt-green/20'
+              : 'bg-control-bg text-text-secondary border border-white/10 hover:text-text-primary'
+          }`}
+        >
+          9-Stage Funnel & Leaks
+        </button>
+        <button
+          onClick={() => setTab('OPPORTUNITIES')}
+          className={`px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+            tab === 'OPPORTUNITIES'
+              ? 'bg-usdt-green text-app-bg shadow-lg shadow-usdt-green/20'
+              : 'bg-control-bg text-text-secondary border border-white/10 hover:text-text-primary'
+          }`}
+        >
+          Opportunities & Cohorts
+        </button>
+        <button
           onClick={() => setTab('REWARDS')}
           className={`px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
             tab === 'REWARDS'
@@ -312,7 +399,7 @@ export const GrowthAdminPage: React.FC = () => {
               : 'bg-control-bg text-text-secondary border border-white/10 hover:text-text-primary'
           }`}
         >
-          Referral Network Graph
+          Referral Network & Quality
         </button>
         <button
           onClick={() => setTab('FRAUD')}
@@ -631,21 +718,278 @@ export const GrowthAdminPage: React.FC = () => {
         </div>
       )}
 
-      {/* ─── 4. TAB 2: REWARDS QUEUE ─────────────────────────────────────────── */}
-      {tab === 'REWARDS' && (
-        <div className="bg-card-bg rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <div>
-              <h3 className="text-sm font-black text-text-primary flex items-center gap-2">
-                <Gift size={16} className="text-usdt-green" /> Authoritative Reward Claim Queue
-              </h3>
-              <p className="text-xs text-text-tertiary mt-0.5">
-                Claims authorized here are immediately disbursed into the user's wallet via the Double-Entry Ledger Orchestrator.
-              </p>
+      {/* ─── TAB: CANONICAL 9-STAGE ECONOMIC FUNNEL & LEAKS ───────────────────── */}
+      {tab === 'FUNNEL' && (
+        <div className="space-y-6">
+          {/* 9-STAGE FUNNEL TABLE */}
+          <div className="bg-card-bg rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+              <div>
+                <h3 className="text-sm font-black text-text-primary flex items-center gap-2">
+                  <Filter size={16} className="text-cyan-400" /> Canonical 9-Stage Economic Funnel
+                </h3>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  End-to-end customer journey progression from arrival to repeat retention and net platform contribution.
+                </p>
+              </div>
+              <span className="text-xs font-mono text-text-tertiary">
+                {funnelStages.length} Measured Stages
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-mono">
+                <thead className="bg-control-bg/50 text-[10px] font-extrabold uppercase text-text-tertiary border-b border-white/5">
+                  <tr>
+                    <th className="py-3 px-4">Stage</th>
+                    <th className="py-3 px-3">Lifecycle Step</th>
+                    <th className="py-3 px-3">Users</th>
+                    <th className="py-3 px-4">Progression Conversion</th>
+                    <th className="py-3 px-3">Drop-off</th>
+                    <th className="py-3 px-4 text-right">Net Contribution</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {funnelStages.map((stage, idx) => (
+                    <tr key={stage.stage} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-4 font-bold text-text-tertiary font-sans">
+                        #{idx + 1}
+                      </td>
+                      <td className="py-3 px-3 font-bold text-text-primary font-sans">
+                        {stage.name}
+                        <div className="text-[10px] text-text-tertiary font-mono">{stage.stage}</div>
+                      </td>
+                      <td className="py-3 px-3 font-bold text-text-primary">
+                        {stage.count.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 h-2 rounded-full bg-white/10 overflow-hidden">
+                            <div
+                              className="h-full bg-cyan-400 rounded-full"
+                              style={{ width: `${Math.min(100, stage.conversionPct)}%` }}
+                            />
+                          </div>
+                          <span className="text-[11px] font-bold text-cyan-400">{stage.conversionPct}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-rose-400">
+                        {stage.dropoffPct > 0 ? `${stage.dropoffPct}%` : '—'}
+                      </td>
+                      <td className="py-3 px-4 text-right font-bold text-usdt-green">
+                        {stage.netContributionUsdt > 0 ? `$${stage.netContributionUsdt.toFixed(2)}` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          <div className="space-y-3">
+          {/* ECONOMIC LEAK DETECTION */}
+          <div className="bg-card-bg rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div>
+                <h3 className="text-sm font-black text-text-primary flex items-center gap-2">
+                  <AlertOctagon size={16} className="text-rose-400" /> Economic Leak Detection
+                </h3>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  Pinpoints highest-friction customer drop-offs and quantifies estimated lost platform contribution.
+                </p>
+              </div>
+              <span className="text-xs font-mono text-rose-400 font-bold">
+                {economicLeaks.length} Detected Leaks
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {economicLeaks.map((leak) => (
+                <div key={leak.leakId} className="p-4 rounded-2xl bg-control-bg border border-white/5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-text-tertiary uppercase">
+                      {leak.leakId}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase font-mono ${
+                      leak.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    }`}>
+                      {leak.severity}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-black text-text-primary">{leak.stage}</h4>
+                    <div className="text-[11px] font-mono text-rose-400 mt-1 font-bold">
+                      {leak.dropoffPercent}% Drop-off ({leak.dropoffCount} users)
+                    </div>
+                    <div className="text-[10px] font-mono text-text-tertiary mt-0.5">
+                      Estimated Lost Contribution: <strong className="text-rose-300">${leak.estimatedLostContributionUsdt.toFixed(2)} USDT</strong>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-[11px] text-text-secondary leading-relaxed">
+                    <strong className="text-cyan-400">Remedy:</strong> {leak.recommendedAction}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── TAB: REVENUE OPPORTUNITY MAP & COHORT ECONOMICS ─────────────────── */}
+      {tab === 'OPPORTUNITIES' && (
+        <div className="space-y-6">
+          {/* RANKED REVENUE OPPORTUNITIES (P0 → P3) */}
+          <div className="bg-card-bg rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div>
+                <h3 className="text-sm font-black text-text-primary flex items-center gap-2">
+                  <Target size={16} className="text-gold" /> Ranked Revenue Opportunity Map
+                </h3>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  Prioritized conversion engineering initiatives ranked by expected incremental net contribution.
+                </p>
+              </div>
+              <span className="text-xs font-mono text-text-tertiary">
+                {opportunities.length} Ranked Opportunities
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {opportunities.map((opp) => (
+                <div key={opp.priority} className="p-4 rounded-2xl bg-control-bg border border-white/5 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase font-mono border ${
+                      opp.priority === 'P0' ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : opp.priority === 'P1' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
+                    }`}>
+                      {opp.priority} · {opp.category}
+                    </span>
+                    <span className="text-xs font-mono font-bold text-usdt-green">
+                      +${opp.expectedIncrementalContributionUsdt.toFixed(2)} USDT Lift
+                    </span>
+                  </div>
+
+                  <h4 className="text-xs font-black text-text-primary">{opp.title}</h4>
+                  <p className="text-[11px] text-text-secondary leading-relaxed">{opp.description}</p>
+
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-text-tertiary">
+                    <span>Target Lift: <strong className="text-cyan-400">+{opp.targetLiftPercent}%</strong></span>
+                    <span>Risk Level: <strong className="text-text-secondary">{opp.riskLevel}</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* MONTHLY COHORT ECONOMICS */}
+          <div className="bg-card-bg rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div>
+                <h3 className="text-sm font-black text-text-primary flex items-center gap-2">
+                  <LineChart size={16} className="text-ton-blue" /> Monthly Cohort Economics & Retention
+                </h3>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  Tracking acquisition quality, CAC payback, net contribution, and D30 retention across cohorts.
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-mono">
+                <thead className="bg-control-bg/50 text-[10px] font-extrabold uppercase text-text-tertiary border-b border-white/5">
+                  <tr>
+                    <th className="py-3 px-4">Cohort</th>
+                    <th className="py-3 px-3">Users</th>
+                    <th className="py-3 px-3">Qualified</th>
+                    <th className="py-3 px-3">Paying</th>
+                    <th className="py-3 px-3">Revenue</th>
+                    <th className="py-3 px-3">Direct Cost</th>
+                    <th className="py-3 px-3">Reward Spend</th>
+                    <th className="py-3 px-3">Net Contribution</th>
+                    <th className="py-3 px-3">CAC</th>
+                    <th className="py-3 px-3">LTV</th>
+                    <th className="py-3 px-4">D30 Retention</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {cohorts.map((cohort) => (
+                    <tr key={cohort.cohortMonth} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-4 font-bold text-text-primary font-sans">{cohort.cohortMonth}</td>
+                      <td className="py-3 px-3">{cohort.totalUsers}</td>
+                      <td className="py-3 px-3 text-cyan-400">{cohort.qualifiedUsers}</td>
+                      <td className="py-3 px-3 text-usdt-green">{cohort.payingUsers}</td>
+                      <td className="py-3 px-3">${cohort.grossRevenueUsdt.toFixed(2)}</td>
+                      <td className="py-3 px-3 text-rose-400">${cohort.directCostUsdt.toFixed(2)}</td>
+                      <td className="py-3 px-3 text-amber-400">${cohort.rewardSpendUsdt.toFixed(2)}</td>
+                      <td className="py-3 px-3 font-bold text-usdt-green">${cohort.netContributionUsdt.toFixed(2)}</td>
+                      <td className="py-3 px-3">${cohort.cacUsdt.toFixed(2)}</td>
+                      <td className="py-3 px-3 font-bold">${cohort.ltvUsdt.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-cyan-400 font-bold">{cohort.retentionD30Percent}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── 4. TAB: REWARDS QUEUE & LIABILITIES ──────────────────────────────── */}
+      {tab === 'REWARDS' && (
+        <div className="space-y-6">
+          {/* REWARD LIABILITY GOVERNANCE CARD */}
+          {liabilities && (
+            <div className="bg-card-bg rounded-3xl p-5 sm:p-6 border border-white/10 space-y-3 shadow-xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-text-primary flex items-center gap-2">
+                  <Wallet size={16} className="text-usdt-green" /> Reward Liability Exposure & Capital Governance
+                </h3>
+                <span className="text-xs font-mono font-bold text-usdt-green">
+                  {liabilities.budgetUtilizationPercent}% Budget Utilized
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
+                <div className="p-3 rounded-2xl bg-control-bg border border-white/5 space-y-1">
+                  <div className="text-[10px] text-text-tertiary uppercase">Available Liability</div>
+                  <div className="text-base font-black text-amber-400">${liabilities.availableLiabilityUsdt.toFixed(2)} USDT</div>
+                  <div className="text-[9px] text-text-tertiary">Unlocked queue claims</div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-control-bg border border-white/5 space-y-1">
+                  <div className="text-[10px] text-text-tertiary uppercase">Committed Liability</div>
+                  <div className="text-base font-black text-purple-400">${liabilities.committedLiabilityUsdt.toFixed(2)} USDT</div>
+                  <div className="text-[9px] text-text-tertiary">Pending admin review</div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-control-bg border border-white/5 space-y-1">
+                  <div className="text-[10px] text-text-tertiary uppercase">Disbursed Spend</div>
+                  <div className="text-base font-black text-usdt-green">${liabilities.disbursedSpendUsdt.toFixed(2)} USDT</div>
+                  <div className="text-[9px] text-text-tertiary">Ledger credited</div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-control-bg border border-white/5 space-y-1">
+                  <div className="text-[10px] text-text-tertiary uppercase">Remaining Budget</div>
+                  <div className="text-base font-black text-cyan-400">${liabilities.remainingBudgetUsdt.toFixed(2)} USDT</div>
+                  <div className="text-[9px] text-text-tertiary">Of ${liabilities.totalBudgetUsdt.toFixed(0)} cap</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-card-bg rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div>
+                <h3 className="text-sm font-black text-text-primary flex items-center gap-2">
+                  <Gift size={16} className="text-usdt-green" /> Authoritative Reward Claim Queue
+                </h3>
+                <p className="text-xs text-text-tertiary mt-0.5">
+                  Claims authorized here are immediately disbursed into the user's wallet via the Double-Entry Ledger Orchestrator.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
             {rewards.map((r) => (
               <div
                 key={r.id}
@@ -687,6 +1031,7 @@ export const GrowthAdminPage: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
       )}
 
       {/* ─── 4. TAB 2: REFERRAL GRAPH ────────────────────────────────────────── */}
@@ -725,6 +1070,70 @@ export const GrowthAdminPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Referrer Economic Quality Score Rankings */}
+          <div className="bg-card-bg rounded-3xl p-5 sm:p-6 border border-white/10 space-y-3 shadow-xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-2">
+              <h4 className="text-xs font-black uppercase tracking-wider text-text-primary flex items-center gap-2">
+                <Award size={14} className="text-cyan-400" /> Referrer Economic Quality Score Rankings
+              </h4>
+              <span className="text-[10px] font-mono text-text-tertiary">
+                Score based on conversion rate & net contribution
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-mono">
+                <thead>
+                  <tr className="border-b border-white/10 bg-control-bg text-[10px] uppercase text-text-tertiary">
+                    <th className="p-3.5 rounded-l-xl">Rank & Referrer</th>
+                    <th className="p-3.5">Invited</th>
+                    <th className="p-3.5">Qualified</th>
+                    <th className="p-3.5">Paying</th>
+                    <th className="p-3.5">Downline Net Contribution</th>
+                    <th className="p-3.5 rounded-r-xl">Quality Score</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {referrerQuality.map((rq, idx) => (
+                    <tr key={rq.referrerId} className="hover:bg-white/5 transition-colors">
+                      <td className="p-3.5">
+                        <div className="font-bold text-text-primary font-sans flex items-center gap-2">
+                          <span className="text-[10px] text-text-tertiary">#{idx + 1}</span>
+                          <span>{rq.referrerName || `User #${rq.referrerId}`}</span>
+                        </div>
+                        {rq.referrerUsername && (
+                          <div className="text-[10px] text-cyan-400 font-mono">@{rq.referrerUsername}</div>
+                        )}
+                      </td>
+                      <td className="p-3.5 text-text-primary">{rq.invitedCount}</td>
+                      <td className="p-3.5 text-cyan-400">{rq.qualifiedCount}</td>
+                      <td className="p-3.5 text-usdt-green">{rq.payingCount}</td>
+                      <td className="p-3.5 font-bold text-usdt-green">${rq.downlineNetContributionUsdt.toFixed(2)}</td>
+                      <td className="p-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 rounded-full bg-white/10 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${rq.qualityScore >= 70 ? 'bg-usdt-green' : rq.qualityScore >= 40 ? 'bg-cyan-400' : 'bg-amber-400'}`}
+                              style={{ width: `${rq.qualityScore}%` }}
+                            />
+                          </div>
+                          <span className="font-bold text-xs font-mono text-cyan-400">{rq.qualityScore}/100</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {referrerQuality.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="p-6 text-center text-text-tertiary">
+                        No referrer quality records found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
           {/* Qualified Ties Table */}
           <div className="bg-card-bg rounded-3xl p-5 sm:p-6 border border-white/10 space-y-3 shadow-xl">

@@ -37,6 +37,66 @@ export class GrowthAdminController {
   }
 
   /**
+   * GET /admin/growth/funnel
+   * Canonical 9-stage Economic Funnel with net contribution.
+   */
+  @Get('growth/funnel')
+  @Permissions(AdminPermission.REFERRAL_READ)
+  async getEconomicFunnel() {
+    return this.growthAnalyticsService.getCanonicalEconomicFunnel();
+  }
+
+  /**
+   * GET /admin/growth/leaks
+   * Economic Leak Detection and drop-off analysis.
+   */
+  @Get('growth/leaks')
+  @Permissions(AdminPermission.REFERRAL_READ)
+  async getEconomicLeaks() {
+    return this.growthAnalyticsService.getEconomicLeaks();
+  }
+
+  /**
+   * GET /admin/growth/opportunities
+   * Ranked Revenue Opportunity Map (P0 → P3).
+   */
+  @Get('growth/opportunities')
+  @Permissions(AdminPermission.REFERRAL_READ)
+  async getRevenueOpportunities() {
+    return this.growthAnalyticsService.getRevenueOpportunities();
+  }
+
+  /**
+   * GET /admin/growth/cohorts
+   * Cohort Economics tracking CAC, LTV, net contribution, and retention.
+   */
+  @Get('growth/cohorts')
+  @Permissions(AdminPermission.REFERRAL_READ)
+  async getCohortEconomics() {
+    return this.growthAnalyticsService.getCohortEconomics();
+  }
+
+  /**
+   * GET /admin/growth/liabilities
+   * Reward Liability Governance (Available, Committed, Disbursed, Budget).
+   */
+  @Get('growth/liabilities')
+  @Permissions(AdminPermission.REFERRAL_READ)
+  async getRewardLiabilities() {
+    return this.growthAnalyticsService.getRewardLiabilityBreakdown();
+  }
+
+  /**
+   * GET /admin/growth/referrers/quality
+   * Referrer Quality Score Rankings.
+   */
+  @Get('growth/referrers/quality')
+  @Permissions(AdminPermission.REFERRAL_READ)
+  async getReferrerQualityRankings() {
+    return this.growthAnalyticsService.getReferrerQualityRankings();
+  }
+
+  /**
    * GET /admin/growth/campaigns/roi
    * Campaign-level ROI and conversion efficiency ranking.
    */

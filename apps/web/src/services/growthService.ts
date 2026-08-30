@@ -333,6 +333,46 @@ export const growthService = {
     return res.data.data;
   },
 
+  async getNextBestAction(): Promise<NextBestAction> {
+    const res = await api.get('/growth/next-best-action');
+    return res.data.data ?? res.data;
+  },
+
+  async getReferralAssistance(refereeId: string): Promise<ReferralAssistance> {
+    const res = await api.get(`/growth/referrals/${refereeId}/assistance`);
+    return res.data.data ?? res.data;
+  },
+
+  async getEconomicFunnel(): Promise<{ stages: CanonicalFunnelStage[] }> {
+    const res = await api.get('/admin/growth/funnel');
+    return res.data.data ?? res.data;
+  },
+
+  async getEconomicLeaks(): Promise<EconomicLeakItem[]> {
+    const res = await api.get('/admin/growth/leaks');
+    return res.data.data ?? res.data;
+  },
+
+  async getRevenueOpportunities(): Promise<RevenueOpportunityItem[]> {
+    const res = await api.get('/admin/growth/opportunities');
+    return res.data.data ?? res.data;
+  },
+
+  async getCohortEconomics(): Promise<CohortEconomicsItem[]> {
+    const res = await api.get('/admin/growth/cohorts');
+    return res.data.data ?? res.data;
+  },
+
+  async getRewardLiabilities(): Promise<RewardLiabilityBreakdown> {
+    const res = await api.get('/admin/growth/liabilities');
+    return res.data.data ?? res.data;
+  },
+
+  async getReferrerQualityRankings(): Promise<ReferrerQualityItem[]> {
+    const res = await api.get('/admin/growth/referrers/quality');
+    return res.data.data ?? res.data;
+  },
+
   async getGrowthEconomyMetrics(): Promise<GrowthEconomyMetrics> {
     const res = await api.get('/admin/growth/economics');
     return res.data.data ?? res.data;
@@ -353,6 +393,94 @@ export const growthService = {
     return res.data.data ?? res.data;
   },
 };
+
+export interface NextBestAction {
+  actionType: string;
+  title: string;
+  description: string;
+  reason: string;
+  destinationTab: 'wallet' | 'shop' | 'grow' | 'rewards' | 'hub';
+  priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW';
+  potentialUnlockUsdt: number;
+  badge?: string;
+}
+
+export interface ReferralAssistance {
+  relationshipId: string;
+  refereeId: string;
+  name: string;
+  username?: string | null;
+  status: string;
+  isQualified: boolean;
+  missingStep: string;
+  helperMessage: string;
+}
+
+export interface CanonicalFunnelStage {
+  stage: string;
+  name: string;
+  count: number;
+  conversionPct: number;
+  dropoffPct: number;
+  netContributionUsdt: number;
+}
+
+export interface EconomicLeakItem {
+  leakId: string;
+  stage: string;
+  fromCount: number;
+  toCount: number;
+  dropoffCount: number;
+  dropoffPercent: number;
+  estimatedLostContributionUsdt: number;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM';
+  recommendedAction: string;
+}
+
+export interface RevenueOpportunityItem {
+  priority: 'P0' | 'P1' | 'P2' | 'P3';
+  title: string;
+  category: string;
+  currentVolume: string;
+  targetLiftPercent: number;
+  expectedIncrementalContributionUsdt: number;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  description: string;
+}
+
+export interface CohortEconomicsItem {
+  cohortMonth: string;
+  totalUsers: number;
+  qualifiedUsers: number;
+  payingUsers: number;
+  grossRevenueUsdt: number;
+  directCostUsdt: number;
+  rewardSpendUsdt: number;
+  netContributionUsdt: number;
+  ltvUsdt: number;
+  cacUsdt: number;
+  retentionD30Percent: number;
+}
+
+export interface RewardLiabilityBreakdown {
+  totalBudgetUsdt: number;
+  availableLiabilityUsdt: number;
+  committedLiabilityUsdt: number;
+  disbursedSpendUsdt: number;
+  remainingBudgetUsdt: number;
+  budgetUtilizationPercent: number;
+}
+
+export interface ReferrerQualityItem {
+  referrerId: string;
+  name: string;
+  username?: string | null;
+  totalInvited: number;
+  qualifiedCount: number;
+  payingCount: number;
+  netContributionUsdt: number;
+  qualityScore: number;
+}
 
 export type CostBasis = 'EXACT_LEDGER' | 'ESTIMATED_RAIL_35PCT' | 'ESTIMATED_HARDWARE_70PCT' | 'ESTIMATED' | 'ZERO_COST';
 export type EconomicStatus = 'PROFITABLE' | 'OPTIMIZE' | 'UNPROFITABLE';

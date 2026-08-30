@@ -13,6 +13,7 @@ import { UserLevelService } from './user-level.service';
 import { GrowthNotificationService } from './growth-notification.service';
 import { TrustCenterService } from './trust-center.service';
 import { PrismaService } from '../../database/prisma.service';
+import { GrowthAnalyticsService } from './growth-analytics.service';
 
 @Controller('growth')
 @UseGuards(AuthGuard)
@@ -29,6 +30,7 @@ export class GrowthController {
     private readonly userLevelService: UserLevelService,
     private readonly notificationService: GrowthNotificationService,
     private readonly trustCenterService: TrustCenterService,
+    private readonly growthAnalyticsService: GrowthAnalyticsService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -42,6 +44,36 @@ export class GrowthController {
       throw new BadRequestException('USER_IDENTITY_NOT_FOUND');
     }
     return user.telegramUserId;
+  }
+
+  /**
+   * GET /growth/next-best-action
+   * Deterministically evaluates real database state to provide the user's highest-value next step.
+   */
+  @Get('next-best-action')
+  async getNextBestAction(@CanonicalUserId() userId: string) {
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.growthAnalyticsService.getNextBestAction(tgUserId);
+  }
+
+  /**
+   * GET /growth/referrals/:refereeId/assistance
+   * Generate tailored setup and settlement instructions for a referrer to assist a specific referee.
+   */
+  @Get('referrals/:refereeId/assistance')
+  async getReferralAssistance(
+    @CanonicalUserId() userId: string,
+    @Param('refereeId') refereeId: string,
+  ) {
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const assistance = await this.growthAnalyticsService.getReferralActivationAssistance(
+      tgUserId,
+      BigInt(refereeId),
+    );
+    if (!assistance) {
+      throw new BadRequestException('REFERRAL_RELATIONSHIP_NOT_FOUND');
+    }
+    return assistance;
   }
 
   /**

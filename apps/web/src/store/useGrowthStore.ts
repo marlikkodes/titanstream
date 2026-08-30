@@ -5,6 +5,7 @@ import {
   type ReferralSummary,
   type RewardItem,
   type QualificationStatus,
+  type NextBestAction,
 } from '../services/growthService';
 
 interface GrowthState {
@@ -12,6 +13,7 @@ interface GrowthState {
   referrals: ReferralSummary | null;
   rewards: RewardItem[];
   qualification: QualificationStatus | null;
+  nextBestAction: NextBestAction | null;
   dashboardData: any | null;
   trustCenterData: any | null;
   isLoading: boolean;
@@ -21,6 +23,7 @@ interface GrowthState {
   fetchReferrals: () => Promise<void>;
   fetchRewards: () => Promise<void>;
   fetchQualification: () => Promise<void>;
+  fetchNextBestAction: () => Promise<void>;
   fetchDashboardData: () => Promise<void>;
   fetchTrustCenterData: () => Promise<void>;
 }
@@ -30,6 +33,7 @@ export const useGrowthStore = create<GrowthState>((set) => ({
   referrals: null,
   rewards: [],
   qualification: null,
+  nextBestAction: null,
   dashboardData: null,
   trustCenterData: null,
   isLoading: false,
@@ -72,6 +76,15 @@ export const useGrowthStore = create<GrowthState>((set) => ({
     }
   },
 
+  fetchNextBestAction: async () => {
+    try {
+      const data = await growthService.getNextBestAction();
+      set({ nextBestAction: data });
+    } catch (err: any) {
+      console.warn('Failed to load next best action:', err?.message);
+    }
+  },
+
   fetchDashboardData: async () => {
     try {
       const data = await growthService.getDashboard();
@@ -90,3 +103,4 @@ export const useGrowthStore = create<GrowthState>((set) => ({
     }
   },
 }));
+
