@@ -18,20 +18,41 @@ import { CurrencyDisplay } from './DualCurrencyDisplay';
 interface NextBestActionCardProps {
   compact?: boolean;
   className?: string;
+  onlyIfRewards?: boolean;
 }
 
 export const NextBestActionCard: React.FC<NextBestActionCardProps> = ({
   compact = false,
   className = '',
+  onlyIfRewards = false,
 }) => {
   const { nextBestAction, fetchNextBestAction } = useGrowthStore();
+  const { missions, queue, fetchMissions } = useRewardQueueStore();
   const { setActiveTab } = useNavigationStore();
 
   useEffect(() => {
     fetchNextBestAction();
-  }, [fetchNextBestAction]);
+    fetchMissions();
+  }, [fetchNextBestAction, fetchMissions]);
 
   if (!nextBestAction) return null;
+
+  const claimableMissions = Array.isArray(missions)
+    ? missions.filter((m) => m.eligible && m.status !== 'CLAIMED')
+    : [];
+  const claimableQueue = Array.isArray(queue)
+    ? queue.filter((r) => r.status === 'AVAILABLE')
+    : [];
+  const hasClaimableRewards = claimableMissions.length > 0 || claimableQueue.length > 0;
+
+  // Strict guard: only appear when there are real rewards to claim
+  if (onlyIfRewards && !hasClaimableRewards) {
+    return null;
+  }
+
+  if (nextBestAction.actionType === 'CLAIM_REWARD' && !hasClaimableRewards) {
+    return null;
+  }
 
   const getActionIcon = (type: string) => {
     switch (type) {

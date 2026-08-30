@@ -2055,21 +2055,33 @@ function adminMockMiddleware(): Plugin {
         if (url.includes('/growth/next-best-action')) {
           const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
           const hasUnclaimed = !claimedSet.has('starter_welcome') || !claimedSet.has('starter_security');
+          
+          if (!hasUnclaimed) {
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              success: true,
+              data: null,
+            }));
+            return;
+          }
+
+          const unclaimedCount = (claimedSet.has('starter_welcome') ? 0 : 1) + (claimedSet.has('starter_security') ? 0 : 1);
+          const unclaimedAmt = (claimedSet.has('starter_welcome') ? 0 : 0.5) + (claimedSet.has('starter_security') ? 0 : 1.0);
+
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              actionType: hasUnclaimed ? 'CLAIM_REWARD' : 'COMMISSION_FLEET',
-              title: hasUnclaimed ? 'Claim Your Unlocked Rewards' : 'Expand Hardware Fleet',
-              description: hasUnclaimed
-                ? 'You have verified reward badge(s) ready to be credited to your available wallet balance.'
-                : 'Commission additional compute power to increase recurring daily yield.',
-              reason: hasUnclaimed ? 'UNCLAIMED_INCENTIVES' : 'FLEET_EXPANSION',
-              destinationTab: hasUnclaimed ? 'rewards' : 'shop',
-              priority: hasUnclaimed ? 'URGENT' : 'NORMAL',
-              potentialUnlockUsdt: hasUnclaimed ? 1.5 : 5.0,
-              badge: hasUnclaimed ? 'Claimable' : 'Recommended',
+              actionType: 'CLAIM_REWARD',
+              title: 'Claim Your Unlocked Rewards',
+              description: `You have ${unclaimedCount} verified reward badge(s) ready to be credited to your available wallet balance.`,
+              reason: 'UNCLAIMED_INCENTIVES',
+              destinationTab: 'rewards',
+              priority: 'URGENT',
+              potentialUnlockUsdt: unclaimedAmt,
+              badge: 'Claimable',
             },
           }));
           return;

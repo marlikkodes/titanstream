@@ -220,8 +220,8 @@ export const TitanHubScreen: React.FC = () => {
         <BalanceDisplay />
       </div>
 
-      {/* CANONICAL NEXT BEST ACTION */}
-      <NextBestActionCard />
+      {/* CANONICAL NEXT BEST ACTION (Only displayed when there are active claimable rewards) */}
+      <NextBestActionCard onlyIfRewards={true} />
 
       {/* DYNAMIC PRIORITY BANNER: Unclaimed Yield Ready */}
       {unclaimedBalance > 0 && (
