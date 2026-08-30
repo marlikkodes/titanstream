@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware';
 import { miningService, type MiningStateResponse } from '../services/mining.service';
 import { machineService, type UserMachineAsset } from '../services/machineService';
 import { useWalletStore } from './useWalletStore';
-import { useCapacityStore } from './useCapacityStore';
 import { MACHINE_CATALOG } from '../data/machines';
 
 type Currency = 'USDT' | 'TON';
@@ -385,13 +384,6 @@ export const useMiningStore = create<MiningState>()(
           .reduce((sum, m) => sum + (Number(m.capacityGhs) || 0), 0);
 
         const finalSpeed = totalCapacity > 0 ? totalCapacity : Math.max(state.baseSpeedGhs, amount);
-
-        // Sync with capacity engine
-        try {
-          useCapacityStore.getState().addCapacity('PREMIUM_PURCHASE', Math.round((catItem?.capacityGhs || amount) * 10), `Purchased ${catItem?.name || tierCode}`);
-        } catch (e) {
-          console.warn('Failed to add capacity:', e);
-        }
 
         return {
           baseSpeedGhs: finalSpeed,

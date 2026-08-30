@@ -6,7 +6,6 @@ import { AdminLayout } from './layouts/admin/AdminLayout';
 import { MineScreen } from './pages/Mine';
 import { FriendsScreen } from './pages/Friends';
 import { BoostScreen } from './pages/Boost';
-import { TreasuryScreen } from './pages/Treasury';
 import { SplashScreen } from './pages/Splash';
 import { WalletScreen } from './pages/Wallet/WalletScreen';
 import { GrowthScreen } from './pages/Growth/GrowthScreen';

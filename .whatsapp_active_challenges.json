@@ -17,7 +17,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -40,7 +40,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -63,7 +63,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -86,7 +86,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -109,7 +109,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -132,7 +132,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -155,7 +155,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -178,7 +178,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -201,7 +201,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -224,7 +224,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -247,7 +247,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -373,7 +373,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -396,7 +396,7 @@
         "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T12:13:27.578Z"
+        "createdAt": "2026-08-30T12:34:05.327Z"
       }
     }
   },
@@ -480,5 +480,85 @@
       }
     }
   },
-  "pin_159498": "wa_ch_mtfrtb4b_54e226bb958f"
+  "pin_159498": "wa_ch_mtfrtb4b_54e226bb958f",
+  "wa_ch_mtfsjplz_b2ba866d751c": {
+    "challengeId": "wa_ch_mtfsjplz_b2ba866d751c",
+    "shortPin": "894511",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Chrome 120 Linux",
+    "createdAt": "2026-08-30T12:33:59.399Z",
+    "expiresAt": "2026-08-30T12:43:59.399Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_894511": "wa_ch_mtfsjplz_b2ba866d751c",
+  "wa_ch_mtfsjpnw_b3b278d90bf0": {
+    "challengeId": "wa_ch_mtfsjpnw_b3b278d90bf0",
+    "shortPin": "239413",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Mobile Chrome",
+    "createdAt": "2026-08-30T12:33:59.469Z",
+    "expiresAt": "2026-08-30T12:43:59.468Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_239413": "wa_ch_mtfsjpnw_b3b278d90bf0",
+  "wa_ch_mtfsju49_f4b5fedf43de": {
+    "challengeId": "wa_ch_mtfsju49_f4b5fedf43de",
+    "shortPin": "240701",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Desktop Chrome 120",
+    "createdAt": "2026-08-30T12:34:05.242Z",
+    "expiresAt": "2026-08-30T12:44:05.242Z",
+    "sessionTokens": {
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
+      "user": {
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-30T12:34:05.257Z"
+      }
+    }
+  },
+  "pin_240701": "wa_ch_mtfsju49_f4b5fedf43de",
+  "wa_ch_mtfsju5y_35e609fe0b87": {
+    "challengeId": "wa_ch_mtfsju5y_35e609fe0b87",
+    "shortPin": "933574",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Mobile Safari",
+    "createdAt": "2026-08-30T12:34:05.302Z",
+    "expiresAt": "2026-08-30T12:44:05.302Z",
+    "sessionTokens": {
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
+      "user": {
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-30T12:34:05.327Z"
+      }
+    }
+  },
+  "pin_933574": "wa_ch_mtfsju5y_35e609fe0b87"
 }

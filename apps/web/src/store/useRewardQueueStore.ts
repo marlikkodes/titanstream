@@ -47,64 +47,9 @@ interface RewardQueueState {
   reset: () => void;
 }
 
-const DEFAULT_STARTER_MISSIONS: MissionItem[] = [
-  {
-    id: 'starter_welcome',
-    title: 'Activate Mining Core',
-    description: 'Start your first mining cycle on Titan Hub',
-    rewardAmount: '0.50',
-    assetCode: 'USDT',
-    category: 'machine',
-    difficulty: 'EASY',
-    eligible: true,
-    status: 'AVAILABLE',
-    progressPercent: 100,
-    requirement: { key: 'mining_started', label: 'Start Core', required: 1, current: 1, unit: 'core', completed: true },
-  },
-  {
-    id: 'starter_invite',
-    title: 'Invite Your First Friend',
-    description: 'Share your referral link with a friend to boost hash speed',
-    rewardAmount: '5.00',
-    assetCode: 'USDT',
-    category: 'referral',
-    difficulty: 'EASY',
-    eligible: false,
-    status: 'AVAILABLE',
-    progressPercent: 0,
-    requirement: { key: 'friends_invited', label: 'Invite Friend', required: 1, current: 0, unit: 'friend', completed: false },
-  },
-  {
-    id: 'starter_streak',
-    title: '3-Day Operator Streak',
-    description: 'Maintain active core telemetry for 3 consecutive days',
-    rewardAmount: '1.00',
-    assetCode: 'USDT',
-    category: 'settlement',
-    difficulty: 'MEDIUM',
-    eligible: false,
-    status: 'AVAILABLE',
-    progressPercent: 33,
-    requirement: { key: 'active_days', label: 'Consecutive Days', required: 3, current: 1, unit: 'days', completed: false },
-  },
-  {
-    id: 'starter_security',
-    title: 'Account Security Shield',
-    description: 'Verify Telegram session & configure security settings',
-    rewardAmount: '0.25',
-    assetCode: 'USDT',
-    category: 'profile',
-    difficulty: 'EASY',
-    eligible: true,
-    status: 'AVAILABLE',
-    progressPercent: 100,
-    requirement: { key: 'security_config', label: 'Security Verified', required: 1, current: 1, unit: 'shield', completed: true },
-  },
-];
-
 export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
   queue: [],
-  missions: DEFAULT_STARTER_MISSIONS,
+  missions: [],
   history: [],
   progress: null,
   achievements: [],
@@ -119,36 +64,32 @@ export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const queue = await growthService.getAvailableRewards();
-      set({ queue, isLoading: false });
+      set({ queue: Array.isArray(queue) ? queue : [], isLoading: false });
     } catch (err: any) {
       console.warn('Failed to load reward queue:', err?.message);
-      set({ isLoading: false });
+      set({ queue: [], isLoading: false });
     }
   },
 
   fetchMissions: async () => {
     try {
       const missions = await growthService.getMissions();
-      if (missions && Array.isArray(missions) && missions.length > 0) {
+      if (missions && Array.isArray(missions)) {
         set({ missions });
       } else {
-        set({ missions: DEFAULT_STARTER_MISSIONS });
+        set({ missions: [] });
       }
     } catch (err: any) {
       console.warn('Failed to load mission queue:', err?.message);
-      set({ missions: DEFAULT_STARTER_MISSIONS });
+      set({ missions: [] });
     }
   },
 
   fetchHistory: async () => {
     try {
       const history = await growthService.getRewardHistory();
-      if (Array.isArray(history) && history.length > 0) {
-        set((state) => {
-          const existingIds = new Set(history.map((h) => h.id));
-          const localOnly = (state.history || []).filter((h) => !existingIds.has(h.id));
-          return { history: [...localOnly, ...history] };
-        });
+      if (Array.isArray(history)) {
+        set({ history });
       }
     } catch (err: any) {
       console.warn('Failed to load reward history:', err?.message);
@@ -167,7 +108,7 @@ export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
   fetchAchievements: async () => {
     try {
       const { achievements, totalUnlocked, total } = await growthService.getAchievements();
-      set({ achievements, totalAchievementsUnlocked: totalUnlocked, totalAchievements: total });
+      set({ achievements: Array.isArray(achievements) ? achievements : [], totalAchievementsUnlocked: totalUnlocked || 0, totalAchievements: total || 0 });
     } catch (err: any) {
       console.warn('Failed to load achievements:', err?.message);
     }
@@ -184,96 +125,31 @@ export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
 
   claimReward: async (id) => {
     set({ isClaiming: true, claimingId: id, error: null });
-    const targetMission = get().missions.find((m) => m.id === id);
-    const amountNum = Number(targetMission?.rewardAmount || (targetMission as any)?.amount || 0.50);
-
-    const finishClaim = (claimedId: string, rewardPayload: any) => {
-      // 1. Credit wallet USDT balance and lifetime totalRewards
-      const walletState = useWalletStore.getState();
-      const currentUsdt = walletState.usdtBalance || 0;
-      const currentRewards = walletState.totalRewards || 0;
-      const newUsdt = parseFloat((currentUsdt + amountNum).toFixed(4));
-      const newRewards = parseFloat((currentRewards + amountNum).toFixed(4));
-      
-      walletState.updateBalance({
-        usdtBalance: newUsdt,
-        totalRewards: newRewards,
-      });
-
-      // 2. Add transaction to wallet history
-      const newTx: any = {
-        id: `tx_${claimedId}_${Date.now()}`,
-        amount: amountNum,
-        currency: 'USDT',
-        type: 'REWARD',
-        status: 'CONFIRMED',
-        description: `Mission Reward: ${targetMission?.ruleName || targetMission?.title || 'Claimed'}`,
-        createdAt: new Date().toISOString(),
-      };
-      useWalletStore.setState((state) => ({
-        transactions: [newTx, ...(state.transactions || [])],
-      }));
-
-      // 3. Add to Reward Queue History
-      const histItem: RewardHistoryItem = {
-        id: `hist_${claimedId}_${Date.now()}`,
-        ruleCode: targetMission?.ruleCode || claimedId,
-        rewardType: (targetMission?.rewardType as any) || 'MILESTONE',
-        amount: amountNum.toFixed(2),
-        assetCode: 'USDT',
-        status: 'CLAIMED',
-        reference: `REF-${claimedId.substring(0, 8).toUpperCase()}`,
-        createdAt: new Date().toISOString(),
-        ruleName: targetMission?.ruleName || targetMission?.title || 'Mission Reward',
-        description: targetMission?.description || 'Completed mission reward',
-        claimedAt: new Date().toISOString(),
-        transactionReference: `tx_${claimedId}_${Date.now()}`,
-      };
-
-      set((state) => ({
-        missions: state.missions.filter((m) => m.id !== claimedId),
-        history: [histItem, ...(state.history || [])],
-        isClaiming: false,
-        claimingId: null,
-      }));
-    };
-
-    if (id.startsWith('starter_') || id.startsWith('rule:')) {
-      const reward = {
-        id,
-        rewardType: 'MILESTONE' as const,
-        amount: amountNum.toFixed(2),
-        assetCode: 'USDT',
-        status: 'PROCESSED',
-        reference: `REF-${id}`,
-      };
-      finishClaim(id, reward);
-      return { success: true, reward };
-    }
-
     try {
       const result = await growthService.claimReward(id);
-      const reward = result?.reward || {
-        id,
-        rewardType: 'MILESTONE' as const,
-        amount: amountNum.toFixed(2),
-        assetCode: 'USDT',
-        status: 'PROCESSED',
-        reference: `REF-${id}`,
-      };
-      finishClaim(id, reward);
+      const reward = result?.reward;
+
+      // 1. Authoritative double-entry ledger balance sync from Balance Engine
+      await useWalletStore.getState().fetchBalanceFromEngine();
+
+      // 2. Refresh local mission list and claim history
+      await Promise.allSettled([
+        get().fetchMissions(),
+        get().fetchHistory(),
+        get().fetchProgress(),
+        get().fetchAchievements(),
+      ]);
+
+      set({
+        isClaiming: false,
+        claimingId: null,
+      });
+
       return { success: true, reward };
     } catch (err: any) {
-      const fallbackReward = {
-        id,
-        rewardType: 'MILESTONE' as const,
-        amount: amountNum.toFixed(2),
-        assetCode: 'USDT',
-        status: 'PROCESSED',
-        reference: `REF-${id}`,
-      };
-      finishClaim(id, fallbackReward);
-      return { success: true, reward: fallbackReward };
+      const errorMessage = err?.response?.data?.message || err?.message || 'Claim failed on server';
+      set({ isClaiming: false, claimingId: null, error: errorMessage });
+      return { success: false, error: errorMessage };
     }
   },
 

@@ -5,11 +5,12 @@ import { Calendar, Info, Gift, Trophy, Sparkles, Award, ChevronRight, Zap, Check
 import { useTreasuryStore } from '../../store/useTreasuryStore';
 import { useGrowthStore } from '../../store/useGrowthStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
-import { CapacityEngine } from '../Treasury/components/CapacityEngine';
+import { RewardQueue } from '../../components/rewards/RewardQueue';
 import { HeroProgress } from '../../components/rewards/HeroProgress';
 import { AchievementsCabinet } from '../../components/rewards/AchievementsCabinet';
 import { RewardHistorySection } from '../../components/rewards/RewardHistorySection';
 import { DestinationLoader } from '../../components/DestinationLoader';
+import { useMachineOwnershipStore } from '../../store/useMachineOwnershipStore';
 
 export const RewardsScreen: React.FC = () => {
   const { fetchDashboardData } = useGrowthStore();
@@ -22,6 +23,11 @@ export const RewardsScreen: React.FC = () => {
   } = useTreasuryStore();
 
   const { setActiveTab } = useNavigationStore();
+  const ownerships = useMachineOwnershipStore((s) => s.ownerships);
+  const activeMachines = Object.values(ownerships || {}).filter(
+    (m) => m.status === 'RUNNING' || m.lifecycleStage === 'RUNNING',
+  );
+  const hasActiveMachine = activeMachines.length > 0;
 
   useEffect(() => {
     useTreasuryStore.getState().fetchTreasuryState();
@@ -48,30 +54,54 @@ export const RewardsScreen: React.FC = () => {
       <HeroProgress />
 
       {/* CROSS-PAGE CONTINUITY BANNER (No Dead Ends) */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        onClick={() => setActiveTab('hub')}
-        className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-between cursor-pointer hover:border-purple-500/50 transition-colors press-feedback"
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-            <Zap size={16} />
-          </div>
-          <div>
-            <div className="text-xs font-black text-text-primary">
-              Machine Milestone Synchronized
+      {hasActiveMachine ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => setActiveTab('hub')}
+          className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-between cursor-pointer hover:border-purple-500/50 transition-colors press-feedback"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+              <Zap size={16} />
             </div>
-            <div className="text-[10px] text-text-secondary">
-              Your active hardware core unlocked continuous hash output. Tap to inspect Titan Hub.
+            <div>
+              <div className="text-xs font-black text-text-primary">
+                {activeMachines[0]?.nickname || 'Titan Core Prime'} • Active
+              </div>
+              <div className="text-[10px] text-text-secondary">
+                Hardware core running. Telemetry and milestones synchronized with Titan Hub.
+              </div>
             </div>
           </div>
-        </div>
-        <ChevronRight size={16} className="text-purple-400" />
-      </motion.div>
+          <ChevronRight size={16} className="text-purple-400" />
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => setActiveTab('shop')}
+          className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between cursor-pointer hover:border-amber-500/50 transition-colors press-feedback"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+              <Zap size={16} />
+            </div>
+            <div>
+              <div className="text-xs font-black text-text-primary">
+                No Active Hardware Core
+              </div>
+              <div className="text-[10px] text-text-secondary">
+                Acquire or activate a machine to unlock automated compute yield milestones.
+              </div>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-amber-400" />
+        </motion.div>
+      )}
 
-      {/* CAPACITY ENGINE — Daily Mission Queue (60% Main Feature) */}
-      <CapacityEngine />
+      {/* MISSIONS & CLAIM QUEUE */}
+      <RewardQueue />
 
       {/* ACHIEVEMENTS CABINET (30% Supporting Content) */}
       <motion.div

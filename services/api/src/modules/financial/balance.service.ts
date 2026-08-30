@@ -52,7 +52,7 @@ export class BalanceService {
       });
     }
 
-    const tgUserId = typeof telegramUserId === 'bigint' ? telegramUserId : BigInt(String(telegramUserId).replace(/\D/g, '') || '0');
+    const tgUserId = typeof telegramUserId === 'bigint' ? telegramUserId : BigInt(telegramUserId);
     if (tgUserId > BigInt(0)) {
       try {
         await this.auditService.create({

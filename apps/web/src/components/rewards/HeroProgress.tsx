@@ -20,12 +20,11 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 const TAB_LABEL: Record<string, string> = {
-  friends: 'Invite Friends',
+  grow: 'Grow Friends',
   wallet: 'Wallet',
-  mine: 'Mining',
-  boost: 'Cloud Machines',
-  growth: 'Growth Hub',
-  rewards: 'Rewards',
+  hub: 'Titan Hub',
+  shop: 'Shop Machines',
+  rewards: 'Rewards Hub',
 };
 
 export const HeroProgress: React.FC<HeroProgressProps> = ({ onRunMission }) => {

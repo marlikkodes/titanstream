@@ -32,6 +32,18 @@ export class GrowthController {
     private readonly prisma: PrismaService,
   ) {}
 
+  private async resolveTelegramUserId(userId: string): Promise<bigint> {
+    if (/^\d+$/.test(userId)) return BigInt(userId);
+    const user = await this.prisma.user.findFirst({
+      where: { OR: [{ id: userId }, { identityId: userId }] },
+      select: { telegramUserId: true },
+    });
+    if (!user?.telegramUserId) {
+      throw new BadRequestException('USER_IDENTITY_NOT_FOUND');
+    }
+    return user.telegramUserId;
+  }
+
   /**
    * GET /growth/trust-center
    * Fetch passport, safety checks, timeline, active protection monitor and trust metrics.
@@ -47,157 +59,110 @@ export class GrowthController {
    */
   @Get(['overview', 'dashboard'])
   async getOverview(@CanonicalUserId() userId: string) {
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const levelSummary = await this.userLevelService.getUserLevelSummary(tgUserId);
+    const referralSummary = await this.referralService.getUserReferralSummary(tgUserId);
+    const rewards = await this.rewardService.getUserRewards(tgUserId);
+
+    let completedSettlementsCount = 0;
+    let totalVerifiedTransactions = 0;
     try {
-      const levelSummary = await this.userLevelService.getUserLevelSummary(userId as any);
-      const referralSummary = await this.referralService.getUserReferralSummary(userId as any);
-      const rewards = await this.rewardService.getUserRewards(userId as any);
-
-      const isUuid = userId.includes('-');
-      let telegramUserId: bigint | undefined = /^\d+$/.test(userId) ? BigInt(userId) : undefined;
-      if (isUuid) {
-        const u = await this.prisma.user.findUnique({ where: { id: userId } });
-        telegramUserId = u?.telegramUserId || undefined;
-      }
-
-      // 1. Production count of completed settlements
-      let completedSettlementsCount = 0;
-      let totalVerifiedTransactions = 24582;
-      try {
-        completedSettlementsCount = await this.prisma.settlementSession.count({
-          where: { telegramUserId, status: 'COMPLETED' },
-        });
-        totalVerifiedTransactions = await this.prisma.settlementSession.count({
-          where: { status: 'COMPLETED' },
-        });
-      } catch {}
-
-      // 3. User growth score calculated from verified trust & transaction metrics
-      const trustScore = levelSummary.trustProfile?.trustScore || 85;
-      const growthScore = Math.max(100, (trustScore * 20) + (completedSettlementsCount * 50));
-
-      // 4. Referral quality score from actual relationship milestones
-      const totalInvited = referralSummary.totalInvited || 0;
-      const qualifiedCount = referralSummary.qualifiedCount || 0;
-      const qualityScore = totalInvited > 0 ? Math.min(100, Math.round((qualifiedCount / totalInvited) * 100)) : 100;
-
-      // 5. Query active database reward rules
-      let activeRules: any[] = [];
-      try {
-        activeRules = await this.prisma.rewardRule.findMany({
-          where: { enabled: true },
-          take: 4,
-        });
-      } catch {}
-
-      const realQueue = await this.rewardService.getAvailableRewards(userId as any);
-
-      const availableRewards = (realQueue.length > 0 ? realQueue : activeRules).map((item: any) => {
-        const isClaimed = rewards.some(
-          (r) => (item.ruleId ? r.ruleId === item.ruleId : r.id === item.id) && r.status === 'CLAIMED',
-        );
-        return {
-          id: item.id,
-          title: item.ruleName || item.name,
-          description: item.description || (item.parameters as any)?.description || `Earn ${item.amount} ${item.assetCode}`,
-          badge: isClaimed ? 'Claimed' : 'Unlocked',
-          rewardValue: `${item.amount} ${item.assetCode || 'USDT'}`,
-          status: isClaimed ? 'CLAIMED' : item.status === 'CLAIM_PENDING' ? 'CLAIM_PENDING' : 'UNLOCKED',
-          action: isClaimed || item.status === 'CLAIM_PENDING' ? 'VIEW' : 'CLAIM',
-        };
+      completedSettlementsCount = await this.prisma.settlementSession.count({
+        where: { telegramUserId: tgUserId, status: 'COMPLETED' },
       });
+      totalVerifiedTransactions = await this.prisma.settlementSession.count({
+        where: { status: 'COMPLETED' },
+      });
+    } catch {}
 
+    const trustScore = levelSummary.trustProfile?.trustScore || 85;
+    const growthScore = Math.max(100, (trustScore * 20) + (completedSettlementsCount * 50));
+
+    const totalInvited = referralSummary.totalInvited || 0;
+    const qualifiedCount = referralSummary.qualifiedCount || 0;
+    const qualityScore = totalInvited > 0 ? Math.min(100, Math.round((qualifiedCount / totalInvited) * 100)) : 100;
+
+    let activeRules: any[] = [];
+    try {
+      activeRules = await this.prisma.rewardRule.findMany({
+        where: { enabled: true },
+        take: 4,
+      });
+    } catch {}
+
+    const realQueue = await this.rewardService.getAvailableRewards(tgUserId);
+
+    const availableRewards = (realQueue.length > 0 ? realQueue : activeRules).map((item: any) => {
+      const isClaimed = rewards.some(
+        (r) => (item.ruleId ? r.ruleId === item.ruleId : r.id === item.id) && r.status === 'CLAIMED',
+      );
       return {
-        growthScore,
-        trustScore,
-        communityRank: `#${Math.max(1, 10000 - Math.floor(growthScore * 1.2))}`,
-        rewardMultiplier: levelSummary.currentLevel === 'ELITE' ? 2.0 : levelSummary.currentLevel === 'PREMIUM' ? 1.5 : 1.0,
-        referralMultiplier: 1.0,
-        withdrawalLimit: levelSummary.currentLevel === 'ELITE' ? 1000 : 100,
-        currentTier: levelSummary.levelName || 'Seed',
-        nextUnlock: levelSummary.nextLevel?.name || 'Builder II',
-        totalVerifiedTransactions: totalVerifiedTransactions || 24582,
-        trustChecklist: [
-          { id: 't1', label: 'Verified account', completed: levelSummary.trustProfile?.verificationStatus !== 'UNVERIFIED' },
-          { id: 't2', label: 'First payment completed', completed: completedSettlementsCount > 0 },
-          { id: 't3', label: 'Invite trusted users', completed: qualifiedCount > 0 },
-          { id: 't4', label: 'Complete transactions', completed: completedSettlementsCount >= 5 },
-        ],
-        availableRewards,
-        todaysMissions: [
-          {
-            id: 'm1',
-            title: 'Complete Verified Payments',
-            description: 'Earn contribution points and build trust rating with every completed payment.',
-            rewardPoints: 50,
-            status: 'ACTIVE',
-          },
-          {
-            id: 'm2',
-            title: 'Invite Active Members',
-            description: 'Unlock permanent referral rewards and rank up in the community network.',
-            rewardPoints: 100,
-            status: 'ACTIVE',
-          },
-          {
-            id: 'm3',
-            title: 'Support Liquidity Growth',
-            description: 'Increase community rank by participating in network treasury expansion.',
-            rewardPoints: 200,
-            status: 'ACTIVE',
-          },
-        ],
-        referralSummary: {
-          code: referralSummary.referralCode,
-          link: referralSummary.referralLink,
-          totalInvited,
-          qualifiedCount,
-          qualityScore,
-          totalEarnedUSDT: referralSummary.totalEarnedUSDT,
-        },
-        seasonProgress: {
-          seasonNumber: 1,
-          seasonTitle: 'Treasury Expansion',
-          seasonProgressPower: growthScore,
-          seasonTargetPower: 10000,
-          daysRemaining: 18,
-        },
+        id: item.id,
+        title: item.ruleName || item.name,
+        description: item.description || (item.parameters as any)?.description || `Earn ${item.amount} ${item.assetCode}`,
+        badge: isClaimed ? 'Claimed' : 'Unlocked',
+        rewardValue: `${item.amount} ${item.assetCode || 'USDT'}`,
+        status: isClaimed ? 'CLAIMED' : item.status === 'CLAIM_PENDING' ? 'CLAIM_PENDING' : 'UNLOCKED',
+        action: isClaimed || item.status === 'CLAIM_PENDING' ? 'VIEW' : 'CLAIM',
       };
-    } catch {
-      return {
-        growthScore: 850,
-        trustScore: 85,
-        communityRank: '#412',
-        rewardMultiplier: 1.0,
-        referralMultiplier: 1.0,
-        withdrawalLimit: 100,
-        currentTier: 'Seed',
-        nextUnlock: 'Builder I',
-        totalVerifiedTransactions: 24582,
-        trustChecklist: [
-          { id: 't1', label: 'Verified account', completed: true },
-          { id: 't2', label: 'First payment completed', completed: false },
-          { id: 't3', label: 'Invite trusted users', completed: false },
-          { id: 't4', label: 'Complete transactions', completed: false },
-        ],
-        availableRewards: [],
-        todaysMissions: [],
-        referralSummary: {
-          code: 'TITAN888',
-          link: 'https://t.me/titanstream_bot?start=ref_TITAN888',
-          totalInvited: 0,
-          qualifiedCount: 0,
-          qualityScore: 100,
-          totalEarnedUSDT: 0,
+    });
+
+    return {
+      growthScore,
+      trustScore,
+      communityRank: `#${Math.max(1, 10000 - Math.floor(growthScore * 1.2))}`,
+      rewardMultiplier: levelSummary.currentLevel === 'ELITE' ? 2.0 : levelSummary.currentLevel === 'PREMIUM' ? 1.5 : 1.0,
+      referralMultiplier: 1.0,
+      withdrawalLimit: levelSummary.currentLevel === 'ELITE' ? 1000 : 100,
+      currentTier: levelSummary.levelName || 'Seed',
+      nextUnlock: levelSummary.nextLevel?.name || 'Builder II',
+      totalVerifiedTransactions: totalVerifiedTransactions || 24582,
+      trustChecklist: [
+        { id: 't1', label: 'Verified account', completed: levelSummary.trustProfile?.verificationStatus !== 'UNVERIFIED' },
+        { id: 't2', label: 'First payment completed', completed: completedSettlementsCount > 0 },
+        { id: 't3', label: 'Invite trusted users', completed: qualifiedCount > 0 },
+        { id: 't4', label: 'Complete transactions', completed: completedSettlementsCount >= 5 },
+      ],
+      availableRewards,
+      todaysMissions: [
+        {
+          id: 'm1',
+          title: 'Complete Verified Payments',
+          description: 'Earn contribution points and build trust rating with every completed payment.',
+          rewardPoints: 50,
+          status: 'ACTIVE',
         },
-        seasonProgress: {
-          seasonNumber: 1,
-          seasonTitle: 'Treasury Expansion',
-          seasonProgressPower: 850,
-          seasonTargetPower: 10000,
-          daysRemaining: 18,
+        {
+          id: 'm2',
+          title: 'Invite Active Members',
+          description: 'Unlock permanent referral rewards and rank up in the community network.',
+          rewardPoints: 100,
+          status: 'ACTIVE',
         },
-      };
-    }
+        {
+          id: 'm3',
+          title: 'Support Liquidity Growth',
+          description: 'Increase community rank by participating in network treasury expansion.',
+          rewardPoints: 200,
+          status: 'ACTIVE',
+        },
+      ],
+      referralSummary: {
+        code: referralSummary.referralCode,
+        link: referralSummary.referralLink,
+        totalInvited,
+        qualifiedCount,
+        qualityScore,
+        totalEarnedUSDT: referralSummary.totalEarnedUSDT,
+      },
+      seasonProgress: {
+        seasonNumber: 1,
+        seasonTitle: 'Treasury Expansion',
+        seasonProgressPower: growthScore,
+        seasonTargetPower: 10000,
+        daysRemaining: 18,
+      },
+    };
   }
 
   /**
@@ -206,70 +171,42 @@ export class GrowthController {
    */
   @Get('profile')
   async getGrowthProfile(@CanonicalUserId() userId: string) {
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const levelSummary = await this.userLevelService.getUserLevelSummary(tgUserId);
+    const referralSummary = await this.referralService.getUserReferralSummary(tgUserId);
+    const rewards = await this.rewardService.getUserRewards(tgUserId);
+
+    let totalVolumeUSDT = 0;
     try {
-      const levelSummary = await this.userLevelService.getUserLevelSummary(userId as any);
-      const referralSummary = await this.referralService.getUserReferralSummary(userId as any);
-      const rewards = await this.rewardService.getUserRewards(userId as any);
+      const completedSettlements = await this.prisma.settlementSession.findMany({
+        where: { telegramUserId: tgUserId, status: 'COMPLETED' },
+        select: { expectedCryptoAmount: true },
+      });
+      totalVolumeUSDT = completedSettlements.reduce(
+        (sum, item) => sum + Number(item.expectedCryptoAmount),
+        0,
+      );
+    } catch {}
 
-      const isUuid = userId.includes('-');
-      let telegramUserId: bigint | undefined = /^\d+$/.test(userId) ? BigInt(userId) : undefined;
-      if (isUuid) {
-        const u = await this.prisma.user.findUnique({ where: { id: userId } });
-        telegramUserId = u?.telegramUserId || undefined;
-      }
-
-      let totalVolumeUSDT = 0;
-      try {
-        const completedSettlements = await this.prisma.settlementSession.findMany({
-          where: { telegramUserId, status: 'COMPLETED' },
-          select: { expectedCryptoAmount: true },
-        });
-        totalVolumeUSDT = completedSettlements.reduce(
-          (sum, item) => sum + Number(item.expectedCryptoAmount),
-          0,
-        );
-      } catch {}
-
-      return {
-        userId,
-        trustScore: levelSummary.trustProfile?.trustScore || 85,
-        level: levelSummary.currentLevel || 'SEED',
-        levelName: levelSummary.levelName || 'Seed',
-        benefits: levelSummary.benefits || [],
-        nextLevel: levelSummary.nextLevel || null,
-        completedSettlements: levelSummary.trustProfile?.completedSettlements || 0,
-        accountAgeDays: levelSummary.trustProfile?.accountAgeDays || 30,
-        totalVolumeUSDT,
-        referrals: {
-          code: referralSummary.referralCode,
-          link: referralSummary.referralLink,
-          totalInvited: referralSummary.totalInvited || 0,
-          qualifiedCount: referralSummary.qualifiedCount || 0,
-          totalEarnedUSDT: referralSummary.totalEarnedUSDT || 0,
-        },
-        rewardsCount: rewards.length,
-      };
-    } catch {
-      return {
-        userId,
-        trustScore: 85,
-        level: 'SEED',
-        levelName: 'Seed',
-        benefits: [],
-        nextLevel: null,
-        completedSettlements: 0,
-        accountAgeDays: 30,
-        totalVolumeUSDT: 0,
-        referrals: {
-          code: 'TITAN888',
-          link: 'https://t.me/titanstream_bot?start=ref_TITAN888',
-          totalInvited: 0,
-          qualifiedCount: 0,
-          totalEarnedUSDT: 0,
-        },
-        rewardsCount: 0,
-      };
-    }
+    return {
+      userId,
+      trustScore: levelSummary.trustProfile?.trustScore || 85,
+      level: levelSummary.currentLevel || 'NEW',
+      levelName: levelSummary.levelName || 'New Explorer',
+      benefits: levelSummary.benefits || [],
+      nextLevel: levelSummary.nextLevel || null,
+      completedSettlements: levelSummary.trustProfile?.completedSettlements || 0,
+      accountAgeDays: levelSummary.trustProfile?.accountAgeDays || 0,
+      totalVolumeUSDT,
+      referrals: {
+        code: referralSummary.referralCode,
+        link: referralSummary.referralLink,
+        totalInvited: referralSummary.totalInvited || 0,
+        qualifiedCount: referralSummary.qualifiedCount || 0,
+        totalEarnedUSDT: referralSummary.totalEarnedUSDT || 0,
+      },
+      rewardsCount: rewards.length,
+    };
   }
 
   /**
@@ -278,20 +215,8 @@ export class GrowthController {
    */
   @Get('referrals')
   async getReferralDashboard(@CanonicalUserId() userId: string) {
-    try {
-      return await this.referralService.getUserReferralSummary(userId as any);
-    } catch {
-      return {
-        referralCode: 'TITAN888',
-        referralLink: 'https://t.me/titanstream_bot?start=ref_TITAN888',
-        totalInvited: 0,
-        qualifiedCount: 0,
-        totalEarnedUSDT: 0,
-        totalEarnedTon: 0,
-        directReferrals: [],
-        tierBreakdown: { tier1: 0, tier2: 0, tier3: 0 },
-      };
-    }
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.referralService.getUserReferralSummary(tgUserId);
   }
 
   /**
@@ -306,7 +231,8 @@ export class GrowthController {
     if (!referralCode) {
       throw new BadRequestException('referralCode is required');
     }
-    return this.referralService.registerReferral(referralCode, userId as any);
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.referralService.registerReferral(referralCode, tgUserId);
   }
 
   /**
@@ -315,14 +241,8 @@ export class GrowthController {
    */
   @Post('referral/link')
   async getReferralLink(@CanonicalUserId() userId: string) {
-    try {
-      return await this.referralService.getOrCreateReferralCode(userId as any);
-    } catch {
-      return {
-        referralCode: 'TITAN888',
-        referralLink: 'https://t.me/titanstream_bot?start=ref_TITAN888',
-      };
-    }
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.referralService.getOrCreateReferralCode(tgUserId);
   }
 
   /**
@@ -331,16 +251,13 @@ export class GrowthController {
    */
   @Get('rewards')
   async getUserRewards(@CanonicalUserId() userId: string) {
-    try {
-      const rewards = await this.rewardService.getUserRewards(userId as any);
-      return rewards.map((r: any) => ({
-        ...r,
-        userId,
-        amount: r.amount.toString(),
-      }));
-    } catch {
-      return [];
-    }
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const rewards = await this.rewardService.getUserRewards(tgUserId);
+    return rewards.map((r: any) => ({
+      ...r,
+      userId,
+      amount: r.amount.toString(),
+    }));
   }
 
   /**
@@ -349,12 +266,9 @@ export class GrowthController {
    */
   @Get('rewards/available')
   async getAvailableRewards(@CanonicalUserId() userId: string) {
-    try {
-      const queue = await this.rewardService.getAvailableRewards(userId as any);
-      return { queue };
-    } catch {
-      return { queue: [] };
-    }
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const queue = await this.rewardService.getAvailableRewards(tgUserId);
+    return { queue };
   }
 
   /**
@@ -364,7 +278,8 @@ export class GrowthController {
    */
   @Get('rewards/missions')
   async getMissionQueue(@CanonicalUserId() userId: string) {
-    const missions = await this.rewardService.getMissionQueue(userId as any);
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const missions = await this.rewardService.getMissionQueue(tgUserId);
     return { missions };
   }
 
@@ -374,7 +289,8 @@ export class GrowthController {
    */
   @Get('rewards/history')
   async getRewardHistory(@CanonicalUserId() userId: string) {
-    const history = await this.rewardService.getRewardHistory(userId as any);
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const history = await this.rewardService.getRewardHistory(tgUserId);
     return { history };
   }
 
@@ -387,7 +303,8 @@ export class GrowthController {
     @CanonicalUserId() userId: string,
     @Param('id') rewardId: string,
   ) {
-    return this.rewardService.getRewardDetail(userId as any, rewardId);
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.rewardService.getRewardDetail(tgUserId, rewardId);
   }
 
   /**
@@ -399,21 +316,9 @@ export class GrowthController {
     @CanonicalUserId() userId: string,
     @Param('id') rewardId: string,
   ) {
-    try {
-      const reward = await this.rewardService.claimReward(userId as any, rewardId);
-      return { reward };
-    } catch (err: any) {
-      return {
-        reward: {
-          id: rewardId,
-          rewardType: 'MILESTONE',
-          amount: '0.50',
-          assetCode: 'USDT',
-          status: 'PROCESSED',
-          reference: `REF-${rewardId.substring(0, 8).toUpperCase()}`,
-        },
-      };
-    }
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const reward = await this.rewardService.claimReward(tgUserId, rewardId);
+    return { reward };
   }
 
   /**
@@ -423,18 +328,8 @@ export class GrowthController {
    */
   @Get('progress')
   async getProgressOverview(@CanonicalUserId() userId: string) {
-    try {
-      return await this.progressService.getProgressOverview(userId as any);
-    } catch {
-      return {
-        streakDays: 1,
-        completedMissions: 0,
-        totalMissions: 5,
-        levelName: 'Initiate',
-        progressPercent: 20,
-        nextTier: 'Builder I',
-      };
-    }
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.progressService.getProgressOverview(tgUserId);
   }
 
   /**
@@ -443,15 +338,8 @@ export class GrowthController {
    */
   @Get('achievements')
   async getAchievements(@CanonicalUserId() userId: string) {
-    try {
-      return await this.achievementService.getUserAchievements(userId as any);
-    } catch {
-      return {
-        achievements: [],
-        totalUnlocked: 0,
-        total: 12,
-      };
-    }
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.achievementService.getUserAchievements(tgUserId);
   }
 
   /**
@@ -460,16 +348,8 @@ export class GrowthController {
    */
   @Get('qualification')
   async getQualificationStatus(@CanonicalUserId() userId: string) {
-    try {
-      return await this.qualificationService.getFullQualificationStatus(userId as any);
-    } catch {
-      return {
-        withdrawalEligible: true,
-        discountEligible: true,
-        discountPercent: 0,
-        requirements: [],
-      };
-    }
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.qualificationService.getFullQualificationStatus(tgUserId);
   }
 
   /**
@@ -478,14 +358,8 @@ export class GrowthController {
    */
   @Get('qualification/withdrawal')
   async getWithdrawalEligibility(@CanonicalUserId() userId: string) {
-    try {
-      return await this.qualificationService.checkWithdrawalEligibility(userId as any);
-    } catch {
-      return {
-        eligible: true,
-        reason: null,
-      };
-    }
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.qualificationService.checkWithdrawalEligibility(tgUserId);
   }
 
   /**
@@ -494,14 +368,8 @@ export class GrowthController {
    */
   @Get('qualification/discount')
   async getDiscountEligibility(@CanonicalUserId() userId: string) {
-    try {
-      return await this.discountService.getUserDiscountStatus(userId as any);
-    } catch {
-      return {
-        eligible: true,
-        discountPercent: 0,
-      };
-    }
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.discountService.getUserDiscountStatus(tgUserId);
   }
 
   /**
@@ -510,7 +378,8 @@ export class GrowthController {
    */
   @Get('graph/tree')
   async getReferralTree(@CanonicalUserId() userId: string) {
-    return this.referralGraphService.getReferralTree(userId as any);
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.referralGraphService.getReferralTree(tgUserId);
   }
 
   /**
@@ -519,7 +388,8 @@ export class GrowthController {
    */
   @Get('graph/chain')
   async getReferralChain(@CanonicalUserId() userId: string) {
-    return this.referralGraphService.getReferralChain(userId as any);
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.referralGraphService.getReferralChain(tgUserId);
   }
 
   /**
@@ -528,7 +398,8 @@ export class GrowthController {
    */
   @Get('graph/downstream')
   async getDownstreamCount(@CanonicalUserId() userId: string) {
-    return this.referralGraphService.getDownstreamCount(userId as any);
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.referralGraphService.getDownstreamCount(tgUserId);
   }
 
   /**
@@ -537,7 +408,8 @@ export class GrowthController {
    */
   @Get('levels')
   async getUserLevels(@CanonicalUserId() userId: string) {
-    return this.userLevelService.getUserLevelSummary(userId as any);
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.userLevelService.getUserLevelSummary(tgUserId);
   }
 
   /**
@@ -549,9 +421,10 @@ export class GrowthController {
     @CanonicalUserId() userId: string,
     @Query('limit') limit?: string,
   ) {
+    const tgUserId = await this.resolveTelegramUserId(userId);
     const parsedLimit = limit ? parseInt(limit, 10) : 20;
-    const records = await this.notificationService.getUserNotifications(userId as any, parsedLimit);
-    const preferences = await this.notificationService.getPreferences(userId as any);
+    const records = await this.notificationService.getUserNotifications(tgUserId, parsedLimit);
+    const preferences = await this.notificationService.getPreferences(tgUserId);
 
     return {
       preferences,
@@ -571,6 +444,7 @@ export class GrowthController {
     @CanonicalUserId() userId: string,
     @Body() body: { telegramEnabled?: boolean; inAppEnabled?: boolean; marketingEnabled?: boolean },
   ) {
-    return this.notificationService.updatePreferences(userId as any, body);
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.notificationService.updatePreferences(tgUserId, body);
   }
 }

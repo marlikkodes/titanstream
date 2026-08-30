@@ -1,7 +1,7 @@
 import { Wallet, TrendingUp, Cpu, ShoppingCart, Gift } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigationStore } from '../store/useNavigationStore';
-import { useTreasuryStore } from '../store/useTreasuryStore';
+import { useRewardQueueStore } from '../store/useRewardQueueStore';
 import { Badge } from '../components/Badge';
 
 type TabId = 'wallet' | 'grow' | 'hub' | 'shop' | 'rewards';
@@ -16,8 +16,8 @@ interface NavItem {
 
 export const BottomNav: React.FC = () => {
   const { activeTab, setActiveTab } = useNavigationStore();
-  const claimableMissionsCount = useTreasuryStore(
-    (s) => (Array.isArray(s.missions) ? s.missions.filter((m) => m.status === 'CLAIMABLE').length : 0)
+  const claimableMissionsCount = useRewardQueueStore(
+    (s) => (Array.isArray(s.missions) ? s.missions.filter((m) => m.eligible).length : 0),
   );
 
   const navItems: NavItem[] = [

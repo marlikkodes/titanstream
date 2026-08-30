@@ -22,28 +22,14 @@ export class FinancialController {
   @Get('account')
   @ApiOperation({ summary: 'Get or create current user financial account' })
   async getAccount(@CanonicalUserId() userId: string) {
-    try {
-      return await this.accounts.getOrCreateForReadyUser(userId);
-    } catch {
-      return { id: `fin_acc_${userId}`, userId, status: 'ACTIVE' };
-    }
+    return this.accounts.getOrCreateForReadyUser(userId);
   }
 
   @Get('balance')
   @ApiOperation({ summary: 'Get derived balances for current user' })
   async getBalance(@CanonicalUserId() userId: string) {
-    try {
-      const account = await this.accounts.getOrCreateForReadyUser(userId);
-      return await this.balances.getBalances(userId as any, account.id);
-    } catch {
-      return {
-        financialAccountId: `fin_acc_${userId}`,
-        balances: [
-          { assetCode: 'USDT', name: 'Tether USD', symbol: 'USDT', decimals: 2, availableBalance: '0.00', pendingBalance: '0.00', reservedBalance: '0.00' },
-          { assetCode: 'TON', name: 'The Open Network', symbol: 'TON', decimals: 4, availableBalance: '0.0000', pendingBalance: '0.0000', reservedBalance: '0.0000' },
-        ],
-      };
-    }
+    const account = await this.accounts.getOrCreateForReadyUser(userId);
+    return this.balances.getBalances(account.telegramUserId, account.id);
   }
 
   @Get('transactions')
@@ -51,13 +37,9 @@ export class FinancialController {
   async getTransactions(@CanonicalUserId() userId: string, @Query() query: PaginationDto) {
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;
-    try {
-      const account = await this.accounts.getOrCreateForReadyUser(userId);
-      const items = await this.transactions.findForAccount(account.id, limit, offset);
-      return { items, pagination: { limit, offset } };
-    } catch {
-      return { items: [], pagination: { limit, offset } };
-    }
+    const account = await this.accounts.getOrCreateForReadyUser(userId);
+    const items = await this.transactions.findForAccount(account.id, limit, offset);
+    return { items, pagination: { limit, offset } };
   }
 
   @Get('ledger')

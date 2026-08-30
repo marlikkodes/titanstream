@@ -17,7 +17,7 @@ export const REWARD_TYPE_META: Record<string, { icon: string; color: string }> =
 const CATEGORY_LABEL: Record<string, string> = {
   referral: 'Referral',
   settlement: 'Settlement',
-  machine: 'Mining',
+  machine: 'Machine',
   profile: 'Profile',
   campaign: 'Campaign',
 };

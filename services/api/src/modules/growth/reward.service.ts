@@ -699,56 +699,14 @@ export class RewardService {
         });
       }
 
-      if (queue.length > 0) {
-        return queue.sort((a, b) => {
-          if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
-          return (b.progressPercent || 0) - (a.progressPercent || 0);
-        });
-      }
+      return queue.sort((a, b) => {
+        if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
+        return (b.progressPercent || 0) - (a.progressPercent || 0);
+      });
     } catch (dbErr: any) {
-      this.logger.warn(`[REWARD_SERVICE] DB unreachable in getMissionQueue: ${dbErr?.message}`);
+      this.logger.warn(`[REWARD_SERVICE] Error in getMissionQueue: ${dbErr?.message}`);
+      return [];
     }
-
-    return [
-      {
-        id: 'starter_welcome',
-        ruleCode: 'RULE_STARTER_WELCOME',
-        rewardType: RewardType.MILESTONE,
-        amount: '0.50',
-        assetCode: 'USDT',
-        status: 'AVAILABLE',
-        reference: 'REF-STARTER-1',
-        createdAt: new Date().toISOString(),
-        ruleName: 'Activate Mining Core',
-        description: 'Start your first mining cycle on Titan Hub',
-        requirement: { key: 'mining_cycle', label: 'Mining Cycle', required: 1, current: 1, unit: 'core', completed: true },
-        reason: 'Ready to claim starter bonus',
-        eligible: true,
-        category: 'machine',
-        difficulty: 'EASY',
-        progressPercent: 100,
-        estimatedRemaining: 'Claim now',
-      },
-      {
-        id: 'starter_security',
-        ruleCode: 'RULE_STARTER_SECURITY',
-        rewardType: RewardType.MILESTONE,
-        amount: '1.00',
-        assetCode: 'USDT',
-        status: 'AVAILABLE',
-        reference: 'REF-STARTER-2',
-        createdAt: new Date().toISOString(),
-        ruleName: 'Security Configuration',
-        description: 'Verify Telegram session & configure security settings',
-        requirement: { key: 'security_config', label: 'Security Verified', required: 1, current: 1, unit: 'shield', completed: true },
-        reason: 'Ready to claim security bonus',
-        eligible: true,
-        category: 'profile',
-        difficulty: 'EASY',
-        progressPercent: 100,
-        estimatedRemaining: 'Claim now',
-      },
-    ];
   }
 
   /**
