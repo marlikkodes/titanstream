@@ -294,18 +294,23 @@ export class ProviderRegistryService implements OnModuleInit {
   }
 
   async history(userKey: bigint | string) {
-    const { user, telegramUserId } = await this.resolveUserAndTelegramId(userKey);
+    try {
+      const { user, telegramUserId } = await this.resolveUserAndTelegramId(userKey);
 
-    if (!telegramUserId && !user) return [];
+      if (!telegramUserId && !user) return [];
 
-    const sessions = await this.prisma.settlementSession.findMany({
-      where: {
-        ...(telegramUserId && telegramUserId > BigInt(0) ? { telegramUserId } : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+      const sessions = await this.prisma.settlementSession.findMany({
+        where: {
+          ...(telegramUserId && telegramUserId > BigInt(0) ? { telegramUserId } : {}),
+        },
+        orderBy: { createdAt: 'desc' },
+      });
 
-    return sessions.map((session) => this.toProviderIndependentView(session));
+      return sessions.map((session) => this.toProviderIndependentView(session));
+    } catch (err: any) {
+      this.logger.warn(`[SETTLEMENT_HISTORY_ERR] Failed to fetch settlement history: ${err?.message}`);
+      return [];
+    }
   }
 
   private async getEnabledAdapter(providerId: SettlementProviderId, asset?: string, country?: string) {

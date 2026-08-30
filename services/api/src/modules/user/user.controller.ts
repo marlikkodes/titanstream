@@ -26,7 +26,7 @@ export class UserController {
     return this.userService.updateProfile(userId, dto);
   }
 
-  @Get(['user/trust', 'user/trust-profile'])
+  @Get(['user/trust', 'user/trust-profile', 'user/trust/profile'])
   @ApiOperation({ summary: 'Get current user trust profile' })
   async getTrustProfile(@CanonicalUserId() userId: string) {
     return this.userService.getTrustProfile(userId);

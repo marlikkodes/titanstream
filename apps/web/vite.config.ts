@@ -1849,6 +1849,270 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
+        // ==========================================
+        // User Application Resilient Endpoints
+        // ==========================================
+
+        // User Preferences & Settings
+        if (url.includes('/user/preferences') || url.includes('/settings/preferences')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              telegramUserId: 5387655307,
+              authenticationMethod: 'TELEGRAM',
+              notificationChannel: 'TELEGRAM',
+              preferredShareChannel: 'TELEGRAM',
+              pushToken: null,
+              settings: {},
+            },
+          }));
+          return;
+        }
+
+        // User Trust Profile
+        if (url.includes('/user/trust/profile') || url.includes('/user/trust-profile') || url.includes('/user/trust')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              trustScore: 85,
+              verificationStatus: 'VERIFIED',
+              accountAgeDays: 30,
+              completedSettlements: 0,
+              activeDisputes: 0,
+              antiFraudScore: 95,
+              tier: 'STANDARD',
+            },
+          }));
+          return;
+        }
+
+        // User Financial Balance
+        if (url.includes('/financial/balance')) {
+          const allUsers = loadUsersFromDisk();
+          const primaryUser = allUsers[0];
+          const usdtBal = primaryUser?.netBalance != null ? Number(primaryUser.netBalance).toFixed(2) : '0.00';
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              financialAccountId: 'fin_acc_user',
+              balances: [
+                { assetCode: 'USDT', name: 'Tether USD', symbol: 'USDT', decimals: 2, availableBalance: usdtBal, pendingBalance: '0.00', reservedBalance: '0.00' },
+                { assetCode: 'TON', name: 'The Open Network', symbol: 'TON', decimals: 4, availableBalance: '0.0000', pendingBalance: '0.0000', reservedBalance: '0.0000' },
+              ],
+            },
+          }));
+          return;
+        }
+
+        // User Financial Transactions
+        if (url.includes('/financial/transactions')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              items: [],
+              pagination: { limit: 50, offset: 0 },
+            },
+          }));
+          return;
+        }
+
+        // Growth Referrals
+        if (url.includes('/growth/referrals')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              referralCode: 'TITAN888',
+              referralLink: 'https://t.me/titanstream_bot?start=ref_TITAN888',
+              totalInvited: 0,
+              qualifiedCount: 0,
+              totalEarnedUSDT: 0,
+              totalEarnedTon: 0,
+              directReferrals: [],
+              tierBreakdown: { tier1: 0, tier2: 0, tier3: 0 },
+            },
+          }));
+          return;
+        }
+
+        // Growth Qualifications
+        if (url.includes('/growth/qualification')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              withdrawalEligible: true,
+              discountEligible: true,
+              discountPercent: 0,
+              requirements: [],
+            },
+          }));
+          return;
+        }
+
+        // Growth Progress
+        if (url.includes('/growth/progress')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              streakDays: 1,
+              completedMissions: 0,
+              totalMissions: 5,
+              levelName: 'Initiate',
+              progressPercent: 20,
+              nextTier: 'Builder I',
+            },
+          }));
+          return;
+        }
+
+        // Growth Achievements
+        if (url.includes('/growth/achievements')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              achievements: [],
+              totalUnlocked: 0,
+              total: 12,
+            },
+          }));
+          return;
+        }
+
+        // Growth Missions Queue
+        if (url.includes('/growth/rewards/missions')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              missions: [
+                {
+                  id: 'starter_welcome',
+                  ruleCode: 'RULE_STARTER_WELCOME',
+                  rewardType: 'MILESTONE',
+                  amount: '0.50',
+                  assetCode: 'USDT',
+                  status: 'AVAILABLE',
+                  reference: 'REF-STARTER-1',
+                  createdAt: new Date().toISOString(),
+                  ruleName: 'Activate Mining Core',
+                  description: 'Start your first mining cycle on Titan Hub',
+                  requirement: { key: 'mining_cycle', label: 'Mining Cycle', required: 1, current: 1, unit: 'core', completed: true },
+                  reason: 'Ready to claim starter bonus',
+                  eligible: true,
+                  category: 'machine',
+                  difficulty: 'EASY',
+                  progressPercent: 100,
+                  estimatedRemaining: 'Claim now',
+                },
+                {
+                  id: 'starter_security',
+                  ruleCode: 'RULE_STARTER_SECURITY',
+                  rewardType: 'MILESTONE',
+                  amount: '1.00',
+                  assetCode: 'USDT',
+                  status: 'AVAILABLE',
+                  reference: 'REF-STARTER-2',
+                  createdAt: new Date().toISOString(),
+                  ruleName: 'Security Configuration',
+                  description: 'Verify Telegram session & configure security settings',
+                  requirement: { key: 'security_config', label: 'Security Verified', required: 1, current: 1, unit: 'shield', completed: true },
+                  reason: 'Ready to claim security bonus',
+                  eligible: true,
+                  category: 'profile',
+                  difficulty: 'EASY',
+                  progressPercent: 100,
+                  estimatedRemaining: 'Claim now',
+                },
+              ],
+            },
+          }));
+          return;
+        }
+
+        // Growth Reward History
+        if (url.includes('/growth/rewards/history')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              history: [],
+            },
+          }));
+          return;
+        }
+
+        // Growth Dashboard & Overview
+        if (url.includes('/growth/dashboard') || url.includes('/growth/overview')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              growthScore: 850,
+              trustScore: 85,
+              communityRank: '#412',
+              rewardMultiplier: 1.0,
+              referralMultiplier: 1.0,
+              withdrawalLimit: 100,
+              currentTier: 'Seed',
+              nextUnlock: 'Builder I',
+              totalVerifiedTransactions: 24582,
+              trustChecklist: [
+                { id: 't1', label: 'Verified account', completed: true },
+                { id: 't2', label: 'First payment completed', completed: false },
+                { id: 't3', label: 'Invite trusted users', completed: false },
+                { id: 't4', label: 'Complete transactions', completed: false },
+              ],
+              availableRewards: [],
+              todaysMissions: [],
+              referralSummary: {
+                code: 'TITAN888',
+                link: 'https://t.me/titanstream_bot?start=ref_TITAN888',
+                totalInvited: 0,
+                qualifiedCount: 0,
+                qualityScore: 100,
+                totalEarnedUSDT: 0,
+              },
+              seasonProgress: {
+                seasonNumber: 1,
+                seasonTitle: 'Treasury Expansion',
+                seasonProgressPower: 850,
+                seasonTargetPower: 10000,
+                daysRemaining: 18,
+              },
+            },
+          }));
+          return;
+        }
+
+        // Settlement History
+        if (url.includes('/settlement/history')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: [],
+          }));
+          return;
+        }
+
         next();
       });
     },
