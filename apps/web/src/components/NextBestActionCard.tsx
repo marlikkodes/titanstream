@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGrowthStore } from '../store/useGrowthStore';
+import { useRewardQueueStore } from '../store/useRewardQueueStore';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { 
   Zap, 
@@ -140,7 +141,7 @@ export const NextBestActionCard: React.FC<NextBestActionCardProps> = ({
         <div className="text-[10px] font-mono text-text-tertiary">
           Potential Economic Value:{' '}
           <strong className="text-usdt-green font-black font-sans">
-            +${nextBestAction.potentialUnlockUsdt.toFixed(2)} USDT
+            +${(Number(nextBestAction?.potentialUnlockUsdt) || 0).toFixed(2)} USDT
           </strong>
         </div>
 
