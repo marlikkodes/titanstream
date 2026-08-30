@@ -115,7 +115,17 @@ export class ReferralService {
   /**
    * Record a new referral connection when a new user joins via a referral code or user ID.
    */
-  async registerReferral(referrerCodeOrId: string, refereeId: bigint) {
+  async registerReferral(
+    referrerCodeOrId: string,
+    refereeId: bigint,
+    attribution?: {
+      channel?: string;
+      campaign?: string;
+      medium?: string;
+      device?: string;
+      landingPage?: string;
+    },
+  ) {
     const cleanedInput = referrerCodeOrId.trim();
 
     // 1. Try finding by referral code string
@@ -173,23 +183,41 @@ export class ReferralService {
         refereeId,
         referralCodeId: codeRecord.id,
         status: ReferralStatus.REGISTERED,
-        metadata: { registeredAt: new Date().toISOString() },
+        metadata: { registeredAt: new Date().toISOString(), ...attribution },
       },
     });
+
+    // Record immutable attribution event in ReferralAnalytics
+    try {
+      await this.prisma.referralAnalytics.create({
+        data: {
+          inviterId: codeRecord.telegramUserId,
+          inviteeId: refereeId,
+          channel: attribution?.channel || 'DIRECT',
+          campaign: attribution?.campaign || null,
+          medium: attribution?.medium || null,
+          device: attribution?.device || null,
+          landingPage: attribution?.landingPage || null,
+          registered: true,
+        },
+      });
+    } catch (e: any) {
+      this.logger.warn(`ReferralAnalytics creation error: ${e?.message}`);
+    }
 
     await this.prisma.referralEvent.create({
       data: {
         relationshipId: relationship.id,
         fromStatus: ReferralStatus.CREATED,
         toStatus: ReferralStatus.REGISTERED,
-        payload: { referrerCode: referrerCodeOrId },
+        payload: { referrerCode: referrerCodeOrId, ...attribution },
       },
     });
 
     await this.growthEventService.publish({
       telegramUserId: refereeId,
       eventType: GrowthEventType.USER_REGISTERED,
-      payload: { referrerId: codeRecord.telegramUserId.toString(), referralCode: referrerCodeOrId },
+      payload: { referrerId: codeRecord.telegramUserId.toString(), referralCode: referrerCodeOrId, attribution },
     });
 
     return relationship;

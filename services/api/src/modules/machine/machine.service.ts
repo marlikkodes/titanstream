@@ -7,7 +7,7 @@ import { FinancialOrchestratorService } from '../financial-orchestration/financi
 import { PaymentOrderService } from '../payment-order/payment-order.service';
 import { MiningService } from '../mining/mining.service';
 import { PlatformOperationsEngineService } from '../admin/services/platform-operations-engine.service';
-import { FinancialOperationType } from '@prisma/client';
+import { FinancialOperationType, Prisma } from '@prisma/client';
 import { AuditEventType } from '../../common/interfaces/user-state.enum';
 import type { NotificationPayload } from '../notification/notification.service';
 
@@ -429,6 +429,29 @@ export class MachineService {
       description: `Purchased machine ${tier.name} for $${tier.priceUsdt} USDT`,
       metadata: { machineId: createdMachine.id, tierCode: tier.tierCode, price: tier.priceUsdt },
     });
+
+    // Record economic contribution in analytical ledger
+    try {
+      const price = new Prisma.Decimal(tier.priceUsdt || 0);
+      const directCost = price.mul(0.70); // 30% upfront margin basis
+      const rel = await this.prisma.referralRelationship.findUnique({
+        where: { refereeId: telegramUserId },
+        select: { id: true },
+      });
+      await this.prisma.growthContribution.create({
+        data: {
+          telegramUserId,
+          referralRelationshipId: rel?.id,
+          economicEventType: 'MACHINE_PURCHASE',
+          economicEventId: createdMachine.id,
+          grossRevenueUsdt: price,
+          directCostUsdt: directCost,
+          netContributionUsdt: price.minus(directCost),
+        },
+      });
+    } catch (e: any) {
+      console.warn('[MachineService] Failed to record GrowthContribution for machine purchase:', e?.message);
+    }
 
     return {
       success: true,

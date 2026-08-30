@@ -38,7 +38,8 @@ const LEVEL_ORDER: Record<string, number> = {
 };
 
 import { EventBusService } from '../automation/event-bus.service';
-import { Optional } from '@nestjs/common';
+import { GrowthContributionService } from './growth-contribution.service';
+import { Optional, Inject, forwardRef } from '@nestjs/common';
 
 @Injectable()
 export class RewardService {
@@ -51,6 +52,7 @@ export class RewardService {
     private readonly notificationService: GrowthNotificationService,
     private readonly achievementService: AchievementService,
     private readonly referralService: ReferralService,
+    @Optional() @Inject(forwardRef(() => GrowthContributionService)) private readonly contributionService?: GrowthContributionService,
     @Optional() private readonly eventBus?: EventBusService,
   ) {}
 
@@ -313,7 +315,33 @@ export class RewardService {
       const rule = await this.prisma.rewardRule.findUnique({
         where: { code: data.ruleCode },
       });
-      if (rule) ruleId = rule.id;
+      if (rule) {
+        ruleId = rule.id;
+
+        // Hard Campaign Budget Guardrail
+        if (rule.budgetLimitUsdt) {
+          const committed = Number(rule.committedLiabilityUsdt || 0);
+          const disbursed = Number(rule.disbursedSpendUsdt || 0);
+          const limit = Number(rule.budgetLimitUsdt);
+          const rewardAmount = Number(data.amount || 0);
+
+          if (committed + disbursed + rewardAmount > limit) {
+            this.logger.warn(`[RewardService] Rule ${rule.code} budget limit reached ($${(committed + disbursed).toFixed(2)} / $${limit.toFixed(2)}). Refusing reward creation.`);
+            throw new BadRequestException({
+              code: 'CAMPAIGN_BUDGET_EXHAUSTED',
+              message: 'Campaign budget limit has been reached for this reward.',
+            });
+          }
+        }
+
+        // Increment committed liability
+        await this.prisma.rewardRule.update({
+          where: { id: rule.id },
+          data: {
+            committedLiabilityUsdt: { increment: new Prisma.Decimal(data.amount || 0) },
+          },
+        });
+      }
     }
 
     const reward = await this.prisma.reward.create({
@@ -848,6 +876,7 @@ export class RewardService {
   async claimReward(telegramUserId: bigint, rewardId: string) {
     const reward = await this.prisma.reward.findUnique({
       where: { id: rewardId },
+      include: { rule: true },
     });
 
     if (!reward) throw new NotFoundException({ code: 'REWARD_NOT_FOUND', message: 'Reward not found' });
@@ -941,6 +970,35 @@ export class RewardService {
           processedAt: new Date(),
         },
       });
+
+      // Update RewardRule budget liability tracking
+      if (reward.ruleId) {
+        try {
+          await this.prisma.rewardRule.update({
+            where: { id: reward.ruleId },
+            data: {
+              committedLiabilityUsdt: { decrement: reward.amount },
+              disbursedSpendUsdt: { increment: reward.amount },
+            },
+          });
+        } catch (err: any) {
+          this.logger.warn(`Failed to update reward rule budget metrics: ${err?.message}`);
+        }
+      }
+
+      // Record economic incentive in GrowthContribution
+      if (this.contributionService) {
+        try {
+          await this.contributionService.recordRewardIncentive(
+            reward.id,
+            reward.telegramUserId,
+            reward.amount.toString(),
+            reward.rule?.code,
+          );
+        } catch (err: any) {
+          this.logger.warn(`Failed to record reward incentive contribution: ${err?.message}`);
+        }
+      }
 
       await this.growthEventService.publish({
         telegramUserId: reward.telegramUserId,

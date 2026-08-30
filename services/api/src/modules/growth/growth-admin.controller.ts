@@ -7,6 +7,7 @@ import { RewardService } from './reward.service';
 import { UserLevelService } from './user-level.service';
 import { GrowthNotificationService } from './growth-notification.service';
 import { ReferralGraphService } from './referral-graph.service';
+import { GrowthAnalyticsService } from './growth-analytics.service';
 import { FraudDetectionService } from '../fraud/fraud-detection.service';
 import { PrismaService } from '../../database/prisma.service';
 import { RewardStatus, RewardType, ReferralStatus, UserLevelTier, NotificationChannel } from '@prisma/client';
@@ -19,10 +20,37 @@ export class GrowthAdminController {
     private readonly userLevelService: UserLevelService,
     private readonly notificationService: GrowthNotificationService,
     private readonly referralGraphService: ReferralGraphService,
+    private readonly growthAnalyticsService: GrowthAnalyticsService,
     @Inject(forwardRef(() => FraudDetectionService))
     private readonly fraudDetectionService: FraudDetectionService,
     private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * GET /admin/growth/economics
+   * Growth Economy Net Contribution, CAC, LTV, and Channel Breakdown.
+   */
+  @Get('growth/economics')
+  @Permissions(AdminPermission.REFERRAL_READ)
+  async getGrowthEconomics() {
+    return this.growthAnalyticsService.getGrowthEconomyMetrics();
+  }
+
+  /**
+   * GET /admin/growth/campaigns/roi
+   * Campaign-level ROI and conversion efficiency ranking.
+   */
+  @Get('growth/campaigns/roi')
+  @Permissions(AdminPermission.REFERRAL_READ)
+  async getCampaignRoiMetrics() {
+    const metrics = await this.growthAnalyticsService.getGrowthEconomyMetrics();
+    return {
+      timestamp: new Date().toISOString(),
+      campaigns: metrics.campaigns,
+      overallGrowthRoi: metrics.overallGrowthRoi,
+      netGrowthContributionUsdt: metrics.netGrowthContributionUsdt,
+    };
+  }
 
   /**
    * GET /admin/rewards

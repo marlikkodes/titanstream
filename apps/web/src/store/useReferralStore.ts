@@ -138,17 +138,31 @@ export const useReferralStore = create<ReferralState>((set, get) => {
       const pendingCode = localStorage.getItem('pending_referral_code') || sessionStorage.getItem('pending_referral_code');
       if (!pendingCode) return;
 
+      let attribution: any = undefined;
+      const rawAttribution = localStorage.getItem('pending_attribution') || sessionStorage.getItem('pending_attribution');
+      if (rawAttribution) {
+        try {
+          attribution = JSON.parse(rawAttribution);
+        } catch {
+          // ignore parsing error
+        }
+      }
+
       try {
         const cleanCode = extractReferralCode(pendingCode);
-        await growthService.attachReferral(cleanCode);
+        await growthService.attachReferral(cleanCode, attribution);
         localStorage.removeItem('pending_referral_code');
         sessionStorage.removeItem('pending_referral_code');
-        console.info(`[REFERRAL_ATTRIBUTION] Successfully attached referral code ${cleanCode}`);
+        localStorage.removeItem('pending_attribution');
+        sessionStorage.removeItem('pending_attribution');
+        console.info(`[REFERRAL_ATTRIBUTION] Successfully attached referral code ${cleanCode} with attribution:`, attribution);
       } catch (err: any) {
         console.warn('[REFERRAL_ATTRIBUTION] Referral attachment result:', err?.message || err);
-        // If already attached or invalid, clean up local key
+        // If already attached or invalid, clean up local keys
         localStorage.removeItem('pending_referral_code');
         sessionStorage.removeItem('pending_referral_code');
+        localStorage.removeItem('pending_attribution');
+        sessionStorage.removeItem('pending_attribution');
       }
     },
 

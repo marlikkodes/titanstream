@@ -379,6 +379,7 @@ model User {
   adminNotes                AdminNote[]
   assetLicenses             UserAssetLicense[]
   userMachineFleet          UserMachineFleetItem[]
+  contributions             GrowthContribution[]
 
   @@index([state])
   @@index([createdAt])
@@ -1564,17 +1565,45 @@ model RewardRule {
   name       String     @map("name")
   rewardType RewardType @map("reward_type")
   amount     Decimal    @db.Decimal(36, 18)
-  assetCode  String     @default("USDT") @map("asset_code")
-  enabled    Boolean    @default(true) @map("enabled")
-  parameters Json       @default("{}") @map("parameters")
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
+  assetCode              String     @default("USDT") @map("asset_code")
+  enabled                Boolean    @default(true) @map("enabled")
+  budgetLimitUsdt        Decimal?   @map("budget_limit_usdt") @db.Decimal(36, 18)
+  committedLiabilityUsdt Decimal    @default(0) @map("committed_liability_usdt") @db.Decimal(36, 18)
+  disbursedSpendUsdt     Decimal    @default(0) @map("disbursed_spend_usdt") @db.Decimal(36, 18)
+  parameters             Json       @default("{}") @map("parameters")
+  createdAt              DateTime   @default(now()) @map("created_at")
+  updatedAt              DateTime   @updatedAt @map("updated_at")
 
   rewards Reward[]
 
   @@index([enabled])
   @@index([rewardType])
   @@map("reward_rules")
+}
+
+model GrowthContribution {
+  id                     String   @id @default(uuid()) @map("id")
+  telegramUserId         BigInt   @map("telegram_user_id")
+  referralRelationshipId String?  @map("referral_relationship_id")
+  campaignCode           String?  @map("campaign_code")
+  growthEventId          String?  @map("growth_event_id")
+  economicEventType      String   @map("economic_event_type")
+  economicEventId        String?  @map("economic_event_id")
+  grossRevenueUsdt       Decimal  @default(0) @map("gross_revenue_usdt") @db.Decimal(36, 18)
+  directCostUsdt         Decimal  @default(0) @map("direct_cost_usdt") @db.Decimal(36, 18)
+  rewardCostUsdt         Decimal  @default(0) @map("reward_cost_usdt") @db.Decimal(36, 18)
+  fraudProvisionUsdt     Decimal  @default(0) @map("fraud_provision_usdt") @db.Decimal(36, 18)
+  netContributionUsdt    Decimal  @default(0) @map("net_contribution_usdt") @db.Decimal(36, 18)
+  occurredAt             DateTime @default(now()) @map("occurred_at")
+
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
+
+  @@index([telegramUserId])
+  @@index([referralRelationshipId])
+  @@index([campaignCode])
+  @@index([economicEventType])
+  @@index([occurredAt])
+  @@map("growth_contributions")
 }
 
 model Reward {

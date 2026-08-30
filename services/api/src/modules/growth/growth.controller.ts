@@ -221,18 +221,19 @@ export class GrowthController {
 
   /**
    * POST /growth/referrals/attach
-   * Post-authentication web referral code attachment.
+   * Post-authentication web referral code attachment with attribution.
    */
   @Post('referrals/attach')
   async attachReferral(
     @CanonicalUserId() userId: string,
     @Body('referralCode') referralCode: string,
+    @Body('attribution') attribution?: any,
   ) {
     if (!referralCode) {
       throw new BadRequestException('referralCode is required');
     }
     const tgUserId = await this.resolveTelegramUserId(userId);
-    return this.referralService.registerReferral(referralCode, tgUserId);
+    return this.referralService.registerReferral(referralCode, tgUserId, attribution);
   }
 
   /**

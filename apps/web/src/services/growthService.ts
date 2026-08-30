@@ -244,8 +244,8 @@ export const growthService = {
     return res.data.data;
   },
 
-  async attachReferral(referralCode: string): Promise<any> {
-    const res = await api.post('/growth/referrals/attach', { referralCode });
+  async attachReferral(referralCode: string, attribution?: any): Promise<any> {
+    const res = await api.post('/growth/referrals/attach', { referralCode, attribution });
     return res.data;
   },
 

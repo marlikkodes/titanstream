@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Zap, ShieldCheck, ArrowRight, Sparkles, UserCheck, CheckCircle2, Share2 } from 'lucide-react';
-import { extractReferralCode } from '../utils/referralUrl';
+import { extractReferralCode, extractAttributionParams } from '../utils/referralUrl';
 import { useReferralStore } from '../store/useReferralStore';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -22,11 +22,15 @@ export const ReferralLanding: React.FC = () => {
       const sanitized = extractReferralCode(code);
       setCleanedCode(sanitized);
 
+      const attribution = extractAttributionParams();
+
       if (!isExistingUser) {
         // Persist in localStorage and sessionStorage ONLY for new/unauthenticated visitors
         localStorage.setItem('pending_referral_code', sanitized);
         sessionStorage.setItem('pending_referral_code', sanitized);
-        console.info(`[REFERRAL_LANDING] New visitor captured code: ${sanitized}`);
+        localStorage.setItem('pending_attribution', JSON.stringify(attribution));
+        sessionStorage.setItem('pending_attribution', JSON.stringify(attribution));
+        console.info(`[REFERRAL_LANDING] New visitor captured code: ${sanitized} with attribution:`, attribution);
       } else {
         console.info(`[REFERRAL_LANDING] Existing user detected (${session?.user?.telegramUserId}). Ignoring new referral code.`);
       }

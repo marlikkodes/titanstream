@@ -35,3 +35,27 @@ export function extractReferralCode(input: string): string {
   }
   return trimmed;
 }
+
+export interface AttributionParams {
+  channel?: string;
+  campaign?: string;
+  medium?: string;
+  source?: string;
+  landingPage?: string;
+}
+
+export function extractAttributionParams(searchOrUrl?: string): AttributionParams {
+  if (typeof window === 'undefined') return {};
+  const queryStr = searchOrUrl || window.location.search || '';
+  const params = new URLSearchParams(queryStr);
+
+  const isTg = Boolean((window as any).Telegram?.WebApp?.initData);
+
+  return {
+    channel: isTg ? 'TELEGRAM' : params.get('channel') || 'WEB_DIRECT',
+    campaign: params.get('utm_campaign') || params.get('campaign') || undefined,
+    medium: params.get('utm_medium') || params.get('medium') || undefined,
+    source: params.get('utm_source') || params.get('source') || undefined,
+    landingPage: typeof window !== 'undefined' ? window.location.pathname : undefined,
+  };
+}

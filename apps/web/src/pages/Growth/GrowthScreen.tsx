@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { useGrowthStore } from '../../store/useGrowthStore';
 import { useTelegram } from '../../context/TelegramContext';
-import { useQuestStore, type QuestItem } from '../../store/useQuestStore';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useWalletStore } from '../../store/useWalletStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
@@ -41,19 +40,6 @@ export const GrowthScreen: React.FC = () => {
 
   // Live trust score from Treasury Store
   const liveTrustScore = useTreasuryStore((s) => s.trustScore);
-
-  // Quest Store and relevant actions
-  const {
-    quests,
-    activeTab: questTab,
-    activeCategory: questCategory,
-    setActiveTab: setQuestTab,
-    setActiveCategory: setQuestCategory,
-    claimQuest,
-    incrementProgress,
-  } = useQuestStore();
-
-  const { oursCount, partnerCount, decrementBadge } = useNotificationStore();
   const { usdtBalance, crystalsBalance, updateBalance, transactions } = useWalletStore();
   const { openGames, setActiveTab: setActiveNavTab } = useNavigationStore();
   const { events: communityEvents } = useTreasuryStore();
@@ -61,64 +47,6 @@ export const GrowthScreen: React.FC = () => {
   const settlementsCount = profile?.completedSettlements ?? 0;
   const ageDays = profile?.accountAgeDays ?? 0;
   const volumeUSDT = profile?.totalVolumeUSDT ?? 0;
-
-  const categories = [
-    'All ours',
-    'Daily login',
-    'Friends',
-    'Taps',
-    'Home screen',
-    'Stories',
-    'Achievements',
-    'Games',
-  ];
-
-  const filteredQuests = quests.filter((q) => {
-    if (q.type !== questTab) return false;
-    if (questCategory === 'All ours' || questCategory === 'Partner') return true;
-    return q.category.toLowerCase() === questCategory.toLowerCase();
-  });
-
-  const handleQuestClaim = async (quest: QuestItem) => {
-    hapticFeedback.impactOccurred('medium');
-    const { claimReward, fetchMissions } = useRewardQueueStore.getState();
-    const result = await claimReward(quest.id);
-
-    if (result.success) {
-      await Promise.all([
-        useWalletStore.getState().fetchBalanceFromEngine(),
-        useTreasuryStore.getState().fetchTreasuryState(),
-        fetchMissions(),
-      ]);
-      claimQuest(quest.id);
-      decrementBadge(quest.type);
-      showToast(`Claimed +${quest.rewardValue} ${quest.rewardType || 'Crystals'} & +2 Safety Score!`, 'success');
-    } else {
-      showToast(result.error || 'Claim failed on server. Please ensure requirements are satisfied.', 'error');
-    }
-  };
-
-  const handleQuestAction = (quest: QuestItem) => {
-    hapticFeedback.selectionChanged();
-    if (quest.actionLabel === 'Play') {
-      openGames();
-      showToast('Opening Mini-Games...', 'info');
-    } else if (quest.actionLabel === 'Add') {
-      incrementProgress(quest.id, 1);
-      showToast('Shortcut added to Home Screen!', 'success');
-      useTreasuryStore.getState().adjustTrustScore(1);
-    } else if (quest.actionLabel === 'Post story') {
-      incrementProgress(quest.id, 1);
-      showToast('Story shared on Telegram!', 'success');
-      useTreasuryStore.getState().adjustTrustScore(1);
-    } else if (quest.externalUrl) {
-      window.open(quest.externalUrl, '_blank');
-      incrementProgress(quest.id, 1);
-      showToast('Task opened! Return to claim your reward.', 'success');
-    } else {
-      showToast(`Executing ${quest.actionLabel || 'task'}...`, 'info');
-    }
-  };
 
   useEffect(() => {
     fetchGrowthProfile();
@@ -547,181 +475,8 @@ export const GrowthScreen: React.FC = () => {
                 </div>
               )}
 
-              {/* 1.5 Real Backend USDT Missions Queue */}
+              {/* 2. Canonical Backend USDT Missions & Rewards Queue */}
               <RewardQueue />
-
-              {/* 2. Quests Section */}
-              <div className="glass-panel p-4.5 rounded-3xl border border-white/10 space-y-4">
-                {/* Ours vs Partner Tabs */}
-                <div className="bg-control-bg p-1 rounded-2xl flex items-center border border-white/5 relative">
-                  <button
-                    onClick={() => {
-                      hapticFeedback.selectionChanged();
-                      setQuestTab('OURS');
-                    }}
-                    className={`
-                      relative flex-1 py-2 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 press-feedback transition-all z-10
-                      ${questTab === 'OURS' ? 'text-usdt-green font-black' : 'text-text-secondary'}
-                    `}
-                  >
-                    {questTab === 'OURS' && (
-                      <motion.div
-                        layoutId="growthQuestSegmentTab"
-                        className="absolute inset-0 bg-usdt-green/15 border border-usdt-green/30 rounded-xl"
-                        transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                      />
-                    )}
-                    <span className="relative z-10">Ours</span>
-                    <span className="relative z-10 bg-usdt-green/20 text-usdt-green text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full">
-                      {oursCount}
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      hapticFeedback.selectionChanged();
-                      setQuestTab('PARTNER');
-                    }}
-                    className={`
-                      relative flex-1 py-2 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 press-feedback transition-all z-10
-                      ${questTab === 'PARTNER' ? 'text-usdt-green font-black' : 'text-text-secondary'}
-                    `}
-                  >
-                    {questTab === 'PARTNER' && (
-                      <motion.div
-                        layoutId="growthQuestSegmentTab"
-                        className="absolute inset-0 bg-usdt-green/15 border border-usdt-green/30 rounded-xl"
-                        transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                      />
-                    )}
-                    <span className="relative z-10">Partner</span>
-                    <span className="relative z-10 bg-control-bg text-text-secondary text-[9px] font-mono px-1.5 py-0.5 rounded-full border border-white/5">
-                      {partnerCount}
-                    </span>
-                  </button>
-                </div>
-
-                {/* Categories Carousel */}
-                {questTab === 'OURS' && (
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                    {categories.map((cat) => {
-                      const isActive = questCategory === cat;
-                      return (
-                        <button
-                          key={cat}
-                          onClick={() => {
-                            hapticFeedback.selectionChanged();
-                            setQuestCategory(cat);
-                          }}
-                          className={`
-                            px-3 py-1.5 rounded-xl text-[10px] font-extrabold whitespace-nowrap press-feedback transition-all
-                            ${isActive
-                              ? 'bg-usdt-green/20 border border-usdt-green/30 text-usdt-green'
-                              : 'bg-control-bg/60 text-text-secondary hover:text-text-primary border border-white/5'
-                            }
-                          `}
-                        >
-                          {cat}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Quests Cards List */}
-                <div className="flex flex-col gap-2.5">
-                  {filteredQuests.length === 0 ? (
-                    <div className="py-6 text-center text-xs text-text-tertiary">
-                      No quests active in this category
-                    </div>
-                  ) : (
-                    filteredQuests.map((quest) => {
-                      const isClaimable = quest.status === 'CLAIMABLE';
-                      const isComplete = quest.status === 'CLAIMED';
-
-                      return (
-                        <div
-                          key={quest.id}
-                          className={`p-3.5 rounded-2xl border flex flex-col gap-3 transition-all ${
-                            isClaimable
-                              ? 'border-usdt-green/35 bg-gradient-to-b from-control-bg/50 to-usdt-green/5'
-                              : 'border-white/5 bg-control-bg/30'
-                          }`}
-                        >
-                          {/* Top row info */}
-                          <div className="flex items-start justify-between gap-2.5">
-                            <div className="flex items-start gap-2.5 min-w-0">
-                              <div className="w-9 h-9 rounded-xl bg-control-bg border border-white/5 flex items-center justify-center text-base shrink-0">
-                                {quest.category === 'Games' ? '🎮' : '💎'}
-                              </div>
-                              <div className="min-w-0">
-                                <h5 className="text-xs font-black text-text-primary truncate">{quest.title}</h5>
-                                <p className="text-[10px] text-text-secondary mt-0.5 leading-normal">{quest.subtitle}</p>
-                              </div>
-                            </div>
-
-                            {isClaimable && (
-                              <span className="text-[9px] font-black text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded-full border border-usdt-green/20 animate-pulse">
-                                READY
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Target progress */}
-                          {quest.target > 1 && (
-                            <div className="flex flex-col gap-1 text-[10px] text-text-tertiary">
-                              <div className="flex justify-between font-mono">
-                                <span>Progress</span>
-                                <span className="font-bold text-text-secondary">{quest.progress} / {quest.target}</span>
-                              </div>
-                              <div className="w-full h-1.5 bg-control-bg rounded-full overflow-hidden p-0.5 border border-white/5">
-                                <div
-                                  className="h-full bg-usdt-green rounded-full transition-all duration-300"
-                                  style={{ width: `${(quest.progress / quest.target) * 100}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Reward details + Action button */}
-                          <div className="flex items-center justify-between pt-2.5 border-t border-white/5">
-                            <div className="bg-control-bg/60 border border-white/5 rounded-full px-2 py-0.5 text-[10px] font-bold text-text-primary flex items-center gap-1 font-mono">
-                              <span>+</span>
-                              <span className="text-crystals-blue">💎</span>
-                              <span>{quest.rewardValue}</span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              {!isComplete && (quest.actionLabel || quest.externalUrl) && (
-                                <button
-                                  onClick={() => handleQuestAction(quest)}
-                                  className="press-feedback bg-control-bg text-text-primary font-bold text-[10px] px-3 py-1.5 rounded-xl border border-white/5 hover:bg-border"
-                                >
-                                  {quest.actionLabel || 'Go'}
-                                </button>
-                              )}
-
-                              <button
-                                disabled={!isClaimable || isComplete}
-                                onClick={() => handleQuestClaim(quest)}
-                                className={`
-                                  press-feedback font-extrabold text-[10px] px-4 py-2 rounded-xl transition-all
-                                  ${isClaimable
-                                    ? 'bg-usdt-green text-app-bg hover:brightness-110 shadow-md shadow-usdt-green/15'
-                                    : 'bg-control-bg/50 text-text-tertiary border border-white/5 cursor-not-allowed'
-                                  }
-                                `}
-                              >
-                                {isComplete ? 'Claimed' : 'Collect'}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
 
               {/* 3. Collapsible Payouts History */}
               <div className="pt-1">
