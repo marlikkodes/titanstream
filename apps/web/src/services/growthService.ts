@@ -362,6 +362,11 @@ export interface CampaignRoiItem {
   ltvUsdt: number;
   paybackPeriodDays: number | null;
   roi: number;
+  budgetLimitUsdt?: number;
+  committedLiabilityUsdt?: number;
+  disbursedSpendUsdt?: number;
+  availableBudgetUsdt?: number;
+  budgetUtilizationPercent?: number;
   status: EconomicStatus;
 }
 

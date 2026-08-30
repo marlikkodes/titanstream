@@ -130,13 +130,9 @@ export const useMiningStore = create<MiningState>()(
      * first fetch (session restore) and after claims (wallet already updated).
      */
     applyServerSession: (session, opts) => {
-      const currentUnclaimed = get().unclaimedBalance;
-      const currentDisplay = get().displayUnclaimed;
-
-      // Preserve highest balance between persistent local store and backend session
-      const targetUnclaimed = Math.max(session.unclaimedBalance, currentUnclaimed, currentDisplay);
       const snap = opts?.snapDisplay || !hydrated;
       hydrated = true;
+      const targetUnclaimed = typeof session.unclaimedBalance === 'number' ? session.unclaimedBalance : 0.0;
 
       set({
         activeCurrency: session.activeCurrency,
@@ -149,7 +145,7 @@ export const useMiningStore = create<MiningState>()(
         isOverheated: session.isOverheated,
         cooldownRemaining: session.cooldownRemaining,
         tapYieldPerTap: session.tapYieldPerTap,
-        displayUnclaimed: snap ? targetUnclaimed : Math.max(currentDisplay, targetUnclaimed),
+        displayUnclaimed: snap ? targetUnclaimed : targetUnclaimed,
         displayMultiplier: snap || session.coolerMultiplier < get().displayMultiplier ? session.coolerMultiplier : get().displayMultiplier,
         displayPromoOutput: snap || session.lifetimePromotionalOutput < get().displayPromoOutput ? session.lifetimePromotionalOutput : get().displayPromoOutput,
       });

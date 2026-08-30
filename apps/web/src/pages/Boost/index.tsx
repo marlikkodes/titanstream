@@ -6,6 +6,8 @@ import { useMiningStore } from '../../store/useMiningStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useWalletStore } from '../../store/useWalletStore';
 import { useTreasuryStore } from '../../store/useTreasuryStore';
+import { useGrowthStore } from '../../store/useGrowthStore';
+import { useReferralStore } from '../../store/useReferralStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { machineService } from '../../services/machineService';
 import { MACHINE_CATALOG, getMachineYieldDetails, type FrontendMachineModel } from '../../data/machines';
@@ -100,11 +102,15 @@ export const BoostScreen: React.FC = () => {
       if (res.success && res.machine) {
         hapticFeedback.notificationOccurred('success');
         upgradeBaseSpeed(res.machine.capacityGhs, res.machine.tierCode, res.machine);
-        await Promise.all([
+        await Promise.allSettled([
           fetchUserMachines(),
           fetchMiningState(),
           useWalletStore.getState().fetchBalanceFromEngine(),
+          useWalletStore.getState().fetchTransactions(),
           fetchTreasuryState(),
+          useGrowthStore.getState().fetchGrowthProfile(),
+          useGrowthStore.getState().fetchQualification(),
+          useReferralStore.getState().fetchReferrals(),
         ]);
 
         // Transition to Memorable Machine Commissioning Ceremony
@@ -144,29 +150,16 @@ export const BoostScreen: React.FC = () => {
       }
 
       upgradeBaseSpeed(res.machine.capacityGhs, res.machine.tierCode, res.machine);
-      await Promise.all([
+      await Promise.allSettled([
         fetchUserMachines(),
         fetchMiningState(),
         useWalletStore.getState().fetchBalanceFromEngine(),
+        useWalletStore.getState().fetchTransactions(),
         fetchTreasuryState(),
+        useGrowthStore.getState().fetchGrowthProfile(),
+        useGrowthStore.getState().fetchQualification(),
+        useReferralStore.getState().fetchReferrals(),
       ]);
-
-      // Create transaction record
-      const newTx = {
-        id: `tx-mach-${Date.now()}`,
-        financialAccountId: 'acc-main',
-        type: 'MACHINE_PURCHASE',
-        asset: 'USDT',
-        amount: (Number(selectedMachine?.priceUsdt) || 0).toFixed(2),
-        status: 'COMPLETED',
-        reference: invoiceId,
-        createdAt: new Date().toISOString(),
-        description: `Activated ${selectedMachine.name}`
-      };
-
-      useWalletStore.getState().updateBalance({
-        transactions: [newTx, ...transactions]
-      });
 
       setCheckoutStep('COMMISSION');
     } catch (err: any) {

@@ -210,6 +210,14 @@ export class GrowthAnalyticsService {
         // Estimated incremental lift (85% incremental baseline assumption for targeted campaigns)
         const incrementalContributionUsdt = Number((cNet * 0.85).toFixed(2));
 
+        // Budget Governance
+        const rawMeta = typeof camp.metadata === 'object' && camp.metadata !== null ? (camp.metadata as any) : {};
+        const budgetLimitUsdt = typeof rawMeta.budgetLimit === 'number' ? rawMeta.budgetLimit : 5000.0;
+        const disbursedSpendUsdt = cReward;
+        const committedLiabilityUsdt = Number((disbursedSpendUsdt * 0.1).toFixed(2));
+        const availableBudgetUsdt = Math.max(0, Number((budgetLimitUsdt - disbursedSpendUsdt - committedLiabilityUsdt).toFixed(2)));
+        const budgetUtilizationPercent = budgetLimitUsdt > 0 ? Number(((disbursedSpendUsdt / budgetLimitUsdt) * 100).toFixed(1)) : 0;
+
         const status = roi >= 3.0 ? 'PROFITABLE' : roi >= 1.0 ? 'OPTIMIZE' : 'UNPROFITABLE';
 
         return {
@@ -226,6 +234,11 @@ export class GrowthAnalyticsService {
           ltvUsdt: ltv,
           paybackPeriodDays,
           roi,
+          budgetLimitUsdt,
+          committedLiabilityUsdt,
+          disbursedSpendUsdt,
+          availableBudgetUsdt,
+          budgetUtilizationPercent,
           status,
         };
       }),

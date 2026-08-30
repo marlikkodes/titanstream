@@ -515,6 +515,7 @@ export const GrowthAdminPage: React.FC = () => {
                     <thead className="bg-control-bg/50 text-[10px] font-extrabold uppercase text-text-tertiary border-b border-white/5">
                       <tr>
                         <th className="py-3 px-4">Campaign</th>
+                        <th className="py-3 px-3">Budget / Available</th>
                         <th className="py-3 px-3">Acquired</th>
                         <th className="py-3 px-3">Paying</th>
                         <th className="py-3 px-3">Revenue</th>
@@ -536,6 +537,10 @@ export const GrowthAdminPage: React.FC = () => {
                             <td className="py-3 px-4">
                               <div className="font-bold text-text-primary font-sans">{camp.title}</div>
                               <div className="text-[10px] text-text-tertiary font-mono">{camp.campaignCode}</div>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="text-text-primary font-bold">${camp.budgetLimitUsdt?.toFixed(0) || '5000'}</div>
+                              <div className="text-[10px] text-usdt-green">${camp.availableBudgetUsdt?.toFixed(0) || '5000'} left</div>
                             </td>
                             <td className="py-3 px-3">{camp.totalAcquiredUsers}</td>
                             <td className="py-3 px-3 text-cyan-400">{camp.totalPayingUsers}</td>
@@ -561,7 +566,7 @@ export const GrowthAdminPage: React.FC = () => {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={13} className="py-8 text-center text-text-tertiary font-sans">
+                          <td colSpan={14} className="py-8 text-center text-text-tertiary font-sans">
                             No campaigns recorded yet. Launch campaigns via UTM parameters to begin attribution tracking.
                           </td>
                         </tr>

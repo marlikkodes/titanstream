@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { useWalletStore } from './useWalletStore';
+import { useTreasuryStore } from './useTreasuryStore';
+import { useGrowthStore } from './useGrowthStore';
 import {
   growthService,
   type MissionItem,
@@ -131,6 +133,10 @@ export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
 
       // 1. Authoritative double-entry ledger balance sync from Balance Engine
       await useWalletStore.getState().fetchBalanceFromEngine();
+      useWalletStore.getState().fetchTransactions().catch(() => undefined);
+      useTreasuryStore.getState().fetchTreasuryState().catch(() => undefined);
+      useGrowthStore.getState().fetchGrowthProfile().catch(() => undefined);
+      useGrowthStore.getState().fetchRewards().catch(() => undefined);
 
       // 2. Refresh local mission list and claim history
       await Promise.allSettled([

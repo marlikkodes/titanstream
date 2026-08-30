@@ -4,6 +4,8 @@ import { financialService, type TransactionRecord } from '../services/financialS
 import { settlementService, type SettlementSessionView } from '../services/settlementService';
 import { gamesService } from '../services/gamesService';
 import { useTreasuryStore } from './useTreasuryStore';
+import { useGrowthStore } from './useGrowthStore';
+import { useReferralStore } from './useReferralStore';
 import { useUserNotificationStore } from './useUserNotificationStore';
 import { useMiningStore } from './useMiningStore';
 import { useGameStore } from './useGameStore';
@@ -108,6 +110,11 @@ export const useWalletStore = create<WalletState>()(
       actionTab: 'wallet',
     });
     get().fetchBalanceFromEngine().catch(() => undefined);
+    get().fetchTransactions().catch(() => undefined);
+    useTreasuryStore.getState().fetchTreasuryState().catch(() => undefined);
+    useGrowthStore.getState().fetchGrowthProfile().catch(() => undefined);
+    useGrowthStore.getState().fetchQualification().catch(() => undefined);
+    useReferralStore.getState().fetchReferrals().catch(() => undefined);
   },
 
   /**
@@ -261,7 +268,11 @@ export const useWalletStore = create<WalletState>()(
       if (session.status === 'COMPLETED') {
         get().fetchBalanceFromEngine();
         get().fetchSettlementHistory();
+        get().fetchTransactions();
         useTreasuryStore.getState().fetchTreasuryState();
+        useGrowthStore.getState().fetchGrowthProfile();
+        useGrowthStore.getState().fetchQualification();
+        useReferralStore.getState().fetchReferrals();
       }
       return session;
     } catch (err: any) {
