@@ -1,0 +1,38 @@
+{
+  "name": "Universal Finish-This Workflow",
+  "phases": [
+    {
+      "phase": "analysis",
+      "agents": [
+        "repo_analyst",
+        "architect"
+      ],
+      "desc": "Identify TODOs, broken integrations, and missing tests"
+    },
+    {
+      "phase": "implementation",
+      "agents": [
+        "frontend_engineer",
+        "backend_engineer",
+        "database_engineer"
+      ],
+      "desc": "Implement incomplete features in parallel"
+    },
+    {
+      "phase": "integration",
+      "agents": [
+        "integration_engineer"
+      ],
+      "desc": "Wire cross-system interfaces and end-to-end flows"
+    },
+    {
+      "phase": "verification",
+      "agents": [
+        "qa_engineer",
+        "security_engineer",
+        "code_reviewer"
+      ],
+      "desc": "Run deterministic gates, red-team review, and regression suites"
+    }
+  ]
+}

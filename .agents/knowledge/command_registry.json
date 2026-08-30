@@ -1,0 +1,15 @@
+{
+  "build": "pnpm build",
+  "test": "pnpm test",
+  "lint": "pnpm lint",
+  "typecheck": "pnpm typecheck",
+  "format": "pnpm format",
+  "dev": "pnpm dev",
+  "git_commit": "python3 scripts/git_plumbing_commit.py",
+  "dev:web": "pnpm dev:web",
+  "build:web": "pnpm build:web",
+  "build:api": "pnpm build:api",
+  "start:api": "pnpm start:api",
+  "format:check": "pnpm format:check",
+  "prepare": "pnpm prepare"
+}

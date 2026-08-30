@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "mappings": {
+    "frontend_bug": [
+      "frontend_engineer",
+      "browser_engineer",
+      "qa_engineer"
+    ],
+    "backend_bug": [
+      "backend_engineer",
+      "debugger",
+      "test_engineer"
+    ],
+    "database_issue": [
+      "database_engineer",
+      "backend_engineer",
+      "qa_engineer"
+    ],
+    "cross_system_feature": [
+      "architect",
+      "frontend_engineer",
+      "backend_engineer",
+      "integration_engineer",
+      "qa_engineer"
+    ],
+    "security_change": [
+      "security_engineer",
+      "backend_engineer",
+      "code_reviewer"
+    ],
+    "performance_issue": [
+      "performance_engineer",
+      "backend_engineer"
+    ],
+    "release_deployment": [
+      "devops_engineer",
+      "security_engineer",
+      "qa_engineer"
+    ],
+    "finish_feature": [
+      "architect",
+      "repo_analyst",
+      "frontend_engineer",
+      "backend_engineer",
+      "integration_engineer",
+      "security_engineer",
+      "qa_engineer"
+    ]
+  }
+}

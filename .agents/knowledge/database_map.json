@@ -1,0 +1,8 @@
+{
+  "schemas": [
+    {
+      "schema_file": "services/api/prisma/schema.prisma",
+      "type": "database_schema"
+    }
+  ]
+}

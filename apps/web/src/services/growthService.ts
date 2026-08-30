@@ -392,6 +392,27 @@ export const growthService = {
     const res = await api.get('/admin/growth/attribution/health');
     return res.data.data ?? res.data;
   },
+
+  async getSocialMissions(): Promise<SocialMission[]> {
+    const res = await api.get('/growth/social/missions');
+    const list = res.data.missions ?? res.data.data?.missions ?? res.data;
+    return Array.isArray(list) ? list : [];
+  },
+
+  async participateInSocialMission(id: string): Promise<any> {
+    const res = await api.post(`/growth/social/missions/${id}/participate`);
+    return res.data.participation ?? res.data.data?.participation ?? res.data;
+  },
+
+  async claimSocialVirtualReward(id: string): Promise<{ success: boolean; crystals: number; xp: number }> {
+    const res = await api.post(`/growth/social/missions/${id}/claim-virtual`);
+    return res.data ?? { success: true, crystals: 0, xp: 0 };
+  },
+
+  async getUserValueBank(): Promise<UserValueBank> {
+    const res = await api.get('/growth/social/value-bank');
+    return res.data.valueBank ?? res.data.data?.valueBank ?? res.data;
+  },
 };
 
 export interface NextBestAction {
@@ -555,4 +576,39 @@ export interface AttributionHealthMetrics {
   estimatedCostEvents: number;
   unassignedContributions: number;
   graphHealthStatus: 'HEALTHY' | 'OPTIMIZATION_REQUIRED';
+}
+
+export interface SocialMission {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  tier: 'ENGAGEMENT' | 'DISTRIBUTION' | 'ACQUISITION' | 'REVENUE';
+  category: string;
+  channel: string;
+  virtualRewardCrystals: number;
+  virtualRewardXp: number;
+  maxRewardUsdt: number;
+  requiredContributionUsdt: number;
+  verifiedContributionUsdt: number;
+  rewardRate: number;
+  platformMarginBufferUsdt: number;
+  progressPercent: number;
+  status: string;
+  isOverSettled: boolean;
+  isEligible: boolean;
+  isClaimed: boolean;
+  virtualRewardsClaimed: boolean;
+  trackingCode: string;
+  attributedActionsCount: number;
+  parameters?: any;
+}
+
+export interface UserValueBank {
+  totalValueGeneratedUsdt: number;
+  unlockedRewardsUsdt: number;
+  retainedContributionUsdt: number;
+  activeMissionsCount: number;
+  completedMissionsCount: number;
+  totalCrystalsEarned: number;
 }

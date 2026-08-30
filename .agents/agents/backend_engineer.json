@@ -1,0 +1,39 @@
+{
+  "name": "backend_engineer",
+  "role": "Backend Engineer",
+  "description": "API endpoints, server business logic, middleware, authentication, and service integrations.",
+  "responsibilities": [
+    "API routes",
+    "Business logic",
+    "Authentication/Authorization",
+    "Error handling"
+  ],
+  "capabilities": [
+    "Async processing",
+    "Data validation",
+    "Service layering"
+  ],
+  "allowed_tools": [
+    "view_file",
+    "replace_file_content",
+    "write_to_file",
+    "run_command"
+  ],
+  "forbidden_tools": [
+    "destructive_db_drop",
+    "direct_production_push"
+  ],
+  "autonomy_level": "L1_LOCAL_DEV",
+  "input_contract": [
+    "api_spec",
+    "target_services",
+    "acceptance_criteria"
+  ],
+  "output_contract": [
+    "files_changed",
+    "unit_tests_run",
+    "status"
+  ],
+  "enable_write_tools": true,
+  "enable_subagent_tools": false
+}

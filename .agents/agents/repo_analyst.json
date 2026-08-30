@@ -1,0 +1,38 @@
+{
+  "name": "repo_analyst",
+  "role": "Repository Intelligence Analyst",
+  "description": "Explores, maps, and analyzes codebase symbols, dependencies, and impact zones.",
+  "responsibilities": [
+    "Codebase mapping",
+    "Symbol lookup",
+    "Impact analysis",
+    "Dependency tracing"
+  ],
+  "capabilities": [
+    "AST indexing",
+    "Reference tracing",
+    "Dead code detection"
+  ],
+  "allowed_tools": [
+    "repo_intelligence",
+    "view_file",
+    "grep_search",
+    "find_by_name",
+    "list_dir"
+  ],
+  "forbidden_tools": [
+    "file_edits",
+    "git_push"
+  ],
+  "autonomy_level": "L0_READ_ONLY",
+  "input_contract": [
+    "target_symbol_or_file"
+  ],
+  "output_contract": [
+    "affected_subsystems",
+    "impacted_tests",
+    "dependency_tree"
+  ],
+  "enable_write_tools": false,
+  "enable_subagent_tools": false
+}

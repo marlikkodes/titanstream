@@ -2257,6 +2257,162 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
+        // Social Growth Missions
+        if (url.includes('/growth/social/missions')) {
+          if (req.method === 'POST' && url.includes('/claim-virtual')) {
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({ success: true, crystals: 250, xp: 100 }));
+            return;
+          }
+          if (req.method === 'POST' && url.includes('/participate')) {
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({ success: true, participation: { id: 'part-mock', trackingCode: 'TSG-CIRC-8888' } }));
+            return;
+          }
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            missions: [
+              {
+                id: 'soc_1',
+                code: 'SOCIAL_JOIN_TG',
+                name: 'Join Official Titan Telegram',
+                description: 'Join the global community for real-time liquidity rate notifications & announcements.',
+                tier: 'ENGAGEMENT',
+                category: 'social',
+                channel: 'TELEGRAM',
+                virtualRewardCrystals: 250,
+                virtualRewardXp: 100,
+                maxRewardUsdt: 0,
+                requiredContributionUsdt: 0,
+                verifiedContributionUsdt: 0,
+                rewardRate: 0,
+                platformMarginBufferUsdt: 0,
+                progressPercent: 100,
+                status: 'TRACKING',
+                isOverSettled: false,
+                isEligible: false,
+                isClaimed: false,
+                virtualRewardsClaimed: false,
+                trackingCode: 'TSG-TELE-8888',
+                attributedActionsCount: 0,
+              },
+              {
+                id: 'soc_2',
+                code: 'SOCIAL_SHARE_CIRCLE',
+                name: 'Activate Your Circle',
+                description: 'Share Titan with your close network. Earn 500 Crystals instantly + unlock 2.00 USDT once your circle completes settlement volume.',
+                tier: 'DISTRIBUTION',
+                category: 'distribution',
+                channel: 'ALL',
+                virtualRewardCrystals: 500,
+                virtualRewardXp: 250,
+                maxRewardUsdt: 2.0,
+                requiredContributionUsdt: 10.0,
+                verifiedContributionUsdt: 7.8,
+                rewardRate: 0.2,
+                platformMarginBufferUsdt: 8.0,
+                progressPercent: 78,
+                status: 'VALUE_GENERATING',
+                isOverSettled: false,
+                isEligible: false,
+                isClaimed: false,
+                virtualRewardsClaimed: true,
+                trackingCode: 'TSG-CIRC-8888',
+                attributedActionsCount: 2,
+              },
+              {
+                id: 'soc_3',
+                code: 'SOCIAL_ACTIVATE_TRADERS',
+                name: 'Liquidity Pioneer',
+                description: 'Bring 3 active partners who complete settlements. Unlock up to 5.00 USDT backed by verified platform contribution.',
+                tier: 'REVENUE',
+                category: 'revenue',
+                channel: 'WHATSAPP',
+                virtualRewardCrystals: 1500,
+                virtualRewardXp: 1000,
+                maxRewardUsdt: 5.0,
+                requiredContributionUsdt: 25.0,
+                verifiedContributionUsdt: 12.5,
+                rewardRate: 0.2,
+                platformMarginBufferUsdt: 20.0,
+                progressPercent: 50,
+                status: 'VALUE_GENERATING',
+                isOverSettled: false,
+                isEligible: false,
+                isClaimed: false,
+                virtualRewardsClaimed: false,
+                trackingCode: 'TSG-TRAD-8888',
+                attributedActionsCount: 1,
+              },
+            ],
+          }));
+          return;
+        }
+
+        // Social Value Bank
+        if (url.includes('/growth/social/value-bank')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            valueBank: {
+              totalValueGeneratedUsdt: 20.30,
+              unlockedRewardsUsdt: 4.00,
+              retainedContributionUsdt: 16.30,
+              activeMissionsCount: 3,
+              completedMissionsCount: 1,
+              totalCrystalsEarned: 750,
+            },
+          }));
+          return;
+        }
+
+        // Admin Social Campaigns
+        if (url.includes('/admin/growth/social/campaigns')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            campaigns: [
+              {
+                id: 'soc_1',
+                code: 'SOCIAL_JOIN_TG',
+                name: 'Join Official Titan Telegram',
+                tier: 'ENGAGEMENT',
+                channel: 'TELEGRAM',
+                enabled: true,
+                totalParticipants: 420,
+                totalClicks: 890,
+                verifiedContributionUsdt: '0.00',
+                unlockedRewardsUsdt: '0.00',
+                retainedContributionUsdt: '0.00',
+                roi: 'N/A',
+                status: 'PROFITABLE',
+              },
+              {
+                id: 'soc_2',
+                code: 'SOCIAL_SHARE_CIRCLE',
+                name: 'Activate Your Circle',
+                tier: 'DISTRIBUTION',
+                channel: 'ALL',
+                enabled: true,
+                totalParticipants: 180,
+                totalClicks: 1250,
+                verifiedContributionUsdt: '1420.00',
+                unlockedRewardsUsdt: '284.00',
+                retainedContributionUsdt: '1136.00',
+                roi: '5.00',
+                status: 'PROFITABLE',
+              },
+            ],
+          }));
+          return;
+        }
+
         // Growth Rewards Claim (POST /growth/rewards/:id/claim)
         if (url.includes('/growth/rewards/') && (url.includes('/claim') || req.method === 'POST')) {
           if (!(globalThis as any).__mockClaimedRewardIds) {

@@ -1,0 +1,39 @@
+{
+  "name": "architect",
+  "role": "Software Architect",
+  "description": "System design, module boundaries, architectural specifications, and migration blueprints.",
+  "responsibilities": [
+    "System design",
+    "Module boundaries",
+    "Technical specs",
+    "Migration planning"
+  ],
+  "capabilities": [
+    "Dependency analysis",
+    "API contract design",
+    "Domain modeling"
+  ],
+  "allowed_tools": [
+    "repo_intelligence",
+    "view_file",
+    "grep_search",
+    "find_by_name"
+  ],
+  "forbidden_tools": [
+    "direct_production_deploy",
+    "drop_database"
+  ],
+  "autonomy_level": "L1_LOCAL_DEV",
+  "input_contract": [
+    "objective",
+    "scope",
+    "constraints"
+  ],
+  "output_contract": [
+    "architecture_plan",
+    "component_dag",
+    "risk_assessment"
+  ],
+  "enable_write_tools": true,
+  "enable_subagent_tools": true
+}

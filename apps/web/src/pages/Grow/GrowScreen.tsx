@@ -8,6 +8,9 @@ import { EmptyState } from '../../components/EmptyState';
 import { DestinationLoader } from '../../components/DestinationLoader';
 import { NextBestActionCard } from '../../components/NextBestActionCard';
 import { ReferralAssistanceModal } from '../../components/ReferralAssistanceModal';
+import { ValueBankCard } from '../../components/growth/ValueBankCard';
+import { SocialMissionCard } from '../../components/growth/SocialMissionCard';
+import { useGrowthStore } from '../../store/useGrowthStore';
 import { 
   Copy, 
   Share2, 
@@ -83,13 +86,24 @@ export const GrowScreen: React.FC = () => {
     fetchReferrals,
   } = useReferralStore();
 
+  const {
+    socialMissions,
+    valueBank,
+    fetchSocialMissions,
+    fetchValueBank,
+    participateInSocialMission,
+    claimSocialVirtualReward,
+  } = useGrowthStore();
+
   const { setActiveTab } = useNavigationStore();
   const [copied, setCopied] = useState(false);
   const [selectedRefereeId, setSelectedRefereeId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReferrals();
-  }, [fetchReferrals]);
+    fetchSocialMissions();
+    fetchValueBank();
+  }, [fetchReferrals, fetchSocialMissions, fetchValueBank]);
 
   if (isLoading && referrals.length === 0 && !error) {
     return <DestinationLoader destination="grow" />;
@@ -133,7 +147,11 @@ export const GrowScreen: React.FC = () => {
         </div>
 
         <button
-          onClick={() => fetchReferrals()}
+          onClick={() => {
+            fetchReferrals();
+            fetchSocialMissions();
+            fetchValueBank();
+          }}
           className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-bold hover:bg-cyan-500/25 transition-colors press-feedback"
           title="Refresh Network Data"
         >
@@ -159,6 +177,35 @@ export const GrowScreen: React.FC = () => {
 
       {/* NEXT BEST ACTION CARD */}
       <NextBestActionCard />
+
+      {/* VALUE BANK — ECONOMIC IMPACT LEDGER */}
+      <ValueBankCard valueBank={valueBank} isLoading={isLoading} />
+
+      {/* SOCIAL MISSIONS SECTION — TIER A/B/C/D */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Gift size={16} className="text-cyan-400" />
+            <h2 className="text-xs font-black uppercase tracking-wider text-text-primary font-mono">
+              Social Growth Missions
+            </h2>
+          </div>
+          <span className="text-[9px] font-mono font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
+            {socialMissions.length} Missions Active
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {socialMissions.map((m) => (
+            <SocialMissionCard
+              key={m.id}
+              mission={m}
+              onClaimVirtual={claimSocialVirtualReward}
+              onParticipate={participateInSocialMission}
+            />
+          ))}
+        </div>
+      </div>
 
       {/* HERO SECTION — Network Performance & Economic Progression */}
       <motion.div

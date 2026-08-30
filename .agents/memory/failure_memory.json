@@ -1,0 +1,21 @@
+[
+  {
+    "id": "fail_7ad6cb00",
+    "symptom": "AssertionError in authentication test",
+    "reproduction_steps": [
+      "pnpm test:auth"
+    ],
+    "root_cause": "AssertionError: AssertionError: Expected 200 OK but got 500 Internal Error",
+    "affected_subsystem": "services/api/src/routes/auth.ts",
+    "fix_description": "Hypothesis 2: Fix AssertionError in services/api/src/routes/auth.ts",
+    "files_touched": [
+      "services/api/src/routes/auth.ts"
+    ],
+    "regression_test": "test_regression_3076",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 2: Fix AssertionError in services/api/src/routes/auth.ts on attempt 2"
+    ],
+    "timestamp": 1788112737.7601857
+  }
+]

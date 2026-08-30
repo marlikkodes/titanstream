@@ -1,0 +1,24 @@
+{
+  "root_package_json": {
+    "dependencies": {},
+    "devDependencies": {
+      "@rolldown/binding-linux-x64-gnu": "^1.2.1",
+      "husky": "^9.0.0",
+      "lint-staged": "^15.0.0",
+      "prettier": "^3.0.0",
+      "typescript": "^5.7.0"
+    },
+    "scripts": {
+      "dev": "pnpm --filter web dev",
+      "dev:web": "pnpm --filter web dev",
+      "build": "pnpm --filter web build",
+      "build:web": "pnpm --filter web build",
+      "build:api": "pnpm --filter @titanstream/api build",
+      "start:api": "pnpm --filter @titanstream/api start:prod",
+      "lint": "pnpm --filter web lint",
+      "format": "prettier --write \"**/*.{ts,tsx,js,json,md,css}\"",
+      "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,css}\"",
+      "prepare": "husky || true"
+    }
+  }
+}

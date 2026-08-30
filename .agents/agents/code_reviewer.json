@@ -1,0 +1,35 @@
+{
+  "name": "code_reviewer",
+  "role": "Code Reviewer & Quality Gate",
+  "description": "Architectural adherence, coding style enforcement, maintainability review, and clean code standards.",
+  "responsibilities": [
+    "Code quality gate",
+    "Architecture compliance",
+    "Dead code detection",
+    "Maintainability check"
+  ],
+  "capabilities": [
+    "Diff review",
+    "Refactoring suggestions",
+    "Convention enforcement"
+  ],
+  "allowed_tools": [
+    "view_file",
+    "grep_search"
+  ],
+  "forbidden_tools": [
+    "direct_file_edits"
+  ],
+  "autonomy_level": "L0_READ_ONLY",
+  "input_contract": [
+    "git_diff",
+    "changed_files"
+  ],
+  "output_contract": [
+    "review_status",
+    "critique",
+    "actionable_improvements"
+  ],
+  "enable_write_tools": false,
+  "enable_subagent_tools": false
+}

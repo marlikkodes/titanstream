@@ -1,0 +1,39 @@
+{
+  "name": "frontend_engineer",
+  "role": "Frontend Engineer",
+  "description": "UI component implementation, responsive styling, client state management, and web standards.",
+  "responsibilities": [
+    "React/Next.js components",
+    "CSS/Tailwind styling",
+    "Client state",
+    "Web performance"
+  ],
+  "capabilities": [
+    "Component refactoring",
+    "Form validation",
+    "State synchronization"
+  ],
+  "allowed_tools": [
+    "view_file",
+    "replace_file_content",
+    "write_to_file",
+    "run_command"
+  ],
+  "forbidden_tools": [
+    "database_drop",
+    "production_deploy"
+  ],
+  "autonomy_level": "L1_LOCAL_DEV",
+  "input_contract": [
+    "ui_spec",
+    "target_components",
+    "acceptance_criteria"
+  ],
+  "output_contract": [
+    "files_changed",
+    "tests_executed",
+    "status"
+  ],
+  "enable_write_tools": true,
+  "enable_subagent_tools": false
+}

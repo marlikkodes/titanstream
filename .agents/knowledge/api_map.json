@@ -1,0 +1,139 @@
+{
+  "endpoints": [
+    {
+      "call": "app.get",
+      "line": "prisma = app.get(PrismaService);",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const authRes = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
+      "line": "const res = await request(app.getHttpServer())",
+      "file": "services/api/test/app.e2e-spec.ts"
+    }
+  ]
+}

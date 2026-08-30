@@ -380,6 +380,7 @@ model User {
   assetLicenses             UserAssetLicense[]
   userMachineFleet          UserMachineFleetItem[]
   contributions             GrowthContribution[]
+  socialParticipations      SocialMissionParticipation[]
 
   @@index([state])
   @@index([createdAt])
@@ -1425,6 +1426,24 @@ enum RewardType {
   MILESTONE
   LOYALTY
   CAMPAIGN
+  SOCIAL
+}
+
+enum SocialMissionTier {
+  ENGAGEMENT
+  DISTRIBUTION
+  ACQUISITION
+  REVENUE
+}
+
+enum SocialParticipationStatus {
+  TRACKING
+  VALUE_GENERATING
+  OVER_SETTLED
+  ELIGIBLE
+  CLAIMED
+  FRAUD_REVIEW
+  EXPIRED
 }
 
 enum RewardStatus {
@@ -1653,6 +1672,87 @@ model Achievement {
   @@unique([telegramUserId, code])
   @@index([telegramUserId, achievedAt])
   @@map("achievements")
+}
+
+model SocialMission {
+  id                       String            @id @default(uuid()) @map("id")
+  code                     String            @unique @map("code")
+  name                     String            @map("name")
+  description              String            @map("description")
+  tier                     SocialMissionTier @default(ENGAGEMENT) @map("tier")
+  category                 String            @default("social") @map("category")
+  channel                  String            @default("TELEGRAM") @map("channel")
+  virtualRewardCrystals    Int               @default(0) @map("virtual_reward_crystals")
+  virtualRewardXp          Int               @default(0) @map("virtual_reward_xp")
+  maxRewardUsdt            Decimal           @default(0) @map("max_reward_usdt") @db.Decimal(36, 18)
+  requiredContributionUsdt  Decimal           @default(0) @map("required_contribution_usdt") @db.Decimal(36, 18)
+  rewardRate               Decimal           @default(0.20) @map("reward_rate") @db.Decimal(10, 4)
+  platformMarginBufferUsdt Decimal           @default(0) @map("platform_margin_buffer_usdt") @db.Decimal(36, 18)
+  requiredActionCount      Int               @default(1) @map("required_action_count")
+  actionType               String            @default("SHARE") @map("action_type")
+  enabled                  Boolean           @default(true) @map("enabled")
+  expiresInDays            Int               @default(30) @map("expires_in_days")
+  ruleId                   String?           @map("rule_id")
+  parameters               Json              @default("{}") @map("parameters")
+  createdAt                DateTime          @default(now()) @map("created_at")
+  updatedAt                DateTime          @updatedAt @map("updated_at")
+
+  participations SocialMissionParticipation[]
+
+  @@index([enabled])
+  @@index([tier])
+  @@map("social_missions")
+}
+
+model SocialMissionParticipation {
+  id                       String                    @id @default(uuid()) @map("id")
+  socialMissionId          String                    @map("social_mission_id")
+  telegramUserId           BigInt                    @map("telegram_user_id")
+  trackingCode             String                    @unique @map("tracking_code")
+  status                   SocialParticipationStatus @default(TRACKING) @map("status")
+  currentActionCount       Int                       @default(0) @map("current_action_count")
+  verifiedContributionUsdt Decimal                   @default(0) @map("verified_contribution_usdt") @db.Decimal(36, 18)
+  unlockedRewardUsdt       Decimal                   @default(0) @map("unlocked_reward_usdt") @db.Decimal(36, 18)
+  retainedMarginUsdt       Decimal                   @default(0) @map("retained_margin_usdt") @db.Decimal(36, 18)
+  virtualRewardsClaimed    Boolean                   @default(false) @map("virtual_rewards_claimed")
+  rewardId                 String?                   @unique @map("reward_id")
+  fraudScore               Int                       @default(0) @map("fraud_score")
+  metadata                 Json                      @default("{}") @map("metadata")
+  createdAt                DateTime                  @default(now()) @map("created_at")
+  updatedAt                DateTime                  @updatedAt @map("updated_at")
+
+  mission       SocialMission       @relation(fields: [socialMissionId], references: [id], onDelete: Restrict)
+  user          User                @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
+  attributions  SocialAttribution[]
+
+  @@unique([socialMissionId, telegramUserId])
+  @@index([telegramUserId])
+  @@index([status])
+  @@index([trackingCode])
+  @@map("social_mission_participations")
+}
+
+model SocialAttribution {
+  id              String   @id @default(uuid()) @map("id")
+  participationId String   @map("participation_id")
+  referrerId      BigInt   @map("referrer_id")
+  refereeId       BigInt?  @map("referee_id")
+  channel         String   @default("TELEGRAM") @map("channel")
+  utmSource       String?  @map("utm_source")
+  utmMedium       String?  @map("utm_medium")
+  utmCampaign     String?  @map("utm_campaign")
+  ipHash          String?  @map("ip_hash")
+  deviceHash      String?  @map("device_hash")
+  stage           String   @default("CLICK") @map("stage")
+  occurredAt      DateTime @default(now()) @map("occurred_at")
+
+  participation SocialMissionParticipation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+
+  @@index([participationId])
+  @@index([referrerId])
+  @@index([refereeId])
+  @@index([stage])
+  @@map("social_attributions")
 }
 
 model UserTrustProfile {

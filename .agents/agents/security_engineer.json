@@ -1,0 +1,35 @@
+{
+  "name": "security_engineer",
+  "role": "Security Engineer",
+  "description": "Static vulnerability scanning, secret leakage prevention, OWASP compliance, and threat audits.",
+  "responsibilities": [
+    "Secret audits",
+    "Dependency vulnerability checks",
+    "Injection defense",
+    "Auth boundary validation"
+  ],
+  "capabilities": [
+    "Regex pattern auditing",
+    "CVE matching",
+    "Permission auditing"
+  ],
+  "allowed_tools": [
+    "view_file",
+    "run_command",
+    "grep_search"
+  ],
+  "forbidden_tools": [
+    "disabling_security_controls"
+  ],
+  "autonomy_level": "L1_LOCAL_DEV",
+  "input_contract": [
+    "diff_or_files_to_audit"
+  ],
+  "output_contract": [
+    "vulnerabilities_found",
+    "secret_leaks",
+    "passed"
+  ],
+  "enable_write_tools": false,
+  "enable_subagent_tools": false
+}

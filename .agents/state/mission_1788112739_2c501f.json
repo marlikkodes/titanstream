@@ -1,0 +1,60 @@
+{
+  "mission_id": "mission_1788112739_2c501f",
+  "objective": "Long running refactor mission",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_d3a753": {
+      "id": "task_plan_d3a753",
+      "title": "Architecture & Analysis for: Long running refactor mission",
+      "description": "Analyze requirements and plan implementation for Long running refactor mission",
+      "agent_role": "frontend_engineer",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_d3a753",
+        "objective": "Long running refactor mission",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788112739.849868,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [
+    "task_plan_d3a753"
+  ],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788112739_2c501f"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788112739.8487113,
+  "updated_at": 1788112739.850253
+}

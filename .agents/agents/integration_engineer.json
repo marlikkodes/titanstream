@@ -1,0 +1,37 @@
+{
+  "name": "integration_engineer",
+  "role": "Integration Engineer",
+  "description": "Cross-service glue, external webhook contracts, messaging flows, and end-to-end service wiring.",
+  "responsibilities": [
+    "Service contracts",
+    "Webhook handlers",
+    "Event serialization",
+    "Integration wiring"
+  ],
+  "capabilities": [
+    "Protocol translation",
+    "Payload validation",
+    "Contract testing"
+  ],
+  "allowed_tools": [
+    "view_file",
+    "replace_file_content",
+    "write_to_file",
+    "run_command"
+  ],
+  "forbidden_tools": [
+    "production_secret_rotation"
+  ],
+  "autonomy_level": "L1_LOCAL_DEV",
+  "input_contract": [
+    "services_to_integrate",
+    "event_schemas"
+  ],
+  "output_contract": [
+    "integration_tests",
+    "status",
+    "files_changed"
+  ],
+  "enable_write_tools": true,
+  "enable_subagent_tools": false
+}

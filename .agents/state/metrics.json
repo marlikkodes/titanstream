@@ -1,0 +1,79 @@
+{
+  "total_missions": 7,
+  "total_tasks_executed": 24,
+  "total_tokens_consumed": 17850,
+  "total_repairs": 0,
+  "total_escalations": 0,
+  "missions": [
+    {
+      "mission_id": "mission_1788112637_46c08a",
+      "timestamp": 1788112639.2819264,
+      "duration_seconds": 2.24,
+      "tokens_consumed": 0,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788112654_f3f70f",
+      "timestamp": 1788112655.7961617,
+      "duration_seconds": 1.12,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788112734_2ede0a",
+      "timestamp": 1788112735.697106,
+      "duration_seconds": 0.79,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788112735_2bb2f5",
+      "timestamp": 1788112736.6295552,
+      "duration_seconds": 0.93,
+      "tokens_consumed": 4250,
+      "tasks_count": 5,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 10
+    },
+    {
+      "mission_id": "mission_1788112736_9e8adb",
+      "timestamp": 1788112737.7564971,
+      "duration_seconds": 1.12,
+      "tokens_consumed": 3400,
+      "tasks_count": 4,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 8
+    },
+    {
+      "mission_id": "mission_1788112737_c10954",
+      "timestamp": 1788112738.7326522,
+      "duration_seconds": 0.97,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788112738_c89122",
+      "timestamp": 1788112739.842317,
+      "duration_seconds": 1.11,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    }
+  ]
+}

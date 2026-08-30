@@ -1,0 +1,20 @@
+{
+  "name": "Security & Red-Team Audit Workflow",
+  "phases": [
+    {
+      "phase": "scan",
+      "agents": [
+        "security_engineer"
+      ],
+      "desc": "Scan diff for secret leaks, dependency CVEs, and OWASP issues"
+    },
+    {
+      "phase": "red_team",
+      "agents": [
+        "code_reviewer",
+        "qa_engineer"
+      ],
+      "desc": "Adversarial review across QA, Security, Performance, and Architecture"
+    }
+  ]
+}

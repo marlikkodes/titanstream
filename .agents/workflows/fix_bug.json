@@ -1,0 +1,28 @@
+{
+  "name": "Autonomous 8-Step Bug Repair Workflow",
+  "phases": [
+    {
+      "phase": "diagnosis",
+      "agents": [
+        "debugger",
+        "repo_analyst"
+      ],
+      "desc": "Observe, reproduce, trace, isolate, and formulate hypothesis"
+    },
+    {
+      "phase": "patch",
+      "agents": [
+        "debugger"
+      ],
+      "desc": "Apply minimal targeted patch"
+    },
+    {
+      "phase": "verify",
+      "agents": [
+        "qa_engineer",
+        "test_engineer"
+      ],
+      "desc": "Verify reproducer passes, create regression test, and update failure memory"
+    }
+  ]
+}

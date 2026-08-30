@@ -16,6 +16,8 @@ import { GrowthNotificationService } from './growth-notification.service';
 import { GrowthAnalyticsService } from './growth-analytics.service';
 import { TrustCenterService } from './trust-center.service';
 import { GrowthContributionService } from './growth-contribution.service';
+import { SocialMissionService } from './social-mission.service';
+import { SocialAttributionService } from './social-attribution.service';
 import { GrowthController } from './growth.controller';
 import { GrowthAdminController } from './growth-admin.controller';
 import { GrowthAnalyticsController } from './growth-analytics.controller';
@@ -41,6 +43,8 @@ import { FraudModule } from '../fraud/fraud.module';
     GrowthAnalyticsService,
     TrustCenterService,
     GrowthContributionService,
+    SocialMissionService,
+    SocialAttributionService,
   ],
   exports: [
     GrowthEventService,
@@ -57,6 +61,8 @@ import { FraudModule } from '../fraud/fraud.module';
     GrowthAnalyticsService,
     TrustCenterService,
     GrowthContributionService,
+    SocialMissionService,
+    SocialAttributionService,
   ],
 })
 export class GrowthModule implements OnModuleInit {

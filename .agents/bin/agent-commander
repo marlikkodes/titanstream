@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""
+Agent Commander CLI
+Unified command interface for Antigravity Superengineering Operating System.
+"""
+
+import sys
+import os
+import argparse
+import json
+
+# Add repository .agents root to path
+script_dir = os.path.dirname(os.path.abspath(__file__))
+agents_root = os.path.abspath(os.path.join(script_dir, ".."))
+workspace_root = os.path.abspath(os.path.join(agents_root, ".."))
+sys.path.insert(0, agents_root)
+
+from engine import (
+    AgentCommander, RepoIntelligence, FailureMemory,
+    MissionStateManager, AgentObservability, AutonomyLevel
+)
+
+def main():
+    parser = argparse.ArgumentParser(description="Antigravity Agent Commander CLI")
+    subparsers = parser.add_subparsers(dest="command", help="Command to execute")
+
+    # fix / debug / test / audit / security / review / architect / trace / performance / ship / finish
+    for cmd_name in ["fix", "debug", "test", "audit", "security", "review", "architect", "trace", "performance", "ship", "finish", "run"]:
+        sp = subparsers.add_parser(cmd_name, help=f"Execute {cmd_name} workflow")
+        sp.add_argument("objective", nargs="*", default=[], help="Objective description")
+        sp.add_argument("--level", default="L1_LOCAL_DEV", choices=["L0_READ_ONLY", "L1_LOCAL_DEV", "L2_STAGING_PR", "L3_PRODUCTION"])
+
+    # status
+    subparsers.add_parser("status", help="Show current mission status")
+
+    # resume
+    sp_resume = subparsers.add_parser("resume", help="Resume interrupted mission")
+    sp_resume.add_argument("--id", default=None, help="Mission ID to resume")
+
+    # index / scan
+    subparsers.add_parser("index", help="Scan and re-index repository intelligence")
+
+    # memory
+    sp_mem = subparsers.add_parser("memory", help="Query or inspect failure memory")
+    sp_mem.add_argument("query", nargs="*", default=[], help="Search query")
+
+    # metrics
+    subparsers.add_parser("metrics", help="Show system observability metrics")
+
+    args = parser.parse_args()
+
+    if not args.command:
+        parser.print_help()
+        sys.exit(0)
+
+    commander = AgentCommander(workspace_root)
+    state_mgr = MissionStateManager(workspace_root)
+    failure_mem = FailureMemory(workspace_root)
+    obs = AgentObservability(workspace_root)
+
+    if args.command in ["fix", "debug", "test", "audit", "security", "review", "architect", "trace", "performance", "ship", "finish", "run"]:
+        obj_text = " ".join(args.objective) if args.objective else f"Execute {args.command} workflow"
+        lvl_map = {
+            "L0_READ_ONLY": AutonomyLevel.LEVEL_0_READ_ONLY,
+            "L1_LOCAL_DEV": AutonomyLevel.LEVEL_1_LOCAL_DEV,
+            "L2_STAGING_PR": AutonomyLevel.LEVEL_2_STAGING_PR,
+            "L3_PRODUCTION": AutonomyLevel.LEVEL_3_PRODUCTION
+        }
+        level = lvl_map.get(args.level, AutonomyLevel.LEVEL_1_LOCAL_DEV)
+        res = commander.execute_mission(obj_text, level)
+        if "concise_ui" in res:
+            print(res["concise_ui"])
+        else:
+            print(json.dumps(res, indent=2))
+
+    elif args.command == "status":
+        curr = state_mgr.get_current_mission()
+        if not curr:
+            print("No active mission found.")
+        else:
+            print(f"Mission: {curr.mission_id}")
+            print(f"Objective: {curr.objective}")
+            print(f"Status: {curr.status} (Phase: {curr.current_phase})")
+            print(f"Progress: {len(curr.completed_tasks)}/{len(curr.tasks)} tasks complete")
+
+    elif args.command == "resume":
+        res = state_mgr.resume_mission(args.id)
+        if not res:
+            print("No mission to resume.")
+        else:
+            print(f"Resuming Mission: {res['mission_id']}")
+            print(f"Objective: {res['objective']}")
+            print(f"Pending Tasks: {res['pending_count']}/{res['total_tasks']}")
+            print(f"Pending Task IDs: {', '.join(res['pending_task_ids'])}")
+
+    elif args.command == "index":
+        intel = RepoIntelligence(workspace_root)
+        summary = intel.scan_and_index()
+        print(f"Repository Indexed: {summary['files_indexed']} files, {len(summary['subsystems'])} subsystems, {summary['apis_discovered']} APIs, {summary['tests_discovered']} tests.")
+
+    elif args.command == "memory":
+        q = " ".join(args.query) if args.query else ""
+        results = failure_mem.search_failures(q)
+        print(f"Found {len(results)} failure memory records:")
+        for r in results[:5]:
+            print(f"  - [{r['id']}] Symptom: {r['symptom']} | Fix: {r['fix_description']}")
+
+    elif args.command == "metrics":
+        summary = obs.get_summary()
+        print(f"Agent OS Metrics Summary:")
+        print(f"  Total Missions: {summary['total_missions']}")
+        print(f"  Total Tasks Executed: {summary['total_tasks_executed']}")
+        print(f"  Total Tokens Consumed: {summary['total_tokens_consumed']}")
+        print(f"  Total Repairs: {summary['total_repairs']}")
+        print(f"  Total Escalations: {summary['total_escalations']}")
+
+if __name__ == "__main__":
+    main()

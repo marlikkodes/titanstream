@@ -19,6 +19,9 @@ import { GrowthNotificationService } from './growth-notification.service';
 import { TrustCenterService } from './trust-center.service';
 import { GrowthEventService } from './growth-event.service';
 import { GrowthAnalyticsService } from './growth-analytics.service';
+import { GrowthContributionService } from './growth-contribution.service';
+import { SocialMissionService } from './social-mission.service';
+import { SocialAttributionService } from './social-attribution.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../database/prisma.service';
@@ -263,6 +266,20 @@ describe('POST-REMEDIATION FORENSIC CERTIFICATION SUITE', () => {
       create: jest.fn().mockResolvedValue({ id: 'ge_1' }),
       findMany: jest.fn().mockResolvedValue([]),
     },
+    socialMission: {
+      upsert: jest.fn().mockResolvedValue({}),
+      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue(null),
+    },
+    socialMissionParticipation: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockResolvedValue({}),
+      update: jest.fn().mockResolvedValue({}),
+    },
+    socialAttribution: {
+      create: jest.fn().mockResolvedValue({}),
+    },
   };
 
   beforeAll(async () => {
@@ -282,6 +299,9 @@ describe('POST-REMEDIATION FORENSIC CERTIFICATION SUITE', () => {
         TrustCenterService,
         GrowthEventService,
         GrowthAnalyticsService,
+        GrowthContributionService,
+        SocialMissionService,
+        SocialAttributionService,
         FinancialAccountService,
         {
           provide: FinancialAccountRepository,

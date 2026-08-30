@@ -1,0 +1,35 @@
+{
+  "name": "doc_engineer",
+  "role": "Documentation Engineer",
+  "description": "API documentation, architecture runbooks, changelog generation, and user guides.",
+  "responsibilities": [
+    "Markdown documentation",
+    "API reference generation",
+    "Runbooks",
+    "Release notes"
+  ],
+  "capabilities": [
+    "Docstring extraction",
+    "Changelog drafting",
+    "Diagram formatting"
+  ],
+  "allowed_tools": [
+    "view_file",
+    "write_to_file",
+    "replace_file_content"
+  ],
+  "forbidden_tools": [
+    "modifying_production_code"
+  ],
+  "autonomy_level": "L1_LOCAL_DEV",
+  "input_contract": [
+    "feature_or_release_spec",
+    "target_doc_path"
+  ],
+  "output_contract": [
+    "docs_written",
+    "status"
+  ],
+  "enable_write_tools": true,
+  "enable_subagent_tools": false
+}

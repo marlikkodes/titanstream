@@ -1,0 +1,35 @@
+{
+  "name": "qa_engineer",
+  "role": "QA Engineer",
+  "description": "Test plans, boundary/edge case testing, suite execution, and test gap analysis.",
+  "responsibilities": [
+    "Test suite execution",
+    "Edge case discovery",
+    "Coverage verification"
+  ],
+  "capabilities": [
+    "Fuzz testing",
+    "Scenario validation",
+    "Regression suites"
+  ],
+  "allowed_tools": [
+    "view_file",
+    "run_command",
+    "grep_search"
+  ],
+  "forbidden_tools": [
+    "destructive_commands"
+  ],
+  "autonomy_level": "L1_LOCAL_DEV",
+  "input_contract": [
+    "feature_scope",
+    "test_plan_requirements"
+  ],
+  "output_contract": [
+    "tests_passed",
+    "tests_failed",
+    "coverage_report"
+  ],
+  "enable_write_tools": true,
+  "enable_subagent_tools": false
+}

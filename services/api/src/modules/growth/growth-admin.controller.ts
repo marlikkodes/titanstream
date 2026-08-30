@@ -339,6 +339,91 @@ export class GrowthAdminController {
         titleTemplate: body.titleTemplate,
         bodyTemplate: body.bodyTemplate,
         channel: body.channel || NotificationChannel.TELEGRAM,
+  /**
+   * GET /admin/growth/social/campaigns
+   * Social Campaign performance, unit economics, ROI, and over-settlement telemetry.
+   */
+  @Get('growth/social/campaigns')
+  @Permissions(AdminPermission.REFERRAL_READ)
+  async getSocialCampaigns() {
+    const missions = await this.prisma.socialMission.findMany({
+      include: {
+        participations: {
+          include: {
+            attributions: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      success: true,
+      campaigns: missions.map((m) => {
+        const totalParticipants = m.participations.length;
+        const totalClicks = m.participations.reduce((acc, p) => acc + p.attributions.filter((a) => a.stage === 'CLICK').length, 0);
+        const verifiedContribution = m.participations.reduce((acc, p) => acc + Number(p.verifiedContributionUsdt), 0);
+        const unlockedRewards = m.participations.reduce((acc, p) => acc + Number(p.unlockedRewardUsdt), 0);
+        const retainedContribution = verifiedContribution - unlockedRewards;
+        const roi = unlockedRewards > 0 ? (verifiedContribution / unlockedRewards).toFixed(2) : 'N/A';
+
+        return {
+          id: m.id,
+          code: m.code,
+          name: m.name,
+          tier: m.tier,
+          channel: m.channel,
+          enabled: m.enabled,
+          totalParticipants,
+          totalClicks,
+          verifiedContributionUsdt: verifiedContribution.toFixed(2),
+          unlockedRewardsUsdt: unlockedRewards.toFixed(2),
+          retainedContributionUsdt: retainedContribution.toFixed(2),
+          roi,
+          status: !m.enabled
+            ? 'PAUSED'
+            : verifiedContribution >= unlockedRewards * 2
+              ? 'PROFITABLE'
+              : 'OPTIMIZE',
+        };
+      }),
+    };
+  }
+
+  /**
+   * POST /admin/growth/social/campaigns
+   * Create or update a social mission campaign configuration.
+   */
+  @Post('growth/social/campaigns')
+  @Permissions(AdminPermission.OPERATIONS_CONTROL)
+  async upsertSocialCampaign(@Body() body: any) {
+    return this.prisma.socialMission.upsert({
+      where: { code: body.code },
+      update: {
+        name: body.name,
+        description: body.description,
+        tier: body.tier,
+        channel: body.channel || 'ALL',
+        virtualRewardCrystals: Number(body.virtualRewardCrystals || 0),
+        virtualRewardXp: Number(body.virtualRewardXp || 0),
+        maxRewardUsdt: body.maxRewardUsdt ? new Prisma.Decimal(body.maxRewardUsdt) : undefined,
+        requiredContributionUsdt: body.requiredContributionUsdt ? new Prisma.Decimal(body.requiredContributionUsdt) : undefined,
+        rewardRate: body.rewardRate ? new Prisma.Decimal(body.rewardRate) : undefined,
+        platformMarginBufferUsdt: body.platformMarginBufferUsdt ? new Prisma.Decimal(body.platformMarginBufferUsdt) : undefined,
+        enabled: body.enabled !== undefined ? body.enabled : true,
+      },
+      create: {
+        code: body.code,
+        name: body.name,
+        description: body.description,
+        tier: body.tier || 'ENGAGEMENT',
+        channel: body.channel || 'ALL',
+        virtualRewardCrystals: Number(body.virtualRewardCrystals || 0),
+        virtualRewardXp: Number(body.virtualRewardXp || 0),
+        maxRewardUsdt: new Prisma.Decimal(body.maxRewardUsdt || 0),
+        requiredContributionUsdt: new Prisma.Decimal(body.requiredContributionUsdt || 0),
+        rewardRate: new Prisma.Decimal(body.rewardRate || 0.2),
+        platformMarginBufferUsdt: new Prisma.Decimal(body.platformMarginBufferUsdt || 0),
         enabled: body.enabled !== undefined ? body.enabled : true,
       },
     });

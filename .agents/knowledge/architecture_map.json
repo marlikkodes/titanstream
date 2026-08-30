@@ -1,0 +1,73 @@
+{
+  "primary_stack": [
+    "Node.js/TypeScript",
+    "pnpm-monorepo",
+    "Python"
+  ],
+  "subsystems": {
+    "apps": {
+      "path": "apps",
+      "type": "core_directory",
+      "components": [
+        "web"
+      ]
+    },
+    "services": {
+      "path": "services",
+      "type": "core_directory",
+      "components": [
+        "api",
+        "worker"
+      ]
+    },
+    "packages": {
+      "path": "packages",
+      "type": "core_directory",
+      "components": [
+        "config",
+        "types"
+      ]
+    },
+    "libs": {
+      "path": "libs",
+      "type": "core_directory",
+      "components": [
+        "blockchain"
+      ]
+    },
+    "infrastructure": {
+      "path": "infrastructure",
+      "type": "core_directory",
+      "components": [
+        "nginx",
+        "docker"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "type": "core_directory",
+      "components": [
+        "__pycache__"
+      ]
+    },
+    "tests": {
+      "path": "tests",
+      "type": "core_directory",
+      "components": [
+        "integration",
+        "node_modules",
+        "agent_os"
+      ]
+    }
+  },
+  "design_patterns": [
+    "Monorepo",
+    "Microservices/Modular Apps",
+    "Event/Message-Driven"
+  ],
+  "entrypoints": [
+    "apps/",
+    "services/",
+    "scripts/"
+  ]
+}

@@ -1,0 +1,215 @@
+{
+  "mission_id": "mission_1788112654_f3f70f",
+  "objective": "Implement auth token refresh",
+  "status": "COMPLETED",
+  "current_phase": "DELIVERY",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 2550,
+  "tasks": {
+    "task_plan_1c32ac": {
+      "id": "task_plan_1c32ac",
+      "title": "Architecture & Analysis for: Implement auth token refresh",
+      "description": "Analyze requirements and plan implementation for Implement auth token refresh",
+      "agent_role": "security_engineer",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_1c32ac",
+        "objective": "Implement auth token refresh",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_1c32ac",
+        "agent_role": "security_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "security_engineer completed Architecture & Analysis for: Implement auth token refresh",
+        "tokens_consumed": 850,
+        "duration_seconds": 5.7220458984375e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788112655.7890804,
+      "completed_at": 1788112655.790051
+    },
+    "task_backend_engineer_eb8993": {
+      "id": "task_backend_engineer_eb8993",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Implement auth token refresh",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_1c32ac"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_backend_engineer_eb8993",
+        "objective": "Implement auth token refresh",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_1c32ac"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_backend_engineer_eb8993",
+        "agent_role": "backend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "backend_engineer completed Backend Engineer Implementation",
+        "tokens_consumed": 850,
+        "duration_seconds": 2.384185791015625e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788112655.7891226,
+      "completed_at": 1788112655.7900636
+    },
+    "task_sec_7939d8": {
+      "id": "task_sec_7939d8",
+      "title": "Security & Red-Team Code Audit",
+      "description": "Audit changes for secrets, vulnerabilities, and architectural integrity",
+      "agent_role": "security_engineer",
+      "dependencies": [
+        "task_backend_engineer_eb8993"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_sec_7939d8",
+        "objective": "Security Audit",
+        "scope": [
+          "security",
+          "audit"
+        ],
+        "constraints": [
+          "zero secret leaks",
+          "OWASP compliance"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_backend_engineer_eb8993"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_sec_7939d8",
+        "agent_role": "security_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "security_engineer completed Security & Red-Team Code Audit",
+        "tokens_consumed": 850,
+        "duration_seconds": 1.6689300537109375e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788112655.7891412,
+      "completed_at": 1788112655.7900708
+    }
+  },
+  "completed_tasks": [
+    "task_plan_1c32ac",
+    "task_backend_engineer_eb8993",
+    "task_sec_7939d8"
+  ],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {
+    "typecheck": true,
+    "lint": true,
+    "unit_tests": true,
+    "security": true,
+    "red_team": true
+  },
+  "active_branches": [
+    "agent/mission_1788112654_f3f70f"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788112654.6796646,
+  "updated_at": 1788112655.7952082
+}

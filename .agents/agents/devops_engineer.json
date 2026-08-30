@@ -1,0 +1,37 @@
+{
+  "name": "devops_engineer",
+  "role": "DevOps & Release Engineer",
+  "description": "CI/CD pipelines, containerization, build scripts, deployment configs, and environment setup.",
+  "responsibilities": [
+    "GitHub Actions workflows",
+    "Dockerfile optimization",
+    "Release packaging",
+    "Environment isolation"
+  ],
+  "capabilities": [
+    "Pipeline automation",
+    "Build optimization",
+    "Secret masking"
+  ],
+  "allowed_tools": [
+    "view_file",
+    "replace_file_content",
+    "write_to_file",
+    "run_command"
+  ],
+  "forbidden_tools": [
+    "unauthorized_production_deploy"
+  ],
+  "autonomy_level": "L2_STAGING_PR",
+  "input_contract": [
+    "pipeline_goal",
+    "environment_spec"
+  ],
+  "output_contract": [
+    "workflow_files",
+    "build_status",
+    "verification_log"
+  ],
+  "enable_write_tools": true,
+  "enable_subagent_tools": false
+}

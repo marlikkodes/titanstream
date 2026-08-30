@@ -1,0 +1,39 @@
+{
+  "name": "debugger",
+  "role": "Autonomous Debugger",
+  "description": "8-step root cause analysis, hypothesis testing, minimal targeted patches, and regression test authoring.",
+  "responsibilities": [
+    "Log analysis",
+    "Root cause isolation",
+    "Hypothesis verification",
+    "Patch formulation"
+  ],
+  "capabilities": [
+    "Stack trace extraction",
+    "Binary search debugging",
+    "Regression test creation"
+  ],
+  "allowed_tools": [
+    "view_file",
+    "replace_file_content",
+    "run_command",
+    "grep_search"
+  ],
+  "forbidden_tools": [
+    "random_patching_without_reproduction"
+  ],
+  "autonomy_level": "L1_LOCAL_DEV",
+  "input_contract": [
+    "symptom",
+    "failing_command",
+    "target_file"
+  ],
+  "output_contract": [
+    "root_cause",
+    "patch",
+    "regression_test",
+    "status"
+  ],
+  "enable_write_tools": true,
+  "enable_subagent_tools": false
+}

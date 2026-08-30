@@ -14,6 +14,8 @@ import { GrowthNotificationService } from './growth-notification.service';
 import { TrustCenterService } from './trust-center.service';
 import { PrismaService } from '../../database/prisma.service';
 import { GrowthAnalyticsService } from './growth-analytics.service';
+import { SocialMissionService } from './social-mission.service';
+import { SocialAttributionService } from './social-attribution.service';
 
 @Controller('growth')
 @UseGuards(AuthGuard)
@@ -31,6 +33,8 @@ export class GrowthController {
     private readonly notificationService: GrowthNotificationService,
     private readonly trustCenterService: TrustCenterService,
     private readonly growthAnalyticsService: GrowthAnalyticsService,
+    private readonly socialMissionService: SocialMissionService,
+    private readonly socialAttributionService: SocialAttributionService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -479,5 +483,80 @@ export class GrowthController {
   ) {
     const tgUserId = await this.resolveTelegramUserId(userId);
     return this.notificationService.updatePreferences(tgUserId, body);
+  }
+
+  // ============================================================
+  // SOCIAL GROWTH ECONOMY & VALUE BANK
+  // ============================================================
+
+  /**
+   * GET /growth/social/missions
+   * Fetch all active social missions with live over-settlement progress.
+   */
+  @Get('social/missions')
+  async getSocialMissions(@CanonicalUserId() userId: string) {
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const missions = await this.socialMissionService.getSocialMissions(tgUserId);
+    return { success: true, missions };
+  }
+
+  /**
+   * POST /growth/social/missions/:id/participate
+   * Enroll user in social mission and generate tracking code.
+   */
+  @Post('social/missions/:id/participate')
+  async participateInSocialMission(
+    @CanonicalUserId() userId: string,
+    @Param('id') missionId: string,
+  ) {
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const participation = await this.socialMissionService.participateInMission(tgUserId, missionId);
+    return { success: true, participation };
+  }
+
+  /**
+   * POST /growth/social/missions/:id/claim-virtual
+   * Claim instant virtual rewards (Crystals / XP) for direct engagement (Economy A).
+   */
+  @Post('social/missions/:id/claim-virtual')
+  async claimVirtualReward(
+    @CanonicalUserId() userId: string,
+    @Param('id') missionId: string,
+  ) {
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    return this.socialMissionService.claimVirtualReward(tgUserId, missionId);
+  }
+
+  /**
+   * GET /growth/social/value-bank
+   * Fetch analytical Value Bank summary (Verified Value, Unlocked Rewards, Retained Margin).
+   */
+  @Get('social/value-bank')
+  async getUserValueBank(@CanonicalUserId() userId: string) {
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const valueBank = await this.socialMissionService.getUserValueBank(tgUserId);
+    return { success: true, valueBank };
+  }
+
+  /**
+   * POST /growth/social/track
+   * Track visitor attribution on shared link.
+   */
+  @Post('social/track')
+  async trackSocialAttribution(
+    @CanonicalUserId() userId: string,
+    @Body() body: { trackingCode: string; channel?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string },
+  ) {
+    const tgUserId = await this.resolveTelegramUserId(userId);
+    const attribution = await this.socialAttributionService.recordAttribution({
+      trackingCode: body.trackingCode,
+      refereeId: tgUserId,
+      channel: body.channel,
+      utmSource: body.utmSource,
+      utmMedium: body.utmMedium,
+      utmCampaign: body.utmCampaign,
+      stage: 'CLICK',
+    });
+    return { success: true, attribution };
   }
 }
