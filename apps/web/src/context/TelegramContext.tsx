@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
