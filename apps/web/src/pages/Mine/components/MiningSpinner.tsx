@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useMiningStore } from '../../../store/useMiningStore';
 import { useWalletStore } from '../../../store/useWalletStore';
-import { useQuestStore } from '../../../store/useQuestStore';
 import { useTreasuryStore } from '../../../store/useTreasuryStore';
 import { useHaptics } from '../../../hooks/useHaptics';
 import { Flame, Thermometer, ChevronLeft, ChevronRight, Lock, Clock, Sparkles, CheckCircle, Zap } from 'lucide-react';
@@ -405,16 +404,6 @@ export const MiningSpinner = React.memo(() => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left - rect.width / 2;
     const y = e.clientY - rect.top - rect.height / 2;
-
-    // Increment Taps category progress for Quest Store
-    useQuestStore.getState().incrementCategoryProgress('Taps', 1);
-
-    // Dynamic trust score from user actions: +1 for every 50 taps
-    const newTapsCount = tapsToday + 1;
-    if (newTapsCount % 50 === 0) {
-      useTreasuryStore.getState().adjustTrustScore(1);
-      showToast("Trust Score increased! Thank you for maintaining active compute operations. 🛡️", "info");
-    }
 
     const newParticle: Particle = {
       id: Date.now() + Math.random(),

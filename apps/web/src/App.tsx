@@ -125,8 +125,6 @@ function MainApp() {
           useMiningStore.getState().fetchMiningState(),
           useTreasuryStore.getState().fetchTreasuryState(),
         ]);
-        const { useQuestStore } = await import('./store/useQuestStore');
-        useQuestStore.getState().checkDailyLoginStreak();
       } catch (err) {
         console.warn('[SYNC] Periodic background synchronization notice:', err);
       }

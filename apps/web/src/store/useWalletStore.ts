@@ -95,11 +95,6 @@ export const useWalletStore = create<WalletState>()(
       if (!changed) return state;
 
       const next = { ...state, ...updates };
-      if (typeof updates.usdtBalance === 'number') {
-        import('./useQuestStore').then(({ useQuestStore }) => {
-          useQuestStore.getState().syncBalanceProgress(updates.usdtBalance!);
-        }).catch(() => undefined);
-      }
       return next;
     });
   },
@@ -266,12 +261,7 @@ export const useWalletStore = create<WalletState>()(
       if (session.status === 'COMPLETED') {
         get().fetchBalanceFromEngine();
         get().fetchSettlementHistory();
-        
-        const depVal = parseFloat(session.expectedCryptoAmount || '0');
-        if (depVal > 0) {
-          useTreasuryStore.getState().adjustTreasuryStats('DEPOSIT', depVal);
-          useTreasuryStore.getState().adjustTrustScore(3);
-        }
+        useTreasuryStore.getState().fetchTreasuryState();
       }
       return session;
     } catch (err: any) {

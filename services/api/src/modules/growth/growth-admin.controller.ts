@@ -53,6 +53,16 @@ export class GrowthAdminController {
   }
 
   /**
+   * GET /admin/growth/attribution/health
+   * Diagnostic health of attribution graph and cost estimations.
+   */
+  @Get('growth/attribution/health')
+  @Permissions(AdminPermission.REFERRAL_READ)
+  async getAttributionHealth() {
+    return this.growthAnalyticsService.getAttributionHealthMetrics();
+  }
+
+  /**
    * GET /admin/rewards
    * Admin view of all rewards.
    */

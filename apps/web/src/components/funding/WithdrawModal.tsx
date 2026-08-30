@@ -6,6 +6,7 @@ import { useTelegram } from '../../context/TelegramContext';
 import { useCountryStore } from '../../store/useCountryStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useGrowthStore } from '../../store/useGrowthStore';
+import { useNavigationStore } from '../../store/useNavigationStore';
 import { withdrawalService, type WithdrawalSession } from '../../services/withdrawalService';
 import { showToast } from '../Toast';
 import { CurrencyDisplay } from '../DualCurrencyDisplay';
@@ -435,13 +436,39 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                       </div>
                     )}
 
-                    {/* Disabled Reason / Requirement Warning */}
-                    {disabledReason && (
+                    {/* Qualification Network Gate Banner */}
+                    {isReferralLocked ? (
+                      <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs space-y-2.5">
+                        <div className="flex items-center justify-between font-extrabold">
+                          <div className="flex items-center gap-1.5">
+                            <Users size={14} className="text-amber-400" />
+                            <span>Withdrawal Network Gate</span>
+                          </div>
+                          <span className="font-mono text-xs bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30">
+                            {qualification?.withdrawal?.qualifiedCount || 0} / 5 Qualified
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-text-secondary leading-relaxed">
+                          To maintain platform liquidity integrity, withdrawals unlock after you have 5 qualified referrals who have completed their first settlement ({Math.max(0, 5 - (qualification?.withdrawal?.qualifiedCount || 0))} remaining).
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleResetModal();
+                            useNavigationStore.getState().setActiveTab('grow');
+                          }}
+                          className="press-feedback w-full py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-amber-500/30 transition-colors"
+                        >
+                          <Users size={14} />
+                          <span>Grow My Network (Invite Friends)</span>
+                        </button>
+                      </div>
+                    ) : disabledReason ? (
                       <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[11px] font-bold flex items-start gap-2">
                         <AlertCircle size={15} className="shrink-0 mt-0.5" />
                         <span>{disabledReason}</span>
                       </div>
-                    )}
+                    ) : null}
 
                     {/* Submit Button */}
                     <button

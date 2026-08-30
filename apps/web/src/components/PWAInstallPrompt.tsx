@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Smartphone, Monitor, Apple, X, Download, Sparkles } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
-import { useQuestStore } from '../store/useQuestStore';
 import { showToast } from './Toast';
 
 interface PWAInstallPromptProps {
@@ -21,7 +20,6 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [deviceType, setDeviceType] = useState<'ios' | 'android' | 'desktop' | 'unknown'>('unknown');
   const { hapticFeedback } = useTelegram();
-  const { incrementProgress } = useQuestStore();
 
   useEffect(() => {
     // Detect device type
@@ -60,9 +58,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
       
       if (outcome === 'accepted') {
         onInstall();
-        // Reward user for completing the quest
-        incrementProgress('q12', 1);
-        showToast('App installed successfully! +10 Crystals', 'success');
+        showToast('App added to home screen successfully!', 'success');
       } else {
         showToast('Install cancelled', 'info');
       }
@@ -70,20 +66,8 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
       setDeferredPrompt(null);
     } else {
       // Manual install instructions (iOS/Desktop)
-      if (deviceType === 'ios') {
-        // For iOS, we can't programmatically trigger install
-        // Just show instructions and mark as complete when user confirms
-        onInstall();
-        // Reward user for completing the quest
-        incrementProgress('q12', 1);
-        showToast('Follow the instructions to add to home screen. +10 Crystals', 'success');
-      } else {
-        // Desktop - show instructions
-        onInstall();
-        // Reward user for completing the quest
-        incrementProgress('q12', 1);
-        showToast('Follow the instructions to install the app. +10 Crystals', 'success');
-      }
+      onInstall();
+      showToast('Follow instructions to add to home screen.', 'info');
     }
   };
 

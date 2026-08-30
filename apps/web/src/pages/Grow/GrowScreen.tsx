@@ -12,11 +12,11 @@ import { EducationCard } from '../../components/EducationCard';
 import { CurrencyDisplay } from '../../components/DualCurrencyDisplay';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  REGISTERED:  { label: 'Joined',      color: 'text-text-secondary',  icon: <Clock size={10} /> },
-  ONBOARDED:   { label: 'Joined',      color: 'text-ton-blue',        icon: <CheckCircle size={10} /> },
-  QUALIFIED:   { label: 'Active',      color: 'text-usdt-green',      icon: <CheckCircle size={10} /> },
-  PAYING:      { label: 'Active',      color: 'text-usdt-green',      icon: <CheckCircle size={10} /> },
-  REWARDED:    { label: 'Reward Sent', color: 'text-gold',            icon: <CheckCircle size={10} /> },
+  REGISTERED:  { label: 'Registered',  color: 'text-text-secondary',  icon: <Clock size={10} /> },
+  ONBOARDED:   { label: 'Onboarded',   color: 'text-ton-blue',        icon: <CheckCircle size={10} /> },
+  QUALIFIED:   { label: 'Qualified',   color: 'text-cyan-400',        icon: <CheckCircle size={10} /> },
+  PAYING:      { label: 'Paying',      color: 'text-usdt-green',      icon: <CheckCircle size={10} /> },
+  REWARDED:    { label: 'Rewarded',    color: 'text-gold',            icon: <CheckCircle size={10} /> },
   CREATED:     { label: 'Invited',     color: 'text-text-tertiary',   icon: <AlertCircle size={10} /> },
 };
 
@@ -236,16 +236,18 @@ export const GrowScreen: React.FC = () => {
         )}
       </div>
 
-      {/* DISCOVERY SECTION — Growth Analytics (10%) */}
-      <div className="web3-card rounded-2xl p-4 border border-white/10 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
-          <BarChart3 size={20} />
-        </div>
-        <div>
-          <h3 className="text-xs font-black text-text-primary">Grow & Earn Together</h3>
-          <p className="text-[10px] text-text-secondary leading-relaxed">
-            Invite friends, track their achievements, and earn referral bonuses when they operate their machines.
-          </p>
+      {/* DISCOVERY SECTION — Growth Analytics & Qualification Rules (10%) */}
+      <div className="web3-card rounded-2xl p-4 border border-cyan-500/20 bg-cyan-950/20 space-y-2">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+            <BarChart3 size={20} />
+          </div>
+          <div>
+            <h3 className="text-xs font-black text-text-primary">How Referral Rewards Work</h3>
+            <p className="text-[10px] text-text-secondary leading-relaxed">
+              When a friend joins with your link, they start as <strong className="text-text-primary">Registered</strong>. Once they complete their first mobile money settlement or machine setup, they become <strong className="text-cyan-400">Qualified</strong> and release your referral reward!
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -333,4 +333,41 @@ export class GrowthAnalyticsService {
       topEconomicReferrers: topEconomicReferrers.sort((a, b) => b.netContributionUsdt - a.netContributionUsdt),
     };
   }
+
+  /**
+   * Diagnostic health of user attribution graph and economic event cost basis.
+   */
+  async getAttributionHealthMetrics() {
+    const totalUsers = await this.prisma.user.count();
+    const attributedUsers = await this.prisma.referralAnalytics.count({
+      where: { campaign: { not: null } },
+    });
+    const referralLinkedUsers = await this.prisma.referralRelationship.count();
+    const unattributedUsers = Math.max(0, totalUsers - attributedUsers);
+
+    const exactCostEvents = await this.prisma.growthContribution.count({
+      where: { costBasis: 'EXACT_LEDGER' },
+    });
+    const estimatedCostEvents = await this.prisma.growthContribution.count({
+      where: { isCostEstimated: true },
+    });
+    const totalEconomicEvents = exactCostEvents + estimatedCostEvents;
+
+    const unassignedContributions = await this.prisma.growthContribution.count({
+      where: { campaignCode: null, referralRelationshipId: null },
+    });
+
+    return {
+      totalUsers,
+      attributedUsers,
+      unattributedUsers,
+      referralLinkedUsers,
+      attributionCoveragePercent: totalUsers > 0 ? Number(((attributedUsers / totalUsers) * 100).toFixed(1)) : 100,
+      totalEconomicEvents,
+      exactCostEvents,
+      estimatedCostEvents,
+      unassignedContributions,
+      graphHealthStatus: unassignedContributions === 0 ? 'HEALTHY' : 'OPTIMIZATION_REQUIRED',
+    };
+  }
 }

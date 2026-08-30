@@ -70,7 +70,6 @@ interface TreasuryState {
   resetSeason: () => void;
   simulateOperatorTrade: (operatorName: string, amount: number) => void;
   adjustTreasuryStats: (type: 'DEPOSIT' | 'WITHDRAW' | 'BOOST', amount: number) => void;
-  adjustTrustScore: (delta: number) => void;
 }
 
 const INITIAL_MISSIONS: MissionItem[] = [
@@ -314,11 +313,5 @@ export const useTreasuryStore = create<TreasuryState>((set, get) => ({
         operatorVolume: newVolume,
       };
     });
-  },
-
-  adjustTrustScore: (delta) => {
-    set((state) => ({
-      trustScore: Math.min(100, Math.max(0, state.trustScore + delta)),
-    }));
   },
 }));

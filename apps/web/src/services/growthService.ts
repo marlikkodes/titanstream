@@ -323,4 +323,94 @@ export const growthService = {
     const res = await api.get('/admin/growth/conversion-funnel');
     return res.data.data;
   },
+
+  async getGrowthEconomyMetrics(): Promise<GrowthEconomyMetrics> {
+    const res = await api.get('/admin/growth/economics');
+    return res.data.data ?? res.data;
+  },
+
+  async getCampaignsRoi(): Promise<{
+    timestamp: string;
+    campaigns: CampaignRoiItem[];
+    overallGrowthRoi: number;
+    netGrowthContributionUsdt: number;
+  }> {
+    const res = await api.get('/admin/growth/campaigns/roi');
+    return res.data.data ?? res.data;
+  },
+
+  async getAttributionHealth(): Promise<AttributionHealthMetrics> {
+    const res = await api.get('/admin/growth/attribution/health');
+    return res.data.data ?? res.data;
+  },
 };
+
+export type CostBasis = 'EXACT_LEDGER' | 'ESTIMATED_RAIL_35PCT' | 'ESTIMATED_HARDWARE_70PCT' | 'ESTIMATED' | 'ZERO_COST';
+export type EconomicStatus = 'PROFITABLE' | 'OPTIMIZE' | 'UNPROFITABLE';
+
+export interface CampaignRoiItem {
+  campaignCode: string;
+  title: string;
+  totalAcquiredUsers: number;
+  totalPayingUsers: number;
+  grossRevenueUsdt: number;
+  directCostUsdt: number;
+  rewardSpendUsdt: number;
+  netContributionUsdt: number;
+  incrementalContributionUsdt: number;
+  cacUsdt: number;
+  ltvUsdt: number;
+  paybackPeriodDays: number | null;
+  roi: number;
+  status: EconomicStatus;
+}
+
+export interface ChannelBreakdownItem {
+  channel: string;
+  userCount: number;
+  grossRevenueUsdt: number;
+  rewardSpendUsdt: number;
+  netContributionUsdt: number;
+  roi: number;
+}
+
+export interface TopEconomicReferrer {
+  telegramUserId: string;
+  username: string;
+  downlineCount: number;
+  networkGrossRevenueUsdt: number;
+  rewardsEarnedUsdt: number;
+  netContributionUsdt: number;
+  networkRoi: number;
+}
+
+export interface CostBreakdown {
+  exactDisbursedRewardsUsdt: number;
+  estimatedRailCostsUsdt: number;
+  estimatedHardwareCostsUsdt: number;
+}
+
+export interface GrowthEconomyMetrics {
+  totalGrossRevenueUsdt: number;
+  totalDirectCostUsdt: number;
+  totalRewardSpendUsdt: number;
+  netGrowthContributionUsdt: number;
+  overallGrowthRoi: number;
+  costBreakdown: CostBreakdown;
+  campaigns: CampaignRoiItem[];
+  channelBreakdown: ChannelBreakdownItem[];
+  topEconomicReferrers: TopEconomicReferrer[];
+}
+
+export interface AttributionHealthMetrics {
+  totalUsers: number;
+  attributedUsers: number;
+  unattributedUsers: number;
+  referralLinkedUsers: number;
+  attributionCoveragePercent: number;
+  totalEconomicEvents: number;
+  exactCostEvents: number;
+  estimatedCostEvents: number;
+  unassignedContributions: number;
+  graphHealthStatus: 'HEALTHY' | 'OPTIMIZATION_REQUIRED';
+}

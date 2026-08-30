@@ -36,7 +36,7 @@ export const BoostScreen: React.FC = () => {
   const { preferLocalCurrency } = useSettingsStore();
   const { hapticFeedback } = useTelegram();
   const { transactions } = useWalletStore();
-  const { adjustTreasuryStats, adjustTrustScore } = useTreasuryStore();
+  const { fetchTreasuryState } = useTreasuryStore();
 
   // Onboarding education modal state
   const [showEducationModal, setShowEducationModal] = useState(false);
@@ -104,9 +104,8 @@ export const BoostScreen: React.FC = () => {
           fetchUserMachines(),
           fetchMiningState(),
           useWalletStore.getState().fetchBalanceFromEngine(),
+          fetchTreasuryState(),
         ]);
-        adjustTreasuryStats('BOOST', selectedMachine.priceUsdt);
-        adjustTrustScore(5);
 
         // Transition to Memorable Machine Commissioning Ceremony
         setCheckoutStep('COMMISSION');
@@ -149,10 +148,8 @@ export const BoostScreen: React.FC = () => {
         fetchUserMachines(),
         fetchMiningState(),
         useWalletStore.getState().fetchBalanceFromEngine(),
+        fetchTreasuryState(),
       ]);
-
-      adjustTreasuryStats('BOOST', selectedMachine.priceUsdt);
-      adjustTrustScore(5);
 
       // Create transaction record
       const newTx = {

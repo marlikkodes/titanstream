@@ -36,7 +36,6 @@ interface ReferralState {
 
   fetchReferrals: () => Promise<void>;
   attachPendingReferral: () => Promise<void>;
-  tickEarnings: (usdtDelta: number, tonDelta: number) => void;
 }
 
 const getFallbackReferralData = () => {
@@ -82,13 +81,6 @@ export const useReferralStore = create<ReferralState>((set, get) => {
         const boost = Number((1 + (summary.totalInvited || 0) * 0.02).toFixed(2));
 
         const count = summary.totalInvited || 0;
-        try {
-          const { useQuestStore } = await import('./useQuestStore');
-          useQuestStore.getState().syncReferralProgress(count);
-        } catch (e) {
-          // ignore circular import guard
-        }
-
         const rawCode = summary.referralCode || currentFallback.code;
         const cleanCode = extractReferralCode(rawCode);
         const isTgApp = Boolean((window as any).Telegram?.WebApp?.initData);
@@ -165,11 +157,5 @@ export const useReferralStore = create<ReferralState>((set, get) => {
         sessionStorage.removeItem('pending_attribution');
       }
     },
-
-    tickEarnings: (usdtDelta, tonDelta) =>
-      set((state) => ({
-        earnedUsdt: state.earnedUsdt + usdtDelta,
-        earnedTon: state.earnedTon + tonDelta,
-      })),
   };
 });

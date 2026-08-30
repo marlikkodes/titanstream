@@ -25,7 +25,6 @@ import {
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useGameStore } from '../../store/useGameStore';
 import { useWalletStore } from '../../store/useWalletStore';
-import { useQuestStore } from '../../store/useQuestStore';
 import { gamesService, type GameCatalogItem, type GameEndResult, type GameStartSession } from '../../services/gamesService';
 import { showToast } from '../../components/Toast';
 import { RouletteGame } from './components/RouletteGame';
@@ -86,7 +85,6 @@ export const GamesScreen: React.FC = () => {
   const { closeGames } = useNavigationStore();
   const store = useGameStore();
   const wallet = useWalletStore();
-  const { incrementProgress, incrementCategoryProgress } = useQuestStore();
 
   const [activeGame, setActiveGame] = useState<GameCatalogItem | null>(null);
   const [pendingEntry, setPendingEntry] = useState<GameCatalogItem | null>(null);
@@ -139,12 +137,6 @@ export const GamesScreen: React.FC = () => {
       store.refreshBalance();
       store.loadHub();
       store.loadLeaderboard({ gameId: activeGame.gameId, period, scope });
-      incrementCategoryProgress('Games', 1);
-      if (activeGame.code === 'ROULETTE' || activeGame.gameId === 'crypto-roulette') {
-        useQuestStore.getState().trackGameSpin();
-      } else if (activeGame.code === 'HOOPS' || activeGame.gameId === 'hoop-masters') {
-        useQuestStore.getState().trackHoopScore(Math.max(1, endResult.score || 1));
-      }
     }
   };
 

@@ -2,6 +2,7 @@ import type React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '@/services/api';
+import { growthService, type GrowthEconomyMetrics, type AttributionHealthMetrics } from '@/services/growthService';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { showToast } from '@/components/Toast';
 import {
@@ -25,6 +26,9 @@ import {
   Zap,
   Check,
   ChevronRight,
+  BarChart3,
+  Activity,
+  Info,
 } from 'lucide-react';
 
 interface RewardItem {
@@ -51,7 +55,10 @@ interface ReferralRelationship {
 }
 
 export const GrowthAdminPage: React.FC = () => {
-  const [tab, setTab] = useState<'REWARDS' | 'REFERRALS' | 'FRAUD' | 'RULES'>('REWARDS');
+  const [tab, setTab] = useState<'ECONOMICS' | 'REWARDS' | 'REFERRALS' | 'FRAUD' | 'RULES'>('ECONOMICS');
+  const [economics, setEconomics] = useState<GrowthEconomyMetrics | null>(null);
+  const [attributionHealth, setAttributionHealth] = useState<AttributionHealthMetrics | null>(null);
+  const [economicsError, setEconomicsError] = useState<string | null>(null);
   const [rewards, setRewards] = useState<RewardItem[]>([]);
   const [referrals, setReferrals] = useState<ReferralRelationship[]>([]);
   const [fraudData, setFraudData] = useState<any>(null);
@@ -68,6 +75,27 @@ export const GrowthAdminPage: React.FC = () => {
   const [ruleName, setRuleName] = useState('Direct Referral USDT Commission');
   const [ruleAmount, setRuleAmount] = useState('5.0');
   const [submittingRule, setSubmittingRule] = useState(false);
+
+  const fetchEconomics = useCallback(async () => {
+    setLoading(true);
+    setEconomicsError(null);
+    try {
+      const [ecoData, healthData] = await Promise.all([
+        growthService.getGrowthEconomyMetrics().catch(() => null),
+        growthService.getAttributionHealth().catch(() => null),
+      ]);
+      if (!ecoData) {
+        setEconomicsError('Unable to load canonical growth economics data from backend.');
+      } else {
+        setEconomics(ecoData);
+      }
+      setAttributionHealth(healthData);
+    } catch (err: any) {
+      setEconomicsError(err?.message || 'Failed to fetch economics metrics');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const fetchRewards = useCallback(async () => {
     setLoading(true);
@@ -108,10 +136,11 @@ export const GrowthAdminPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (tab === 'ECONOMICS') fetchEconomics();
     if (tab === 'REWARDS') fetchRewards();
     if (tab === 'REFERRALS') fetchReferrals();
     if (tab === 'FRAUD') fetchFraudCheck();
-  }, [tab, fetchRewards, fetchReferrals, fetchFraudCheck]);
+  }, [tab, fetchEconomics, fetchRewards, fetchReferrals, fetchFraudCheck]);
 
   const handleApproveReward = async (id: string) => {
     setApprovingId(id);
@@ -179,19 +208,19 @@ export const GrowthAdminPage: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black uppercase tracking-widest text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded border border-usdt-green/30">
-                  Growth & Tokenomics
+                  Growth Economy Control Plane
                 </span>
                 <span className="text-xs text-text-tertiary">·</span>
                 <span className="text-xs text-text-secondary font-mono flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${pendingRewards.length > 0 ? 'bg-amber-400 animate-pulse' : 'bg-usdt-green'}`} />
-                  {pendingRewards.length > 0 ? `${pendingRewards.length} Claims Awaiting Authorization` : 'Queue Clear'}
+                  <span className="w-2 h-2 rounded-full bg-usdt-green" />
+                  Double-Entry Ledger Verified
                 </span>
               </div>
               <h1 className="text-xl font-black text-text-primary tracking-tight mt-1">
-                Growth & Referral Administration
+                Mission Control — Growth Economy
               </h1>
               <p className="text-xs text-text-secondary mt-0.5">
-                Authoritative referral tree tracking, double-entry milestone disbursements, and graph cycle anti-fraud radar.
+                Economic value attribution, campaign ROI governance, cost basis transparency, and referral graph telemetry.
               </p>
             </div>
           </div>
@@ -199,6 +228,7 @@ export const GrowthAdminPage: React.FC = () => {
           <div className="flex items-center gap-2 self-end lg:self-center">
             <button
               onClick={() => {
+                if (tab === 'ECONOMICS') fetchEconomics();
                 if (tab === 'REWARDS') fetchRewards();
                 if (tab === 'REFERRALS') fetchReferrals();
                 if (tab === 'FRAUD') fetchFraudCheck();
@@ -255,6 +285,16 @@ export const GrowthAdminPage: React.FC = () => {
       {/* ─── 2. NAVIGATION TABS ────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto no-scrollbar">
         <button
+          onClick={() => setTab('ECONOMICS')}
+          className={`px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+            tab === 'ECONOMICS'
+              ? 'bg-usdt-green text-app-bg shadow-lg shadow-usdt-green/20'
+              : 'bg-control-bg text-text-secondary border border-white/10 hover:text-text-primary'
+          }`}
+        >
+          Economics & ROI
+        </button>
+        <button
           onClick={() => setTab('REWARDS')}
           className={`px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
             tab === 'REWARDS'
@@ -296,7 +336,297 @@ export const GrowthAdminPage: React.FC = () => {
         </button>
       </div>
 
-      {/* ─── 3. TAB 1: REWARDS QUEUE ─────────────────────────────────────────── */}
+      {/* ─── 3. TAB 1: ECONOMICS & ROI COCKPIT ─────────────────────────────────── */}
+      {tab === 'ECONOMICS' && (
+        <div className="space-y-6">
+          {loading && !economics ? (
+            <div className="p-8 text-center text-text-secondary font-mono text-xs flex items-center justify-center gap-2">
+              <RefreshCw size={16} className="animate-spin text-usdt-green" />
+              Loading Growth Economy metrics from server...
+            </div>
+          ) : economicsError ? (
+            <div className="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs space-y-2">
+              <div className="font-bold flex items-center gap-2">
+                <AlertTriangle size={16} /> Error Loading Growth Economy Data
+              </div>
+              <div>{economicsError}</div>
+              <button
+                onClick={fetchEconomics}
+                className="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 font-bold hover:bg-rose-500/30 cursor-pointer"
+              >
+                Retry
+              </button>
+            </div>
+          ) : economics ? (
+            <>
+              {/* Executive Summary Metric Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="p-4 rounded-2xl bg-card-bg border border-white/10 space-y-1">
+                  <span className="text-[10px] font-bold uppercase text-text-tertiary">Gross Revenue</span>
+                  <div className="text-xl font-black font-mono text-text-primary">
+                    ${economics.totalGrossRevenueUsdt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <span className="text-[9px] font-bold uppercase text-cyan-400">Settlements & Machines</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-card-bg border border-white/10 space-y-1">
+                  <span className="text-[10px] font-bold uppercase text-text-tertiary">Direct Variable Costs</span>
+                  <div className="text-xl font-black font-mono text-rose-400">
+                    ${economics.totalDirectCostUsdt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    ESTIMATED BASIS
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-card-bg border border-white/10 space-y-1">
+                  <span className="text-[10px] font-bold uppercase text-text-tertiary">Incentive Spend</span>
+                  <div className="text-xl font-black font-mono text-amber-400">
+                    ${economics.totalRewardSpendUsdt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-usdt-green/15 text-usdt-green border border-usdt-green/30">
+                    EXACT LEDGER
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-card-bg border border-white/10 space-y-1">
+                  <span className="text-[10px] font-bold uppercase text-text-tertiary">Net Contribution</span>
+                  <div className={`text-xl font-black font-mono ${economics.netGrowthContributionUsdt >= 0 ? 'text-usdt-green' : 'text-rose-400'}`}>
+                    ${economics.netGrowthContributionUsdt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <span className="text-[9px] font-bold uppercase text-text-tertiary">Gross - Costs - Rewards</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-card-bg border border-white/10 space-y-1">
+                  <span className="text-[10px] font-bold uppercase text-text-tertiary">Growth ROI</span>
+                  <div className="text-xl font-black font-mono text-usdt-green">
+                    {economics.overallGrowthRoi}x
+                  </div>
+                  <span className="text-[9px] font-bold uppercase text-text-tertiary">Net / Reward Spend</span>
+                </div>
+              </div>
+
+              {/* Cost Basis Transparency Widget */}
+              <div className="p-4 rounded-2xl bg-card-bg border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-text-primary flex items-center gap-2">
+                    <Info size={14} className="text-cyan-400" /> Cost Basis Transparency & Estimation Disclosure
+                  </h3>
+                  <span className="text-[10px] font-mono text-text-tertiary">Analytical Accounting Invariant</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+                  <div className="p-3 rounded-xl bg-control-bg border border-white/5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-text-tertiary font-bold">Reward Incentives</span>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-usdt-green/20 text-usdt-green border border-usdt-green/30 font-sans font-bold">
+                        EXACT
+                      </span>
+                    </div>
+                    <div className="text-base font-extrabold text-text-primary">
+                      ${economics.costBreakdown?.exactDisbursedRewardsUsdt?.toFixed(2) || '0.00'} USDT
+                    </div>
+                    <div className="text-[10px] text-text-tertiary font-sans">
+                      Exact double-entry SYSTEM_ALLOCATION ledger disbursement.
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-control-bg border border-white/5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-text-tertiary font-bold">Payment Rail & FX</span>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/30 font-sans font-bold">
+                        ESTIMATED (35%)
+                      </span>
+                    </div>
+                    <div className="text-base font-extrabold text-text-primary">
+                      ${economics.costBreakdown?.estimatedRailCostsUsdt?.toFixed(2) || '0.00'} USDT
+                    </div>
+                    <div className="text-[10px] text-text-tertiary font-sans">
+                      Modeled 35% provider fee & FX liquidity cost assumption.
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-control-bg border border-white/5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-text-tertiary font-bold">Hardware Provisioning</span>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/30 font-sans font-bold">
+                        ESTIMATED (70%)
+                      </span>
+                    </div>
+                    <div className="text-base font-extrabold text-text-primary">
+                      ${economics.costBreakdown?.estimatedHardwareCostsUsdt?.toFixed(2) || '0.00'} USDT
+                    </div>
+                    <div className="text-[10px] text-text-tertiary font-sans">
+                      Modeled 70% COGS basis for machine cloud hardware deployment.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Attribution Health Diagnostic Panel */}
+              {attributionHealth && (
+                <div className="p-4 rounded-2xl bg-card-bg border border-white/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-text-primary flex items-center gap-2">
+                      <Activity size={14} className="text-usdt-green" /> Attribution Graph Health & Coverage
+                    </h3>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${attributionHealth.graphHealthStatus === 'HEALTHY' ? 'bg-usdt-green/15 text-usdt-green border-usdt-green/30' : 'bg-amber-500/15 text-amber-400 border-amber-500/30'}`}>
+                      {attributionHealth.graphHealthStatus}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+                    <div className="p-3 rounded-xl bg-control-bg border border-white/5">
+                      <span className="text-text-tertiary text-[10px] font-sans">Total Users</span>
+                      <div className="text-base font-extrabold text-text-primary mt-1">{attributionHealth.totalUsers}</div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-control-bg border border-white/5">
+                      <span className="text-text-tertiary text-[10px] font-sans">Attributed / Linked</span>
+                      <div className="text-base font-extrabold text-cyan-400 mt-1">{attributionHealth.attributedUsers} ({attributionHealth.attributionCoveragePercent}%)</div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-control-bg border border-white/5">
+                      <span className="text-text-tertiary text-[10px] font-sans">Total Economic Events</span>
+                      <div className="text-base font-extrabold text-usdt-green mt-1">{attributionHealth.totalEconomicEvents}</div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-control-bg border border-white/5">
+                      <span className="text-text-tertiary text-[10px] font-sans">Exact vs. Estimated Events</span>
+                      <div className="text-base font-extrabold text-text-primary mt-1">{attributionHealth.exactCostEvents} / {attributionHealth.estimatedCostEvents}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Campaign Performance Matrix Table */}
+              <div className="bg-card-bg rounded-3xl border border-white/10 overflow-hidden shadow-xl">
+                <div className="p-4 sm:p-5 border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-text-primary flex items-center gap-2">
+                      <TrendingUp size={16} className="text-usdt-green" /> Campaign Economics & ROI Matrix
+                    </h3>
+                    <p className="text-[11px] text-text-secondary mt-0.5">
+                      Customer acquisition cost (CAC), Lifetime Value (LTV), payback velocity, and net contribution per campaign.
+                    </p>
+                  </div>
+                  <span className="text-xs font-mono text-text-tertiary">
+                    {economics.campaigns?.length || 0} Active Campaigns
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead className="bg-control-bg/50 text-[10px] font-extrabold uppercase text-text-tertiary border-b border-white/5">
+                      <tr>
+                        <th className="py-3 px-4">Campaign</th>
+                        <th className="py-3 px-3">Acquired</th>
+                        <th className="py-3 px-3">Paying</th>
+                        <th className="py-3 px-3">Revenue</th>
+                        <th className="py-3 px-3">Direct Cost</th>
+                        <th className="py-3 px-3">Reward Spend</th>
+                        <th className="py-3 px-3">Net Contribution</th>
+                        <th className="py-3 px-3">Modeled Lift (85%)</th>
+                        <th className="py-3 px-3">CAC</th>
+                        <th className="py-3 px-3">LTV</th>
+                        <th className="py-3 px-3">Payback</th>
+                        <th className="py-3 px-3">ROI</th>
+                        <th className="py-3 px-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {economics.campaigns && economics.campaigns.length > 0 ? (
+                        economics.campaigns.map((camp) => (
+                          <tr key={camp.campaignCode} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-text-primary font-sans">{camp.title}</div>
+                              <div className="text-[10px] text-text-tertiary font-mono">{camp.campaignCode}</div>
+                            </td>
+                            <td className="py-3 px-3">{camp.totalAcquiredUsers}</td>
+                            <td className="py-3 px-3 text-cyan-400">{camp.totalPayingUsers}</td>
+                            <td className="py-3 px-3">${camp.grossRevenueUsdt.toFixed(2)}</td>
+                            <td className="py-3 px-3 text-rose-400">${camp.directCostUsdt.toFixed(2)}</td>
+                            <td className="py-3 px-3 text-amber-400">${camp.rewardSpendUsdt.toFixed(2)}</td>
+                            <td className={`py-3 px-3 font-bold ${camp.netContributionUsdt >= 0 ? 'text-usdt-green' : 'text-rose-400'}`}>
+                              ${camp.netContributionUsdt.toFixed(2)}
+                            </td>
+                            <td className="py-3 px-3 text-text-secondary">${camp.incrementalContributionUsdt.toFixed(2)}</td>
+                            <td className="py-3 px-3">${camp.cacUsdt.toFixed(2)}</td>
+                            <td className="py-3 px-3">${camp.ltvUsdt.toFixed(2)}</td>
+                            <td className="py-3 px-3">
+                              {camp.paybackPeriodDays ? `${camp.paybackPeriodDays}d` : '—'}
+                            </td>
+                            <td className="py-3 px-3 font-bold text-usdt-green">{camp.roi}x</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase font-sans ${camp.status === 'PROFITABLE' ? 'bg-usdt-green/20 text-usdt-green border border-usdt-green/30' : camp.status === 'OPTIMIZE' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}`}>
+                                {camp.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={13} className="py-8 text-center text-text-tertiary font-sans">
+                            No campaigns recorded yet. Launch campaigns via UTM parameters to begin attribution tracking.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Channel Breakdown & Top Referrers */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Channel Performance Breakdown */}
+                <div className="bg-card-bg rounded-3xl p-5 border border-white/10 space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-text-primary flex items-center gap-2">
+                    <Share2 size={16} className="text-cyan-400" /> Acquisition Channel Economics
+                  </h3>
+                  <div className="space-y-2 font-mono text-xs">
+                    {economics.channelBreakdown?.map((ch) => (
+                      <div key={ch.channel} className="p-3 rounded-xl bg-control-bg border border-white/5 flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-text-primary font-sans">{ch.channel}</div>
+                          <div className="text-[10px] text-text-tertiary">{ch.userCount} users acquired</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-usdt-green">${ch.netContributionUsdt.toFixed(2)} Net</div>
+                          <div className="text-[10px] text-text-tertiary">ROI: {ch.roi}x</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top Economic Referrers (Ranked by Downline Contribution) */}
+                <div className="bg-card-bg rounded-3xl p-5 border border-white/10 space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-text-primary flex items-center gap-2">
+                    <Award size={16} className="text-gold" /> Top Economic Referrers (Net Contribution)
+                  </h3>
+                  <div className="space-y-2 font-mono text-xs">
+                    {economics.topEconomicReferrers && economics.topEconomicReferrers.length > 0 ? (
+                      economics.topEconomicReferrers.map((ref) => (
+                        <div key={ref.telegramUserId} className="p-3 rounded-xl bg-control-bg border border-white/5 flex items-center justify-between">
+                          <div>
+                            <div className="font-bold text-text-primary font-sans">{ref.username}</div>
+                            <div className="text-[10px] text-text-tertiary">{ref.downlineCount} network ties</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-usdt-green">${ref.netContributionUsdt.toFixed(2)} Net</div>
+                            <div className="text-[10px] text-text-tertiary">Network ROI: {ref.networkRoi}x</div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-text-tertiary text-xs font-sans">
+                        No downline economic activity recorded yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {/* ─── 4. TAB 2: REWARDS QUEUE ─────────────────────────────────────────── */}
       {tab === 'REWARDS' && (
         <div className="bg-card-bg rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
           <div className="flex items-center justify-between border-b border-white/10 pb-3">

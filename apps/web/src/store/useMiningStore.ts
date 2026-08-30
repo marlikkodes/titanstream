@@ -179,13 +179,6 @@ export const useMiningStore = create<MiningState>()(
           });
           useWalletStore.getState().updateBalance({ activeMachines: activeCount });
 
-          try {
-            const { useQuestStore } = await import('./useQuestStore');
-            useQuestStore.getState().syncMachinePowerProgress(baseSpeedGhs);
-          } catch (e) {
-            // ignore circular import
-          }
-
           return machines;
         }
       } catch (err) {
