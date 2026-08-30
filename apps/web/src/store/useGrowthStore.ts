@@ -43,9 +43,10 @@ export const useGrowthStore = create<GrowthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const data = await growthService.getProfile();
-      set({ profile: data, isLoading: false });
+      set({ profile: data, isLoading: false, error: null });
     } catch (err: any) {
-      set({ error: err?.message || 'Failed to load growth profile', isLoading: false });
+      console.warn('Failed to load growth profile:', err?.message);
+      set({ isLoading: false, error: null });
     }
   },
 

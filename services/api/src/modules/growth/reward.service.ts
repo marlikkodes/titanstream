@@ -827,11 +827,38 @@ export class RewardService {
    * Detail view for the claim experience page.
    */
   async getRewardDetail(telegramUserId: bigint, rewardId: string) {
-    const reward = await this.prisma.reward.findUnique({
+    let reward = await this.prisma.reward.findUnique({
       where: { id: rewardId },
       include: { rule: true },
     });
-    if (!reward) throw new NotFoundException({ code: 'REWARD_NOT_FOUND', message: `Reward ${rewardId} not found` });
+
+    if (!reward) {
+      const cleanRuleId = rewardId.startsWith('rule:') ? rewardId.replace('rule:', '') : rewardId;
+      const rule = await this.prisma.rewardRule.findFirst({
+        where: { OR: [{ id: cleanRuleId }, { code: cleanRuleId }] },
+      });
+
+      if (rule) {
+        const eligibility = await this.evaluateRuleEligibility(telegramUserId, rule);
+        return {
+          id: `rule:${rule.id}`,
+          rewardType: rule.rewardType,
+          amount: rule.amount.toString(),
+          assetCode: 'USDT',
+          status: 'AVAILABLE',
+          reference: `rule_${rule.code}`,
+          createdAt: new Date(),
+          ruleName: rule.name,
+          description: (rule.parameters as any)?.description || rule.name,
+          requirement: eligibility.requirement,
+          reason: eligibility.reason,
+          eligible: eligibility.eligible,
+        };
+      }
+
+      throw new NotFoundException({ code: 'REWARD_NOT_FOUND', message: `Reward ${rewardId} not found` });
+    }
+
     if (reward.telegramUserId !== telegramUserId) {
       throw new ForbiddenException({ code: 'REWARD_FORBIDDEN', message: 'This reward belongs to another user' });
     }
@@ -874,12 +901,44 @@ export class RewardService {
    * ledger entry is confirmed.
    */
   async claimReward(telegramUserId: bigint, rewardId: string) {
-    const reward = await this.prisma.reward.findUnique({
+    let reward = await this.prisma.reward.findUnique({
       where: { id: rewardId },
       include: { rule: true },
     });
 
-    if (!reward) throw new NotFoundException({ code: 'REWARD_NOT_FOUND', message: 'Reward not found' });
+    if (!reward) {
+      // Check if rewardId refers to a rule ID or rule code (e.g. from the mission queue)
+      const cleanRuleId = rewardId.startsWith('rule:') ? rewardId.replace('rule:', '') : rewardId;
+      const rule = await this.prisma.rewardRule.findFirst({
+        where: { OR: [{ id: cleanRuleId }, { code: cleanRuleId }] },
+      });
+
+      if (rule) {
+        const { eligible, reason } = await this.evaluateRuleEligibility(telegramUserId, rule);
+        if (!eligible) {
+          throw new BadRequestException({ code: 'REWARD_REQUIREMENTS_INCOMPLETE', message: reason });
+        }
+        const created = await this.createReward({
+          telegramUserId,
+          rewardType: rule.rewardType,
+          amount: rule.amount.toString(),
+          ruleCode: rule.code,
+          reference: `rule_${rule.code}_${telegramUserId}_${Date.now()}`,
+          metadata: { ruleCode: rule.code },
+        });
+        reward = await this.prisma.reward.findUnique({
+          where: { id: created.id },
+          include: { rule: true },
+        });
+      } else {
+        throw new NotFoundException({ code: 'REWARD_NOT_FOUND', message: 'Reward not found' });
+      }
+    }
+
+    if (!reward) {
+      throw new NotFoundException({ code: 'REWARD_NOT_FOUND', message: 'Reward not found' });
+    }
+
     if (reward.telegramUserId !== telegramUserId) {
       throw new ForbiddenException({ code: 'REWARD_FORBIDDEN', message: 'This reward belongs to another user' });
     }

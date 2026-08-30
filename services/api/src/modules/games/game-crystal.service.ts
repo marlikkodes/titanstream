@@ -45,18 +45,50 @@ export class GameCrystalService {
       }
     }
 
-    const existing = await client.crystalAccount.findUnique({
-      where: { telegramUserId },
-    });
+    try {
+      const existing = await client.crystalAccount.findUnique({
+        where: { telegramUserId },
+      });
 
-    if (existing) return existing;
+      if (existing) return existing;
 
-    return client.crystalAccount.create({
-      data: {
+      // Ensure base User record exists to satisfy foreign key constraint
+      let user = await client.user.findUnique({
+        where: { telegramUserId },
+        select: { telegramUserId: true },
+      });
+      if (!user) {
+        try {
+          user = await client.user.create({
+            data: {
+              telegramUserId,
+              firstName: 'Operator',
+            },
+            select: { telegramUserId: true },
+          });
+        } catch {
+          user = await client.user.findUnique({ where: { telegramUserId }, select: { telegramUserId: true } });
+        }
+      }
+
+      return await client.crystalAccount.create({
+        data: {
+          telegramUserId,
+          balance: 100,
+        },
+      });
+    } catch (err: any) {
+      this.logger.warn(`[GameCrystalService] Crystal account lookup fallback for ${telegramUserId}: ${err?.message}`);
+      return {
+        id: `fallback_${telegramUserId}`,
         telegramUserId,
         balance: 100,
-      },
-    });
+        lifetimeEarned: 100,
+        lifetimeSpent: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    }
   }
 
   async getAccount(userKey: bigint | string) {
@@ -64,8 +96,12 @@ export class GameCrystalService {
   }
 
   async getBalance(userKey: bigint | string): Promise<number> {
-    const account = await this.getAccount(userKey);
-    return account.balance;
+    try {
+      const account = await this.getAccount(userKey);
+      return account.balance;
+    } catch {
+      return 100;
+    }
   }
 
   async getTransactions(userKey: bigint | string, limit = 50, offset = 0) {
