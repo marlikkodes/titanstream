@@ -16,7 +16,10 @@ export interface CreateUserData {
 export interface UpdateUserData {
   telegramUsername?: string;
   firstName?: string;
+  displayName?: string;
   lastName?: string;
+  phoneNumber?: string;
+  connectedWhatsApp?: string;
   photoUrl?: string;
   languageCode?: string;
 }
@@ -94,10 +97,25 @@ export class UserService {
   async updateProfile(userKey: string | bigint, dto: UpdateUserData) {
     try {
       const user = await this.getProfile(userKey);
-      return await this.prisma.user.update({
+      const updateData: any = {};
+      const chosenName = (dto.displayName || dto.firstName || '').trim();
+      if (chosenName) {
+        updateData.firstName = chosenName;
+      }
+      if (dto.lastName) updateData.lastName = dto.lastName.trim();
+      if (dto.photoUrl) updateData.photoUrl = dto.photoUrl;
+      if (dto.languageCode) updateData.languageCode = dto.languageCode;
+      if (dto.phoneNumber || dto.connectedWhatsApp) {
+        updateData.phoneNumber = (dto.phoneNumber || dto.connectedWhatsApp)!.trim();
+      }
+      if (dto.telegramUsername) updateData.telegramUsername = dto.telegramUsername.trim();
+
+      const updated = await this.prisma.user.update({
         where: { id: user.id },
-        data: dto as any,
+        data: updateData,
       });
+
+      return updated;
     } catch {
       return { id: String(userKey), ...dto };
     }

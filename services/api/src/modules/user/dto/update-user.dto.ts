@@ -10,7 +10,27 @@ export class UpdateUserDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  displayName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   lastName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  connectedWhatsApp?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  telegramUsername?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

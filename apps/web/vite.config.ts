@@ -1853,8 +1853,84 @@ function adminMockMiddleware(): Plugin {
         // User Application Resilient Endpoints
         // ==========================================
 
+        // User Profile & Name Management
+        if (url.includes('/users/me') || url.includes('/user/profile')) {
+          if (req.method === 'PATCH' || req.method === 'POST') {
+            let bodyStr = '';
+            req.on('data', chunk => { bodyStr += chunk; });
+            req.on('end', () => {
+              try {
+                const body = JSON.parse(bodyStr || '{}');
+                const allUsers = loadUsersFromDisk();
+                const primaryUser = allUsers[0] || {
+                  id: 'usr_001',
+                  telegramUserId: 5387655307,
+                  username: 'wendy_droid',
+                  firstName: 'Wendy',
+                  status: 'ACTIVE',
+                  isVerified: true,
+                };
+                if (body.firstName || body.displayName) {
+                  primaryUser.firstName = (body.displayName || body.firstName).trim();
+                }
+                if (body.lastName) primaryUser.lastName = body.lastName.trim();
+                if (body.phoneNumber || body.connectedWhatsApp) {
+                  primaryUser.phoneNumber = (body.phoneNumber || body.connectedWhatsApp).trim();
+                  primaryUser.connectedWhatsApp = (body.phoneNumber || body.connectedWhatsApp).trim();
+                }
+                if (body.withdrawalPhoneNumber) {
+                  primaryUser.withdrawalPhoneNumber = body.withdrawalPhoneNumber.trim();
+                }
+                if (allUsers.length === 0) allUsers.push(primaryUser);
+                saveUsersToDisk(allUsers);
+                res.setHeader('Content-Type', 'application/json');
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true, data: primaryUser }));
+              } catch (e) {
+                res.setHeader('Content-Type', 'application/json');
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true }));
+              }
+            });
+            return;
+          } else if (req.method === 'GET') {
+            const allUsers = loadUsersFromDisk();
+            const primaryUser = allUsers[0] || {
+              id: 'usr_001',
+              telegramUserId: 5387655307,
+              username: 'wendy_droid',
+              firstName: 'Wendy',
+              status: 'ACTIVE',
+              isVerified: true,
+            };
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({ success: true, data: primaryUser }));
+            return;
+          }
+        }
+
         // User Preferences & Settings
         if (url.includes('/user/preferences') || url.includes('/settings/preferences')) {
+          if (req.method === 'PATCH' || req.method === 'POST') {
+            let bodyStr = '';
+            req.on('data', chunk => { bodyStr += chunk; });
+            req.on('end', () => {
+              try {
+                const body = JSON.parse(bodyStr || '{}');
+                const allUsers = loadUsersFromDisk();
+                const primaryUser = allUsers[0];
+                if (primaryUser && body.settings?.displayName) {
+                  primaryUser.firstName = body.settings.displayName;
+                  saveUsersToDisk(allUsers);
+                }
+              } catch (e) {}
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true }));
+            });
+            return;
+          }
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({

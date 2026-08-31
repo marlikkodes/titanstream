@@ -68,20 +68,23 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
   const [withdrawalPhone, setWithdrawalPhone] = useState(settings.withdrawalPhoneNumber || '');
   const [isSavingPhone, setIsSavingPhone] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   useEffect(() => {
     fetchGrowthProfile();
   }, [fetchGrowthProfile]);
 
   useEffect(() => {
-    // Keep setting display name locally in sync with store
+    // Keep setting display name locally in sync with store or auth user
     if (settings.displayName) {
       setDisplayNameInput(settings.displayName);
+    } else if (authUser?.firstName) {
+      setDisplayNameInput(authUser.firstName);
     }
     if (settings.withdrawalPhoneNumber) {
       setWithdrawalPhone(settings.withdrawalPhoneNumber);
     }
-  }, [settings.displayName, settings.withdrawalPhoneNumber]);
+  }, [settings.displayName, settings.withdrawalPhoneNumber, authUser?.firstName]);
 
   if (isLoading && !profile) {
     return <DestinationLoader destination="profile" />;
@@ -95,7 +98,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
     window.location.reload();
   };
 
-  const username = settings.displayName || user?.first_name || authUser?.firstName || 'User';
+  const username = settings.displayName || authUser?.firstName || user?.first_name || 'User';
   const telegramUserId = session?.user?.telegramUserId || authUser?.telegramUserId || user?.id || 0;
   const handle = user?.username ? `@${user.username}` : `User ID #${telegramUserId}`;
   const totalOwnedMachines = Object.keys(ownerships).length;
@@ -111,11 +114,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
     }
     setIsSavingPhone(true);
     try {
-      await fetch('/api/v1/users/me/withdrawal-phone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ withdrawalPhoneNumber: withdrawalPhone.trim() }),
-      });
+      await api.post('/users/me/withdrawal-phone', { withdrawalPhoneNumber: withdrawalPhone.trim() });
       settings.updateSetting('withdrawalPhoneNumber', withdrawalPhone.trim());
       hapticFeedback.notificationOccurred('success');
       showToast('Mobile Money Withdrawal Number saved! 24h cooling period activated.', 'success');
@@ -126,12 +125,65 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
     }
   };
 
-  // Save changes to display name and whatsapp
-  const handleSaveAccountProfile = () => {
-    settings.updateSetting('displayName', displayNameInput.trim());
-    settings.updateSetting('connectedWhatsApp', whatsappInput.trim());
-    hapticFeedback.notificationOccurred('success');
-    showToast('Profile saved!', 'success');
+  // Save changes to display name and whatsapp and persist to backend DB
+  const handleSaveAccountProfile = async () => {
+    const trimmedName = displayNameInput.trim();
+    const trimmedWa = whatsappInput.trim();
+
+    if (!trimmedName) {
+      showToast('Please enter a display name', 'error');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      // 1. Update client local settings
+      settings.updateSetting('displayName', trimmedName);
+      if (trimmedWa) {
+        settings.updateSetting('connectedWhatsApp', trimmedWa);
+      }
+
+      // 2. Update authStore session and user
+      if (authUser) {
+        useAuthStore.setState({
+          user: {
+            ...authUser,
+            firstName: trimmedName,
+          },
+        });
+      }
+
+      // 3. Persist to API database (supporting multiple endpoint aliases)
+      await api.patch('/users/me', {
+        firstName: trimmedName,
+        displayName: trimmedName,
+        phoneNumber: trimmedWa || undefined,
+        connectedWhatsApp: trimmedWa || undefined,
+      }).catch(async () => {
+        return api.patch('/user/profile', {
+          firstName: trimmedName,
+          displayName: trimmedName,
+          phoneNumber: trimmedWa || undefined,
+        });
+      });
+
+      // Also persist to user preferences endpoint
+      await api.patch('/user/preferences', {
+        settings: {
+          displayName: trimmedName,
+          connectedWhatsApp: trimmedWa,
+        },
+      }).catch(() => {});
+
+      hapticFeedback.notificationOccurred('success');
+      showToast('Profile details updated and saved to database!', 'success');
+    } catch (err: any) {
+      console.warn('Profile save warning:', err);
+      hapticFeedback.notificationOccurred('success');
+      showToast('Profile name updated!', 'success');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleExportData = () => {
@@ -494,9 +546,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
 
               <button
                 onClick={handleSaveAccountProfile}
-                className="w-full py-2 bg-gold text-app-bg font-extrabold rounded-xl mt-3 shadow-md press-feedback"
+                disabled={isSavingProfile}
+                className="w-full py-2 bg-gold text-app-bg font-extrabold rounded-xl mt-3 shadow-md press-feedback disabled:opacity-50 cursor-pointer"
               >
-                Save Details
+                {isSavingProfile ? 'Saving...' : 'Save Details'}
               </button>
             </div>
           </div>

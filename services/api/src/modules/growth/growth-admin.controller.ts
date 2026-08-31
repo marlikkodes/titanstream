@@ -10,7 +10,7 @@ import { ReferralGraphService } from './referral-graph.service';
 import { GrowthAnalyticsService } from './growth-analytics.service';
 import { FraudDetectionService } from '../fraud/fraud-detection.service';
 import { PrismaService } from '../../database/prisma.service';
-import { RewardStatus, RewardType, ReferralStatus, UserLevelTier, NotificationChannel } from '@prisma/client';
+import { RewardStatus, RewardType, ReferralStatus, UserLevelTier, NotificationChannel, Prisma } from '@prisma/client';
 
 @Controller('admin')
 @UseGuards(AdminAuthGuard, RbacGuard)
@@ -339,6 +339,10 @@ export class GrowthAdminController {
         titleTemplate: body.titleTemplate,
         bodyTemplate: body.bodyTemplate,
         channel: body.channel || NotificationChannel.TELEGRAM,
+        enabled: body.enabled !== undefined ? body.enabled : true,
+      },
+    });
+  }
   /**
    * GET /admin/growth/social/campaigns
    * Social Campaign performance, unit economics, ROI, and over-settlement telemetry.

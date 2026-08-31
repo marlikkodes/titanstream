@@ -7,6 +7,7 @@ import { HelpModal } from '../components/HelpModal';
 import { useUserNotificationStore } from '../store/useUserNotificationStore';
 import { useTelegram } from '../context/TelegramContext';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useCountryStore } from '../store/useCountryStore';
 import { formatAdaptiveCounter } from '../utils/format';
 
@@ -14,10 +15,13 @@ export const Header: React.FC = () => {
   const { usdtBalance, crystalsBalance } = useWalletStore();
   const { openGames, setActiveTab, openProfileDrawer } = useNavigationStore();
   const { hapticFeedback, logout, user } = useTelegram();
+  const authUser = useAuthStore((s) => s.user);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const { unreadCount, setModalOpen } = useUserNotificationStore();
-  const { preferLocalCurrency, setCurrencyPreference, selectedCryptoCurrency, setCryptoCurrency } = useSettingsStore();
+  const { preferLocalCurrency, setCurrencyPreference, selectedCryptoCurrency, setCryptoCurrency, displayName } = useSettingsStore();
   const { selectedCountry } = useCountryStore();
+
+  const avatarInitial = (displayName || authUser?.firstName || user?.first_name || 'T')[0].toUpperCase();
 
   const handleToggleCurrency = () => {
     hapticFeedback.impactOccurred('light');
@@ -182,7 +186,7 @@ export const Header: React.FC = () => {
           className="press-feedback flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-gold/30 to-purple-500/30 border border-gold/40 text-gold font-black text-xs shadow-sm hover:border-gold transition-colors"
           title="Operator Profile"
         >
-          {user?.first_name ? user.first_name[0].toUpperCase() : 'T'}
+          {avatarInitial}
         </button>
 
       {/* Help Modal */}

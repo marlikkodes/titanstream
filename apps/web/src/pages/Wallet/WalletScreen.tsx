@@ -29,6 +29,7 @@ import { useTelegram } from '../../context/TelegramContext';
 
 import { useCountryStore } from '../../store/useCountryStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useGrowthStore } from '../../store/useGrowthStore';
 import { Users } from 'lucide-react';
 
@@ -91,7 +92,9 @@ export const WalletScreen: React.FC = () => {
     return <DestinationLoader destination="wallet" />;
   }
 
-  const username = user?.first_name || 'User';
+  const authUser = useAuthStore((s) => s.user);
+  const displayName = useSettingsStore((s) => s.displayName);
+  const username = displayName || authUser?.firstName || user?.first_name || 'User';
   const totalAssetsUsdt = usdtBalance + unclaimedBalance;
 
   return (
