@@ -30,14 +30,14 @@ export const ValueBankCard: React.FC<ValueBankCardProps> = ({ valueBank, isLoadi
           </div>
           <div>
             <span className="text-[9px] font-mono font-black uppercase tracking-widest text-cyan-400 block">
-              ECONOMIC IMPACT LEDGER
+              REWARDS & BONUS VAULT
             </span>
-            <h3 className="text-sm font-black text-text-primary tracking-tight">Growth Value Bank</h3>
+            <h3 className="text-sm font-black text-text-primary tracking-tight">Earnings Summary</h3>
           </div>
         </div>
 
         <span className="text-[9px] font-mono font-bold px-2.5 py-1 rounded-full bg-usdt-green/10 text-usdt-green border border-usdt-green/20 flex items-center gap-1">
-          <ShieldCheck size={11} /> Verified Realized Value
+          <ShieldCheck size={11} /> Realized Earnings
         </span>
       </div>
 
@@ -45,29 +45,29 @@ export const ValueBankCard: React.FC<ValueBankCardProps> = ({ valueBank, isLoadi
       <div className="grid grid-cols-3 gap-2 pt-1">
         {/* 1. Value Generated */}
         <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex flex-col justify-between">
-          <span className="text-[9px] text-text-tertiary font-mono uppercase">Value Created</span>
+          <span className="text-[9px] text-text-tertiary font-mono uppercase">Total Generated</span>
           <div className="text-base font-black text-cyan-400 font-sans mt-1">
             ${totalGenerated.toFixed(2)}
           </div>
-          <span className="text-[8px] text-text-tertiary mt-0.5">Net Contribution</span>
+          <span className="text-[8px] text-text-tertiary mt-0.5">From your network</span>
         </div>
 
         {/* 2. Unlocked Rewards */}
         <div className="p-3 rounded-2xl bg-usdt-green/10 border border-usdt-green/25 flex flex-col justify-between">
-          <span className="text-[9px] text-usdt-green font-mono uppercase">Unlocked Cash</span>
+          <span className="text-[9px] text-usdt-green font-mono uppercase">Cash Earned</span>
           <div className="text-base font-black text-usdt-green font-sans mt-1">
             +${unlockedRewards.toFixed(2)}
           </div>
-          <span className="text-[8px] text-text-tertiary mt-0.5">USDT Credited</span>
+          <span className="text-[8px] text-text-tertiary mt-0.5">Credited to wallet</span>
         </div>
 
         {/* 3. Retained Platform Margin */}
         <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex flex-col justify-between">
-          <span className="text-[9px] text-text-tertiary font-mono uppercase">Titan Retained</span>
+          <span className="text-[9px] text-text-tertiary font-mono uppercase">Community Pool</span>
           <div className="text-base font-black text-gold font-sans mt-1">
             ${retainedContribution.toFixed(2)}
           </div>
-          <span className="text-[8px] text-text-tertiary mt-0.5">Protocol Surplus</span>
+          <span className="text-[8px] text-text-tertiary mt-0.5">Network rewards</span>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ export const ValueBankCard: React.FC<ValueBankCardProps> = ({ valueBank, isLoadi
         </div>
         <div className="flex items-center gap-1 text-[9px]">
           <Info size={11} className="text-cyan-400" />
-          <span>Value-Gated • Paid from realized net margin</span>
+          <span>Instant settlements to your wallet balance</span>
         </div>
       </div>
     </motion.div>

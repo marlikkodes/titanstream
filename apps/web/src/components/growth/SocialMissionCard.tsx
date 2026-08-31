@@ -80,17 +80,19 @@ export const SocialMissionCard: React.FC<SocialMissionCardProps> = ({
   const getTierBadge = (tier: string) => {
     switch (tier) {
       case 'ENGAGEMENT':
-        return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/25';
+        return { label: 'Social Bonus', style: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/25' };
       case 'DISTRIBUTION':
-        return 'bg-purple-500/10 text-purple-400 border-purple-500/25';
+        return { label: 'Invite Bonus', style: 'bg-purple-500/10 text-purple-400 border-purple-500/25' };
       case 'ACQUISITION':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/25';
+        return { label: 'Community Task', style: 'bg-amber-500/10 text-amber-400 border-amber-500/25' };
       case 'REVENUE':
-        return 'bg-usdt-green/10 text-usdt-green border-usdt-green/25';
+        return { label: 'Cash Bonus', style: 'bg-usdt-green/10 text-usdt-green border-usdt-green/25' };
       default:
-        return 'bg-white/5 text-text-tertiary border-white/10';
+        return { label: 'Bonus Mission', style: 'bg-white/5 text-text-tertiary border-white/10' };
     }
   };
+
+  const badge = getTierBadge(mission.tier);
 
   return (
     <motion.div
@@ -101,8 +103,8 @@ export const SocialMissionCard: React.FC<SocialMissionCardProps> = ({
     >
       {/* TOP ROW: TIER & VIRTUAL REWARD */}
       <div className="flex items-center justify-between">
-        <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-full border ${getTierBadge(mission.tier)}`}>
-          Level {mission.tier}
+        <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-full border ${badge.style}`}>
+          {badge.label}
         </span>
 
         <div className="flex items-center gap-1.5 text-[10px] font-mono">
@@ -113,7 +115,7 @@ export const SocialMissionCard: React.FC<SocialMissionCardProps> = ({
           )}
           {mission.maxRewardUsdt > 0 && (
             <span className="text-usdt-green font-bold bg-usdt-green/10 px-1.5 py-0.5 rounded-md border border-usdt-green/20">
-              Up to +${mission.maxRewardUsdt.toFixed(2)} USDT
+              +${mission.maxRewardUsdt.toFixed(2)} USDT Bonus
             </span>
           )}
         </div>
@@ -131,7 +133,7 @@ export const SocialMissionCard: React.FC<SocialMissionCardProps> = ({
       {mission.requiredContributionUsdt > 0 && (
         <div className="pt-1">
           <div className="flex items-center justify-between text-[9px] font-mono">
-            <span className="text-text-tertiary">Verified Net Value</span>
+            <span className="text-text-tertiary">Mission Progress</span>
             <span className={mission.isOverSettled ? 'text-usdt-green font-bold' : 'text-cyan-400 font-bold'}>
               ${mission.verifiedContributionUsdt.toFixed(2)} / ${mission.requiredContributionUsdt.toFixed(2)}
             </span>

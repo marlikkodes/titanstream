@@ -141,9 +141,9 @@ export const GrowScreen: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-400 font-mono flex items-center gap-1.5">
-            <Zap size={12} className="text-cyan-400" /> Economic Growth Graph
+            <Zap size={12} className="text-cyan-400" /> Community & Referral Rewards
           </span>
-          <h1 className="text-2xl font-black text-text-primary tracking-tight">Growth Network</h1>
+          <h1 className="text-2xl font-black text-text-primary tracking-tight">Invite & Earn</h1>
         </div>
 
         <button
@@ -153,7 +153,7 @@ export const GrowScreen: React.FC = () => {
             fetchValueBank();
           }}
           className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-bold hover:bg-cyan-500/25 transition-colors press-feedback"
-          title="Refresh Network Data"
+          title="Refresh Rewards & Stats"
         >
           <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
         </button>
@@ -187,11 +187,11 @@ export const GrowScreen: React.FC = () => {
           <div className="flex items-center gap-2">
             <Gift size={16} className="text-cyan-400" />
             <h2 className="text-xs font-black uppercase tracking-wider text-text-primary font-mono">
-              Social Growth Missions
+              Bonus Missions & Tasks
             </h2>
           </div>
           <span className="text-[9px] font-mono font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
-            {socialMissions.length} Missions Active
+            {socialMissions.length} Active Tasks
           </span>
         </div>
 
@@ -217,45 +217,45 @@ export const GrowScreen: React.FC = () => {
 
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-400 font-mono">
-            Network Performance
+            Your Community Stats
           </span>
           <span className="text-[10px] font-mono font-bold text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded-full border border-usdt-green/20">
-            {computeBoost > 1 ? `+${Math.round((computeBoost - 1) * 100)}% HASH BOOST` : 'VERIFIED CIRCLE'}
+            {computeBoost > 1 ? `+${Math.round((computeBoost - 1) * 100)}% MINING BOOST` : 'ACTIVE TEAM'}
           </span>
         </div>
 
         {/* 4-GRID ECONOMIC METRICS */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Total Invited</div>
+            <div className="text-[9px] font-bold text-text-tertiary uppercase">Friends Invited</div>
             <div className="text-xl font-black text-text-primary font-mono mt-1">
               {invitedCount}
             </div>
-            <div className="text-[9px] text-text-tertiary font-mono mt-0.5">Registered members</div>
+            <div className="text-[9px] text-text-tertiary font-mono mt-0.5">Joined with your link</div>
           </div>
 
           <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Qualified Friends</div>
+            <div className="text-[9px] font-bold text-text-tertiary uppercase">Active Friends</div>
             <div className="text-xl font-black text-cyan-400 font-mono mt-1">
               {qualifiedCount}
             </div>
-            <div className="text-[9px] text-cyan-400/80 font-mono mt-0.5">Settlement completed</div>
+            <div className="text-[9px] text-cyan-400/80 font-mono mt-0.5">Completed 1st trade</div>
           </div>
 
           <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Paying Operators</div>
+            <div className="text-[9px] font-bold text-text-tertiary uppercase">Machine Owners</div>
             <div className="text-xl font-black text-usdt-green font-mono mt-1">
               {payingCount}
             </div>
-            <div className="text-[9px] text-usdt-green/80 font-mono mt-0.5">Machine active</div>
+            <div className="text-[9px] text-usdt-green/80 font-mono mt-0.5">Mining capacity active</div>
           </div>
 
           <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Rewards Earned</div>
+            <div className="text-[9px] font-bold text-text-tertiary uppercase">Total Earned</div>
             <div className="text-xl font-black text-gold font-mono mt-1">
               <CurrencyDisplay amount={earnedUsdt} size="sm" />
             </div>
-            <div className="text-[9px] text-gold/80 font-mono mt-0.5">Ledger disbursed</div>
+            <div className="text-[9px] text-gold/80 font-mono mt-0.5">In your wallet</div>
           </div>
         </div>
 
@@ -266,17 +266,17 @@ export const GrowScreen: React.FC = () => {
               {isWithdrawalUnlocked ? (
                 <>
                   <Unlock size={14} className="text-usdt-green" />
-                  <span className="text-usdt-green">Direct Withdrawals Unlocked</span>
+                  <span className="text-usdt-green">Cash Withdrawals Unlocked</span>
                 </>
               ) : (
                 <>
                   <Lock size={14} className="text-amber-400" />
-                  <span>Withdrawal Qualification Gate</span>
+                  <span>Withdrawal Qualification Target</span>
                 </>
               )}
             </div>
             <span className="text-[10px] font-mono font-bold text-cyan-400">
-              {qualifiedCount} / 5 Qualified
+              {qualifiedCount} / 5 Active Friends
             </span>
           </div>
 
@@ -292,8 +292,8 @@ export const GrowScreen: React.FC = () => {
           <div className="text-[10px] text-text-tertiary flex items-center justify-between">
             <span>
               {isWithdrawalUnlocked
-                ? 'Your network is fully verified for instant mobile money payouts.'
-                : `${remainingForWithdrawal} more qualified ${remainingForWithdrawal === 1 ? 'friend' : 'friends'} needed to unlock cashout.`}
+                ? 'Your account is fully verified for instant mobile money cashouts.'
+                : `${remainingForWithdrawal} more active ${remainingForWithdrawal === 1 ? 'friend' : 'friends'} needed to unlock direct cashout.`}
             </span>
             <button
               onClick={() => setActiveTab('rewards')}
@@ -327,7 +327,7 @@ export const GrowScreen: React.FC = () => {
       {/* SHARE CENTER CARD */}
       <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-extrabold text-text-tertiary uppercase tracking-wider">Your Personal Referral Code</span>
+          <span className="font-extrabold text-text-tertiary uppercase tracking-wider">Your Referral Link & Code</span>
           <span className="font-mono text-cyan-400 font-bold">{referralCode || 'TITAN888'}</span>
         </div>
 
@@ -352,27 +352,27 @@ export const GrowScreen: React.FC = () => {
       <div className="web3-card rounded-2xl p-4 border border-cyan-500/20 bg-gradient-to-r from-cyan-950/30 to-black/50 space-y-3">
         <div className="flex items-center gap-2 text-xs font-black text-text-primary uppercase tracking-wider">
           <Sparkles size={16} className="text-cyan-400" />
-          <span>How To Maximize Referral Value</span>
+          <span>How To Earn More With Friends</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
           <div className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
             <div className="font-extrabold text-text-primary flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[10px] font-mono">1</span>
-              <span>Guide 1st Settlement</span>
+              <span>Help Friends Start Mining</span>
             </div>
             <p className="text-[11px] text-text-secondary">
-              When your referral completes their first mobile money deposit or settlement, they instantly become <strong className="text-cyan-400">Qualified</strong>, unlocking your bonus.
+              When your invited friend completes their first deposit, trade, or settlement, they become <strong className="text-cyan-400">Active</strong>, unlocking your bonus reward.
             </p>
           </div>
 
           <div className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
             <div className="font-extrabold text-text-primary flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-usdt-green/20 text-usdt-green flex items-center justify-center text-[10px] font-mono">2</span>
-              <span>Cloud Machine Adoption</span>
+              <span>Machine Commission Rewards</span>
             </div>
             <p className="text-[11px] text-text-secondary">
-              When referrals commission a cloud machine, you gain recurring network computing rewards and advance toward higher operator tiers.
+              When your friends activate cloud compute capacity, you receive recurring mining commission rewards deposited straight to your wallet.
             </p>
           </div>
         </div>
@@ -383,10 +383,10 @@ export const GrowScreen: React.FC = () => {
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-text-tertiary flex items-center gap-2">
             <Users size={14} className="text-cyan-400" />
-            Network Roster & Lifecycles
+            Invited Friends & Progress
           </h2>
           <span className="text-[10px] font-mono text-text-tertiary">
-            {referrals.length} Total Connections
+            {referrals.length} Total Friends
           </span>
         </div>
 
