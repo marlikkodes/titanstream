@@ -162,12 +162,20 @@ export const useAuthStore = create<AuthState>()(
 
       clearSession: () => {
         localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth-storage');
+        localStorage.removeItem('wallet-storage');
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('mirror_mode');
+          sessionStorage.removeItem('mirror_user');
+        }
         set({
           isAuthenticated: false,
           session: null,
           authError: null,
           stepUpToken: null,
           isStepUpModalOpen: false,
+          isMirrorMode: false,
+          mirrorTargetUser: null,
         });
       },
 
@@ -265,6 +273,11 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           state._hasHydrated = true;
+          if (state.session && (!state.session.accessToken || (state.session.expiresAt && Date.now() > state.session.expiresAt))) {
+            state.isAuthenticated = false;
+            state.session = null;
+            localStorage.removeItem('auth_token');
+          }
           useAuthStore.setState({ _hasHydrated: true });
         }
       },

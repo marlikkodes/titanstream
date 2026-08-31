@@ -289,6 +289,38 @@ function adminMockMiddleware(): Plugin {
     } catch (e) {}
   }
 
+  function findRequestUser(req: any, allUsers: any[]) {
+    const userIdHeader = String(req.headers['x-user-id'] || '').trim();
+    const authHeader = String(req.headers['authorization'] || '').replace(/^Bearer\s+/i, '').trim();
+
+    if (userIdHeader) {
+      const cleanHeader = userIdHeader.replace(/[^0-9]/g, '');
+      const u = allUsers.find((x: any) =>
+        String(x.id) === userIdHeader ||
+        String(x.telegramId) === userIdHeader ||
+        String(x.titanId) === userIdHeader ||
+        (cleanHeader && String(x.phoneNumber || '').replace(/[^0-9]/g, '') === cleanHeader) ||
+        (cleanHeader && String(x.id || '').replace(/[^0-9]/g, '') === cleanHeader)
+      );
+      if (u) return u;
+    }
+
+    if (authHeader) {
+      const tokenClean = authHeader.replace(/^tg_token_|^wa_token_|^mirror_auth_/, '').trim();
+      const tokenDigits = tokenClean.replace(/[^0-9]/g, '');
+      const u = allUsers.find((x: any) =>
+        String(x.id) === tokenClean ||
+        String(x.telegramId) === tokenClean ||
+        String(x.titanId) === tokenClean ||
+        (tokenDigits && String(x.phoneNumber || '').replace(/[^0-9]/g, '') === tokenDigits) ||
+        (tokenDigits && String(x.id || '').replace(/[^0-9]/g, '') === tokenDigits)
+      );
+      if (u) return u;
+    }
+
+    return allUsers[0];
+  }
+
   // Ensure initial disk database is created
   if (!fs.existsSync(USERS_DB_PATH)) {
     saveUsersToDisk(mockRegisteredUsers);
@@ -1969,18 +2001,19 @@ function adminMockMiddleware(): Plugin {
         // User Financial Balance
         if (url.includes('/financial/balance')) {
           const allUsers = loadUsersFromDisk();
-          const primaryUser = allUsers[0];
-          const baseBal = primaryUser?.netBalance != null ? Number(primaryUser.netBalance) : 0;
-          const totalUsdt = (baseBal + (globalThis as any).__mockRewardBalance || 0).toFixed(2);
+          const targetUser = findRequestUser(req, allUsers);
+          const baseBal = targetUser?.netBalance != null ? Number(targetUser.netBalance) : 0;
+          const totalUsdt = baseBal.toFixed(2);
+          const tonBal = (targetUser?.tonBalance != null ? Number(targetUser.tonBalance) : 0).toFixed(4);
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              financialAccountId: 'fin_acc_user',
+              financialAccountId: targetUser?.wallets?.[0] || `fin_acc_${targetUser?.id || 'user'}`,
               balances: [
                 { assetCode: 'USDT', name: 'Tether USD', symbol: 'USDT', decimals: 2, availableBalance: totalUsdt, pendingBalance: '0.00', reservedBalance: '0.00' },
-                { assetCode: 'TON', name: 'The Open Network', symbol: 'TON', decimals: 4, availableBalance: '0.0000', pendingBalance: '0.0000', reservedBalance: '0.0000' },
+                { assetCode: 'TON', name: 'The Open Network', symbol: 'TON', decimals: 4, availableBalance: tonBal, pendingBalance: '0.0000', reservedBalance: '0.0000' },
               ],
             },
           }));
@@ -1989,7 +2022,9 @@ function adminMockMiddleware(): Plugin {
 
         // User Financial Transactions
         if (url.includes('/financial/transactions')) {
-          const txs = (globalThis as any).__mockFinancialTransactions || [];
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const txs = targetUser?.transactions || [];
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
@@ -2004,13 +2039,16 @@ function adminMockMiddleware(): Plugin {
 
         // Growth Profile
         if (url.includes('/growth/profile')) {
-          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const claimedArr: string[] = targetUser?.claimedRewards || [];
+          const claimedSet = new Set(claimedArr);
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              userId: 'usr_canonical_operator',
+              userId: targetUser?.id || 'usr_canonical_operator',
               trustScore: 85 + (claimedSet.size * 2),
               level: 'VERIFIED',
               levelName: 'Verified Operator',
@@ -2196,10 +2234,10 @@ function adminMockMiddleware(): Plugin {
 
         // Growth Missions Queue
         if (url.includes('/growth/rewards/missions')) {
-          if (!(globalThis as any).__mockClaimedRewardIds) {
-            (globalThis as any).__mockClaimedRewardIds = new Set<string>();
-          }
-          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds;
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const claimedArr: string[] = targetUser?.claimedRewards || [];
+          const claimedSet = new Set(claimedArr);
 
           const allEngineMissions = [
             {
@@ -2491,17 +2529,13 @@ function adminMockMiddleware(): Plugin {
 
         // Growth Rewards Claim (POST /growth/rewards/:id/claim)
         if (url.includes('/growth/rewards/') && (url.includes('/claim') || req.method === 'POST')) {
-          if (!(globalThis as any).__mockClaimedRewardIds) {
-            (globalThis as any).__mockClaimedRewardIds = new Set<string>();
-          }
-          if (!(globalThis as any).__mockFinancialTransactions) {
-            (globalThis as any).__mockFinancialTransactions = [];
-          }
-          if (typeof (globalThis as any).__mockRewardBalance !== 'number') {
-            (globalThis as any).__mockRewardBalance = 0;
-          }
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          targetUser.claimedRewards = targetUser.claimedRewards || [];
+          targetUser.transactions = targetUser.transactions || [];
+          targetUser.netBalance = Number(targetUser.netBalance || 0);
 
-          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds;
+          const claimedSet = new Set(targetUser.claimedRewards);
           const match = url.match(/\/growth\/rewards\/([^/?#]+)\/claim/) || url.match(/\/growth\/rewards\/([^/?#]+)/);
           const rawId = match ? match[1] : 'starter_welcome';
           const rewardId = rawId.replace(/^rule:/, '');
@@ -2519,12 +2553,16 @@ function adminMockMiddleware(): Plugin {
             return;
           }
 
-          claimedSet.add(rewardId);
-          if (rewardId.includes('welcome')) claimedSet.add('starter_welcome');
-          if (rewardId.includes('security')) claimedSet.add('starter_security');
+          targetUser.claimedRewards.push(rewardId);
+          if (rewardId.includes('welcome') && !targetUser.claimedRewards.includes('starter_welcome')) {
+            targetUser.claimedRewards.push('starter_welcome');
+          }
+          if (rewardId.includes('security') && !targetUser.claimedRewards.includes('starter_security')) {
+            targetUser.claimedRewards.push('starter_security');
+          }
 
           const amountVal = rewardId.includes('security') ? 1.00 : 0.50;
-          (globalThis as any).__mockRewardBalance += amountVal;
+          targetUser.netBalance = Number((targetUser.netBalance + amountVal).toFixed(2));
 
           const rewardData = {
             id: rewardId,
@@ -2545,7 +2583,9 @@ function adminMockMiddleware(): Plugin {
             createdAt: new Date().toISOString(),
             description: rewardId.includes('security') ? 'Security Configuration Reward' : 'Hardware Core Starter Reward',
           };
-          (globalThis as any).__mockFinancialTransactions.unshift(txRecord);
+          targetUser.transactions.unshift(txRecord);
+
+          saveUsersToDisk(allUsers);
 
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
@@ -2561,7 +2601,9 @@ function adminMockMiddleware(): Plugin {
 
         // Exact GET /growth/rewards
         if (url === '/api/v1/growth/rewards' || url === '/growth/rewards') {
-          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const claimedSet = new Set(targetUser?.claimedRewards || []);
           const list: any[] = [];
           if (claimedSet.has('starter_welcome')) {
             list.push({ id: 'starter_welcome', amount: '0.50', assetCode: 'USDT', status: 'CLAIMED', processedAt: new Date().toISOString() });
@@ -2582,7 +2624,9 @@ function adminMockMiddleware(): Plugin {
         if (url.includes('/growth/rewards/') && !url.includes('/missions') && !url.includes('/history') && !url.includes('/available')) {
           const match = url.match(/\/growth\/rewards\/([^/?#]+)/);
           const rawId = match ? match[1] : 'starter_welcome';
-          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const claimedSet = new Set(targetUser?.claimedRewards || []);
           const isClaimed = claimedSet.has(rawId);
 
           res.setHeader('Content-Type', 'application/json');
@@ -2605,7 +2649,9 @@ function adminMockMiddleware(): Plugin {
 
         // Growth Reward History
         if (url.includes('/growth/rewards/history')) {
-          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const claimedSet = new Set(targetUser?.claimedRewards || []);
           const historyList: any[] = [];
           if (claimedSet.has('starter_welcome')) {
             historyList.push({ id: 'starter_welcome', amount: '0.50', assetCode: 'USDT', status: 'CLAIMED', processedAt: new Date().toISOString(), reference: 'REF-STARTER-1' });

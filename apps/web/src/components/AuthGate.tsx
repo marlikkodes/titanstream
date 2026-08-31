@@ -51,7 +51,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // WhatsApp Conversational Approval & Device-Aware States
   const [deviceContext, setDeviceContext] = useState<LoginDeviceContext>('unknown');
-  const [waViewMode, setWaViewMode] = useState<'auto' | 'qr_pin' | 'deep_link' | 'otp'>('auto');
+  const [waViewMode, setWaViewMode] = useState<'auto' | 'qr_pin' | 'deep_link' | 'otp'>('otp');
   
   const [waChallengeId, setWaChallengeId] = useState<string | null>(null);
   const [waShortPin, setWaShortPin] = useState<string | null>(null);
@@ -724,9 +724,20 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 </div>
               )}
 
-              {/* ── Mode C: Traditional OTP Fallback View ───────────────────────── */}
+              {/* ── Mode C: Direct Phone & WhatsApp Sign-In View ───────────────────────── */}
               {waViewMode === 'otp' && (
                 <div className="w-full flex flex-col items-center space-y-4">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-bold text-gray-300">
+                    <Smartphone size={12} className="text-[#25D366]" />
+                    <span>Direct WhatsApp & Phone Sign In</span>
+                  </div>
+
+                  <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                    {waStep === 'phone'
+                      ? 'Enter your WhatsApp or mobile number to authenticate your account.'
+                      : 'Enter the 6-digit code sent to your number to complete sign in.'}
+                  </p>
+
                   {waMessage && waStep === 'otp' && (
                     <div className="w-full p-3.5 mb-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold text-center leading-relaxed">
                       {waMessage}
@@ -734,32 +745,42 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
                   )}
 
                   {waStep === 'phone' ? (
-                    <form onSubmit={handleRequestWaOtp} className="w-full space-y-4">
-                      <input
-                        type="tel"
-                        value={waPhone}
-                        onChange={(e) => setWaPhone(e.target.value)}
-                        placeholder="+256 700 000 000"
-                        className="w-full px-5 py-4 rounded-2xl bg-[#141722] border border-white/10 text-white font-mono text-center text-sm font-semibold placeholder:text-gray-500 focus:outline-none focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366] transition-all shadow-inner"
-                      />
+                    <form onSubmit={handleRequestWaOtp} className="w-full space-y-3">
+                      <div className="space-y-1 text-left">
+                        <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider pl-1">
+                          Phone or WhatsApp Number
+                        </label>
+                        <input
+                          type="tel"
+                          value={waPhone}
+                          onChange={(e) => setWaPhone(e.target.value)}
+                          placeholder="+256 752 762 181"
+                          className="w-full px-5 py-4 rounded-2xl bg-[#141722] border border-white/10 text-white font-mono text-center text-sm font-semibold placeholder:text-gray-500 focus:outline-none focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366] transition-all shadow-inner"
+                        />
+                      </div>
                       <button
                         type="submit"
                         disabled={waLoading || !waPhone}
                         className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#25D366] via-[#20bd5a] to-[#128C7E] hover:brightness-110 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-[#25D366]/25 transition-all disabled:opacity-50 active:scale-[0.98] border border-white/20"
                       >
-                        {waLoading ? <Loader2 size={18} className="animate-spin" /> : 'Send Verification Code'}
+                        {waLoading ? <Loader2 size={18} className="animate-spin" /> : 'Continue with WhatsApp'}
                       </button>
                     </form>
                   ) : (
-                    <form onSubmit={handleVerifyWaOtp} className="w-full space-y-4">
-                      <input
-                        type="text"
-                        maxLength={6}
-                        value={waOtpCode}
-                        onChange={(e) => setWaOtpCode(e.target.replace(/\D/g, ''))}
-                        placeholder="000000"
-                        className="w-full px-5 py-4 rounded-2xl bg-[#141722] border border-white/10 text-white font-mono text-center tracking-[0.4em] text-xl font-bold placeholder:text-gray-600 focus:outline-none focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366] transition-all shadow-inner"
-                      />
+                    <form onSubmit={handleVerifyWaOtp} className="w-full space-y-3">
+                      <div className="space-y-1 text-left">
+                        <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider pl-1">
+                          6-Digit Verification PIN
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={waOtpCode}
+                          onChange={(e) => setWaOtpCode(e.target.replace(/\D/g, ''))}
+                          placeholder="000000"
+                          className="w-full px-5 py-4 rounded-2xl bg-[#141722] border border-white/10 text-white font-mono text-center tracking-[0.4em] text-xl font-bold placeholder:text-gray-600 focus:outline-none focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366] transition-all shadow-inner"
+                        />
+                      </div>
                       <button
                         type="submit"
                         disabled={waLoading || waOtpCode.length < 6}
@@ -767,16 +788,24 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
                       >
                         {waLoading ? <Loader2 size={18} className="animate-spin" /> : 'Verify Code & Sign In'}
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => { setWaStep('phone'); setWaError(null); }}
+                        className="text-xs text-gray-400 hover:text-white transition-colors flex items-center justify-center gap-1 font-semibold mx-auto pt-1"
+                      >
+                        <ArrowLeft size={12} />
+                        <span>Change phone number</span>
+                      </button>
                     </form>
                   )}
 
                   <button
                     type="button"
                     onClick={() => { setWaViewMode('auto'); setWaError(null); }}
-                    className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1 font-semibold"
+                    className="text-xs text-gray-400 hover:text-[#25D366] transition-colors flex items-center gap-1.5 font-semibold pt-2"
                   >
-                    <ArrowLeft size={12} />
-                    <span>Back to Conversational Approval</span>
+                    <QrCode size={13} />
+                    <span>Scan QR Code or Open WhatsApp App instead</span>
                   </button>
                 </div>
               )}
@@ -785,9 +814,10 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
               {waViewMode !== 'otp' && (
                 <button
                   onClick={() => { setWaViewMode('otp'); setWaError(null); }}
-                  className="text-[11px] text-gray-500 hover:text-gray-300 transition-colors mt-4 font-semibold"
+                  className="text-xs text-gray-400 hover:text-[#25D366] transition-colors mt-4 font-semibold flex items-center gap-1.5"
                 >
-                  Prefer 6-digit OTP code input?
+                  <Smartphone size={13} />
+                  <span>Enter Phone / WhatsApp Number directly</span>
                 </button>
               )}
             </div>
