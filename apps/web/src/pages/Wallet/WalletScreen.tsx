@@ -78,6 +78,9 @@ export const WalletScreen: React.FC = () => {
     useMiningStore.getState().fetchUserMachines();
   }, [hasFetchedBalanceOnce]);
 
+  const authUser = useAuthStore((s) => s.user);
+  const displayName = useSettingsStore((s) => s.displayName);
+
   const handleRefresh = () => {
     hapticFeedback.impactOccurred('light');
     useWalletStore.getState().fetchBalanceFromEngine();
@@ -92,8 +95,6 @@ export const WalletScreen: React.FC = () => {
     return <DestinationLoader destination="wallet" />;
   }
 
-  const authUser = useAuthStore((s) => s.user);
-  const displayName = useSettingsStore((s) => s.displayName);
   const username = displayName || authUser?.firstName || user?.first_name || 'User';
   const totalAssetsUsdt = usdtBalance + unclaimedBalance;
 
