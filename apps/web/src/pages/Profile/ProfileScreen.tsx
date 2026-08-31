@@ -855,29 +855,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
 
             <div className="space-y-3 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Connected Telegram ID</span>
+                <span className="text-text-secondary">Connected ID (Telegram / WhatsApp)</span>
                 <span className="font-mono text-text-primary">{telegramUserId}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Two-Factor Authentication</span>
-                <button
-                  onClick={() => {
-                    const newState = !settings.twoFactorEnabled;
-                    settings.updateSetting('twoFactorEnabled', newState);
-                    showToast(
-                      newState
-                        ? 'Two-Factor Authentication enabled for your Telegram session.'
-                        : 'Two-Factor Authentication disabled.',
-                      newState ? 'success' : 'info'
-                    );
-                  }}
-                  className={`px-2.5 py-0.5 rounded-lg font-mono font-bold text-[10px] uppercase transition-colors border press-feedback ${
-                    settings.twoFactorEnabled ? 'bg-usdt-green/20 border-usdt-green/30 text-usdt-green' : 'bg-white/5 border-white/10 text-text-secondary'
-                  }`}
-                >
-                  {settings.twoFactorEnabled ? 'Active' : 'Inactive'}
-                </button>
-              </div>
+              {settings.connectedWhatsApp && settings.connectedWhatsApp !== String(telegramUserId) && (
+                <div className="flex items-center justify-between">
+                  <span className="text-text-secondary">Connected WhatsApp</span>
+                  <span className="font-mono text-text-primary">{settings.connectedWhatsApp}</span>
+                </div>
+              )}
 
               {/* Session list */}
               <div className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-2">
