@@ -2072,19 +2072,39 @@ function adminMockMiddleware(): Plugin {
 
         // Growth Referrals
         if (url.includes('/growth/referrals')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const refs = targetUser.referrals || [];
+          const totalInvited = refs.length;
+          const qualifiedCount = refs.filter((r: any) => r.status === 'QUALIFIED' || r.status === 'PAYING' || r.status === 'REWARDED').length;
+          const payingCount = refs.filter((r: any) => r.status === 'PAYING' || r.status === 'REWARDED').length;
+          const totalEarned = (targetUser.claimedRewards || []).filter((id: string) => id.startsWith('ref_') || id.startsWith('soc_')).length * 2.0;
+          const code = targetUser.referralCode || ('TITAN' + (targetUser.phoneNumber || targetUser.telegramId || targetUser.id).slice(-4));
+
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              referralCode: 'TITAN888',
-              referralLink: 'https://t.me/titanstream_bot?start=ref_TITAN888',
-              totalInvited: 0,
-              qualifiedCount: 0,
-              totalEarnedUSDT: 0,
+              referralCode: code,
+              referralLink: 'https://t.me/titanstream_bot?start=ref_' + code,
+              totalInvited,
+              qualifiedCount,
+              payingCount,
+              totalEarnedUSDT: totalEarned,
               totalEarnedTon: 0,
-              directReferrals: [],
-              tierBreakdown: { tier1: 0, tier2: 0, tier3: 0 },
+              networkContributionUsdt: Number((refs.reduce((acc: number, r: any) => acc + (r.netContributionUsdt || 0), 0)).toFixed(2)),
+              networkGrossVolumeUsdt: Number((refs.reduce((acc: number, r: any) => acc + (r.grossVolumeUsdt || 0), 0)).toFixed(2)),
+              qualificationStatus: {
+                qualifiedCount,
+                payingCount,
+                withdrawalRequired: 5,
+                withdrawalRemaining: Math.max(0, 5 - qualifiedCount),
+                isWithdrawalUnlocked: qualifiedCount >= 5,
+              },
+              directReferrals: refs,
+              referrals: refs,
+              tierBreakdown: { tier1: totalInvited, tier2: 0, tier3: 0 },
             },
           }));
           return;
@@ -2092,12 +2112,23 @@ function adminMockMiddleware(): Plugin {
 
         // Growth Qualifications
         if (url.includes('/growth/qualification')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const refs = targetUser.referrals || [];
+          const qualifiedCount = refs.filter((r: any) => r.status === 'QUALIFIED' || r.status === 'PAYING' || r.status === 'REWARDED').length;
+          const payingCount = refs.filter((r: any) => r.status === 'PAYING' || r.status === 'REWARDED').length;
+
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              withdrawalEligible: true,
+              qualifiedCount,
+              payingCount,
+              withdrawalRequired: 5,
+              withdrawalRemaining: Math.max(0, 5 - qualifiedCount),
+              isWithdrawalUnlocked: qualifiedCount >= 5,
+              withdrawalEligible: qualifiedCount >= 5,
               discountEligible: true,
               discountPercent: 0,
               requirements: [],
@@ -2108,7 +2139,9 @@ function adminMockMiddleware(): Plugin {
 
         // Growth Progress
         if (url.includes('/growth/progress')) {
-          const claimedSet: Set<string> = (globalThis as any).__mockClaimedRewardIds || new Set();
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const claimedSet = new Set(targetUser.claimedRewards || []);
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
@@ -2127,20 +2160,26 @@ function adminMockMiddleware(): Plugin {
 
         // Games Crystal Balance & Catalog
         if (url.includes('/games/balance')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const crystals = Number(targetUser.crystalsBalance || 0);
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             data: {
-              balance: 150,
-              lifetimeEarned: 250,
-              lifetimeSpent: 100,
+              balance: crystals,
+              lifetimeEarned: crystals,
+              lifetimeSpent: 0,
             },
           }));
           return;
         }
 
         if (url.includes('/games/profile')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const crystals = Number(targetUser.crystalsBalance || 0);
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
@@ -2148,11 +2187,11 @@ function adminMockMiddleware(): Plugin {
             data: {
               profile: {
                 level: 1,
-                xp: 150,
+                xp: crystals,
                 nextLevelXp: 500,
                 highestScore: 0,
                 gamesPlayed: 0,
-                crystalsBalance: 150,
+                crystalsBalance: crystals,
               },
               dailyLogin: {
                 day: 1,
@@ -2373,18 +2412,80 @@ function adminMockMiddleware(): Plugin {
 
         // Social Growth Missions
         if (url.includes('/growth/social/missions')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          targetUser.claimedVirtualMissions = targetUser.claimedVirtualMissions || [];
+          targetUser.participatedMissions = targetUser.participatedMissions || [];
+          targetUser.crystalsBalance = Number(targetUser.crystalsBalance || 0);
+
           if (req.method === 'POST' && url.includes('/claim-virtual')) {
+            const match = url.match(/\/growth\/social\/missions\/([^/?#]+)\/claim-virtual/);
+            const missionId = match ? match[1] : 'soc_1';
+
+            if (targetUser.claimedVirtualMissions.includes(missionId)) {
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true, alreadyClaimed: true, crystals: 0, xp: 0 }));
+              return;
+            }
+
+            let crystalsReward = 250;
+            let xpReward = 100;
+            if (missionId === 'soc_2') { crystalsReward = 500; xpReward = 250; }
+            if (missionId === 'soc_3') { crystalsReward = 1500; xpReward = 1000; }
+
+            targetUser.claimedVirtualMissions.push(missionId);
+            targetUser.crystalsBalance += crystalsReward;
+            targetUser.transactions = targetUser.transactions || [];
+            targetUser.transactions.unshift({
+              id: 'tx_crys_' + Date.now(),
+              type: 'CRYSTAL_REWARD',
+              amount: crystalsReward,
+              currency: 'CRYSTALS',
+              status: 'COMPLETED',
+              description: `Mission Reward (${missionId}): +${crystalsReward} Crystals`,
+              createdAt: new Date().toISOString(),
+            });
+
+            saveUsersToDisk(allUsers);
+
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = 200;
-            res.end(JSON.stringify({ success: true, crystals: 250, xp: 100 }));
+            res.end(JSON.stringify({ success: true, crystals: crystalsReward, xp: xpReward, alreadyClaimed: false }));
             return;
           }
+
           if (req.method === 'POST' && url.includes('/participate')) {
+            const match = url.match(/\/growth\/social\/missions\/([^/?#]+)\/participate/);
+            const missionId = match ? match[1] : 'soc_2';
+            if (!targetUser.participatedMissions.includes(missionId)) {
+              targetUser.participatedMissions.push(missionId);
+              saveUsersToDisk(allUsers);
+            }
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = 200;
-            res.end(JSON.stringify({ success: true, participation: { id: 'part-mock', trackingCode: 'TSG-CIRC-8888' } }));
+            res.end(JSON.stringify({
+              success: true,
+              participation: {
+                id: 'part_' + (targetUser.id || 'usr').slice(-4),
+                trackingCode: 'TSG-' + (targetUser.phoneNumber || targetUser.telegramId || targetUser.id).slice(-4),
+              },
+            }));
             return;
           }
+
+          // Dynamic missions according to user's real state
+          const refs = targetUser.referrals || [];
+          const isSoc1Claimed = targetUser.claimedVirtualMissions.includes('soc_1');
+          const isSoc2Claimed = targetUser.claimedVirtualMissions.includes('soc_2');
+          const isSoc3Claimed = targetUser.claimedVirtualMissions.includes('soc_3');
+
+          const soc2Progress = Math.min(100, Math.round((refs.length / 3) * 100));
+          const soc3Progress = Math.min(100, Math.round((refs.filter((r: any) => r.status === 'PAYING' || r.status === 'REWARDED').length / 3) * 100));
+
+          const verifiedSoc2Value = Number((refs.reduce((acc: number, r: any) => acc + (r.netContributionUsdt || 0), 0)).toFixed(2));
+          const verifiedSoc3Value = Number((refs.filter((r: any) => r.status === 'PAYING' || r.status === 'REWARDED').length * 5.0).toFixed(2));
+
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
@@ -2405,14 +2506,14 @@ function adminMockMiddleware(): Plugin {
                 verifiedContributionUsdt: 0,
                 rewardRate: 0,
                 platformMarginBufferUsdt: 0,
-                progressPercent: 100,
-                status: 'TRACKING',
+                progressPercent: isSoc1Claimed ? 100 : 0,
+                status: isSoc1Claimed ? 'CLAIMED' : 'TRACKING',
                 isOverSettled: false,
                 isEligible: false,
                 isClaimed: false,
-                virtualRewardsClaimed: false,
-                trackingCode: 'TSG-TELE-8888',
-                attributedActionsCount: 0,
+                virtualRewardsClaimed: isSoc1Claimed,
+                trackingCode: 'TSG-TELE-' + (targetUser.phoneNumber || targetUser.telegramId || targetUser.id).slice(-4),
+                attributedActionsCount: isSoc1Claimed ? 1 : 0,
               },
               {
                 id: 'soc_2',
@@ -2426,17 +2527,17 @@ function adminMockMiddleware(): Plugin {
                 virtualRewardXp: 250,
                 maxRewardUsdt: 2.0,
                 requiredContributionUsdt: 10.0,
-                verifiedContributionUsdt: 7.8,
+                verifiedContributionUsdt: verifiedSoc2Value,
                 rewardRate: 0.2,
                 platformMarginBufferUsdt: 8.0,
-                progressPercent: 78,
-                status: 'VALUE_GENERATING',
-                isOverSettled: false,
-                isEligible: false,
-                isClaimed: false,
-                virtualRewardsClaimed: true,
-                trackingCode: 'TSG-CIRC-8888',
-                attributedActionsCount: 2,
+                progressPercent: soc2Progress,
+                status: verifiedSoc2Value >= 10.0 ? 'ELIGIBLE' : (refs.length > 0 ? 'VALUE_GENERATING' : 'TRACKING'),
+                isOverSettled: verifiedSoc2Value >= 10.0,
+                isEligible: verifiedSoc2Value >= 10.0,
+                isClaimed: (targetUser.claimedRewards || []).includes('soc_2'),
+                virtualRewardsClaimed: isSoc2Claimed,
+                trackingCode: 'TSG-CIRC-' + (targetUser.phoneNumber || targetUser.telegramId || targetUser.id).slice(-4),
+                attributedActionsCount: refs.length,
               },
               {
                 id: 'soc_3',
@@ -2450,17 +2551,17 @@ function adminMockMiddleware(): Plugin {
                 virtualRewardXp: 1000,
                 maxRewardUsdt: 5.0,
                 requiredContributionUsdt: 25.0,
-                verifiedContributionUsdt: 12.5,
+                verifiedContributionUsdt: verifiedSoc3Value,
                 rewardRate: 0.2,
                 platformMarginBufferUsdt: 20.0,
-                progressPercent: 50,
-                status: 'VALUE_GENERATING',
-                isOverSettled: false,
-                isEligible: false,
-                isClaimed: false,
-                virtualRewardsClaimed: false,
-                trackingCode: 'TSG-TRAD-8888',
-                attributedActionsCount: 1,
+                progressPercent: soc3Progress,
+                status: verifiedSoc3Value >= 25.0 ? 'ELIGIBLE' : (verifiedSoc3Value > 0 ? 'VALUE_GENERATING' : 'TRACKING'),
+                isOverSettled: verifiedSoc3Value >= 25.0,
+                isEligible: verifiedSoc3Value >= 25.0,
+                isClaimed: (targetUser.claimedRewards || []).includes('soc_3'),
+                virtualRewardsClaimed: isSoc3Claimed,
+                trackingCode: 'TSG-TRAD-' + (targetUser.phoneNumber || targetUser.telegramId || targetUser.id).slice(-4),
+                attributedActionsCount: refs.filter((r: any) => r.status === 'PAYING' || r.status === 'REWARDED').length,
               },
             ],
           }));
@@ -2469,17 +2570,27 @@ function adminMockMiddleware(): Plugin {
 
         // Social Value Bank
         if (url.includes('/growth/social/value-bank')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const refs = targetUser.referrals || [];
+          const userCrystals = Number(targetUser.crystalsBalance || 0);
+
+          const totalGenerated = Number((refs.reduce((acc: number, r: any) => acc + (r.netContributionUsdt || 0), 0)).toFixed(2));
+          const unlockedRewards = Number(((targetUser.claimedRewards || []).filter((id: string) => id.startsWith('soc_') || id.startsWith('ref_')).length * 2.0).toFixed(2));
+          const retainedContribution = Number((Math.max(0, totalGenerated - unlockedRewards)).toFixed(2));
+          const completedCount = (targetUser.claimedVirtualMissions || []).length;
+
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             success: true,
             valueBank: {
-              totalValueGeneratedUsdt: 20.30,
-              unlockedRewardsUsdt: 4.00,
-              retainedContributionUsdt: 16.30,
+              totalValueGeneratedUsdt: totalGenerated,
+              unlockedRewardsUsdt: unlockedRewards,
+              retainedContributionUsdt: retainedContribution,
               activeMissionsCount: 3,
-              completedMissionsCount: 1,
-              totalCrystalsEarned: 750,
+              completedMissionsCount: completedCount,
+              totalCrystalsEarned: userCrystals,
             },
           }));
           return;
