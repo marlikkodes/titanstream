@@ -1,0 +1,3 @@
+{"event_id": "evt_78e195c9", "mission_id": "2026-08-30-crash-mission-cc28c5", "type": "MISSION_CREATED", "timestamp": 1788119818.753691, "payload": {"objective": "Crash Mission", "autonomy_level": "L1_LOCAL_DEV", "token_budget": 50000}}
+{"event_id": "evt_2fffc2da", "mission_id": "2026-08-30-crash-mission-cc28c5", "type": "TASK_CREATED", "timestamp": 1788119818.7541575, "payload": {"task_id": "t1", "title": "T1"}}
+{"event_id": "evt_df799319", "mission_id": "2026-08-30-crash-mission-cc28c5", "type": "AGENT_COMPLETED", "timestamp": 1788119818.7546823, "payload": {"task_id": "t1", "tokens": 500}}

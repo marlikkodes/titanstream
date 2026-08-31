@@ -1,0 +1,47 @@
+{
+  "mission_id": "mission_test_replay_001",
+  "objective": "Resolve CSS alignment in Hub Spinner",
+  "created_at": 1788119000.0,
+  "plan": {
+    "type": "CSS_STYLING"
+  },
+  "steps": [
+    {
+      "step_number": 1,
+      "agent": "frontend_engineer",
+      "action_type": "EDIT",
+      "tool": "replace_content",
+      "tool_input": {
+        "file": "styles.css"
+      },
+      "tool_output": {
+        "success": true
+      },
+      "timestamp": 1788119001.0
+    },
+    {
+      "step_number": 2,
+      "agent": "browser_engineer",
+      "action_type": "ASSERT",
+      "tool": "browser_engine",
+      "tool_input": {
+        "check": "dom_aligned"
+      },
+      "tool_output": {
+        "dom_valid": true
+      },
+      "timestamp": 1788119002.0
+    }
+  ],
+  "patches_applied": [
+    "styles.css"
+  ],
+  "verification_results": [
+    {
+      "gate": "browser_verify",
+      "status": "PASSED"
+    }
+  ],
+  "final_status": "COMPLETED",
+  "confidence_score": 0.96
+}

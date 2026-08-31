@@ -1,0 +1,175 @@
+{
+  "mission_id": "mission_1788119765_25ba82",
+  "objective": "Fix prisma database migration column naming mismatch in transactions table",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_2c2b31": {
+      "id": "task_plan_2c2b31",
+      "title": "Architecture & Analysis for: Fix prisma database migration column nam",
+      "description": "Analyze requirements and plan implementation for Fix prisma database migration column naming mismatch in transactions table",
+      "agent_role": "database_engineer",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_2c2b31",
+        "objective": "Fix prisma database migration column naming mismatch in transactions table",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119766.1696136,
+      "completed_at": null
+    },
+    "task_database_engineer_cd193a": {
+      "id": "task_database_engineer_cd193a",
+      "title": "Database Engineer Implementation",
+      "description": "Execute database_engineer scope for Fix prisma database migration column naming mismatch in transactions table",
+      "agent_role": "database_engineer",
+      "dependencies": [
+        "task_plan_2c2b31"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_database_engineer_cd193a",
+        "objective": "Fix prisma database migration column naming mismatch in transactions table",
+        "scope": [
+          "database_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_2c2b31"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119766.1696315,
+      "completed_at": null
+    },
+    "task_backend_engineer_e4f23f": {
+      "id": "task_backend_engineer_e4f23f",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Fix prisma database migration column naming mismatch in transactions table",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_2c2b31"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_backend_engineer_e4f23f",
+        "objective": "Fix prisma database migration column naming mismatch in transactions table",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_2c2b31"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119766.1696382,
+      "completed_at": null
+    },
+    "task_qa_515052": {
+      "id": "task_qa_515052",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_database_engineer_cd193a",
+        "task_backend_engineer_e4f23f"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_qa_515052",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_database_engineer_cd193a",
+          "task_backend_engineer_e4f23f"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119766.1696446,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119765_25ba82"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119765.6361315,
+  "updated_at": 1788119766.1696475
+}

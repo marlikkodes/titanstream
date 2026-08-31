@@ -1,0 +1,213 @@
+{
+  "mission_id": "mission_1788119775_210fbb",
+  "objective": "Fix reactive synchronization between useGrowthStore and ValueBankCard",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_6b819a": {
+      "id": "task_plan_6b819a",
+      "title": "Architecture & Analysis for: Fix reactive synchronization between use",
+      "description": "Analyze requirements and plan implementation for Fix reactive synchronization between useGrowthStore and ValueBankCard",
+      "agent_role": "architect",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_6b819a",
+        "objective": "Fix reactive synchronization between useGrowthStore and ValueBankCard",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119776.398377,
+      "completed_at": null
+    },
+    "task_frontend_engineer_12f308": {
+      "id": "task_frontend_engineer_12f308",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Fix reactive synchronization between useGrowthStore and ValueBankCard",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_6b819a"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_12f308",
+        "objective": "Fix reactive synchronization between useGrowthStore and ValueBankCard",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_6b819a"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119776.398392,
+      "completed_at": null
+    },
+    "task_backend_engineer_4fd621": {
+      "id": "task_backend_engineer_4fd621",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Fix reactive synchronization between useGrowthStore and ValueBankCard",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_6b819a"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_backend_engineer_4fd621",
+        "objective": "Fix reactive synchronization between useGrowthStore and ValueBankCard",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_6b819a"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119776.3983989,
+      "completed_at": null
+    },
+    "task_integ_e57850": {
+      "id": "task_integ_e57850",
+      "title": "Cross-System Integration Verification",
+      "description": "Verify module interfaces, contracts, and data flows",
+      "agent_role": "integration_engineer",
+      "dependencies": [
+        "task_frontend_engineer_12f308",
+        "task_backend_engineer_4fd621"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_integ_e57850",
+        "objective": "Verify integration",
+        "scope": [
+          "integration"
+        ],
+        "constraints": [
+          "no contract breaks"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_12f308",
+          "task_backend_engineer_4fd621"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119776.3984046,
+      "completed_at": null
+    },
+    "task_qa_8217a1": {
+      "id": "task_qa_8217a1",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_integ_e57850"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_qa_8217a1",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_integ_e57850"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119776.3984098,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119775_210fbb"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119775.733514,
+  "updated_at": 1788119776.3984118
+}

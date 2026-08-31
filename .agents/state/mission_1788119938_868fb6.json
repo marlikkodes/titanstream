@@ -1,0 +1,328 @@
+{
+  "mission_id": "mission_1788119938_868fb6",
+  "objective": "Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+  "status": "COMPLETED",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_7caa35": {
+      "id": "task_plan_7caa35",
+      "title": "Architecture & Analysis for: Repair Pesapal and Mobile Money settleme",
+      "description": "Analyze requirements and plan implementation for Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+      "agent_role": "architect",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_7caa35",
+        "objective": "Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_7caa35",
+        "agent_role": "architect",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/server.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119938.680921,
+      "completed_at": null
+    },
+    "task_frontend_engineer_807609": {
+      "id": "task_frontend_engineer_807609",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_7caa35"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_807609",
+        "objective": "Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_7caa35"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_frontend_engineer_807609",
+        "agent_role": "frontend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "apps/web/src/components/MainSpinner.tsx"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119938.6809363,
+      "completed_at": null
+    },
+    "task_backend_engineer_b8f3a3": {
+      "id": "task_backend_engineer_b8f3a3",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_7caa35"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_backend_engineer_b8f3a3",
+        "objective": "Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_7caa35"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_backend_engineer_b8f3a3",
+        "agent_role": "backend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119938.680944,
+      "completed_at": null
+    },
+    "task_integ_e8572c": {
+      "id": "task_integ_e8572c",
+      "title": "Cross-System Integration Verification",
+      "description": "Verify module interfaces, contracts, and data flows",
+      "agent_role": "integration_engineer",
+      "dependencies": [
+        "task_frontend_engineer_807609",
+        "task_backend_engineer_b8f3a3"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_integ_e8572c",
+        "objective": "Verify integration",
+        "scope": [
+          "integration"
+        ],
+        "constraints": [
+          "no contract breaks"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_807609",
+          "task_backend_engineer_b8f3a3"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_integ_e8572c",
+        "agent_role": "integration_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/server.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119938.68095,
+      "completed_at": null
+    },
+    "task_qa_701ab0": {
+      "id": "task_qa_701ab0",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_integ_e8572c"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_qa_701ab0",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_integ_e8572c"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_qa_701ab0",
+        "agent_role": "qa_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/server.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119938.6809554,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119938_868fb6"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119938.0397003,
+  "updated_at": 1788119938.681355
+}

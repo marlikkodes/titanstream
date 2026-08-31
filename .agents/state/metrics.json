@@ -1,7 +1,7 @@
 {
-  "total_missions": 34,
-  "total_tasks_executed": 122,
-  "total_tokens_consumed": 101150,
+  "total_missions": 39,
+  "total_tasks_executed": 140,
+  "total_tokens_consumed": 116450,
   "total_repairs": 0,
   "total_escalations": 0,
   "missions": [
@@ -339,6 +339,56 @@
       "mission_id": "mission_1788118597_63c940",
       "timestamp": 1788118598.74435,
       "duration_seconds": 0.88,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788119274_d4b41f",
+      "timestamp": 1788119274.8898528,
+      "duration_seconds": 0.48,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788119275_92f73b",
+      "timestamp": 1788119275.521474,
+      "duration_seconds": 0.51,
+      "tokens_consumed": 4250,
+      "tasks_count": 5,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 10
+    },
+    {
+      "mission_id": "mission_1788119275_6eff74",
+      "timestamp": 1788119276.1523607,
+      "duration_seconds": 0.51,
+      "tokens_consumed": 3400,
+      "tasks_count": 4,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 8
+    },
+    {
+      "mission_id": "mission_1788119276_d91b91",
+      "timestamp": 1788119277.1694586,
+      "duration_seconds": 0.61,
+      "tokens_consumed": 2550,
+      "tasks_count": 3,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 6
+    },
+    {
+      "mission_id": "mission_1788119277_db6e01",
+      "timestamp": 1788119277.915191,
+      "duration_seconds": 0.61,
       "tokens_consumed": 2550,
       "tasks_count": 3,
       "repair_attempts": 0,

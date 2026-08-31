@@ -1,0 +1,175 @@
+{
+  "mission_id": "mission_1788119687_7835b1",
+  "objective": "Add SocialMission and SocialAttribution schema with backward compatibility",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_a20e5a": {
+      "id": "task_plan_a20e5a",
+      "title": "Architecture & Analysis for: Add SocialMission and SocialAttribution ",
+      "description": "Analyze requirements and plan implementation for Add SocialMission and SocialAttribution schema with backward compatibility",
+      "agent_role": "database_engineer",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_a20e5a",
+        "objective": "Add SocialMission and SocialAttribution schema with backward compatibility",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119688.3177676,
+      "completed_at": null
+    },
+    "task_database_engineer_07ae86": {
+      "id": "task_database_engineer_07ae86",
+      "title": "Database Engineer Implementation",
+      "description": "Execute database_engineer scope for Add SocialMission and SocialAttribution schema with backward compatibility",
+      "agent_role": "database_engineer",
+      "dependencies": [
+        "task_plan_a20e5a"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_database_engineer_07ae86",
+        "objective": "Add SocialMission and SocialAttribution schema with backward compatibility",
+        "scope": [
+          "database_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_a20e5a"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119688.3177845,
+      "completed_at": null
+    },
+    "task_backend_engineer_c2027a": {
+      "id": "task_backend_engineer_c2027a",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Add SocialMission and SocialAttribution schema with backward compatibility",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_a20e5a"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_backend_engineer_c2027a",
+        "objective": "Add SocialMission and SocialAttribution schema with backward compatibility",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_a20e5a"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119688.317792,
+      "completed_at": null
+    },
+    "task_qa_8182ce": {
+      "id": "task_qa_8182ce",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_database_engineer_07ae86",
+        "task_backend_engineer_c2027a"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_qa_8182ce",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_database_engineer_07ae86",
+          "task_backend_engineer_c2027a"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119688.3177984,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119687_7835b1"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119687.813482,
+  "updated_at": 1788119688.3178005
+}

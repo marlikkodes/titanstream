@@ -1,0 +1,267 @@
+{
+  "mission_id": "mission_1788119968_cb174d",
+  "objective": "Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+  "status": "COMPLETED",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_a662bc": {
+      "id": "task_plan_a662bc",
+      "title": "Architecture & Analysis for: Synchronize FinancialOrchestrator alloca",
+      "description": "Analyze requirements and plan implementation for Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+      "agent_role": "devops_engineer",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_a662bc",
+        "objective": "Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_a662bc",
+        "agent_role": "devops_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/server.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119968.7896283,
+      "completed_at": null
+    },
+    "task_devops_engineer_1af98a": {
+      "id": "task_devops_engineer_1af98a",
+      "title": "Devops Engineer Implementation",
+      "description": "Execute devops_engineer scope for Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+      "agent_role": "devops_engineer",
+      "dependencies": [
+        "task_plan_a662bc"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_devops_engineer_1af98a",
+        "objective": "Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+        "scope": [
+          "devops_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_a662bc"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_devops_engineer_1af98a",
+        "agent_role": "devops_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/server.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119968.7896452,
+      "completed_at": null
+    },
+    "task_qa_8ad4fb": {
+      "id": "task_qa_8ad4fb",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_devops_engineer_1af98a"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_qa_8ad4fb",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_devops_engineer_1af98a"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_qa_8ad4fb",
+        "agent_role": "qa_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/server.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119968.7896512,
+      "completed_at": null
+    },
+    "task_sec_bda310": {
+      "id": "task_sec_bda310",
+      "title": "Security & Red-Team Code Audit",
+      "description": "Audit changes for secrets, vulnerabilities, and architectural integrity",
+      "agent_role": "security_engineer",
+      "dependencies": [
+        "task_devops_engineer_1af98a"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_sec_bda310",
+        "objective": "Security Audit",
+        "scope": [
+          "security",
+          "audit"
+        ],
+        "constraints": [
+          "zero secret leaks",
+          "OWASP compliance"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_devops_engineer_1af98a"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_sec_bda310",
+        "agent_role": "security_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119968.7896564,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119968_cb174d"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119968.185478,
+  "updated_at": 1788119968.790088
+}

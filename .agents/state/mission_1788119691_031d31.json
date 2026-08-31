@@ -1,0 +1,175 @@
+{
+  "mission_id": "mission_1788119691_031d31",
+  "objective": "Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_60f1b5": {
+      "id": "task_plan_60f1b5",
+      "title": "Architecture & Analysis for: Synchronize FinancialOrchestrator alloca",
+      "description": "Analyze requirements and plan implementation for Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+      "agent_role": "devops_engineer",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_60f1b5",
+        "objective": "Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119692.1629014,
+      "completed_at": null
+    },
+    "task_devops_engineer_77dcd9": {
+      "id": "task_devops_engineer_77dcd9",
+      "title": "Devops Engineer Implementation",
+      "description": "Execute devops_engineer scope for Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+      "agent_role": "devops_engineer",
+      "dependencies": [
+        "task_plan_60f1b5"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_devops_engineer_77dcd9",
+        "objective": "Synchronize FinancialOrchestrator allocation with GrowthContribution over-settlement gate",
+        "scope": [
+          "devops_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_60f1b5"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119692.1629164,
+      "completed_at": null
+    },
+    "task_qa_1953c0": {
+      "id": "task_qa_1953c0",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_devops_engineer_77dcd9"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_qa_1953c0",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_devops_engineer_77dcd9"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119692.1629212,
+      "completed_at": null
+    },
+    "task_sec_281a42": {
+      "id": "task_sec_281a42",
+      "title": "Security & Red-Team Code Audit",
+      "description": "Audit changes for secrets, vulnerabilities, and architectural integrity",
+      "agent_role": "security_engineer",
+      "dependencies": [
+        "task_devops_engineer_77dcd9"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_sec_281a42",
+        "objective": "Security Audit",
+        "scope": [
+          "security",
+          "audit"
+        ],
+        "constraints": [
+          "zero secret leaks",
+          "OWASP compliance"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_devops_engineer_77dcd9"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119692.1629245,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119691_031d31"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119691.6513867,
+  "updated_at": 1788119692.1629262
+}

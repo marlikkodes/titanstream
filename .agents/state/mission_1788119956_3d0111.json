@@ -1,0 +1,60 @@
+{
+  "mission_id": "mission_1788119956_3d0111",
+  "objective": "Interruption Test",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_62f7ce": {
+      "id": "task_plan_62f7ce",
+      "title": "Architecture & Analysis for: Interruption Test",
+      "description": "Analyze requirements and plan implementation for Interruption Test",
+      "agent_role": "frontend_engineer",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_62f7ce",
+        "objective": "Interruption Test",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119956.9536884,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [
+    "task_plan_62f7ce"
+  ],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119956_3d0111"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119956.9531815,
+  "updated_at": 1788119956.9538007
+}

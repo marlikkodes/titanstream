@@ -1,10 +1,10 @@
 {
-  "total_missions": 3,
-  "total_prompt_tokens": 45000,
-  "total_completion_tokens": 9000,
+  "total_missions": 11,
+  "total_prompt_tokens": 165000,
+  "total_completion_tokens": 33000,
   "total_cached_tokens": 0,
-  "total_cost_usd": 0.036,
-  "total_human_minutes_saved": 81.0,
+  "total_cost_usd": 0.132,
+  "total_human_minutes_saved": 297.0,
   "records": [
     {
       "mission_id": "m_budget",
@@ -27,6 +27,78 @@
     {
       "mission_id": "m_budget",
       "timestamp": 1788118603.8603117,
+      "prompt_tokens": 15000,
+      "completion_tokens": 3000,
+      "cost_usd": 0.012,
+      "human_minutes_saved": 27.0,
+      "success": true
+    },
+    {
+      "mission_id": "m_budget",
+      "timestamp": 1788119281.0759153,
+      "prompt_tokens": 15000,
+      "completion_tokens": 3000,
+      "cost_usd": 0.012,
+      "human_minutes_saved": 27.0,
+      "success": true
+    },
+    {
+      "mission_id": "m_budget",
+      "timestamp": 1788119684.7724419,
+      "prompt_tokens": 15000,
+      "completion_tokens": 3000,
+      "cost_usd": 0.012,
+      "human_minutes_saved": 27.0,
+      "success": true
+    },
+    {
+      "mission_id": "m_budget",
+      "timestamp": 1788119717.7909493,
+      "prompt_tokens": 15000,
+      "completion_tokens": 3000,
+      "cost_usd": 0.012,
+      "human_minutes_saved": 27.0,
+      "success": true
+    },
+    {
+      "mission_id": "m_budget",
+      "timestamp": 1788119771.933329,
+      "prompt_tokens": 15000,
+      "completion_tokens": 3000,
+      "cost_usd": 0.012,
+      "human_minutes_saved": 27.0,
+      "success": true
+    },
+    {
+      "mission_id": "m_budget",
+      "timestamp": 1788119820.5489209,
+      "prompt_tokens": 15000,
+      "completion_tokens": 3000,
+      "cost_usd": 0.012,
+      "human_minutes_saved": 27.0,
+      "success": true
+    },
+    {
+      "mission_id": "m_budget",
+      "timestamp": 1788119887.1722634,
+      "prompt_tokens": 15000,
+      "completion_tokens": 3000,
+      "cost_usd": 0.012,
+      "human_minutes_saved": 27.0,
+      "success": true
+    },
+    {
+      "mission_id": "m_budget",
+      "timestamp": 1788119935.3809137,
+      "prompt_tokens": 15000,
+      "completion_tokens": 3000,
+      "cost_usd": 0.012,
+      "human_minutes_saved": 27.0,
+      "success": true
+    },
+    {
+      "mission_id": "m_budget",
+      "timestamp": 1788119960.823342,
       "prompt_tokens": 15000,
       "completion_tokens": 3000,
       "cost_usd": 0.012,

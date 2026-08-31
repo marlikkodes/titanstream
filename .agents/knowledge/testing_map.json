@@ -1,5 +1,10 @@
 {
   "test_suites": [
+    "AgentOS/benchmarks/golden_missions/test_golden_missions.py",
+    "AgentOS/engine/verification/test_selector.py",
+    "AgentOS/tests/self/test_self_subsystems.py",
+    "AgentOS/tests/chaos/test_chaos_injection.py",
+    "AgentOS/tests/redteam/test_adversarial_security.py",
     "scripts/test_merchant_mm_e2e.py",
     "scripts/test_withdrawal_hardening_e2e.py",
     "services/api/test/auth.unit.spec.ts",
@@ -61,6 +66,7 @@
     "tests/stage12a.spec.ts",
     "tests/agent_os/test_suite_all_12.py",
     "tests/agent_os/test_suite_all_40.py",
+    "tests/agent_os/test_suite_phase2_master.py",
     "tests/agent_os/test_suite_all_20.py"
   ]
 }

@@ -1,0 +1,213 @@
+{
+  "mission_id": "mission_1788119724_21ec1d",
+  "objective": "Fix mobile viewport text clipping on Hub Spinner reward queue card",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_664dd0": {
+      "id": "task_plan_664dd0",
+      "title": "Architecture & Analysis for: Fix mobile viewport text clipping on Hub",
+      "description": "Analyze requirements and plan implementation for Fix mobile viewport text clipping on Hub Spinner reward queue card",
+      "agent_role": "architect",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_664dd0",
+        "objective": "Fix mobile viewport text clipping on Hub Spinner reward queue card",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119724.6862833,
+      "completed_at": null
+    },
+    "task_frontend_engineer_d73973": {
+      "id": "task_frontend_engineer_d73973",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Fix mobile viewport text clipping on Hub Spinner reward queue card",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_664dd0"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_d73973",
+        "objective": "Fix mobile viewport text clipping on Hub Spinner reward queue card",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_664dd0"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119724.6863008,
+      "completed_at": null
+    },
+    "task_backend_engineer_97935b": {
+      "id": "task_backend_engineer_97935b",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Fix mobile viewport text clipping on Hub Spinner reward queue card",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_664dd0"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_backend_engineer_97935b",
+        "objective": "Fix mobile viewport text clipping on Hub Spinner reward queue card",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_664dd0"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119724.6863077,
+      "completed_at": null
+    },
+    "task_integ_b769ae": {
+      "id": "task_integ_b769ae",
+      "title": "Cross-System Integration Verification",
+      "description": "Verify module interfaces, contracts, and data flows",
+      "agent_role": "integration_engineer",
+      "dependencies": [
+        "task_frontend_engineer_d73973",
+        "task_backend_engineer_97935b"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_integ_b769ae",
+        "objective": "Verify integration",
+        "scope": [
+          "integration"
+        ],
+        "constraints": [
+          "no contract breaks"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_d73973",
+          "task_backend_engineer_97935b"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119724.686312,
+      "completed_at": null
+    },
+    "task_qa_3328ff": {
+      "id": "task_qa_3328ff",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_integ_b769ae"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_qa_3328ff",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_integ_b769ae"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119724.6863167,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119724_21ec1d"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119724.1522315,
+  "updated_at": 1788119724.686319
+}

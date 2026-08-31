@@ -1,6 +1,6 @@
 {
   "root": "/home/wendy/Desktop/tetherstream",
-  "total_files": 4583,
+  "total_files": 4817,
   "files": [
     {
       "path": "MISSION_CONTROL_FORENSIC_REPORT.md",
@@ -318,6 +318,11 @@
       "size_bytes": 23
     },
     {
+      "path": "AgentOS/docs/PHASE-II-BASELINE.md",
+      "extension": ".md",
+      "size_bytes": 5537
+    },
+    {
       "path": "AgentOS/docs/CAPABILITY-REGISTRY.md",
       "extension": ".md",
       "size_bytes": 4100
@@ -336,6 +341,11 @@
       "path": "AgentOS/docs/SUPERENGINEERING-SYSTEM-FINAL.md",
       "extension": ".md",
       "size_bytes": 9503
+    },
+    {
+      "path": "AgentOS/docs/TOKEN-ECONOMICS.md",
+      "extension": ".md",
+      "size_bytes": 2094
     },
     {
       "path": "AgentOS/benchmarks/nextjs_app/package.json",
@@ -411,6 +421,11 @@
       "path": "AgentOS/benchmarks/node_backend/src/auth.js",
       "extension": ".js",
       "size_bytes": 202
+    },
+    {
+      "path": "AgentOS/benchmarks/golden_missions/test_golden_missions.py",
+      "extension": ".py",
+      "size_bytes": 3335
     },
     {
       "path": "AgentOS/benchmarks/fullstack_app/frontend/api.ts",
@@ -735,12 +750,12 @@
     {
       "path": "AgentOS/engine/__init__.py",
       "extension": ".py",
-      "size_bytes": 1399
+      "size_bytes": 3766
     },
     {
       "path": "AgentOS/engine/agent_commander.py",
       "extension": ".py",
-      "size_bytes": 7280
+      "size_bytes": 12290
     },
     {
       "path": "AgentOS/engine/mission_state.py",
@@ -761,6 +776,11 @@
       "path": "AgentOS/engine/verification/evidence_engine.py",
       "extension": ".py",
       "size_bytes": 2516
+    },
+    {
+      "path": "AgentOS/engine/verification/test_selector.py",
+      "extension": ".py",
+      "size_bytes": 3989
     },
     {
       "path": "AgentOS/engine/verification/deterministic_gates.py",
@@ -788,6 +808,11 @@
       "size_bytes": 136
     },
     {
+      "path": "AgentOS/engine/context/context_cache.py",
+      "extension": ".py",
+      "size_bytes": 2095
+    },
+    {
       "path": "AgentOS/engine/context/tier_manager.py",
       "extension": ".py",
       "size_bytes": 6309
@@ -796,6 +821,11 @@
       "path": "AgentOS/engine/safety/capability_firewall.py",
       "extension": ".py",
       "size_bytes": 2453
+    },
+    {
+      "path": "AgentOS/engine/safety/environment_safety.py",
+      "extension": ".py",
+      "size_bytes": 2021
     },
     {
       "path": "AgentOS/engine/safety/hooks.py",
@@ -808,14 +838,34 @@
       "size_bytes": 182
     },
     {
+      "path": "AgentOS/engine/safety/prompt_injection_defense.py",
+      "extension": ".py",
+      "size_bytes": 1800
+    },
+    {
       "path": "AgentOS/engine/safety/policy_guard.py",
       "extension": ".py",
       "size_bytes": 2583
     },
     {
+      "path": "AgentOS/engine/safety/supply_chain.py",
+      "extension": ".py",
+      "size_bytes": 2072
+    },
+    {
       "path": "AgentOS/engine/routing/domain_detector.py",
       "extension": ".py",
       "size_bytes": 11482
+    },
+    {
+      "path": "AgentOS/engine/routing/tool_router.py",
+      "extension": ".py",
+      "size_bytes": 1792
+    },
+    {
+      "path": "AgentOS/engine/routing/mcp_governor.py",
+      "extension": ".py",
+      "size_bytes": 2498
     },
     {
       "path": "AgentOS/engine/repository/onboarding.py",
@@ -848,6 +898,21 @@
       "size_bytes": 2019
     },
     {
+      "path": "AgentOS/engine/mission/incident_mode.py",
+      "extension": ".py",
+      "size_bytes": 2583
+    },
+    {
+      "path": "AgentOS/engine/mission/replay.py",
+      "extension": ".py",
+      "size_bytes": 2634
+    },
+    {
+      "path": "AgentOS/engine/mission/mission_planner_v2.py",
+      "extension": ".py",
+      "size_bytes": 7234
+    },
+    {
       "path": "AgentOS/engine/mission/__init__.py",
       "extension": ".py",
       "size_bytes": 104
@@ -873,9 +938,19 @@
       "size_bytes": 231
     },
     {
+      "path": "AgentOS/engine/economics/engineering_score.py",
+      "extension": ".py",
+      "size_bytes": 2751
+    },
+    {
       "path": "AgentOS/engine/economics/telemetry_v2.py",
       "extension": ".py",
       "size_bytes": 2795
+    },
+    {
+      "path": "AgentOS/engine/diagnostics/learning_dashboard.py",
+      "extension": ".py",
+      "size_bytes": 1697
     },
     {
       "path": "AgentOS/engine/diagnostics/doctor.py",
@@ -888,6 +963,16 @@
       "size_bytes": 6111
     },
     {
+      "path": "AgentOS/engine/orchestration/agent_composition.py",
+      "extension": ".py",
+      "size_bytes": 2649
+    },
+    {
+      "path": "AgentOS/engine/orchestration/staged_review.py",
+      "extension": ".py",
+      "size_bytes": 2901
+    },
+    {
       "path": "AgentOS/engine/orchestration/__init__.py",
       "extension": ".py",
       "size_bytes": 70
@@ -898,9 +983,34 @@
       "size_bytes": 1663
     },
     {
+      "path": "AgentOS/engine/memory/strategy_memory.py",
+      "extension": ".py",
+      "size_bytes": 6509
+    },
+    {
       "path": "AgentOS/engine/memory/failure_memory.py",
       "extension": ".py",
       "size_bytes": 4265
+    },
+    {
+      "path": "AgentOS/engine/policy/policy_engine.py",
+      "extension": ".py",
+      "size_bytes": 8236
+    },
+    {
+      "path": "AgentOS/engine/policy/__init__.py",
+      "extension": ".py",
+      "size_bytes": 201
+    },
+    {
+      "path": "AgentOS/engine/intelligence/regression_predictor.py",
+      "extension": ".py",
+      "size_bytes": 2548
+    },
+    {
+      "path": "AgentOS/engine/intelligence/diff_analyzer.py",
+      "extension": ".py",
+      "size_bytes": 3311
     },
     {
       "path": "AgentOS/engine/intelligence/interface.py",
@@ -921,6 +1031,16 @@
       "path": "AgentOS/engine/intelligence/ast/structural_editor.py",
       "extension": ".py",
       "size_bytes": 2362
+    },
+    {
+      "path": "AgentOS/engine/intelligence/confidence/__init__.py",
+      "extension": ".py",
+      "size_bytes": 66
+    },
+    {
+      "path": "AgentOS/engine/intelligence/confidence/confidence_engine.py",
+      "extension": ".py",
+      "size_bytes": 3309
     },
     {
       "path": "AgentOS/engine/intelligence/impact/__init__.py",
@@ -956,6 +1076,21 @@
       "path": "AgentOS/workers/swe_worker/worker.py",
       "extension": ".py",
       "size_bytes": 845
+    },
+    {
+      "path": "AgentOS/tests/self/test_self_subsystems.py",
+      "extension": ".py",
+      "size_bytes": 8215
+    },
+    {
+      "path": "AgentOS/tests/chaos/test_chaos_injection.py",
+      "extension": ".py",
+      "size_bytes": 3169
+    },
+    {
+      "path": "AgentOS/tests/redteam/test_adversarial_security.py",
+      "extension": ".py",
+      "size_bytes": 3583
     },
     {
       "path": "scripts/generate_configs_and_workflows.py",
@@ -2213,6 +2348,11 @@
       "size_bytes": 3848
     },
     {
+      "path": ".agents/test_replays/mission_test_replay_001.json",
+      "extension": ".json",
+      "size_bytes": 966
+    },
+    {
       "path": ".agents/skills/superengineering/SKILL.md",
       "extension": ".md",
       "size_bytes": 930
@@ -2230,7 +2370,7 @@
     {
       "path": ".agents/knowledge/testing_map.json",
       "extension": ".json",
-      "size_bytes": 4303
+      "size_bytes": 4630
     },
     {
       "path": ".agents/knowledge/command_registry.json",
@@ -2250,12 +2390,107 @@
     {
       "path": ".agents/knowledge/repo_map.json",
       "extension": ".json",
-      "size_bytes": 643245
+      "size_bytes": 674337
     },
     {
       "path": ".agents/bin/agent-commander",
       "extension": "",
       "size_bytes": 5015
+    },
+    {
+      "path": ".agents/cache/context_test/schema_summary.json",
+      "extension": ".json",
+      "size_bytes": 225
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-b5a3a6/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-b5a3a6/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-b5a3a6/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-cc28c5/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 517
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-cc28c5/mission.json",
+      "extension": ".json",
+      "size_bytes": 209
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-cc28c5/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 600
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-c27ac1/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 340
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-c27ac1/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-c27ac1/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 228
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-f4f726/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-f4f726/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-f4f726/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-bde208/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-bde208/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-bde208/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-d78161/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 518
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-d78161/mission.json",
+      "extension": ".json",
+      "size_bytes": 209
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-d78161/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 601
     },
     {
       "path": ".agents/missions/2026-08-30-crash-recovery-mission-79d93b/checkpoint.json",
@@ -2271,6 +2506,36 @@
       "path": ".agents/missions/2026-08-30-crash-recovery-mission-79d93b/events.jsonl",
       "extension": ".jsonl",
       "size_bytes": 1077
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-75db2f/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-75db2f/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-75db2f/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-2c838f/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-2c838f/mission.json",
+      "extension": ".json",
+      "size_bytes": 200
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-2c838f/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
     },
     {
       "path": ".agents/missions/2026-08-30-mission-beta-update-database-5afad2/checkpoint.json",
@@ -2303,6 +2568,51 @@
       "size_bytes": 1075
     },
     {
+      "path": ".agents/missions/2026-08-30-mission-1-25c323/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-25c323/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-25c323/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-d34a7b/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 516
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-d34a7b/mission.json",
+      "extension": ".json",
+      "size_bytes": 208
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-d34a7b/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 599
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-580fe5/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 518
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-580fe5/mission.json",
+      "extension": ".json",
+      "size_bytes": 209
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-580fe5/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 601
+    },
+    {
       "path": ".agents/missions/2026-08-30-mission-2-1350ac/checkpoint.json",
       "extension": ".json",
       "size_bytes": 342
@@ -2314,6 +2624,21 @@
     },
     {
       "path": ".agents/missions/2026-08-30-mission-2-1350ac/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-c196fd/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-c196fd/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-c196fd/events.jsonl",
       "extension": ".jsonl",
       "size_bytes": 230
     },
@@ -2331,6 +2656,51 @@
       "path": ".agents/missions/2026-08-30-mission-beta-update-database-b91495/events.jsonl",
       "extension": ".jsonl",
       "size_bytes": 449
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-d7b9df/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-d7b9df/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-d7b9df/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-cbcb6e/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-cbcb6e/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-cbcb6e/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-c6a6a7/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 517
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-c6a6a7/mission.json",
+      "extension": ".json",
+      "size_bytes": 209
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-c6a6a7/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 600
     },
     {
       "path": ".agents/missions/2026-08-30-mission-alpha-refactor-ui-c65471/checkpoint.json",
@@ -2363,6 +2733,21 @@
       "size_bytes": 439
     },
     {
+      "path": ".agents/missions/2026-08-30-mission-1-bfe11e/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 341
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-bfe11e/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-bfe11e/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 229
+    },
+    {
       "path": ".agents/missions/2026-08-30-crash-mission-4162d8/checkpoint.json",
       "extension": ".json",
       "size_bytes": 518
@@ -2376,6 +2761,96 @@
       "path": ".agents/missions/2026-08-30-crash-mission-4162d8/events.jsonl",
       "extension": ".jsonl",
       "size_bytes": 601
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-5ccc29/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-5ccc29/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-5ccc29/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-91f30a/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 518
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-91f30a/mission.json",
+      "extension": ".json",
+      "size_bytes": 208
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-91f30a/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 600
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-00923f/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-00923f/mission.json",
+      "extension": ".json",
+      "size_bytes": 200
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-00923f/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-5e244d/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-5e244d/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-5e244d/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-b95592/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-b95592/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-b95592/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-bc9e6b/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-bc9e6b/mission.json",
+      "extension": ".json",
+      "size_bytes": 200
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-2-bc9e6b/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
     },
     {
       "path": ".agents/missions/2026-08-30-mission-1-bc5e7e/checkpoint.json",
@@ -2406,6 +2881,81 @@
       "path": ".agents/missions/2026-08-30-mission-1-3cb7b5/events.jsonl",
       "extension": ".jsonl",
       "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-96819b/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 518
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-96819b/mission.json",
+      "extension": ".json",
+      "size_bytes": 208
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-96819b/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 601
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-659d4b/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 518
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-659d4b/mission.json",
+      "extension": ".json",
+      "size_bytes": 209
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-659d4b/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 601
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-7add90/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-7add90/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-7add90/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-b9af94/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-b9af94/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-30-mission-1-b9af94/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-9b3cf1/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 517
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-9b3cf1/mission.json",
+      "extension": ".json",
+      "size_bytes": 209
+    },
+    {
+      "path": ".agents/missions/2026-08-30-crash-mission-9b3cf1/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 600
     },
     {
       "path": ".agents/missions/2026-08-30-mission-2-3159ce/checkpoint.json",
@@ -2498,9 +3048,29 @@
       "size_bytes": 344
     },
     {
+      "path": ".agents/state/mission_1788119813_668cc3.json",
+      "extension": ".json",
+      "size_bytes": 10075
+    },
+    {
+      "path": ".agents/state/mission_1788119814_69c5df.json",
+      "extension": ".json",
+      "size_bytes": 8415
+    },
+    {
       "path": ".agents/state/mission_1788118483_fa1984.json",
       "extension": ".json",
       "size_bytes": 1678
+    },
+    {
+      "path": ".agents/state/mission_1788119777_ae11fa.json",
+      "extension": ".json",
+      "size_bytes": 5590
+    },
+    {
+      "path": ".agents/state/mission_1788119939_50707d.json",
+      "extension": ".json",
+      "size_bytes": 10086
     },
     {
       "path": ".agents/state/mission_1788118506_5c911b.json",
@@ -2513,6 +3083,11 @@
       "size_bytes": 10373
     },
     {
+      "path": ".agents/state/mission_1788119766_c28c46.json",
+      "extension": ".json",
+      "size_bytes": 4245
+    },
+    {
       "path": ".agents/state/mission_1788112920_c1be94.json",
       "extension": ".json",
       "size_bytes": 6587
@@ -2523,9 +3098,39 @@
       "size_bytes": 6457
     },
     {
+      "path": ".agents/state/mission_1788119724_21ec1d.json",
+      "extension": ".json",
+      "size_bytes": 6648
+    },
+    {
+      "path": ".agents/state/mission_1788119275_6eff74.json",
+      "extension": ".json",
+      "size_bytes": 8644
+    },
+    {
+      "path": ".agents/state/mission_1788119679_414b76.json",
+      "extension": ".json",
+      "size_bytes": 4244
+    },
+    {
+      "path": ".agents/state/mission_1788119822_bf6175.json",
+      "extension": ".json",
+      "size_bytes": 6247
+    },
+    {
       "path": ".agents/state/mission_1788112948_1eacd5.json",
       "extension": ".json",
       "size_bytes": 6454
+    },
+    {
+      "path": ".agents/state/mission_1788119714_c04d53.json",
+      "extension": ".json",
+      "size_bytes": 1677
+    },
+    {
+      "path": ".agents/state/mission_1788119773_609e48.json",
+      "extension": ".json",
+      "size_bytes": 4194
     },
     {
       "path": ".agents/state/mission_1788112736_9e8adb.json",
@@ -2538,9 +3143,39 @@
       "size_bytes": 8641
     },
     {
+      "path": ".agents/state/mission_1788119928_0f6b38.json",
+      "extension": ".json",
+      "size_bytes": 10073
+    },
+    {
+      "path": ".agents/state/mission_1788119686_c0be3e.json",
+      "extension": ".json",
+      "size_bytes": 4192
+    },
+    {
+      "path": ".agents/state/mission_1788119274_d4b41f.json",
+      "extension": ".json",
+      "size_bytes": 6457
+    },
+    {
+      "path": ".agents/state/mission_1788119277_db6e01.json",
+      "extension": ".json",
+      "size_bytes": 6601
+    },
+    {
       "path": ".agents/state/mission_1788112654_f3f70f.json",
       "extension": ".json",
       "size_bytes": 6359
+    },
+    {
+      "path": ".agents/state/mission_1788119678_d951f3.json",
+      "extension": ".json",
+      "size_bytes": 5598
+    },
+    {
+      "path": ".agents/state/mission_1788119723_78a919.json",
+      "extension": ".json",
+      "size_bytes": 6745
     },
     {
       "path": ".agents/state/mission_1788112952_2a8256.json",
@@ -2548,9 +3183,49 @@
       "size_bytes": 6605
     },
     {
+      "path": ".agents/state/mission_1788119882_cc271f.json",
+      "extension": ".json",
+      "size_bytes": 6391
+    },
+    {
+      "path": ".agents/state/mission_1788119941_33a0cd.json",
+      "extension": ".json",
+      "size_bytes": 8238
+    },
+    {
+      "path": ".agents/state/mission_1788119687_3a9f26.json",
+      "extension": ".json",
+      "size_bytes": 6669
+    },
+    {
+      "path": ".agents/state/mission_1788119826_cc1999.json",
+      "extension": ".json",
+      "size_bytes": 10289
+    },
+    {
+      "path": ".agents/state/mission_1788119929_18b83e.json",
+      "extension": ".json",
+      "size_bytes": 6376
+    },
+    {
       "path": ".agents/state/mission_1788118507_6b0032.json",
       "extension": ".json",
       "size_bytes": 6587
+    },
+    {
+      "path": ".agents/state/mission_1788119890_da8d1d.json",
+      "extension": ".json",
+      "size_bytes": 8413
+    },
+    {
+      "path": ".agents/state/mission_1788119956_3d0111.json",
+      "extension": ".json",
+      "size_bytes": 1679
+    },
+    {
+      "path": ".agents/state/mission_1788119827_5d30a2.json",
+      "extension": ".json",
+      "size_bytes": 10119
     },
     {
       "path": ".agents/state/mission_1788118597_ef51a5.json",
@@ -2568,6 +3243,21 @@
       "size_bytes": 6583
     },
     {
+      "path": ".agents/state/mission_1788118599_9555db.json",
+      "extension": ".json",
+      "size_bytes": 1677
+    },
+    {
+      "path": ".agents/state/mission_1788119710_69cfcc.json",
+      "extension": ".json",
+      "size_bytes": 4113
+    },
+    {
+      "path": ".agents/state/mission_1788119823_b52b2e.json",
+      "extension": ".json",
+      "size_bytes": 10156
+    },
+    {
       "path": ".agents/state/mission_1788118596_03cf61.json",
       "extension": ".json",
       "size_bytes": 8639
@@ -2578,9 +3268,44 @@
       "size_bytes": 6454
     },
     {
+      "path": ".agents/state/mission_1788119894_0650f3.json",
+      "extension": ".json",
+      "size_bytes": 8335
+    },
+    {
       "path": ".agents/state/mission_1788112739_2c501f.json",
       "extension": ".json",
       "size_bytes": 1725
+    },
+    {
+      "path": ".agents/state/mission_1788119720_cfcf4b.json",
+      "extension": ".json",
+      "size_bytes": 5596
+    },
+    {
+      "path": ".agents/state/mission_1788119965_cb9a1d.json",
+      "extension": ".json",
+      "size_bytes": 10082
+    },
+    {
+      "path": ".agents/state/mission_1788119678_413bc7.json",
+      "extension": ".json",
+      "size_bytes": 6618
+    },
+    {
+      "path": ".agents/state/mission_1788119812_ace92b.json",
+      "extension": ".json",
+      "size_bytes": 6171
+    },
+    {
+      "path": ".agents/state/mission_1788119816_eef82d.json",
+      "extension": ".json",
+      "size_bytes": 1679
+    },
+    {
+      "path": ".agents/state/mission_1788119952_61226b.json",
+      "extension": ".json",
+      "size_bytes": 6171
     },
     {
       "path": ".agents/state/mission_1788118481_aeb0bc.json",
@@ -2588,14 +3313,49 @@
       "size_bytes": 6585
     },
     {
+      "path": ".agents/state/mission_1788119881_051cd1.json",
+      "extension": ".json",
+      "size_bytes": 6379
+    },
+    {
+      "path": ".agents/state/mission_1788119825_2bbd1a.json",
+      "extension": ".json",
+      "size_bytes": 8404
+    },
+    {
       "path": ".agents/state/metrics.json",
       "extension": ".json",
-      "size_bytes": 8859
+      "size_bytes": 10441
     },
     {
       "path": ".agents/state/mission_1788112735_2bb2f5.json",
       "extension": ".json",
       "size_bytes": 10374
+    },
+    {
+      "path": ".agents/state/mission_1788119775_210fbb.json",
+      "extension": ".json",
+      "size_bytes": 6668
+    },
+    {
+      "path": ".agents/state/mission_1788119968_cb174d.json",
+      "extension": ".json",
+      "size_bytes": 596
+    },
+    {
+      "path": ".agents/state/mission_1788119677_b51d2c.json",
+      "extension": ".json",
+      "size_bytes": 4115
+    },
+    {
+      "path": ".agents/state/mission_1788119778_0867e5.json",
+      "extension": ".json",
+      "size_bytes": 6747
+    },
+    {
+      "path": ".agents/state/mission_1788119888_b11c1b.json",
+      "extension": ".json",
+      "size_bytes": 6247
     },
     {
       "path": ".agents/state/mission_1788118505_a9a4df.json",
@@ -2613,9 +3373,39 @@
       "size_bytes": 55
     },
     {
+      "path": ".agents/state/mission_1788119691_031d31.json",
+      "extension": ".json",
+      "size_bytes": 5486
+    },
+    {
       "path": ".agents/state/mission_1788118597_63c940.json",
       "extension": ".json",
-      "size_bytes": 580
+      "size_bytes": 6602
+    },
+    {
+      "path": ".agents/state/mission_1788119825_da7326.json",
+      "extension": ".json",
+      "size_bytes": 10084
+    },
+    {
+      "path": ".agents/state/mission_1788119776_7086e1.json",
+      "extension": ".json",
+      "size_bytes": 6626
+    },
+    {
+      "path": ".agents/state/mission_1788119963_603568.json",
+      "extension": ".json",
+      "size_bytes": 10158
+    },
+    {
+      "path": ".agents/state/mission_1788119710_2ec6dc.json",
+      "extension": ".json",
+      "size_bytes": 6619
+    },
+    {
+      "path": ".agents/state/mission_1788119719_20ba3b.json",
+      "extension": ".json",
+      "size_bytes": 4192
     },
     {
       "path": ".agents/state/mission_1788114973_92ed1c.json",
@@ -2623,14 +3413,74 @@
       "size_bytes": 0
     },
     {
+      "path": ".agents/state/mission_1788119965_3c84aa.json",
+      "extension": ".json",
+      "size_bytes": 8402
+    },
+    {
+      "path": ".agents/state/mission_1788119722_34e248.json",
+      "extension": ".json",
+      "size_bytes": 5588
+    },
+    {
       "path": ".agents/state/mission_1788112919_8cf766.json",
       "extension": ".json",
       "size_bytes": 8642
     },
     {
+      "path": ".agents/state/mission_1788119892_cdda18.json",
+      "extension": ".json",
+      "size_bytes": 8239
+    },
+    {
       "path": ".agents/state/mission_1788112918_76443d.json",
       "extension": ".json",
       "size_bytes": 10380
+    },
+    {
+      "path": ".agents/state/mission_1788119764_1ef20a.json",
+      "extension": ".json",
+      "size_bytes": 6619
+    },
+    {
+      "path": ".agents/state/mission_1788119927_8aa282.json",
+      "extension": ".json",
+      "size_bytes": 6168
+    },
+    {
+      "path": ".agents/state/mission_1788119955_a031ba.json",
+      "extension": ".json",
+      "size_bytes": 6392
+    },
+    {
+      "path": ".agents/state/mission_1788119713_5fa7d6.json",
+      "extension": ".json",
+      "size_bytes": 4282
+    },
+    {
+      "path": ".agents/state/mission_1788119891_2c435d.json",
+      "extension": ".json",
+      "size_bytes": 10084
+    },
+    {
+      "path": ".agents/state/mission_1788119966_61f7cf.json",
+      "extension": ".json",
+      "size_bytes": 8240
+    },
+    {
+      "path": ".agents/state/mission_1788119275_92f73b.json",
+      "extension": ".json",
+      "size_bytes": 10377
+    },
+    {
+      "path": ".agents/state/mission_1788119823_3cea84.json",
+      "extension": ".json",
+      "size_bytes": 8412
+    },
+    {
+      "path": ".agents/state/mission_1788119826_7ac1da.json",
+      "extension": ".json",
+      "size_bytes": 8238
     },
     {
       "path": ".agents/state/mission_1788118505_7de7c5.json",
@@ -2643,9 +3493,84 @@
       "size_bytes": 6270
     },
     {
+      "path": ".agents/state/mission_1788119681_ff636f.json",
+      "extension": ".json",
+      "size_bytes": 1679
+    },
+    {
+      "path": ".agents/state/mission_1788119938_5e7288.json",
+      "extension": ".json",
+      "size_bytes": 8416
+    },
+    {
+      "path": ".agents/state/mission_1788119778_56d424.json",
+      "extension": ".json",
+      "size_bytes": 6647
+    },
+    {
+      "path": ".agents/state/mission_1788119768_ff9770.json",
+      "extension": ".json",
+      "size_bytes": 1679
+    },
+    {
+      "path": ".agents/state/mission_1788119938_868fb6.json",
+      "extension": ".json",
+      "size_bytes": 10154
+    },
+    {
+      "path": ".agents/state/mission_1788119827_66e0bf.json",
+      "extension": ".json",
+      "size_bytes": 8334
+    },
+    {
+      "path": ".agents/state/mission_1788119278_1c372f.json",
+      "extension": ".json",
+      "size_bytes": 1678
+    },
+    {
+      "path": ".agents/state/mission_1788119774_cf2328.json",
+      "extension": ".json",
+      "size_bytes": 6667
+    },
+    {
+      "path": ".agents/state/mission_1788119775_b72825.json",
+      "extension": ".json",
+      "size_bytes": 5594
+    },
+    {
+      "path": ".agents/state/mission_1788119767_1782b2.json",
+      "extension": ".json",
+      "size_bytes": 4284
+    },
+    {
+      "path": ".agents/state/mission_1788119688_9fb905.json",
+      "extension": ".json",
+      "size_bytes": 6627
+    },
+    {
       "path": ".agents/state/mission_1788118480_2bd59b.json",
       "extension": ".json",
       "size_bytes": 10371
+    },
+    {
+      "path": ".agents/state/mission_1788119964_f72cde.json",
+      "extension": ".json",
+      "size_bytes": 8415
+    },
+    {
+      "path": ".agents/state/mission_1788119724_6e9083.json",
+      "extension": ".json",
+      "size_bytes": 5482
+    },
+    {
+      "path": ".agents/state/mission_1788119720_6caf0e.json",
+      "extension": ".json",
+      "size_bytes": 6671
+    },
+    {
+      "path": ".agents/state/mission_1788119721_896d8b.json",
+      "extension": ".json",
+      "size_bytes": 6668
     },
     {
       "path": ".agents/state/mission_1788114963_661158.json",
@@ -2653,14 +3578,74 @@
       "size_bytes": 10377
     },
     {
+      "path": ".agents/state/mission_1788119276_d91b91.json",
+      "extension": ".json",
+      "size_bytes": 6583
+    },
+    {
+      "path": ".agents/state/mission_1788119777_6d1c97.json",
+      "extension": ".json",
+      "size_bytes": 5485
+    },
+    {
+      "path": ".agents/state/mission_1788119779_71c182.json",
+      "extension": ".json",
+      "size_bytes": 5485
+    },
+    {
       "path": ".agents/state/mission_1788118595_21ca35.json",
       "extension": ".json",
       "size_bytes": 10379
     },
     {
+      "path": ".agents/state/mission_1788119931_0fcb35.json",
+      "extension": ".json",
+      "size_bytes": 1677
+    },
+    {
+      "path": ".agents/state/mission_1788119689_4f2f9e.json",
+      "extension": ".json",
+      "size_bytes": 5485
+    },
+    {
+      "path": ".agents/state/mission_1788119880_751c59.json",
+      "extension": ".json",
+      "size_bytes": 10074
+    },
+    {
+      "path": ".agents/state/mission_1788119883_43ae7f.json",
+      "extension": ".json",
+      "size_bytes": 1679
+    },
+    {
+      "path": ".agents/state/mission_1788119967_b5c338.json",
+      "extension": ".json",
+      "size_bytes": 10122
+    },
+    {
+      "path": ".agents/state/mission_1788119890_0ee72c.json",
+      "extension": ".json",
+      "size_bytes": 10158
+    },
+    {
+      "path": ".agents/state/mission_1788119712_fb79fb.json",
+      "extension": ".json",
+      "size_bytes": 4244
+    },
+    {
       "path": ".agents/state/economic_telemetry.json",
       "extension": ".json",
-      "size_bytes": 661
+      "size_bytes": 2724
+    },
+    {
+      "path": ".agents/state/mission_1788119928_93525e.json",
+      "extension": ".json",
+      "size_bytes": 8412
+    },
+    {
+      "path": ".agents/state/mission_1788119942_548f23.json",
+      "extension": ".json",
+      "size_bytes": 10123
     },
     {
       "path": ".agents/state/mission_1788118508_72463c.json",
@@ -2668,9 +3653,64 @@
       "size_bytes": 1678
     },
     {
+      "path": ".agents/state/mission_1788119889_191764.json",
+      "extension": ".json",
+      "size_bytes": 10158
+    },
+    {
+      "path": ".agents/state/mission_1788119687_7835b1.json",
+      "extension": ".json",
+      "size_bytes": 5596
+    },
+    {
+      "path": ".agents/state/mission_1788119721_5c9b58.json",
+      "extension": ".json",
+      "size_bytes": 6625
+    },
+    {
       "path": ".agents/state/mission_1788112953_ba574b.json",
       "extension": ".json",
       "size_bytes": 1725
+    },
+    {
+      "path": ".agents/state/mission_1788119943_0bffcd.json",
+      "extension": ".json",
+      "size_bytes": 8334
+    },
+    {
+      "path": ".agents/state/mission_1788119930_34c061.json",
+      "extension": ".json",
+      "size_bytes": 6393
+    },
+    {
+      "path": ".agents/state/mission_1788119941_d8b68a.json",
+      "extension": ".json",
+      "size_bytes": 10286
+    },
+    {
+      "path": ".agents/state/mission_1788119879_79a449.json",
+      "extension": ".json",
+      "size_bytes": 6170
+    },
+    {
+      "path": ".agents/state/mission_1788119765_25ba82.json",
+      "extension": ".json",
+      "size_bytes": 5598
+    },
+    {
+      "path": ".agents/state/mission_1788119891_8aee5a.json",
+      "extension": ".json",
+      "size_bytes": 8402
+    },
+    {
+      "path": ".agents/state/mission_1788119764_67c2b5.json",
+      "extension": ".json",
+      "size_bytes": 4114
+    },
+    {
+      "path": ".agents/state/mission_1788119711_dffdb6.json",
+      "extension": ".json",
+      "size_bytes": 5595
     },
     {
       "path": ".agents/state/mission_1788118482_48a52c.json",
@@ -2693,9 +3733,44 @@
       "size_bytes": 6460
     },
     {
+      "path": ".agents/state/mission_1788119962_0abd0c.json",
+      "extension": ".json",
+      "size_bytes": 6247
+    },
+    {
+      "path": ".agents/state/mission_1788119953_403d2a.json",
+      "extension": ".json",
+      "size_bytes": 10071
+    },
+    {
+      "path": ".agents/state/mission_1788119815_c17823.json",
+      "extension": ".json",
+      "size_bytes": 6392
+    },
+    {
+      "path": ".agents/state/mission_1788119937_d8d0ef.json",
+      "extension": ".json",
+      "size_bytes": 6250
+    },
+    {
+      "path": ".agents/state/mission_1788119824_65fd12.json",
+      "extension": ".json",
+      "size_bytes": 10157
+    },
+    {
       "path": ".agents/state/mission_1788118594_7cd365.json",
       "extension": ".json",
       "size_bytes": 6453
+    },
+    {
+      "path": ".agents/state/mission_1788119940_c6b105.json",
+      "extension": ".json",
+      "size_bytes": 8403
+    },
+    {
+      "path": ".agents/state/mission_1788119815_7bb009.json",
+      "extension": ".json",
+      "size_bytes": 6378
     },
     {
       "path": ".agents/state/mission_1788112950_d2f7e1.json",
@@ -2703,9 +3778,64 @@
       "size_bytes": 8639
     },
     {
+      "path": ".agents/state/mission_1788119964_1f4e1d.json",
+      "extension": ".json",
+      "size_bytes": 10158
+    },
+    {
+      "path": ".agents/state/mission_1788119723_c6ef49.json",
+      "extension": ".json",
+      "size_bytes": 5485
+    },
+    {
+      "path": ".agents/state/mission_1788119939_8fe575.json",
+      "extension": ".json",
+      "size_bytes": 10156
+    },
+    {
+      "path": ".agents/state/mission_1788119967_61c007.json",
+      "extension": ".json",
+      "size_bytes": 10289
+    },
+    {
+      "path": ".agents/state/mission_1788119955_24c922.json",
+      "extension": ".json",
+      "size_bytes": 6375
+    },
+    {
       "path": ".agents/state/mission_1788112921_f9646b.json",
       "extension": ".json",
       "size_bytes": 6606
+    },
+    {
+      "path": ".agents/state/mission_1788119680_3528f2.json",
+      "extension": ".json",
+      "size_bytes": 4284
+    },
+    {
+      "path": ".agents/state/mission_1788119690_5e9cae.json",
+      "extension": ".json",
+      "size_bytes": 6745
+    },
+    {
+      "path": ".agents/state/mission_1788119893_a0f5e4.json",
+      "extension": ".json",
+      "size_bytes": 10122
+    },
+    {
+      "path": ".agents/state/mission_1788119691_407ee4.json",
+      "extension": ".json",
+      "size_bytes": 6646
+    },
+    {
+      "path": ".agents/state/mission_1788119893_97b0ad.json",
+      "extension": ".json",
+      "size_bytes": 10291
+    },
+    {
+      "path": ".agents/state/mission_1788119954_29213f.json",
+      "extension": ".json",
+      "size_bytes": 8414
     },
     {
       "path": ".agents/state/mission_1788118478_c48be1.json",
@@ -2713,9 +3843,29 @@
       "size_bytes": 6452
     },
     {
+      "path": ".agents/state/mission_1788119880_763240.json",
+      "extension": ".json",
+      "size_bytes": 8416
+    },
+    {
+      "path": ".agents/state/mission_1788119688_d3a001.json",
+      "extension": ".json",
+      "size_bytes": 6669
+    },
+    {
+      "path": ".agents/state/mission_1788119689_018ae7.json",
+      "extension": ".json",
+      "size_bytes": 5587
+    },
+    {
       "path": ".agents/state/snapshots/mission_test_rollback/AgentOS/tests/_temp_rollback_target.txt",
       "extension": ".txt",
       "size_bytes": 20
+    },
+    {
+      "path": ".agents/state/snapshots/mission_chaos_001/scratch/chaos_test_file.txt",
+      "extension": ".txt",
+      "size_bytes": 14
     },
     {
       "path": ".agents/agents/frontend_engineer.json",
@@ -2803,9 +3953,24 @@
       "size_bytes": 1008
     },
     {
+      "path": ".agents/memory/strategy_memory_test.json",
+      "extension": ".json",
+      "size_bytes": 2126
+    },
+    {
       "path": ".agents/memory/failure_memory.json",
       "extension": ".json",
-      "size_bytes": 3763
+      "size_bytes": 8025
+    },
+    {
+      "path": ".agents/memory/strategy_memory_redteam.json",
+      "extension": ".json",
+      "size_bytes": 2126
+    },
+    {
+      "path": ".agents/memory/strategy_memory.json",
+      "extension": ".json",
+      "size_bytes": 2142
     },
     {
       "path": ".agents/engine/verification_gates.py",
@@ -22911,6 +24076,11 @@
       "path": "tests/agent_os/test_suite_all_40.py",
       "extension": ".py",
       "size_bytes": 16734
+    },
+    {
+      "path": "tests/agent_os/test_suite_phase2_master.py",
+      "extension": ".py",
+      "size_bytes": 2313
     },
     {
       "path": "tests/agent_os/test_suite_all_20.py",

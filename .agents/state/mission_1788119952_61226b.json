@@ -1,0 +1,204 @@
+{
+  "mission_id": "mission_1788119952_61226b",
+  "objective": "Fix spinner animation jitter on dashboard page",
+  "status": "COMPLETED",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_b99ea8": {
+      "id": "task_plan_b99ea8",
+      "title": "Architecture & Analysis for: Fix spinner animation jitter on dashboar",
+      "description": "Analyze requirements and plan implementation for Fix spinner animation jitter on dashboard page",
+      "agent_role": "frontend_engineer",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_b99ea8",
+        "objective": "Fix spinner animation jitter on dashboard page",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_b99ea8",
+        "agent_role": "frontend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "apps/web/src/components/MainSpinner.tsx"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix spinner animation jitter on dashboard page",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119953.2377763,
+      "completed_at": null
+    },
+    "task_frontend_engineer_ff3654": {
+      "id": "task_frontend_engineer_ff3654",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Fix spinner animation jitter on dashboard page",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_b99ea8"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_ff3654",
+        "objective": "Fix spinner animation jitter on dashboard page",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_b99ea8"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_frontend_engineer_ff3654",
+        "agent_role": "frontend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "apps/web/src/components/MainSpinner.tsx"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix spinner animation jitter on dashboard page",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119953.2377973,
+      "completed_at": null
+    },
+    "task_qa_7dbaa1": {
+      "id": "task_qa_7dbaa1",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "browser_engineer",
+      "dependencies": [
+        "task_frontend_engineer_ff3654"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_qa_7dbaa1",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_ff3654"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_qa_7dbaa1",
+        "agent_role": "browser_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "apps/web/src/components/MainSpinner.tsx"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix spinner animation jitter on dashboard page",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119953.2378042,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119952_61226b"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119952.6974764,
+  "updated_at": 1788119953.2381625
+}

@@ -1,0 +1,10 @@
+{
+  "artifact_key": "schema_summary",
+  "file_hash": "96ed0c73b2b86896",
+  "computed_at": 1788119962.8042812,
+  "content": {
+    "schema": "User, GrowthContribution, Reward"
+  },
+  "from_cache": false,
+  "tokens_saved": 500
+}

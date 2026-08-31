@@ -1,0 +1,328 @@
+{
+  "mission_id": "mission_1788119827_5d30a2",
+  "objective": "Fix mobile viewport text clipping on Hub Spinner reward queue card",
+  "status": "COMPLETED",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_b99fc0": {
+      "id": "task_plan_b99fc0",
+      "title": "Architecture & Analysis for: Fix mobile viewport text clipping on Hub",
+      "description": "Analyze requirements and plan implementation for Fix mobile viewport text clipping on Hub Spinner reward queue card",
+      "agent_role": "architect",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_b99fc0",
+        "objective": "Fix mobile viewport text clipping on Hub Spinner reward queue card",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_b99fc0",
+        "agent_role": "architect",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/server.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix mobile viewport text clipping on Hub Spinner reward queue card",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119827.6881537,
+      "completed_at": null
+    },
+    "task_frontend_engineer_516212": {
+      "id": "task_frontend_engineer_516212",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Fix mobile viewport text clipping on Hub Spinner reward queue card",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_b99fc0"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_516212",
+        "objective": "Fix mobile viewport text clipping on Hub Spinner reward queue card",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_b99fc0"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_frontend_engineer_516212",
+        "agent_role": "frontend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "apps/web/src/components/MainSpinner.tsx"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix mobile viewport text clipping on Hub Spinner reward queue card",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119827.688169,
+      "completed_at": null
+    },
+    "task_backend_engineer_a3c089": {
+      "id": "task_backend_engineer_a3c089",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Fix mobile viewport text clipping on Hub Spinner reward queue card",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_b99fc0"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_backend_engineer_a3c089",
+        "objective": "Fix mobile viewport text clipping on Hub Spinner reward queue card",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_b99fc0"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_backend_engineer_a3c089",
+        "agent_role": "backend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix mobile viewport text clipping on Hub Spinner reward queue card",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119827.6881833,
+      "completed_at": null
+    },
+    "task_integ_633170": {
+      "id": "task_integ_633170",
+      "title": "Cross-System Integration Verification",
+      "description": "Verify module interfaces, contracts, and data flows",
+      "agent_role": "integration_engineer",
+      "dependencies": [
+        "task_frontend_engineer_516212",
+        "task_backend_engineer_a3c089"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_integ_633170",
+        "objective": "Verify integration",
+        "scope": [
+          "integration"
+        ],
+        "constraints": [
+          "no contract breaks"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_516212",
+          "task_backend_engineer_a3c089"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_integ_633170",
+        "agent_role": "integration_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/server.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix mobile viewport text clipping on Hub Spinner reward queue card",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119827.688188,
+      "completed_at": null
+    },
+    "task_qa_2d0109": {
+      "id": "task_qa_2d0109",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_integ_633170"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_qa_2d0109",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_integ_633170"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_qa_2d0109",
+        "agent_role": "qa_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/server.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix mobile viewport text clipping on Hub Spinner reward queue card",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119827.6881928,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119827_5d30a2"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119827.190737,
+  "updated_at": 1788119827.688603
+}

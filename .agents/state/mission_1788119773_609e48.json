@@ -1,0 +1,136 @@
+{
+  "mission_id": "mission_1788119773_609e48",
+  "objective": "Fix the broken WhatsApp login session token expiry bug",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_ac3463": {
+      "id": "task_plan_ac3463",
+      "title": "Architecture & Analysis for: Fix the broken WhatsApp login session to",
+      "description": "Analyze requirements and plan implementation for Fix the broken WhatsApp login session token expiry bug",
+      "agent_role": "security_engineer",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_ac3463",
+        "objective": "Fix the broken WhatsApp login session token expiry bug",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119774.5257998,
+      "completed_at": null
+    },
+    "task_backend_engineer_529964": {
+      "id": "task_backend_engineer_529964",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Fix the broken WhatsApp login session token expiry bug",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_ac3463"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_backend_engineer_529964",
+        "objective": "Fix the broken WhatsApp login session token expiry bug",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_ac3463"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119774.5258148,
+      "completed_at": null
+    },
+    "task_sec_205a29": {
+      "id": "task_sec_205a29",
+      "title": "Security & Red-Team Code Audit",
+      "description": "Audit changes for secrets, vulnerabilities, and architectural integrity",
+      "agent_role": "security_engineer",
+      "dependencies": [
+        "task_backend_engineer_529964"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_sec_205a29",
+        "objective": "Security Audit",
+        "scope": [
+          "security",
+          "audit"
+        ],
+        "constraints": [
+          "zero secret leaks",
+          "OWASP compliance"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_backend_engineer_529964"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119774.5258236,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119773_609e48"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119773.7722898,
+  "updated_at": 1788119774.5258255
+}

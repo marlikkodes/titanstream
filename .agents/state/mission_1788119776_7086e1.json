@@ -1,0 +1,213 @@
+{
+  "mission_id": "mission_1788119776_7086e1",
+  "objective": "Align NextBestAction API contract with frontend interface types",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_a4f574": {
+      "id": "task_plan_a4f574",
+      "title": "Architecture & Analysis for: Align NextBestAction API contract with f",
+      "description": "Analyze requirements and plan implementation for Align NextBestAction API contract with frontend interface types",
+      "agent_role": "architect",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_a4f574",
+        "objective": "Align NextBestAction API contract with frontend interface types",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119777.005812,
+      "completed_at": null
+    },
+    "task_frontend_engineer_b51577": {
+      "id": "task_frontend_engineer_b51577",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Align NextBestAction API contract with frontend interface types",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_a4f574"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_b51577",
+        "objective": "Align NextBestAction API contract with frontend interface types",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_a4f574"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119777.005833,
+      "completed_at": null
+    },
+    "task_backend_engineer_fc747a": {
+      "id": "task_backend_engineer_fc747a",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Align NextBestAction API contract with frontend interface types",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_a4f574"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_backend_engineer_fc747a",
+        "objective": "Align NextBestAction API contract with frontend interface types",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_a4f574"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119777.0058436,
+      "completed_at": null
+    },
+    "task_integ_2fc16f": {
+      "id": "task_integ_2fc16f",
+      "title": "Cross-System Integration Verification",
+      "description": "Verify module interfaces, contracts, and data flows",
+      "agent_role": "integration_engineer",
+      "dependencies": [
+        "task_frontend_engineer_b51577",
+        "task_backend_engineer_fc747a"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_integ_2fc16f",
+        "objective": "Verify integration",
+        "scope": [
+          "integration"
+        ],
+        "constraints": [
+          "no contract breaks"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_b51577",
+          "task_backend_engineer_fc747a"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119777.0058522,
+      "completed_at": null
+    },
+    "task_qa_3ba731": {
+      "id": "task_qa_3ba731",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_integ_2fc16f"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_qa_3ba731",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_integ_2fc16f"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119777.0058613,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119776_7086e1"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119776.4002476,
+  "updated_at": 1788119777.005864
+}

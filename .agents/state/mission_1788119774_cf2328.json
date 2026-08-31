@@ -1,0 +1,213 @@
+{
+  "mission_id": "mission_1788119774_cf2328",
+  "objective": "Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_0b8135": {
+      "id": "task_plan_0b8135",
+      "title": "Architecture & Analysis for: Repair Pesapal and Mobile Money settleme",
+      "description": "Analyze requirements and plan implementation for Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+      "agent_role": "architect",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_0b8135",
+        "objective": "Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119775.1286292,
+      "completed_at": null
+    },
+    "task_frontend_engineer_c85302": {
+      "id": "task_frontend_engineer_c85302",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_0b8135"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_c85302",
+        "objective": "Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_0b8135"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119775.1286454,
+      "completed_at": null
+    },
+    "task_backend_engineer_ba97c0": {
+      "id": "task_backend_engineer_ba97c0",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_0b8135"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_backend_engineer_ba97c0",
+        "objective": "Repair Pesapal and Mobile Money settlement webhook signature mismatch",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_0b8135"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119775.1286523,
+      "completed_at": null
+    },
+    "task_integ_5f8539": {
+      "id": "task_integ_5f8539",
+      "title": "Cross-System Integration Verification",
+      "description": "Verify module interfaces, contracts, and data flows",
+      "agent_role": "integration_engineer",
+      "dependencies": [
+        "task_frontend_engineer_c85302",
+        "task_backend_engineer_ba97c0"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_integ_5f8539",
+        "objective": "Verify integration",
+        "scope": [
+          "integration"
+        ],
+        "constraints": [
+          "no contract breaks"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_c85302",
+          "task_backend_engineer_ba97c0"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119775.12866,
+      "completed_at": null
+    },
+    "task_qa_bf3a28": {
+      "id": "task_qa_bf3a28",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_integ_5f8539"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_qa_bf3a28",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_integ_5f8539"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119775.128665,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119774_cf2328"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119774.527659,
+  "updated_at": 1788119775.1286674
+}

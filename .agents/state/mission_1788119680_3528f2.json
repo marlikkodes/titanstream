@@ -1,0 +1,136 @@
+{
+  "mission_id": "mission_1788119680_3528f2",
+  "objective": "Update auth token JWT signing secret validation and session cookie flags",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_42c904": {
+      "id": "task_plan_42c904",
+      "title": "Architecture & Analysis for: Update auth token JWT signing secret val",
+      "description": "Analyze requirements and plan implementation for Update auth token JWT signing secret validation and session cookie flags",
+      "agent_role": "security_engineer",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_42c904",
+        "objective": "Update auth token JWT signing secret validation and session cookie flags",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119680.9341214,
+      "completed_at": null
+    },
+    "task_backend_engineer_681404": {
+      "id": "task_backend_engineer_681404",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Update auth token JWT signing secret validation and session cookie flags",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_42c904"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_backend_engineer_681404",
+        "objective": "Update auth token JWT signing secret validation and session cookie flags",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_42c904"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119680.9341376,
+      "completed_at": null
+    },
+    "task_sec_d4303f": {
+      "id": "task_sec_d4303f",
+      "title": "Security & Red-Team Code Audit",
+      "description": "Audit changes for secrets, vulnerabilities, and architectural integrity",
+      "agent_role": "security_engineer",
+      "dependencies": [
+        "task_backend_engineer_681404"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_sec_d4303f",
+        "objective": "Security Audit",
+        "scope": [
+          "security",
+          "audit"
+        ],
+        "constraints": [
+          "zero secret leaks",
+          "OWASP compliance"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_backend_engineer_681404"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119680.9341447,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119680_3528f2"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119680.3986511,
+  "updated_at": 1788119680.9341471
+}

@@ -1,0 +1,135 @@
+{
+  "mission_id": "mission_1788119712_fb79fb",
+  "objective": "Verify checkout button click and browser console errors on checkout page",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_4fc83a": {
+      "id": "task_plan_4fc83a",
+      "title": "Architecture & Analysis for: Verify checkout button click and browser",
+      "description": "Analyze requirements and plan implementation for Verify checkout button click and browser console errors on checkout page",
+      "agent_role": "frontend_engineer",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_4fc83a",
+        "objective": "Verify checkout button click and browser console errors on checkout page",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119713.186702,
+      "completed_at": null
+    },
+    "task_frontend_engineer_34c720": {
+      "id": "task_frontend_engineer_34c720",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Verify checkout button click and browser console errors on checkout page",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_4fc83a"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_34c720",
+        "objective": "Verify checkout button click and browser console errors on checkout page",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_4fc83a"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119713.1867177,
+      "completed_at": null
+    },
+    "task_qa_4989d6": {
+      "id": "task_qa_4989d6",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "browser_engineer",
+      "dependencies": [
+        "task_frontend_engineer_34c720"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_qa_4989d6",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_34c720"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119713.1867235,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119712_fb79fb"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119712.6518908,
+  "updated_at": 1788119713.1867263
+}

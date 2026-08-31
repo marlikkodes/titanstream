@@ -1,0 +1,213 @@
+{
+  "mission_id": "mission_1788119778_0867e5",
+  "objective": "Diagnose and repair mock missing provider error in growth e2e certification test",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_ec84de": {
+      "id": "task_plan_ec84de",
+      "title": "Architecture & Analysis for: Diagnose and repair mock missing provide",
+      "description": "Analyze requirements and plan implementation for Diagnose and repair mock missing provider error in growth e2e certification test",
+      "agent_role": "architect",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_ec84de",
+        "objective": "Diagnose and repair mock missing provider error in growth e2e certification test",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119778.7547753,
+      "completed_at": null
+    },
+    "task_frontend_engineer_2c7e39": {
+      "id": "task_frontend_engineer_2c7e39",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Diagnose and repair mock missing provider error in growth e2e certification test",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_ec84de"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_2c7e39",
+        "objective": "Diagnose and repair mock missing provider error in growth e2e certification test",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_ec84de"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119778.7547886,
+      "completed_at": null
+    },
+    "task_backend_engineer_1c99c5": {
+      "id": "task_backend_engineer_1c99c5",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Diagnose and repair mock missing provider error in growth e2e certification test",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_ec84de"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_backend_engineer_1c99c5",
+        "objective": "Diagnose and repair mock missing provider error in growth e2e certification test",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_ec84de"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119778.7547948,
+      "completed_at": null
+    },
+    "task_integ_b2835c": {
+      "id": "task_integ_b2835c",
+      "title": "Cross-System Integration Verification",
+      "description": "Verify module interfaces, contracts, and data flows",
+      "agent_role": "integration_engineer",
+      "dependencies": [
+        "task_frontend_engineer_2c7e39",
+        "task_backend_engineer_1c99c5"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_integ_b2835c",
+        "objective": "Verify integration",
+        "scope": [
+          "integration"
+        ],
+        "constraints": [
+          "no contract breaks"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_2c7e39",
+          "task_backend_engineer_1c99c5"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119778.7547991,
+      "completed_at": null
+    },
+    "task_qa_95a456": {
+      "id": "task_qa_95a456",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_integ_b2835c"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_qa_95a456",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_integ_b2835c"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119778.7548032,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119778_0867e5"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119778.2136939,
+  "updated_at": 1788119778.754805
+}

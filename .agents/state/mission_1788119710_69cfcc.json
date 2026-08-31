@@ -1,0 +1,135 @@
+{
+  "mission_id": "mission_1788119710_69cfcc",
+  "objective": "Fix spinner animation jitter on dashboard page",
+  "status": "ACTIVE",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_83a56c": {
+      "id": "task_plan_83a56c",
+      "title": "Architecture & Analysis for: Fix spinner animation jitter on dashboar",
+      "description": "Analyze requirements and plan implementation for Fix spinner animation jitter on dashboard page",
+      "agent_role": "frontend_engineer",
+      "dependencies": [],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_plan_83a56c",
+        "objective": "Fix spinner animation jitter on dashboard page",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119710.7941065,
+      "completed_at": null
+    },
+    "task_frontend_engineer_3196c8": {
+      "id": "task_frontend_engineer_3196c8",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Fix spinner animation jitter on dashboard page",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_83a56c"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_3196c8",
+        "objective": "Fix spinner animation jitter on dashboard page",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_83a56c"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119710.7941222,
+      "completed_at": null
+    },
+    "task_qa_154f5a": {
+      "id": "task_qa_154f5a",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "browser_engineer",
+      "dependencies": [
+        "task_frontend_engineer_3196c8"
+      ],
+      "status": "PENDING",
+      "contract_input": {
+        "task_id": "task_qa_154f5a",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_3196c8"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": null,
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788119710.7941284,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788119710_69cfcc"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788119710.299202,
+  "updated_at": 1788119710.794132
+}
