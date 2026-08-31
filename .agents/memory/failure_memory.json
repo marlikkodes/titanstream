@@ -259,5 +259,55 @@
       "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
     ],
     "timestamp": 1788137293.481988
+  },
+  {
+    "id": "fail_c0766e83",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_4202",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788175784.7664871
+  },
+  {
+    "id": "d101",
+    "domain": "general",
+    "symptom": "JWT token expired on refresh",
+    "root_cause": "Clock drift in token verifier",
+    "fix_applied": "Add 60s leeway",
+    "regression_test": "test_jwt_leeway"
+  },
+  {
+    "id": "fail_b21a660f",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_5275",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788175851.005847
+  },
+  {
+    "id": "d101",
+    "domain": "general",
+    "symptom": "JWT token expired on refresh",
+    "root_cause": "Clock drift in token verifier",
+    "fix_applied": "Add 60s leeway",
+    "regression_test": "test_jwt_leeway"
   }
 ]

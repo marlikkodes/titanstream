@@ -1,0 +1,16 @@
+{
+  "backend_engineer": {
+    "tasks_assigned": 2,
+    "first_pass_successes": 2,
+    "total_repairs": 0,
+    "regressions_caused": 0,
+    "total_tokens": 2000,
+    "total_latency": 3.0,
+    "domain_scores": {
+      "auth": {
+        "successes": 2,
+        "total": 2
+      }
+    }
+  }
+}

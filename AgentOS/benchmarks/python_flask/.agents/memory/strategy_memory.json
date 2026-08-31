@@ -1,0 +1,89 @@
+{
+  "strat_auth_jwt_regression": {
+    "strategy_id": "strat_auth_jwt_regression",
+    "task_type": "BUG_FIX",
+    "subsystem": "AUTHENTICATION",
+    "steps": [
+      "knowledge_graph",
+      "auth_subsystem_trace",
+      "ast_edit",
+      "unit_test",
+      "security_scan"
+    ],
+    "agent_sequence": [
+      "debugger",
+      "backend_engineer",
+      "test_engineer"
+    ],
+    "tool_sequence": [
+      "knowledge_graph",
+      "ast_edit",
+      "run_test",
+      "security_scanner"
+    ],
+    "model_tier": "T3_COMPLEX",
+    "success_count": 8,
+    "failure_count": 0,
+    "total_cost_usd": 0.015,
+    "avg_duration_seconds": 0.40437500000000004,
+    "human_interventions": 0,
+    "provenance_mission_id": "init",
+    "confidence_score": 0.95
+  },
+  "strat_db_schema_migration": {
+    "strategy_id": "strat_db_schema_migration",
+    "task_type": "DB_MIGRATION",
+    "subsystem": "DATA_PERSISTENCE",
+    "steps": [
+      "schema_diff",
+      "migration_generator",
+      "rollback_verifier",
+      "integration_test"
+    ],
+    "agent_sequence": [
+      "database_engineer",
+      "backend_engineer",
+      "test_engineer"
+    ],
+    "tool_sequence": [
+      "knowledge_graph",
+      "write_file",
+      "run_test"
+    ],
+    "model_tier": "T4_CRITICAL",
+    "success_count": 4,
+    "failure_count": 0,
+    "total_cost_usd": 0.025,
+    "avg_duration_seconds": 5.1,
+    "human_interventions": 0,
+    "provenance_mission_id": "init",
+    "confidence_score": 0.95
+  },
+  "strat_css_responsive_layout": {
+    "strategy_id": "strat_css_responsive_layout",
+    "task_type": "CSS_STYLING",
+    "subsystem": "FRONTEND_PRESENTATION",
+    "steps": [
+      "dom_inspection",
+      "style_patch",
+      "browser_assertion"
+    ],
+    "agent_sequence": [
+      "frontend_engineer",
+      "browser_engineer"
+    ],
+    "tool_sequence": [
+      "ripgrep",
+      "replace_content",
+      "browser_engine"
+    ],
+    "model_tier": "T1_CHEAP",
+    "success_count": 8,
+    "failure_count": 0,
+    "total_cost_usd": 0.004,
+    "avg_duration_seconds": 1.8,
+    "human_interventions": 0,
+    "provenance_mission_id": "init",
+    "confidence_score": 0.95
+  }
+}

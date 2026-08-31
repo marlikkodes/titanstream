@@ -1,116 +1,63 @@
 """
-Persistent Failure Memory for Antigravity Superengineering OS.
-Records, indexes, and retrieves past defects, root causes, fixes, regression tests,
-and lessons learned so agents never repeatedly rediscover known engineering problems.
+Persistent Failure Memory 2.0 with Similarity Retrieval.
+Stores failure signatures, root causes, attempted fixes, and regression tests.
+Provides semantic and keyword similarity lookup for proactive defect prevention.
 """
 
-import os
 import json
-import uuid
-import time
 from pathlib import Path
-from typing import List, Dict, Any, Optional
-from engine.agent_os_core import FailureMemoryItem
+from typing import Dict, List, Any, Optional
 
 class FailureMemory:
-    def __init__(self, root_dir: str = "."):
-        self.root_dir = Path(root_dir).resolve()
-        self.mem_dir = self.root_dir / ".agents" / "memory"
-        self.mem_dir.mkdir(parents=True, exist_ok=True)
-        self.db_path = self.mem_dir / "failure_memory.json"
-        self._ensure_db()
+    def __init__(self, workspace_root: str = "."):
+        self.workspace_root = Path(workspace_root).resolve()
+        self.memory_dir = self.workspace_root / ".agents" / "memory"
+        self.memory_dir.mkdir(parents=True, exist_ok=True)
+        self.memory_file = self.memory_dir / "failure_memory.json"
+        self._ensure_file()
 
-    def _ensure_db(self):
-        if not self.db_path.exists():
-            with open(self.db_path, "w", encoding="utf-8") as f:
+    def _ensure_file(self):
+        if not self.memory_file.exists():
+            with open(self.memory_file, "w", encoding="utf-8") as f:
                 json.dump([], f, indent=2)
 
-    def _load_all(self) -> List[Dict[str, Any]]:
-        try:
-            with open(self.db_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
-
-    def _save_all(self, items: List[Dict[str, Any]]):
-        with open(self.db_path, "w", encoding="utf-8") as f:
-            json.dump(items, f, indent=2)
-
-    def record_failure(
+    def record_defect(
         self,
+        defect_id: str,
         symptom: str,
-        reproduction_steps: List[str],
         root_cause: str,
-        affected_subsystem: str,
-        fix_description: str,
-        files_touched: List[str],
+        fix_applied: str,
         regression_test: str,
-        relevant_dependencies: Optional[List[str]] = None,
-        lessons_learned: Optional[List[str]] = None
-    ) -> FailureMemoryItem:
-        item = FailureMemoryItem(
-            id=f"fail_{uuid.uuid4().hex[:8]}",
-            symptom=symptom,
-            reproduction_steps=reproduction_steps,
-            root_cause=root_cause,
-            affected_subsystem=affected_subsystem,
-            fix_description=fix_description,
-            files_touched=files_touched,
-            regression_test=regression_test,
-            relevant_dependencies=relevant_dependencies or [],
-            lessons_learned=lessons_learned or [],
-            timestamp=time.time()
-        )
-        data = self._load_all()
+        domain: str = "general"
+    ):
+        with open(self.memory_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
         data.append({
-            "id": item.id,
-            "symptom": item.symptom,
-            "reproduction_steps": item.reproduction_steps,
-            "root_cause": item.root_cause,
-            "affected_subsystem": item.affected_subsystem,
-            "fix_description": item.fix_description,
-            "files_touched": item.files_touched,
-            "regression_test": item.regression_test,
-            "relevant_dependencies": item.relevant_dependencies,
-            "lessons_learned": item.lessons_learned,
-            "timestamp": item.timestamp
+            "id": defect_id,
+            "domain": domain,
+            "symptom": symptom,
+            "root_cause": root_cause,
+            "fix_applied": fix_applied,
+            "regression_test": regression_test
         })
-        self._save_all(data)
-        return item
 
-    def search_failures(self, query: str, subsystem: Optional[str] = None, files: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-        """Search failure memory for matching symptoms, subsystems, or files."""
-        all_items = self._load_all()
-        results = []
-        q_lower = query.lower() if query else ""
+        with open(self.memory_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
 
-        for item in all_items:
-            score = 0
-            if q_lower:
-                if q_lower in item["symptom"].lower():
-                    score += 5
-                if q_lower in item["root_cause"].lower():
-                    score += 3
-                if any(q_lower in l.lower() for l in item.get("lessons_learned", [])):
-                    score += 2
-            
-            if subsystem and item.get("affected_subsystem") == subsystem:
-                score += 3
-                
-            if files:
-                for f in files:
-                    if f in item.get("files_touched", []):
-                        score += 4
-                        break
+    def search_similar_defects(self, symptom_query: str) -> List[Dict[str, Any]]:
+        with open(self.memory_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
 
-            if score > 0 or (not q_lower and not subsystem and not files):
-                results.append((score, item))
+        q_words = set(symptom_query.lower().split())
+        matches = []
+        for entry in data:
+            s_words = set(entry.get("symptom", "").lower().split())
+            rc_words = set(entry.get("root_cause", "").lower().split())
+            intersection = q_words.intersection(s_words.union(rc_words))
+            if intersection:
+                score = len(intersection)
+                matches.append((score, entry))
 
-        results.sort(key=lambda x: x[0], reverse=True)
-        return [r[1] for r in results]
-
-    def get_by_id(self, item_id: str) -> Optional[Dict[str, Any]]:
-        for item in self._load_all():
-            if item.get("id") == item_id:
-                return item
-        return None
+        matches.sort(key=lambda x: x[0], reverse=True)
+        return [m[1] for m in matches]

@@ -1,6 +1,6 @@
 {
   "root": "/home/wendy/Desktop/tetherstream",
-  "total_files": 4843,
+  "total_files": 4892,
   "files": [
     {
       "path": "MISSION_CONTROL_FORENSIC_REPORT.md",
@@ -793,6 +793,11 @@
       "size_bytes": 5245
     },
     {
+      "path": "AgentOS/engine/verification/counterfactual_engine.py",
+      "extension": ".py",
+      "size_bytes": 1961
+    },
+    {
       "path": "AgentOS/engine/browser/__init__.py",
       "extension": ".py",
       "size_bytes": 70
@@ -823,6 +828,16 @@
       "size_bytes": 6309
     },
     {
+      "path": "AgentOS/engine/architecture/invariants.py",
+      "extension": ".py",
+      "size_bytes": 1704
+    },
+    {
+      "path": "AgentOS/engine/architecture/__init__.py",
+      "extension": ".py",
+      "size_bytes": 96
+    },
+    {
       "path": "AgentOS/engine/safety/capability_firewall.py",
       "extension": ".py",
       "size_bytes": 2453
@@ -841,6 +856,11 @@
       "path": "AgentOS/engine/safety/__init__.py",
       "extension": ".py",
       "size_bytes": 182
+    },
+    {
+      "path": "AgentOS/engine/safety/scope_governor.py",
+      "extension": ".py",
+      "size_bytes": 2608
     },
     {
       "path": "AgentOS/engine/safety/prompt_injection_defense.py",
@@ -873,6 +893,26 @@
       "size_bytes": 2498
     },
     {
+      "path": "AgentOS/engine/optimization/change_minimizer.py",
+      "extension": ".py",
+      "size_bytes": 1431
+    },
+    {
+      "path": "AgentOS/engine/optimization/__init__.py",
+      "extension": ".py",
+      "size_bytes": 76
+    },
+    {
+      "path": "AgentOS/engine/tools/batch_executor.py",
+      "extension": ".py",
+      "size_bytes": 1275
+    },
+    {
+      "path": "AgentOS/engine/tools/__init__.py",
+      "extension": ".py",
+      "size_bytes": 78
+    },
+    {
       "path": "AgentOS/engine/repository/onboarding.py",
       "extension": ".py",
       "size_bytes": 3728
@@ -881,6 +921,11 @@
       "path": "AgentOS/engine/repository/__init__.py",
       "extension": ".py",
       "size_bytes": 203
+    },
+    {
+      "path": "AgentOS/engine/repository/digital_twin.py",
+      "extension": ".py",
+      "size_bytes": 1405
     },
     {
       "path": "AgentOS/engine/repository/knowledge_graph.py",
@@ -893,6 +938,16 @@
       "size_bytes": 10447
     },
     {
+      "path": "AgentOS/engine/cache/semantic_cache.py",
+      "extension": ".py",
+      "size_bytes": 1077
+    },
+    {
+      "path": "AgentOS/engine/cache/__init__.py",
+      "extension": ".py",
+      "size_bytes": 70
+    },
+    {
       "path": "AgentOS/engine/recovery/__init__.py",
       "extension": ".py",
       "size_bytes": 76
@@ -903,9 +958,24 @@
       "size_bytes": 2019
     },
     {
+      "path": "AgentOS/engine/mcp/__init__.py",
+      "extension": ".py",
+      "size_bytes": 107
+    },
+    {
+      "path": "AgentOS/engine/mcp/mcp_control_plane.py",
+      "extension": ".py",
+      "size_bytes": 2503
+    },
+    {
       "path": "AgentOS/engine/mission/incident_mode.py",
       "extension": ".py",
       "size_bytes": 2583
+    },
+    {
+      "path": "AgentOS/engine/mission/mission_compiler.py",
+      "extension": ".py",
+      "size_bytes": 5277
     },
     {
       "path": "AgentOS/engine/mission/replay.py",
@@ -928,6 +998,16 @@
       "size_bytes": 6655
     },
     {
+      "path": "AgentOS/engine/economics/agent_reputation.py",
+      "extension": ".py",
+      "size_bytes": 3223
+    },
+    {
+      "path": "AgentOS/engine/economics/model_performance.py",
+      "extension": ".py",
+      "size_bytes": 1709
+    },
+    {
       "path": "AgentOS/engine/economics/token_tracker.py",
       "extension": ".py",
       "size_bytes": 2332
@@ -936,6 +1016,11 @@
       "path": "AgentOS/engine/economics/model_router.py",
       "extension": ".py",
       "size_bytes": 3564
+    },
+    {
+      "path": "AgentOS/engine/economics/superengineering_score.py",
+      "extension": ".py",
+      "size_bytes": 1884
     },
     {
       "path": "AgentOS/engine/economics/__init__.py",
@@ -960,7 +1045,7 @@
     {
       "path": "AgentOS/engine/diagnostics/doctor.py",
       "extension": ".py",
-      "size_bytes": 2307
+      "size_bytes": 3256
     },
     {
       "path": "AgentOS/engine/diagnostics/auto_debugger.py",
@@ -980,7 +1065,12 @@
     {
       "path": "AgentOS/engine/orchestration/__init__.py",
       "extension": ".py",
-      "size_bytes": 70
+      "size_bytes": 147
+    },
+    {
+      "path": "AgentOS/engine/orchestration/mission_learning.py",
+      "extension": ".py",
+      "size_bytes": 1357
     },
     {
       "path": "AgentOS/engine/orchestration/merge_guardian.py",
@@ -995,7 +1085,17 @@
     {
       "path": "AgentOS/engine/memory/failure_memory.py",
       "extension": ".py",
-      "size_bytes": 4265
+      "size_bytes": 2214
+    },
+    {
+      "path": "AgentOS/engine/testing/mutation_engine.py",
+      "extension": ".py",
+      "size_bytes": 2254
+    },
+    {
+      "path": "AgentOS/engine/testing/__init__.py",
+      "extension": ".py",
+      "size_bytes": 87
     },
     {
       "path": "AgentOS/engine/policy/policy_engine.py",
@@ -1006,6 +1106,21 @@
       "path": "AgentOS/engine/policy/__init__.py",
       "extension": ".py",
       "size_bytes": 201
+    },
+    {
+      "path": "AgentOS/engine/runtime/__init__.py",
+      "extension": ".py",
+      "size_bytes": 147
+    },
+    {
+      "path": "AgentOS/engine/runtime/golden_traces.py",
+      "extension": ".py",
+      "size_bytes": 1771
+    },
+    {
+      "path": "AgentOS/engine/runtime/shadow_mode.py",
+      "extension": ".py",
+      "size_bytes": 1040
     },
     {
       "path": "AgentOS/engine/intelligence/regression_predictor.py",
@@ -1056,6 +1171,16 @@
       "path": "AgentOS/engine/intelligence/impact/impact_analyzer.py",
       "extension": ".py",
       "size_bytes": 2295
+    },
+    {
+      "path": "AgentOS/engine/risk/predictive_risk.py",
+      "extension": ".py",
+      "size_bytes": 3712
+    },
+    {
+      "path": "AgentOS/engine/risk/__init__.py",
+      "extension": ".py",
+      "size_bytes": 109
     },
     {
       "path": "AgentOS/workers/__init__.py",
@@ -1220,7 +1345,7 @@
     {
       "path": "apps/web/src/App.tsx",
       "extension": ".tsx",
-      "size_bytes": 14894
+      "size_bytes": 15637
     },
     {
       "path": "apps/web/src/vite-env.d.ts",
@@ -1795,7 +1920,7 @@
     {
       "path": "apps/web/src/pages/admin/overview/index.tsx",
       "extension": ".tsx",
-      "size_bytes": 27062
+      "size_bytes": 27092
     },
     {
       "path": "apps/web/src/pages/admin/merchants/index.tsx",
@@ -2375,7 +2500,7 @@
     {
       "path": ".agents/knowledge/testing_map.json",
       "extension": ".json",
-      "size_bytes": 4630
+      "size_bytes": 4673
     },
     {
       "path": ".agents/knowledge/command_registry.json",
@@ -2395,7 +2520,7 @@
     {
       "path": ".agents/knowledge/repo_map.json",
       "extension": ".json",
-      "size_bytes": 677787
+      "size_bytes": 683978
     },
     {
       "path": ".agents/bin/agent-commander",
@@ -2558,6 +2683,21 @@
       "size_bytes": 230
     },
     {
+      "path": ".agents/missions/2026-08-31-mission-1-c3a818/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 341
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-1-c3a818/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-1-c3a818/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 229
+    },
+    {
       "path": ".agents/missions/2026-08-30-mission-beta-update-database-5afad2/checkpoint.json",
       "extension": ".json",
       "size_bytes": 381
@@ -2616,6 +2756,21 @@
       "path": ".agents/missions/2026-08-30-crash-mission-d34a7b/events.jsonl",
       "extension": ".jsonl",
       "size_bytes": 599
+    },
+    {
+      "path": ".agents/missions/2026-08-31-crash-mission-c6f76b/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 518
+    },
+    {
+      "path": ".agents/missions/2026-08-31-crash-mission-c6f76b/mission.json",
+      "extension": ".json",
+      "size_bytes": 209
+    },
+    {
+      "path": ".agents/missions/2026-08-31-crash-mission-c6f76b/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 600
     },
     {
       "path": ".agents/missions/2026-08-30-crash-mission-580fe5/checkpoint.json",
@@ -2689,6 +2844,21 @@
     },
     {
       "path": ".agents/missions/2026-08-30-mission-2-d7b9df/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-2-19fe75/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-2-19fe75/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-2-19fe75/events.jsonl",
       "extension": ".jsonl",
       "size_bytes": 230
     },
@@ -3323,6 +3493,11 @@
       "size_bytes": 4113
     },
     {
+      "path": ".agents/state/mission_1788175779_a49cbc.json",
+      "extension": ".json",
+      "size_bytes": 6169
+    },
+    {
       "path": ".agents/state/mission_1788119823_b52b2e.json",
       "extension": ".json",
       "size_bytes": 10156
@@ -3346,6 +3521,11 @@
       "path": ".agents/state/mission_1788112739_2c501f.json",
       "extension": ".json",
       "size_bytes": 1725
+    },
+    {
+      "path": ".agents/state/mission_1788175849_347b0d.json",
+      "extension": ".json",
+      "size_bytes": 8415
     },
     {
       "path": ".agents/state/mission_1788119720_cfcf4b.json",
@@ -3403,6 +3583,11 @@
       "size_bytes": 10441
     },
     {
+      "path": ".agents/state/model_performance.json",
+      "extension": ".json",
+      "size_bytes": 102
+    },
+    {
       "path": ".agents/state/mission_1788112735_2bb2f5.json",
       "extension": ".json",
       "size_bytes": 10374
@@ -3416,6 +3601,11 @@
       "path": ".agents/state/mission_1788119968_cb174d.json",
       "extension": ".json",
       "size_bytes": 8334
+    },
+    {
+      "path": ".agents/state/mission_1788175852_a90ac8.json",
+      "extension": ".json",
+      "size_bytes": 580
     },
     {
       "path": ".agents/state/mission_1788119677_b51d2c.json",
@@ -3558,6 +3748,11 @@
       "size_bytes": 10377
     },
     {
+      "path": ".agents/state/mission_1788175781_035c13.json",
+      "extension": ".json",
+      "size_bytes": 10074
+    },
+    {
       "path": ".agents/state/mission_1788119823_3cea84.json",
       "extension": ".json",
       "size_bytes": 8412
@@ -3585,7 +3780,7 @@
     {
       "path": ".agents/state/mission_1788137306_fd4a73.json",
       "extension": ".json",
-      "size_bytes": 596
+      "size_bytes": 8335
     },
     {
       "path": ".agents/state/mission_1788119938_5e7288.json",
@@ -3633,9 +3828,19 @@
       "size_bytes": 5594
     },
     {
+      "path": ".agents/state/mission_1788175851_1fa032.json",
+      "extension": ".json",
+      "size_bytes": 6378
+    },
+    {
       "path": ".agents/state/mission_1788119767_1782b2.json",
       "extension": ".json",
       "size_bytes": 4284
+    },
+    {
+      "path": ".agents/state/mission_1788175847_84a038.json",
+      "extension": ".json",
+      "size_bytes": 10075
     },
     {
       "path": ".agents/state/mission_1788119688_9fb905.json",
@@ -3653,6 +3858,11 @@
       "size_bytes": 8415
     },
     {
+      "path": ".agents/state/mission_1788175785_c7779b.json",
+      "extension": ".json",
+      "size_bytes": 6378
+    },
+    {
       "path": ".agents/state/mission_1788119724_6e9083.json",
       "extension": ".json",
       "size_bytes": 5482
@@ -3661,6 +3871,11 @@
       "path": ".agents/state/mission_1788119720_6caf0e.json",
       "extension": ".json",
       "size_bytes": 6671
+    },
+    {
+      "path": ".agents/state/mission_1788175782_e3859c.json",
+      "extension": ".json",
+      "size_bytes": 8415
     },
     {
       "path": ".agents/state/mission_1788119721_896d8b.json",
@@ -3730,7 +3945,7 @@
     {
       "path": ".agents/state/economic_telemetry.json",
       "extension": ".json",
-      "size_bytes": 2953
+      "size_bytes": 3182
     },
     {
       "path": ".agents/state/mission_1788119928_93525e.json",
@@ -3746,6 +3961,11 @@
       "path": ".agents/state/mission_1788118508_72463c.json",
       "extension": ".json",
       "size_bytes": 1678
+    },
+    {
+      "path": ".agents/state/mission_1788175788_b59a8d.json",
+      "extension": ".json",
+      "size_bytes": 1677
     },
     {
       "path": ".agents/state/mission_1788119889_191764.json",
@@ -3798,6 +4018,11 @@
       "size_bytes": 8402
     },
     {
+      "path": ".agents/state/agent_reputation.json",
+      "extension": ".json",
+      "size_bytes": 288
+    },
+    {
       "path": ".agents/state/mission_1788119764_67c2b5.json",
       "extension": ".json",
       "size_bytes": 4114
@@ -3816,6 +4041,11 @@
       "path": ".agents/state/mission_1788118482_48a52c.json",
       "extension": ".json",
       "size_bytes": 6601
+    },
+    {
+      "path": ".agents/state/mission_1788175786_c3c19c.json",
+      "extension": ".json",
+      "size_bytes": 6393
     },
     {
       "path": ".agents/state/mission_1788112738_c89122.json",
@@ -3861,6 +4091,11 @@
       "path": ".agents/state/mission_1788119824_65fd12.json",
       "extension": ".json",
       "size_bytes": 10157
+    },
+    {
+      "path": ".agents/state/mission_1788175846_720605.json",
+      "extension": ".json",
+      "size_bytes": 6171
     },
     {
       "path": ".agents/state/mission_1788118594_7cd365.json",
@@ -4090,7 +4325,7 @@
     {
       "path": ".agents/memory/failure_memory.json",
       "extension": ".json",
-      "size_bytes": 8557
+      "size_bytes": 9850
     },
     {
       "path": ".agents/memory/strategy_memory_redteam.json",
@@ -4226,6 +4461,11 @@
       "path": ".agents/engine/memory/failure_memory.py",
       "extension": ".py",
       "size_bytes": 4265
+    },
+    {
+      "path": ".agents/traces/tr_auth_01.json",
+      "extension": ".json",
+      "size_bytes": 191
     },
     {
       "path": "concept photos/photo_5_2026-07-28_08-36-53.jpg",
@@ -24196,6 +24436,11 @@
       "path": "tests/integration/README.md",
       "extension": ".md",
       "size_bytes": 98
+    },
+    {
+      "path": "tests/agent_os/test_suite_all_60.py",
+      "extension": ".py",
+      "size_bytes": 27199
     },
     {
       "path": "tests/agent_os/test_suite_all_12.py",

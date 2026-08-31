@@ -1,0 +1,15 @@
+{
+  "mission_id": "2026-08-31-mission-1-dae136",
+  "objective": "Mission 1",
+  "status": "ACTIVE",
+  "tasks": {},
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": 0,
+  "test_results": {},
+  "escalated": false,
+  "escalation_reason": null,
+  "tokens_consumed": 0,
+  "created_at": 1788175862.2374787,
+  "completed_at": null
+}

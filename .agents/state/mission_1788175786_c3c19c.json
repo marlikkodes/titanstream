@@ -1,0 +1,205 @@
+{
+  "mission_id": "mission_1788175786_c3c19c",
+  "objective": "Update auth token JWT signing secret validation and session cookie flags",
+  "status": "COMPLETED",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_e1f97c": {
+      "id": "task_plan_e1f97c",
+      "title": "Architecture & Analysis for: Update auth token JWT signing secret val",
+      "description": "Analyze requirements and plan implementation for Update auth token JWT signing secret validation and session cookie flags",
+      "agent_role": "security_engineer",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_e1f97c",
+        "objective": "Update auth token JWT signing secret validation and session cookie flags",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_e1f97c",
+        "agent_role": "security_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Update auth token JWT signing secret validation and session cookie flags",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175787.2663555,
+      "completed_at": null
+    },
+    "task_backend_engineer_8d5f1a": {
+      "id": "task_backend_engineer_8d5f1a",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Update auth token JWT signing secret validation and session cookie flags",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_e1f97c"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_backend_engineer_8d5f1a",
+        "objective": "Update auth token JWT signing secret validation and session cookie flags",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_e1f97c"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_backend_engineer_8d5f1a",
+        "agent_role": "backend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Update auth token JWT signing secret validation and session cookie flags",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175787.2663715,
+      "completed_at": null
+    },
+    "task_sec_2fb38e": {
+      "id": "task_sec_2fb38e",
+      "title": "Security & Red-Team Code Audit",
+      "description": "Audit changes for secrets, vulnerabilities, and architectural integrity",
+      "agent_role": "security_engineer",
+      "dependencies": [
+        "task_backend_engineer_8d5f1a"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_sec_2fb38e",
+        "objective": "Security Audit",
+        "scope": [
+          "security",
+          "audit"
+        ],
+        "constraints": [
+          "zero secret leaks",
+          "OWASP compliance"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_backend_engineer_8d5f1a"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_sec_2fb38e",
+        "agent_role": "security_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Update auth token JWT signing secret validation and session cookie flags",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175787.266381,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788175786_c3c19c"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788175786.6429482,
+  "updated_at": 1788175787.2667232
+}

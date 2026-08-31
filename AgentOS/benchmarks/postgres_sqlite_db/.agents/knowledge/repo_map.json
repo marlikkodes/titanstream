@@ -1,0 +1,36 @@
+{
+  "root": "/home/wendy/Desktop/tetherstream/AgentOS/benchmarks/postgres_sqlite_db",
+  "total_files": 6,
+  "files": [
+    {
+      "path": "schema.sql",
+      "extension": ".sql",
+      "size_bytes": 142
+    },
+    {
+      "path": ".agents/state/mission_1788175916_a52f60.json",
+      "extension": ".json",
+      "size_bytes": 543
+    },
+    {
+      "path": ".agents/state/metrics.json",
+      "extension": ".json",
+      "size_bytes": 150
+    },
+    {
+      "path": ".agents/state/current_mission.json",
+      "extension": ".json",
+      "size_bytes": 55
+    },
+    {
+      "path": ".agents/memory/failure_memory.json",
+      "extension": ".json",
+      "size_bytes": 2
+    },
+    {
+      "path": ".agents/memory/strategy_memory.json",
+      "extension": ".json",
+      "size_bytes": 2126
+    }
+  ]
+}

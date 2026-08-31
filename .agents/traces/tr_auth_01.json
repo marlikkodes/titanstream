@@ -1,0 +1,13 @@
+{
+  "trace_id": "tr_auth_01",
+  "workflow": "UserLogin",
+  "inputs": {
+    "user": "alice"
+  },
+  "expected_output": {
+    "status": "AUTH_OK"
+  },
+  "assertions": [
+    "token_present"
+  ]
+}

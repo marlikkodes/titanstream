@@ -1,0 +1,16 @@
+{
+  "primary_stack": [
+    "Python"
+  ],
+  "subsystems": {},
+  "design_patterns": [
+    "Monorepo",
+    "Microservices/Modular Apps",
+    "Event/Message-Driven"
+  ],
+  "entrypoints": [
+    "apps/",
+    "services/",
+    "scripts/"
+  ]
+}

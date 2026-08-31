@@ -1,10 +1,10 @@
 {
-  "total_missions": 12,
-  "total_prompt_tokens": 180000,
-  "total_completion_tokens": 36000,
+  "total_missions": 14,
+  "total_prompt_tokens": 210000,
+  "total_completion_tokens": 42000,
   "total_cached_tokens": 0,
-  "total_cost_usd": 0.144,
-  "total_human_minutes_saved": 324.0,
+  "total_cost_usd": 0.168,
+  "total_human_minutes_saved": 378.0,
   "records": [
     {
       "mission_id": "m_budget",
@@ -108,6 +108,24 @@
     {
       "mission_id": "m_budget",
       "timestamp": 1788137299.4434311,
+      "prompt_tokens": 15000,
+      "completion_tokens": 3000,
+      "cost_usd": 0.012,
+      "human_minutes_saved": 27.0,
+      "success": true
+    },
+    {
+      "mission_id": "m_budget",
+      "timestamp": 1788175803.1618679,
+      "prompt_tokens": 15000,
+      "completion_tokens": 3000,
+      "cost_usd": 0.012,
+      "human_minutes_saved": 27.0,
+      "success": true
+    },
+    {
+      "mission_id": "m_budget",
+      "timestamp": 1788175870.9001124,
       "prompt_tokens": 15000,
       "completion_tokens": 3000,
       "cost_usd": 0.012,

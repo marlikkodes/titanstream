@@ -1,0 +1,204 @@
+{
+  "mission_id": "mission_1788175851_1fa032",
+  "objective": "Verify checkout button click and browser console errors on checkout page",
+  "status": "COMPLETED",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_da1e0e": {
+      "id": "task_plan_da1e0e",
+      "title": "Architecture & Analysis for: Verify checkout button click and browser",
+      "description": "Analyze requirements and plan implementation for Verify checkout button click and browser console errors on checkout page",
+      "agent_role": "frontend_engineer",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_da1e0e",
+        "objective": "Verify checkout button click and browser console errors on checkout page",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_da1e0e",
+        "agent_role": "frontend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "apps/web/src/components/MainSpinner.tsx"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Verify checkout button click and browser console errors on checkout page",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175852.207513,
+      "completed_at": null
+    },
+    "task_frontend_engineer_71f3a5": {
+      "id": "task_frontend_engineer_71f3a5",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for Verify checkout button click and browser console errors on checkout page",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_da1e0e"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_71f3a5",
+        "objective": "Verify checkout button click and browser console errors on checkout page",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_da1e0e"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_frontend_engineer_71f3a5",
+        "agent_role": "frontend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "apps/web/src/components/MainSpinner.tsx"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Verify checkout button click and browser console errors on checkout page",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175852.2075293,
+      "completed_at": null
+    },
+    "task_qa_d6ec96": {
+      "id": "task_qa_d6ec96",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "browser_engineer",
+      "dependencies": [
+        "task_frontend_engineer_71f3a5"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_qa_d6ec96",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_71f3a5"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_qa_d6ec96",
+        "agent_role": "browser_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "apps/web/src/components/MainSpinner.tsx"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Verify checkout button click and browser console errors on checkout page",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175852.2075353,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788175851_1fa032"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788175851.6627228,
+  "updated_at": 1788175852.2079477
+}

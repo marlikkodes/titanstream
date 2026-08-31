@@ -1,0 +1,205 @@
+{
+  "mission_id": "mission_1788175916_3854e4",
+  "objective": "Fix auth token validation header parsing",
+  "status": "COMPLETED",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_b60bbf": {
+      "id": "task_plan_b60bbf",
+      "title": "Architecture & Analysis for: Fix auth token validation header parsing",
+      "description": "Analyze requirements and plan implementation for Fix auth token validation header parsing",
+      "agent_role": "security_engineer",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_b60bbf",
+        "objective": "Fix auth token validation header parsing",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_b60bbf",
+        "agent_role": "security_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix auth token validation header parsing",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175916.7842336,
+      "completed_at": null
+    },
+    "task_backend_engineer_635e2b": {
+      "id": "task_backend_engineer_635e2b",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Fix auth token validation header parsing",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_b60bbf"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_backend_engineer_635e2b",
+        "objective": "Fix auth token validation header parsing",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_b60bbf"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_backend_engineer_635e2b",
+        "agent_role": "backend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix auth token validation header parsing",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175916.784253,
+      "completed_at": null
+    },
+    "task_sec_fd3bfb": {
+      "id": "task_sec_fd3bfb",
+      "title": "Security & Red-Team Code Audit",
+      "description": "Audit changes for secrets, vulnerabilities, and architectural integrity",
+      "agent_role": "security_engineer",
+      "dependencies": [
+        "task_backend_engineer_635e2b"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_sec_fd3bfb",
+        "objective": "Security Audit",
+        "scope": [
+          "security",
+          "audit"
+        ],
+        "constraints": [
+          "zero secret leaks",
+          "OWASP compliance"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_backend_engineer_635e2b"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_sec_fd3bfb",
+        "agent_role": "security_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix auth token validation header parsing",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175916.784265,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788175916_3854e4"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788175916.7809565,
+  "updated_at": 1788175916.7848604
+}

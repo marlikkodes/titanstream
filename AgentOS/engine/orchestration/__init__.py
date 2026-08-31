@@ -1,2 +1,3 @@
 from .merge_guardian import MergeGuardian
-__all__ = ["MergeGuardian"]
+from .mission_learning import MissionLearningEngine
+__all__ = ["MergeGuardian", "MissionLearningEngine"]

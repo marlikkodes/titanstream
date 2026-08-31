@@ -1,0 +1,8 @@
+{
+  "mission_id": "2026-08-31-mission-1-dae136",
+  "objective": "Mission 1",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "status": "INITIALIZED",
+  "created_at": 1788175862.2370179
+}

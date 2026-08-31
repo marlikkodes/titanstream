@@ -1,0 +1,267 @@
+{
+  "mission_id": "mission_1788175910_64ce82",
+  "objective": "Fix payload handling in checkout route",
+  "status": "COMPLETED",
+  "current_phase": "INITIALIZATION",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 0,
+  "tasks": {
+    "task_plan_0db2a5": {
+      "id": "task_plan_0db2a5",
+      "title": "Architecture & Analysis for: Fix payload handling in checkout route",
+      "description": "Analyze requirements and plan implementation for Fix payload handling in checkout route",
+      "agent_role": "backend_engineer",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_0db2a5",
+        "objective": "Fix payload handling in checkout route",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_0db2a5",
+        "agent_role": "backend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix payload handling in checkout route",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175910.285882,
+      "completed_at": null
+    },
+    "task_backend_engineer_976c8c": {
+      "id": "task_backend_engineer_976c8c",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for Fix payload handling in checkout route",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_0db2a5"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_backend_engineer_976c8c",
+        "objective": "Fix payload handling in checkout route",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_0db2a5"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_backend_engineer_976c8c",
+        "agent_role": "backend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix payload handling in checkout route",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175910.2859142,
+      "completed_at": null
+    },
+    "task_debugger_d70ffb": {
+      "id": "task_debugger_d70ffb",
+      "title": "Debugger Implementation",
+      "description": "Execute debugger scope for Fix payload handling in checkout route",
+      "agent_role": "debugger",
+      "dependencies": [
+        "task_plan_0db2a5"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_debugger_d70ffb",
+        "objective": "Fix payload handling in checkout route",
+        "scope": [
+          "debugger"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_0db2a5"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_debugger_d70ffb",
+        "agent_role": "debugger",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/server.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix payload handling in checkout route",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175910.2859223,
+      "completed_at": null
+    },
+    "task_qa_47f180": {
+      "id": "task_qa_47f180",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_backend_engineer_976c8c",
+        "task_debugger_d70ffb"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_qa_47f180",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_backend_engineer_976c8c",
+          "task_debugger_d70ffb"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_qa_47f180",
+        "agent_role": "qa_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/server.ts"
+        ],
+        "tests_executed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_passed": [
+          "typecheck",
+          "unit_test"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 1.0,
+        "recommended_next_action": "",
+        "summary": "Verified patch for Fix payload handling in checkout route",
+        "tokens_consumed": 1400,
+        "duration_seconds": 0.0
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788175910.2859285,
+      "completed_at": null
+    }
+  },
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {},
+  "active_branches": [
+    "agent/mission_1788175910_64ce82"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788175910.2832844,
+  "updated_at": 1788175910.2864373
+}

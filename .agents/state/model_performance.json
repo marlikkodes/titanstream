@@ -1,0 +1,7 @@
+{
+  "gemini-2.5-flash:T2_STANDARD": {
+    "runs": 2,
+    "successes": 2,
+    "total_cost": 0.004
+  }
+}

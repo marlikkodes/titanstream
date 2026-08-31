@@ -1,6 +1,6 @@
 {
   "root": "/home/wendy/Desktop/tetherstream/AgentOS/benchmarks/python_flask",
-  "total_files": 6,
+  "total_files": 17,
   "files": [
     {
       "path": ".agents/project.json",
@@ -8,14 +8,54 @@
       "size_bytes": 157
     },
     {
+      "path": ".agents/knowledge/api_map.json",
+      "extension": ".json",
+      "size_bytes": 21
+    },
+    {
+      "path": ".agents/knowledge/dependency_map.json",
+      "extension": ".json",
+      "size_bytes": 2
+    },
+    {
+      "path": ".agents/knowledge/testing_map.json",
+      "extension": ".json",
+      "size_bytes": 23
+    },
+    {
+      "path": ".agents/knowledge/command_registry.json",
+      "extension": ".json",
+      "size_bytes": 224
+    },
+    {
+      "path": ".agents/knowledge/architecture_map.json",
+      "extension": ".json",
+      "size_bytes": 235
+    },
+    {
+      "path": ".agents/knowledge/database_map.json",
+      "extension": ".json",
+      "size_bytes": 19
+    },
+    {
+      "path": ".agents/knowledge/repo_map.json",
+      "extension": ".json",
+      "size_bytes": 1976
+    },
+    {
+      "path": ".agents/state/mission_1788175910_64ce82.json",
+      "extension": ".json",
+      "size_bytes": 7911
+    },
+    {
       "path": ".agents/state/metrics.json",
       "extension": ".json",
-      "size_bytes": 150
+      "size_bytes": 419
     },
     {
       "path": ".agents/state/mission_1788118520_3c2c87.json",
       "extension": ".json",
-      "size_bytes": 546
+      "size_bytes": 8252
     },
     {
       "path": ".agents/state/current_mission.json",
@@ -23,9 +63,24 @@
       "size_bytes": 55
     },
     {
+      "path": ".agents/state/mission_1788175902_f1410c.json",
+      "extension": ".json",
+      "size_bytes": 7911
+    },
+    {
+      "path": ".agents/state/mission_1788175916_bda020.json",
+      "extension": ".json",
+      "size_bytes": 546
+    },
+    {
       "path": ".agents/memory/failure_memory.json",
       "extension": ".json",
       "size_bytes": 2
+    },
+    {
+      "path": ".agents/memory/strategy_memory.json",
+      "extension": ".json",
+      "size_bytes": 2141
     },
     {
       "path": "src/app.py",

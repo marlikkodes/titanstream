@@ -1,6 +1,6 @@
 {
   "root": "/home/wendy/Desktop/tetherstream/AgentOS/benchmarks/node_backend",
-  "total_files": 6,
+  "total_files": 15,
   "files": [
     {
       "path": "package.json",
@@ -8,9 +8,49 @@
       "size_bytes": 82
     },
     {
+      "path": ".agents/knowledge/api_map.json",
+      "extension": ".json",
+      "size_bytes": 21
+    },
+    {
+      "path": ".agents/knowledge/dependency_map.json",
+      "extension": ".json",
+      "size_bytes": 146
+    },
+    {
+      "path": ".agents/knowledge/testing_map.json",
+      "extension": ".json",
+      "size_bytes": 23
+    },
+    {
+      "path": ".agents/knowledge/command_registry.json",
+      "extension": ".json",
+      "size_bytes": 224
+    },
+    {
+      "path": ".agents/knowledge/architecture_map.json",
+      "extension": ".json",
+      "size_bytes": 247
+    },
+    {
+      "path": ".agents/knowledge/database_map.json",
+      "extension": ".json",
+      "size_bytes": 19
+    },
+    {
+      "path": ".agents/knowledge/repo_map.json",
+      "extension": ".json",
+      "size_bytes": 770
+    },
+    {
+      "path": ".agents/state/mission_1788175916_3854e4.json",
+      "extension": ".json",
+      "size_bytes": 548
+    },
+    {
       "path": ".agents/state/metrics.json",
       "extension": ".json",
-      "size_bytes": 150
+      "size_bytes": 419
     },
     {
       "path": ".agents/state/current_mission.json",
@@ -20,12 +60,17 @@
     {
       "path": ".agents/state/mission_1788118520_5bc6e8.json",
       "extension": ".json",
-      "size_bytes": 548
+      "size_bytes": 6437
     },
     {
       "path": ".agents/memory/failure_memory.json",
       "extension": ".json",
       "size_bytes": 2
+    },
+    {
+      "path": ".agents/memory/strategy_memory.json",
+      "extension": ".json",
+      "size_bytes": 2126
     },
     {
       "path": "src/auth.js",
