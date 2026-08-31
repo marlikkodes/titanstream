@@ -14,32 +14,65 @@ import { MachineOwnersManualModal } from './pages/TitanHub/components/MachineOwn
 import { MachineCertificateModal } from './pages/TitanHub/components/MachineCertificateModal';
 import { DestinationLoader } from './components/DestinationLoader';
 
-// Lazy-loaded Admin Pages (Code-split out of initial JS bundle)
-const OverviewPage = lazy(() => import('./pages/admin/overview').then((m) => ({ default: m.OverviewPage })));
-const OrdersPage = lazy(() => import('./pages/admin/orders').then((m) => ({ default: m.OrdersPage })));
-const OperationsPage = lazy(() => import('./pages/admin/operations').then((m) => ({ default: m.OperationsPage })));
-const OperationsHqPage = lazy(() => import('./pages/admin/operations-hq').then((m) => ({ default: m.OperationsHqPage })));
-const IntelligencePage = lazy(() => import('./pages/admin/intelligence').then((m) => ({ default: m.IntelligencePage })));
-const ReadinessPage = lazy(() => import('./pages/admin/readiness').then((m) => ({ default: m.ReadinessPage })));
-const LiquidityPage = lazy(() => import('./pages/admin/liquidity').then((m) => ({ default: m.LiquidityPage })));
-const TreasuryPage = lazy(() => import('./pages/admin/treasury').then((m) => ({ default: m.TreasuryPage })));
-const FinancialControlCenterPage = lazy(() => import('./pages/admin/financial').then((m) => ({ default: m.FinancialControlCenterPage })));
-const MachineControlCenterPage = lazy(() => import('./pages/admin/machines').then((m) => ({ default: m.MachineControlCenterPage })));
-const PaymentRailsPage = lazy(() => import('./pages/admin/payment-rails').then((m) => ({ default: m.PaymentRailsPage })));
-const WithdrawalsPage = lazy(() => import('./pages/admin/withdrawals').then((m) => ({ default: m.WithdrawalsPage })));
-const UsersPage = lazy(() => import('./pages/admin/users').then((m) => ({ default: m.UsersPage })));
-const AdminSupportPage = lazy(() => import('./pages/admin/support').then((m) => ({ default: m.AdminSupportPage })));
-const GamesAdminPage = lazy(() => import('./pages/admin/games').then((m) => ({ default: m.GamesAdminPage })));
-const RiskPage = lazy(() => import('./pages/admin/risk').then((m) => ({ default: m.RiskPage })));
-const AutomationPage = lazy(() => import('./pages/admin/automation').then((m) => ({ default: m.AutomationPage })));
-const RevenuePage = lazy(() => import('./pages/admin/revenue').then((m) => ({ default: m.RevenuePage })));
-const NotificationsPage = lazy(() => import('./pages/admin/notifications').then((m) => ({ default: m.NotificationsPage })));
-const AuditPage = lazy(() => import('./pages/admin/audit').then((m) => ({ default: m.AuditPage })));
-const HealthPage = lazy(() => import('./pages/admin/health').then((m) => ({ default: m.HealthPage })));
-const SettingsPage = lazy(() => import('./pages/admin/settings').then((m) => ({ default: m.SettingsPage })));
-const GrowthAdminPage = lazy(() => import('./pages/admin/growth').then((m) => ({ default: m.GrowthAdminPage })));
-const WhatsappAdminPage = lazy(() => import('./pages/admin/whatsapp').then((m) => ({ default: m.WhatsappAdminPage })));
-const MerchantsAdminPage = lazy(() => import('./pages/admin/merchants').then((m) => ({ default: m.MerchantsAdminPage })));
+// Resilient lazy loader with auto-retry and chunk recovery
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<any>,
+  exportName?: string,
+  retries = 2
+) {
+  return lazy(async () => {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const module = await factory();
+        const component = exportName ? (module[exportName] || module.default) : (module.default || Object.values(module)[0]);
+        if (sessionStorage.getItem('retry-lazy-refreshed')) {
+          sessionStorage.removeItem('retry-lazy-refreshed');
+        }
+        return { default: component };
+      } catch (error: any) {
+        if (i === retries) {
+          const hasRefreshed = sessionStorage.getItem('retry-lazy-refreshed');
+          if (!hasRefreshed) {
+            sessionStorage.setItem('retry-lazy-refreshed', 'true');
+            window.location.reload();
+            return new Promise(() => {}); // prevent throw while reload starts
+          }
+          sessionStorage.removeItem('retry-lazy-refreshed');
+          throw error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 300 * (i + 1)));
+      }
+    }
+    return factory();
+  });
+}
+
+// Lazy-loaded Admin Pages (Code-split with resilient chunk retry)
+const OverviewPage = lazyWithRetry(() => import('./pages/admin/overview'), 'OverviewPage');
+const OrdersPage = lazyWithRetry(() => import('./pages/admin/orders'), 'OrdersPage');
+const OperationsPage = lazyWithRetry(() => import('./pages/admin/operations'), 'OperationsPage');
+const OperationsHqPage = lazyWithRetry(() => import('./pages/admin/operations-hq'), 'OperationsHqPage');
+const IntelligencePage = lazyWithRetry(() => import('./pages/admin/intelligence'), 'IntelligencePage');
+const ReadinessPage = lazyWithRetry(() => import('./pages/admin/readiness'), 'ReadinessPage');
+const LiquidityPage = lazyWithRetry(() => import('./pages/admin/liquidity'), 'LiquidityPage');
+const TreasuryPage = lazyWithRetry(() => import('./pages/admin/treasury'), 'TreasuryPage');
+const FinancialControlCenterPage = lazyWithRetry(() => import('./pages/admin/financial'), 'FinancialControlCenterPage');
+const MachineControlCenterPage = lazyWithRetry(() => import('./pages/admin/machines'), 'MachineControlCenterPage');
+const PaymentRailsPage = lazyWithRetry(() => import('./pages/admin/payment-rails'), 'PaymentRailsPage');
+const WithdrawalsPage = lazyWithRetry(() => import('./pages/admin/withdrawals'), 'WithdrawalsPage');
+const UsersPage = lazyWithRetry(() => import('./pages/admin/users'), 'UsersPage');
+const AdminSupportPage = lazyWithRetry(() => import('./pages/admin/support'), 'AdminSupportPage');
+const GamesAdminPage = lazyWithRetry(() => import('./pages/admin/games'), 'GamesAdminPage');
+const RiskPage = lazyWithRetry(() => import('./pages/admin/risk'), 'RiskPage');
+const AutomationPage = lazyWithRetry(() => import('./pages/admin/automation'), 'AutomationPage');
+const RevenuePage = lazyWithRetry(() => import('./pages/admin/revenue'), 'RevenuePage');
+const NotificationsPage = lazyWithRetry(() => import('./pages/admin/notifications'), 'NotificationsPage');
+const AuditPage = lazyWithRetry(() => import('./pages/admin/audit'), 'AuditPage');
+const HealthPage = lazyWithRetry(() => import('./pages/admin/health'), 'HealthPage');
+const SettingsPage = lazyWithRetry(() => import('./pages/admin/settings'), 'SettingsPage');
+const GrowthAdminPage = lazyWithRetry(() => import('./pages/admin/growth'), 'GrowthAdminPage');
+const WhatsappAdminPage = lazyWithRetry(() => import('./pages/admin/whatsapp'), 'WhatsappAdminPage');
+const MerchantsAdminPage = lazyWithRetry(() => import('./pages/admin/merchants'), 'MerchantsAdminPage');
 
 import { useNavigationStore } from './store/useNavigationStore';
 import { useMissionRunnerStore } from './store/useMissionRunnerStore';

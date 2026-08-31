@@ -1,7 +1,7 @@
 {
   "artifact_key": "schema_summary",
   "file_hash": "96ed0c73b2b86896",
-  "computed_at": 1788119962.8042812,
+  "computed_at": 1788137301.5065885,
   "content": {
     "schema": "User, GrowthContribution, Reward"
   },

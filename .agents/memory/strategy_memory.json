@@ -22,10 +22,10 @@
       "security_scanner"
     ],
     "model_tier": "T3_COMPLEX",
-    "success_count": 65,
+    "success_count": 80,
     "failure_count": 0,
     "total_cost_usd": 0.015,
-    "avg_duration_seconds": 0.5901762234025351,
+    "avg_duration_seconds": 0.5861403252021302,
     "human_interventions": 0,
     "provenance_mission_id": "init",
     "confidence_score": 0.95

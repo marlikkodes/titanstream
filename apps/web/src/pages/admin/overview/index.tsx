@@ -534,3 +534,5 @@ export const OverviewPage: React.FC = () => {
     </div>
   );
 };
+
+export default OverviewPage;

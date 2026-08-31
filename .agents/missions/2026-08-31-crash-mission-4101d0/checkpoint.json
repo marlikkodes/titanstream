@@ -1,0 +1,26 @@
+{
+  "mission_id": "2026-08-31-crash-mission-4101d0",
+  "objective": "Crash Mission",
+  "status": "ACTIVE",
+  "tasks": {
+    "t1": {
+      "id": "t1",
+      "title": "T1",
+      "role": "",
+      "status": "COMPLETED",
+      "dependencies": [],
+      "output": null
+    }
+  },
+  "completed_tasks": [
+    "t1"
+  ],
+  "failed_tasks": [],
+  "repair_attempts": 0,
+  "test_results": {},
+  "escalated": false,
+  "escalation_reason": null,
+  "tokens_consumed": 500,
+  "created_at": 1788137297.5549583,
+  "completed_at": null
+}

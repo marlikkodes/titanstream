@@ -3,22 +3,21 @@
     "challengeId": "wa_chal_1787790084949",
     "shortPin": "584188",
     "status": "APPROVED",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:21:24.949Z",
     "expiresAt": "2026-08-27T00:31:24.949Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -27,22 +26,21 @@
     "challengeId": "wa_chal_1787789647809",
     "shortPin": "520394",
     "status": "APPROVED",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:14:07.809Z",
     "expiresAt": "2026-08-27T00:24:07.809Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -51,22 +49,21 @@
     "challengeId": "wa_chal_1787791077195",
     "shortPin": "436605",
     "status": "APPROVED",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:37:57.195Z",
     "expiresAt": "2026-08-27T00:47:57.195Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -78,19 +75,18 @@
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:45:24.691Z",
     "expiresAt": "2026-08-27T00:55:24.691Z",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -102,19 +98,18 @@
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:51:05.322Z",
     "expiresAt": "2026-08-27T01:01:05.322Z",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -123,22 +118,21 @@
     "challengeId": "wa_chal_1787791876115",
     "shortPin": "472305",
     "status": "APPROVED",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T00:51:16.116Z",
     "expiresAt": "2026-08-27T01:01:16.116Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -147,22 +141,21 @@
     "challengeId": "wa_chal_1787792408723",
     "shortPin": "353179",
     "status": "APPROVED",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T01:00:08.723Z",
     "expiresAt": "2026-08-27T01:10:08.723Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -171,22 +164,21 @@
     "challengeId": "wa_chal_1787793884760",
     "shortPin": "791800",
     "status": "APPROVED",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T01:24:44.760Z",
     "expiresAt": "2026-08-27T01:34:44.760Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -198,19 +190,18 @@
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T05:31:34.943Z",
     "expiresAt": "2026-08-27T05:41:34.941Z",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -219,22 +210,21 @@
     "challengeId": "wa_chal_1787808740240",
     "shortPin": "985707",
     "status": "APPROVED",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T05:32:20.241Z",
     "expiresAt": "2026-08-27T05:44:22.937Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -243,22 +233,21 @@
     "challengeId": "wa_chal_1787823899600",
     "shortPin": "509904",
     "status": "APPROVED",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-27T09:44:59.601Z",
     "expiresAt": "2026-08-27T09:54:59.600Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -373,19 +362,18 @@
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-30T10:54:22.051Z",
     "expiresAt": "2026-08-30T11:04:22.050Z",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -397,19 +385,18 @@
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-30T11:06:26.916Z",
     "expiresAt": "2026-08-30T11:16:26.915Z",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
@@ -578,24 +565,217 @@
     "challengeId": "wa_chal_1788101400269",
     "shortPin": "386842",
     "status": "APPROVED",
-    "phone": "+256754241334",
+    "phone": "+256770000000",
     "deviceInfo": "Browser Session",
     "createdAt": "2026-08-30T14:50:00.269Z",
     "expiresAt": "2026-08-30T15:00:00.270Z",
     "sessionTokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ0aXRhblVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInVzZXJJZCI6IjI1Njc1NDI0MTMzNCIsInRlbGVncmFtVXNlcklkIjoyNTY3NTQyNDEzMzQsInByb3ZpZGVyIjoiV0hBVFNBUFAiLCJzdGF0ZSI6IlJFQURZIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3ODgxMDE0MDAsImV4cCI6MTc4ODEwMjMwMH0.HJwVyUEm7pEzaR1AfJEcAcsyfnsossszptwRJH-kqj4",
-      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTY3NTQyNDEzMzQiLCJ1c2VySWQiOiIyNTY3NTQyNDEzMzQiLCJ0ZWxlZ3JhbVVzZXJJZCI6MjU2NzU0MjQxMzM0LCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc4ODEwMTQwMCwiZXhwIjoxNzkwNjkzNDAwfQ.Rn7FZGgDmxtJCkY4dYVeL-BIS5IEdLREcgxglgjsrYo",
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
       "user": {
-        "id": "titan_wa_256754241334",
-        "identityId": "titan_wa_256754241334",
-        "telegramUserId": 256754241334,
-        "firstName": "reincarnated",
-        "lastName": "",
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
         "state": "READY",
         "isReady": true,
-        "createdAt": "2026-08-30T14:50:00.408Z"
+        "createdAt": "2026-08-31T00:48:04.416Z"
       }
     }
   },
-  "pin_386842": "wa_chal_1788101400269"
+  "pin_386842": "wa_chal_1788101400269",
+  "wa_ch_mtgiolqa_e474ac8b093c": {
+    "challengeId": "wa_ch_mtgiolqa_e474ac8b093c",
+    "shortPin": "727480",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Chrome 120 Linux",
+    "createdAt": "2026-08-31T00:45:37.667Z",
+    "expiresAt": "2026-08-31T00:55:37.667Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_727480": "wa_ch_mtgiolqa_e474ac8b093c",
+  "wa_ch_mtgiolr6_17d36a322ea6": {
+    "challengeId": "wa_ch_mtgiolr6_17d36a322ea6",
+    "shortPin": "739695",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Mobile Chrome",
+    "createdAt": "2026-08-31T00:45:37.698Z",
+    "expiresAt": "2026-08-31T00:55:37.698Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_739695": "wa_ch_mtgiolr6_17d36a322ea6",
+  "wa_ch_mtgiomha_b7a3d90842a9": {
+    "challengeId": "wa_ch_mtgiomha_b7a3d90842a9",
+    "shortPin": "164132",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Desktop Chrome 120",
+    "createdAt": "2026-08-31T00:45:38.639Z",
+    "expiresAt": "2026-08-31T00:55:38.639Z",
+    "sessionTokens": {
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
+      "user": {
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-31T00:45:38.645Z"
+      }
+    }
+  },
+  "pin_164132": "wa_ch_mtgiomha_b7a3d90842a9",
+  "wa_ch_mtgiomhl_42d89c8fb9cc": {
+    "challengeId": "wa_ch_mtgiomhl_42d89c8fb9cc",
+    "shortPin": "958959",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Mobile Safari",
+    "createdAt": "2026-08-31T00:45:38.649Z",
+    "expiresAt": "2026-08-31T00:55:38.649Z",
+    "sessionTokens": {
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
+      "user": {
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-31T00:45:38.652Z"
+      }
+    }
+  },
+  "pin_958959": "wa_ch_mtgiomhl_42d89c8fb9cc",
+  "wa_ch_mtgir5st_5afb6e992257": {
+    "challengeId": "wa_ch_mtgir5st_5afb6e992257",
+    "shortPin": "399394",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Chrome 120 Linux",
+    "createdAt": "2026-08-31T00:47:36.990Z",
+    "expiresAt": "2026-08-31T00:57:36.990Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_399394": "wa_ch_mtgir5st_5afb6e992257",
+  "wa_ch_mtgir5t5_3355b78a8892": {
+    "challengeId": "wa_ch_mtgir5t5_3355b78a8892",
+    "shortPin": "237280",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Mobile Chrome",
+    "createdAt": "2026-08-31T00:47:37.001Z",
+    "expiresAt": "2026-08-31T00:57:37.001Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_237280": "wa_ch_mtgir5t5_3355b78a8892",
+  "wa_ch_mtgirppp_9572732c18c8": {
+    "challengeId": "wa_ch_mtgirppp_9572732c18c8",
+    "shortPin": "182085",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Chrome 120 Linux",
+    "createdAt": "2026-08-31T00:48:02.798Z",
+    "expiresAt": "2026-08-31T00:58:02.798Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_182085": "wa_ch_mtgirppp_9572732c18c8",
+  "wa_ch_mtgirpqg_44ca563e8a3f": {
+    "challengeId": "wa_ch_mtgirpqg_44ca563e8a3f",
+    "shortPin": "425961",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Mobile Chrome",
+    "createdAt": "2026-08-31T00:48:02.824Z",
+    "expiresAt": "2026-08-31T00:58:02.824Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_425961": "wa_ch_mtgirpqg_44ca563e8a3f",
+  "wa_ch_mtgirqyc_6588879ae12c": {
+    "challengeId": "wa_ch_mtgirqyc_6588879ae12c",
+    "shortPin": "790903",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Desktop Chrome 120",
+    "createdAt": "2026-08-31T00:48:04.405Z",
+    "expiresAt": "2026-08-31T00:58:04.405Z",
+    "sessionTokens": {
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
+      "user": {
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-31T00:48:04.409Z"
+      }
+    }
+  },
+  "pin_790903": "wa_ch_mtgirqyc_6588879ae12c",
+  "wa_ch_mtgirqym_3a2d6ce8f3a8": {
+    "challengeId": "wa_ch_mtgirqym_3a2d6ce8f3a8",
+    "shortPin": "514179",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Mobile Safari",
+    "createdAt": "2026-08-31T00:48:04.414Z",
+    "expiresAt": "2026-08-31T00:58:04.414Z",
+    "sessionTokens": {
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
+      "user": {
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-08-31T00:48:04.416Z"
+      }
+    }
+  },
+  "pin_514179": "wa_ch_mtgirqym_3a2d6ce8f3a8"
 }

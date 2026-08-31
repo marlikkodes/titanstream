@@ -1,6 +1,6 @@
 {
   "root": "/home/wendy/Desktop/tetherstream",
-  "total_files": 4817,
+  "total_files": 4843,
   "files": [
     {
       "path": "MISSION_CONTROL_FORENSIC_REPORT.md",
@@ -331,6 +331,11 @@
       "path": "AgentOS/docs/capability-harvest.md",
       "extension": ".md",
       "size_bytes": 5510
+    },
+    {
+      "path": "AgentOS/docs/PHASE-II-FINAL.md",
+      "extension": ".md",
+      "size_bytes": 5015
     },
     {
       "path": "AgentOS/docs/capability-baseline.md",
@@ -2390,7 +2395,7 @@
     {
       "path": ".agents/knowledge/repo_map.json",
       "extension": ".json",
-      "size_bytes": 674337
+      "size_bytes": 677787
     },
     {
       "path": ".agents/bin/agent-commander",
@@ -2521,6 +2526,21 @@
       "path": ".agents/missions/2026-08-30-mission-2-75db2f/events.jsonl",
       "extension": ".jsonl",
       "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-31-crash-mission-4101d0/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 518
+    },
+    {
+      "path": ".agents/missions/2026-08-31-crash-mission-4101d0/mission.json",
+      "extension": ".json",
+      "size_bytes": 209
+    },
+    {
+      "path": ".agents/missions/2026-08-31-crash-mission-4101d0/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 601
     },
     {
       "path": ".agents/missions/2026-08-30-mission-2-2c838f/checkpoint.json",
@@ -2733,6 +2753,21 @@
       "size_bytes": 439
     },
     {
+      "path": ".agents/missions/2026-08-31-mission-2-6797d0/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-2-6797d0/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-2-6797d0/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
       "path": ".agents/missions/2026-08-30-mission-1-bfe11e/checkpoint.json",
       "extension": ".json",
       "size_bytes": 341
@@ -2913,6 +2948,21 @@
       "size_bytes": 601
     },
     {
+      "path": ".agents/missions/2026-08-31-mission-1-15fe89/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-1-15fe89/mission.json",
+      "extension": ".json",
+      "size_bytes": 200
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-1-15fe89/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
       "path": ".agents/missions/2026-08-30-mission-1-7add90/checkpoint.json",
       "extension": ".json",
       "size_bytes": 342
@@ -3078,6 +3128,11 @@
       "size_bytes": 8640
     },
     {
+      "path": ".agents/state/mission_1788137302_c6d59a.json",
+      "extension": ".json",
+      "size_bytes": 8415
+    },
+    {
       "path": ".agents/state/mission_1788112949_e89637.json",
       "extension": ".json",
       "size_bytes": 10373
@@ -3148,6 +3203,11 @@
       "size_bytes": 10073
     },
     {
+      "path": ".agents/state/mission_1788137295_a5e353.json",
+      "extension": ".json",
+      "size_bytes": 1679
+    },
+    {
       "path": ".agents/state/mission_1788119686_c0be3e.json",
       "extension": ".json",
       "size_bytes": 4192
@@ -3168,6 +3228,11 @@
       "size_bytes": 6359
     },
     {
+      "path": ".agents/state/mission_1788137290_3af342.json",
+      "extension": ".json",
+      "size_bytes": 6171
+    },
+    {
       "path": ".agents/state/mission_1788119678_d951f3.json",
       "extension": ".json",
       "size_bytes": 5598
@@ -3176,6 +3241,11 @@
       "path": ".agents/state/mission_1788119723_78a919.json",
       "extension": ".json",
       "size_bytes": 6745
+    },
+    {
+      "path": ".agents/state/mission_1788137303_886aeb.json",
+      "extension": ".json",
+      "size_bytes": 10157
     },
     {
       "path": ".agents/state/mission_1788112952_2a8256.json",
@@ -3323,6 +3393,11 @@
       "size_bytes": 8404
     },
     {
+      "path": ".agents/state/mission_1788137292_ef7090.json",
+      "extension": ".json",
+      "size_bytes": 8412
+    },
+    {
       "path": ".agents/state/metrics.json",
       "extension": ".json",
       "size_bytes": 10441
@@ -3340,7 +3415,7 @@
     {
       "path": ".agents/state/mission_1788119968_cb174d.json",
       "extension": ".json",
-      "size_bytes": 596
+      "size_bytes": 8334
     },
     {
       "path": ".agents/state/mission_1788119677_b51d2c.json",
@@ -3386,6 +3461,11 @@
       "path": ".agents/state/mission_1788119825_da7326.json",
       "extension": ".json",
       "size_bytes": 10084
+    },
+    {
+      "path": ".agents/state/mission_1788137304_f2dd13.json",
+      "extension": ".json",
+      "size_bytes": 8404
     },
     {
       "path": ".agents/state/mission_1788119776_7086e1.json",
@@ -3453,6 +3533,11 @@
       "size_bytes": 6392
     },
     {
+      "path": ".agents/state/mission_1788137294_0f0952.json",
+      "extension": ".json",
+      "size_bytes": 6394
+    },
+    {
       "path": ".agents/state/mission_1788119713_5fa7d6.json",
       "extension": ".json",
       "size_bytes": 4282
@@ -3498,6 +3583,11 @@
       "size_bytes": 1679
     },
     {
+      "path": ".agents/state/mission_1788137306_fd4a73.json",
+      "extension": ".json",
+      "size_bytes": 596
+    },
+    {
       "path": ".agents/state/mission_1788119938_5e7288.json",
       "extension": ".json",
       "size_bytes": 8416
@@ -3511,6 +3601,11 @@
       "path": ".agents/state/mission_1788119768_ff9770.json",
       "extension": ".json",
       "size_bytes": 1679
+    },
+    {
+      "path": ".agents/state/mission_1788137301_1860a4.json",
+      "extension": ".json",
+      "size_bytes": 6249
     },
     {
       "path": ".agents/state/mission_1788119938_868fb6.json",
@@ -3635,7 +3730,7 @@
     {
       "path": ".agents/state/economic_telemetry.json",
       "extension": ".json",
-      "size_bytes": 2724
+      "size_bytes": 2953
     },
     {
       "path": ".agents/state/mission_1788119928_93525e.json",
@@ -3713,6 +3808,11 @@
       "size_bytes": 5595
     },
     {
+      "path": ".agents/state/mission_1788137303_c93753.json",
+      "extension": ".json",
+      "size_bytes": 10087
+    },
+    {
       "path": ".agents/state/mission_1788118482_48a52c.json",
       "extension": ".json",
       "size_bytes": 6601
@@ -3748,6 +3848,11 @@
       "size_bytes": 6392
     },
     {
+      "path": ".agents/state/mission_1788137305_277d3c.json",
+      "extension": ".json",
+      "size_bytes": 10289
+    },
+    {
       "path": ".agents/state/mission_1788119937_d8d0ef.json",
       "extension": ".json",
       "size_bytes": 6250
@@ -3761,6 +3866,11 @@
       "path": ".agents/state/mission_1788118594_7cd365.json",
       "extension": ".json",
       "size_bytes": 6453
+    },
+    {
+      "path": ".agents/state/mission_1788137305_f88575.json",
+      "extension": ".json",
+      "size_bytes": 8239
     },
     {
       "path": ".agents/state/mission_1788119940_c6b105.json",
@@ -3778,9 +3888,19 @@
       "size_bytes": 8639
     },
     {
+      "path": ".agents/state/mission_1788137293_fc2796.json",
+      "extension": ".json",
+      "size_bytes": 6375
+    },
+    {
       "path": ".agents/state/mission_1788119964_1f4e1d.json",
       "extension": ".json",
       "size_bytes": 10158
+    },
+    {
+      "path": ".agents/state/mission_1788137306_2cc59a.json",
+      "extension": ".json",
+      "size_bytes": 10120
     },
     {
       "path": ".agents/state/mission_1788119723_c6ef49.json",
@@ -3788,9 +3908,19 @@
       "size_bytes": 5485
     },
     {
+      "path": ".agents/state/mission_1788137302_8e479c.json",
+      "extension": ".json",
+      "size_bytes": 10156
+    },
+    {
       "path": ".agents/state/mission_1788119939_8fe575.json",
       "extension": ".json",
       "size_bytes": 10156
+    },
+    {
+      "path": ".agents/state/mission_1788137291_4f8cf4.json",
+      "extension": ".json",
+      "size_bytes": 10072
     },
     {
       "path": ".agents/state/mission_1788119967_61c007.json",
@@ -3960,7 +4090,7 @@
     {
       "path": ".agents/memory/failure_memory.json",
       "extension": ".json",
-      "size_bytes": 8025
+      "size_bytes": 8557
     },
     {
       "path": ".agents/memory/strategy_memory_redteam.json",
@@ -13445,7 +13575,7 @@
     {
       "path": "services/api/src/modules/admin/guards/admin-auth.guard.ts",
       "extension": ".ts",
-      "size_bytes": 1920
+      "size_bytes": 1415
     },
     {
       "path": "services/api/src/modules/admin/guards/rbac.guard.spec.ts",
@@ -13975,7 +14105,7 @@
     {
       "path": "services/api/src/modules/settlement/provider-registry.service.ts",
       "extension": ".ts",
-      "size_bytes": 19522
+      "size_bytes": 19694
     },
     {
       "path": "services/api/src/modules/settlement/merchant-settlement.provider.ts",
@@ -15015,7 +15145,7 @@
     {
       "path": "services/api/src/modules/notification/baileys-prisma-auth.ts",
       "extension": ".ts",
-      "size_bytes": 9466
+      "size_bytes": 9407
     },
     {
       "path": "services/api/src/modules/notification/notification.service.ts",

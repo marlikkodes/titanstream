@@ -143,18 +143,16 @@ export async function usePrismaAuthState(
   const saveCreds = async () => {
     writeLocalCache('creds', creds);
     if (!isDbAvailable) return;
-    setImmediate(async () => {
-      try {
-        const dataJson = JSON.parse(JSON.stringify(creds, BufferJSON?.replacer));
-        await prisma.baileysAuthKey.upsert({
-          where: { accountId_keyId: { accountId, keyId: 'creds' } },
-          create: { accountId, keyId: 'creds', data: dataJson },
-          update: { data: dataJson },
-        });
-      } catch {
-        isDbAvailable = false;
-      }
-    });
+    try {
+      const dataJson = JSON.parse(JSON.stringify(creds, BufferJSON?.replacer));
+      await prisma.baileysAuthKey.upsert({
+        where: { accountId_keyId: { accountId, keyId: 'creds' } },
+        create: { accountId, keyId: 'creds', data: dataJson },
+        update: { data: dataJson },
+      });
+    } catch {
+      isDbAvailable = false;
+    }
   };
 
   // 3. Define `clearCreds`

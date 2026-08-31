@@ -228,6 +228,9 @@ export class ProviderRegistryService implements OnModuleInit {
     const requestedNetwork = dto.mobileMoneyNetwork ? dto.mobileMoneyNetwork.toUpperCase() : undefined;
     const existingActive = await this.findActiveSettlementForProvider(telegramUserIdBig, dto.asset, providerId, requestedNetwork);
     if (existingActive) {
+      if (providerId === SettlementProviderId.PESAPAL) {
+        throw new BadRequestException('ACTIVE_SETTLEMENT_ALREADY_EXISTS');
+      }
       this.logger.log(`[SETTLEMENT] Returning existing active session [${existingActive.id}] for user ${telegramUserIdBig}`);
       const independent = this.toProviderIndependentView(existingActive);
       return {
@@ -444,10 +447,10 @@ export class ProviderRegistryService implements OnModuleInit {
       reference: session.referenceCode,
       referenceCode: session.referenceCode,
       asset: session.asset,
-      requestedAmount: session.requestedAmount.toString(),
-      expectedAssetAmount: session.expectedCryptoAmount.toString(),
-      expectedCryptoAmount: session.expectedCryptoAmount.toString(),
-      exchangeRate: session.exchangeRate.toString(),
+      requestedAmount: session.requestedAmount?.toString() ?? '0',
+      expectedAssetAmount: session.expectedCryptoAmount?.toString() ?? '0',
+      expectedCryptoAmount: session.expectedCryptoAmount?.toString() ?? '0',
+      exchangeRate: session.exchangeRate?.toString() ?? '1',
       status: session.status,
       expiresAt: session.expiresAt,
       createdAt: session.createdAt,

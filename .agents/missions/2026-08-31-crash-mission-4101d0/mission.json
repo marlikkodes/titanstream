@@ -1,0 +1,8 @@
+{
+  "mission_id": "2026-08-31-crash-mission-4101d0",
+  "objective": "Crash Mission",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "status": "INITIALIZED",
+  "created_at": 1788137297.5547836
+}
