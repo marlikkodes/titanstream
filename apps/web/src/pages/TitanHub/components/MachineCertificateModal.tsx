@@ -15,7 +15,12 @@ export const MachineCertificateModal: React.FC = () => {
   if (!activeCertificateId) return null;
 
   // Find record matching certificate machineId or active certificate ID
-  const record = Object.values(ownerships).find((r) => r.machineId === activeCertificateId || r.certificateId === activeCertificateId) || Object.values(ownerships)[0];
+  const record = Object.values(ownerships).find(
+    (r) => r.machineId === activeCertificateId || r.certificateId === activeCertificateId || r.tierCode === activeCertificateId
+  );
+
+  if (!record) return null;
+
   const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === record.tierCode.toUpperCase()) || MACHINE_CATALOG[0];
 
   const ownerName = user?.username ? `@${user.username}` : user?.firstName ? user.firstName : 'Titan Stream User';

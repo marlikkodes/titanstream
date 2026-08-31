@@ -58,7 +58,8 @@ interface MachineOwnershipState {
   openCertificate: (machineId: string) => void;
   closeCertificate: () => void;
   addTimelineEvent: (tierCode: string, event: string, description: string) => void;
-  registerPurchasedMachine: (tierCode: string, machineId?: string) => OwnershipRecord;
+  syncWithUserMachines: (machines: any[]) => void;
+  clearUnownedMachines: (ownedTierCodes: string[]) => void;
 }
 
 // Generate serial number based on tierCode and timestamp hash
@@ -68,7 +69,7 @@ const generateSerialNumber = (tierCode: string) => {
   return `SN-TT-${code}-${randHex}`;
 };
 
-// Default Titan Core setup for immediate ownership feel
+// Default Titan Core setup for baseline trial core
 const DEFAULT_CORE_RECORD: OwnershipRecord = {
   machineId: 'core-trial-001',
   tierCode: 'TS_TRIAL',
@@ -87,16 +88,6 @@ const DEFAULT_CORE_RECORD: OwnershipRecord = {
       timestamp: new Date(Date.now() - 86400000 * 7).toISOString(),
       event: 'Commissioned',
       description: 'Titan Core baseline hashing node provisioned.',
-    },
-    {
-      timestamp: new Date(Date.now() - 86400000 * 6).toISOString(),
-      event: 'First Reward Delivered',
-      description: 'Initial ₮2.00 USDT daily hash reward credited.',
-    },
-    {
-      timestamp: new Date(Date.now() - 86400000 * 1).toISOString(),
-      event: '100 Hours Online',
-      description: 'Continuous uptime operational milestone achieved.',
     },
   ],
 };
@@ -124,7 +115,63 @@ export const useMachineOwnershipStore = create<MachineOwnershipState>()(
         }
       },
 
+      syncWithUserMachines: (machines: any[]) => {
+        if (!Array.isArray(machines)) return;
+        const currentOwnerships = { ...get().ownerships };
+        const newOwnerships: Record<string, OwnershipRecord> = {};
+
+        for (const m of machines) {
+          const norm = (m.tierCode || '').trim().toUpperCase();
+          if (!norm) continue;
+
+          if (currentOwnerships[norm]) {
+            newOwnerships[norm] = {
+              ...currentOwnerships[norm],
+              status: m.status === 'PAUSED' ? 'PAUSED' : 'RUNNING',
+              totalYieldEarned: m.lifetimeEarnings ?? currentOwnerships[norm].totalYieldEarned,
+            };
+          } else {
+            const catalogItem = MACHINE_CATALOG.find((c) => c.tierCode.toUpperCase() === norm);
+            newOwnerships[norm] = {
+              machineId: m.id || `mch-${norm.toLowerCase()}-${Date.now()}`,
+              tierCode: norm,
+              nickname: m.name || catalogItem?.name || norm,
+              serialNumber: generateSerialNumber(norm),
+              status: m.status === 'PAUSED' ? 'PAUSED' : 'RUNNING',
+              lifecycleStage: 'RUNNING',
+              commissionedAt: m.purchasedAt || new Date().toISOString(),
+              activatedAt: m.activatedAt || new Date().toISOString(),
+              lastSyncAt: new Date().toISOString(),
+              runtimeSeconds: 3600,
+              totalYieldEarned: m.lifetimeEarnings || 0,
+              certificateId: `CERT-${norm}-${Math.floor(1000 + Math.random() * 9000)}`,
+              memoryTimeline: [
+                {
+                  timestamp: m.purchasedAt || new Date().toISOString(),
+                  event: 'Commissioned',
+                  description: `${m.name || catalogItem?.name || norm} operational node provisioned.`,
+                },
+              ],
+            };
+          }
+        }
+
+        set({ ownerships: newOwnerships });
+      },
+
+      clearUnownedMachines: (ownedTierCodes: string[]) => {
+        const upperCodes = new Set((ownedTierCodes || []).map((c) => (c || '').trim().toUpperCase()));
+        const filtered: Record<string, OwnershipRecord> = {};
+        for (const [tier, rec] of Object.entries(get().ownerships)) {
+          if (upperCodes.has(tier.toUpperCase())) {
+            filtered[tier] = rec;
+          }
+        }
+        set({ ownerships: filtered });
+      },
+
       getRecordByTier: (tierCode: string) => {
+        if (!tierCode) return null;
         const norm = tierCode.trim().toUpperCase();
         const record = get().ownerships[norm];
         if (record) return record;
@@ -132,39 +179,6 @@ export const useMachineOwnershipStore = create<MachineOwnershipState>()(
         // Fallback for trial
         if (norm === 'TS_TRIAL') {
           return DEFAULT_CORE_RECORD;
-        }
-
-        // Dynamically create record if catalog contains machine but store doesn't have custom record
-        const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === norm);
-        if (catalogItem) {
-          const newRecord: OwnershipRecord = {
-            machineId: `mch-${norm.toLowerCase()}-${Date.now()}`,
-            tierCode: catalogItem.tierCode,
-            nickname: catalogItem.name,
-            serialNumber: generateSerialNumber(catalogItem.tierCode),
-            status: 'RUNNING',
-            lifecycleStage: 'RUNNING',
-            commissionedAt: new Date().toISOString(),
-            activatedAt: new Date().toISOString(),
-            lastSyncAt: new Date().toISOString(),
-            runtimeSeconds: 3600,
-            totalYieldEarned: 0,
-            certificateId: `CERT-${norm}-${Math.floor(Math.random() * 10000)}`,
-            memoryTimeline: [
-              {
-                timestamp: new Date().toISOString(),
-                event: 'Commissioned',
-                description: `${catalogItem.name} operational asset registered.`,
-              },
-            ],
-          };
-          set((state) => ({
-            ownerships: {
-              ...state.ownerships,
-              [norm]: newRecord,
-            },
-          }));
-          return newRecord;
         }
 
         return null;
@@ -353,7 +367,7 @@ export const useMachineOwnershipStore = create<MachineOwnershipState>()(
       },
     }),
     {
-      name: 'titan_machine_ownership_v1',
+      name: 'titan_machine_ownership_v3',
     }
   )
 );

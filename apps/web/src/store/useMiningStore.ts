@@ -155,7 +155,9 @@ export const useMiningStore = create<MiningState>()(
       try {
         const machines = await machineService.getMyMachines();
         if (Array.isArray(machines)) {
-          const serverOwnedTiers = machines.map((m) => m.tierCode);
+          const serverOwnedTiers = machines
+            .filter((m) => m.status === 'ACTIVE' || m.status === 'CREATED' || m.status === 'INITIALIZED')
+            .map((m) => m.tierCode.toUpperCase());
           const ownedTierCodes = Array.from(new Set(['TS_TRIAL', ...serverOwnedTiers]));
           const hasPurchased = machines.some((m) => m.tierCode !== 'TS_TRIAL' && (m.status === 'ACTIVE' || m.status === 'CREATED'));
           const activeCount = machines.filter((m) => m.status === 'ACTIVE' || m.status === 'CREATED').length;
@@ -175,6 +177,10 @@ export const useMiningStore = create<MiningState>()(
           });
           useWalletStore.getState().updateBalance({ activeMachines: activeCount });
 
+          // Synchronize machine ownership store so only owned machines and certificates exist
+          const { useMachineOwnershipStore } = await import('./useMachineOwnershipStore');
+          useMachineOwnershipStore.getState().syncWithUserMachines(machines);
+
           return machines;
         }
       } catch (err) {
@@ -184,17 +190,18 @@ export const useMiningStore = create<MiningState>()(
     },
 
     isMachineOwned: (tierCode: string) => {
-      if (!tierCode || tierCode.toUpperCase() === 'TS_TRIAL') return true;
-      const s = get();
+      if (!tierCode) return false;
       const normTier = tierCode.trim().toUpperCase();
+      if (normTier === 'TS_TRIAL') return true;
 
-      const inOwnedCodes = s.ownedTierCodes.some((code) => (code || '').trim().toUpperCase() === normTier);
+      const s = get();
+      const inOwnedCodes = (s.ownedTierCodes || []).some((code) => (code || '').trim().toUpperCase() === normTier);
       if (inOwnedCodes) return true;
 
-      return s.userMachines.some((m) => {
+      return (s.userMachines || []).some((m) => {
         const mTier = (m.tierCode || '').trim().toUpperCase();
         const mStatus = (m.status || '').trim().toUpperCase();
-        return mTier === normTier && (mStatus === 'ACTIVE' || mStatus === 'CREATED' || mStatus === 'INITIALIZED' || mStatus === '');
+        return mTier === normTier && (mStatus === 'ACTIVE' || mStatus === 'CREATED' || mStatus === 'INITIALIZED');
       });
     },
 

@@ -25,12 +25,14 @@ import {
   Smartphone,
   Key,
   Check,
-  X
+  X,
+  ShoppingCart
 } from 'lucide-react';
 import { useGrowthStore } from '../../store/useGrowthStore';
 import { useTreasuryStore } from '../../store/useTreasuryStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useMachineOwnershipStore } from '../../store/useMachineOwnershipStore';
+import { useMiningStore } from '../../store/useMiningStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -51,6 +53,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
   const { trustScore } = useTreasuryStore();
   const { session, clearSession, user: authUser } = useAuthStore();
   const { ownerships, openCertificate, openOwnersManual } = useMachineOwnershipStore();
+  const isMachineOwned = useMiningStore((s) => s.isMachineOwned);
+  const ownedMachinesList = Object.values(ownerships).filter((rec) => isMachineOwned(rec.tierCode));
   const { setActiveTab } = useNavigationStore();
   const { hapticFeedback, user } = useTelegram();
   const settings = useSettingsStore();
@@ -283,36 +287,60 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
             Your Machines
           </h2>
 
-          <div className="web3-card rounded-2xl divide-y divide-white/5 border border-white/10 overflow-hidden text-xs">
-            {Object.values(ownerships).map((rec) => (
-              <div key={rec.machineId} className="p-3.5 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-gold/15 border border-gold/30 text-gold flex items-center justify-center">
-                    <Award size={18} />
-                  </div>
-                  <div>
-                    <div className="font-extrabold text-text-primary">{rec.nickname}</div>
-                    <div className="text-[10px] text-text-tertiary font-mono">{rec.serialNumber}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openOwnersManual(rec.tierCode)}
-                    className="py-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-text-secondary hover:text-text-primary"
-                  >
-                    Manual
-                  </button>
-                  <button
-                    onClick={() => openCertificate(rec.machineId)}
-                    className="py-1 px-2 rounded-lg bg-gold/15 border border-gold/30 text-[10px] font-bold text-gold hover:bg-gold/25"
-                  >
-                    Certificate
-                  </button>
-                </div>
+          {ownedMachinesList.length === 0 ? (
+            <div className="web3-card rounded-2xl p-6 border border-white/10 text-center flex flex-col items-center justify-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-text-tertiary">
+                <Cpu size={24} />
               </div>
-            ))}
-          </div>
+              <div>
+                <h3 className="text-sm font-bold text-text-primary">No Machines Commissioned</h3>
+                <p className="text-xs text-text-tertiary max-w-xs mx-auto mt-1">
+                  You currently have no cloud computing machines in your fleet.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (onClose) onClose();
+                  setActiveTab('hub');
+                }}
+                className="mt-1 py-2 px-4 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center gap-2 hover:brightness-110 press-feedback transition-all cursor-pointer"
+              >
+                <ShoppingCart size={13} />
+                <span>Explore Machines</span>
+              </button>
+            </div>
+          ) : (
+            <div className="web3-card rounded-2xl divide-y divide-white/5 border border-white/10 overflow-hidden text-xs">
+              {ownedMachinesList.map((rec) => (
+                <div key={rec.machineId} className="p-3.5 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-gold/15 border border-gold/30 text-gold flex items-center justify-center">
+                      <Award size={18} />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-text-primary">{rec.nickname}</div>
+                      <div className="text-[10px] text-text-tertiary font-mono">{rec.serialNumber}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openOwnersManual(rec.tierCode)}
+                      className="py-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-text-secondary hover:text-text-primary cursor-pointer"
+                    >
+                      Manual
+                    </button>
+                    <button
+                      onClick={() => openCertificate(rec.machineId)}
+                      className="py-1 px-2 rounded-lg bg-gold/15 border border-gold/30 text-[10px] font-bold text-gold hover:bg-gold/25 cursor-pointer"
+                    >
+                      Certificate
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -324,30 +352,54 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
             Machine Certificates
           </h2>
 
-          <div className="grid grid-cols-1 gap-2.5">
-            {Object.values(ownerships).map((rec) => (
-              <div
-                key={rec.certificateId}
-                onClick={() => openCertificate(rec.machineId)}
-                className="web3-card-gold rounded-2xl p-4 border border-gold/30 flex items-center justify-between cursor-pointer hover:border-gold/60 transition-colors press-feedback"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gold/20 text-gold flex items-center justify-center">
-                    <Award size={22} />
-                  </div>
-                  <div>
-                    <div className="text-xs font-black text-text-primary">{rec.nickname} Certificate</div>
-                    <div className="text-[10px] font-mono text-gold">{rec.certificateId}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 text-[10px] font-extrabold text-gold uppercase bg-gold/10 px-2.5 py-1 rounded-full border border-gold/20">
-                  <span>View</span>
-                  <ChevronRight size={12} />
-                </div>
+          {ownedMachinesList.length === 0 ? (
+            <div className="web3-card rounded-2xl p-6 border border-white/10 text-center flex flex-col items-center justify-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
+                <Award size={24} />
               </div>
-            ))}
-          </div>
+              <div>
+                <h3 className="text-sm font-bold text-text-primary">No Certificates Issued</h3>
+                <p className="text-xs text-text-tertiary max-w-xs mx-auto mt-1">
+                  Verifiable ownership certificates are generated cryptographically upon machine acquisition.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (onClose) onClose();
+                  setActiveTab('hub');
+                }}
+                className="mt-1 py-2 px-4 rounded-xl bg-gold text-app-bg font-extrabold text-xs flex items-center gap-2 hover:brightness-110 press-feedback transition-all cursor-pointer"
+              >
+                <ShoppingCart size={13} />
+                <span>Acquire Machine</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-2.5">
+              {ownedMachinesList.map((rec) => (
+                <div
+                  key={rec.certificateId}
+                  onClick={() => openCertificate(rec.machineId)}
+                  className="web3-card-gold rounded-2xl p-4 border border-gold/30 flex items-center justify-between cursor-pointer hover:border-gold/60 transition-colors press-feedback"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gold/20 text-gold flex items-center justify-center">
+                      <Award size={22} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-text-primary">{rec.nickname} Certificate</div>
+                      <div className="text-[10px] font-mono text-gold">{rec.certificateId}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-[10px] font-extrabold text-gold uppercase bg-gold/10 px-2.5 py-1 rounded-full border border-gold/20">
+                    <span>View</span>
+                    <ChevronRight size={12} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
