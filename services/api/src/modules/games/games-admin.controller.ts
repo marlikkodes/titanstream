@@ -13,6 +13,7 @@ import { GameProfileService } from './game-profile.service';
 import { GameLeaderboardService } from './game-leaderboard.service';
 import { GameDailyChallengeService } from './game-daily-challenge.service';
 import { GameSessionService } from './game-session.service';
+import { EconomicIntelligenceService } from './economic-intelligence.service';
 import { CrystalAdminAdjustDto, UpsertGameCatalogDto, UpsertGameEventDto, UpsertDailyChallengeDto } from './dto/games.dto';
 
 /**
@@ -33,6 +34,7 @@ export class GamesAdminController {
     private readonly challenges: GameDailyChallengeService,
     private readonly sessions: GameSessionService,
     private readonly prisma: PrismaService,
+    private readonly economicIntelligence: EconomicIntelligenceService,
   ) {}
 
   @Get('catalog')
@@ -249,5 +251,44 @@ export class GamesAdminController {
       reference: g.reference,
       createdAt: g.createdAt,
     }));
+  }
+
+  @Get('economics/supply')
+  @Permissions(AdminPermission.GAME_MANAGE)
+  @ApiOperation({ summary: 'Crystal supply and velocity metrics' })
+  async getSupplyEconomics() {
+    const [supply, velocity] = await Promise.all([
+      this.economicIntelligence.getSupplyMetrics(),
+      this.economicIntelligence.getVelocityMetrics(),
+    ]);
+    return { supply, velocity };
+  }
+
+  @Get('economics/games')
+  @Permissions(AdminPermission.GAME_MANAGE)
+  @ApiOperation({ summary: 'Per-game economic breakdown (in/out, sink flow)' })
+  async getGameEconomics() {
+    return { items: await this.economicIntelligence.getPerGameEconomics() };
+  }
+
+  @Get('economics/nev')
+  @Permissions(AdminPermission.GAME_MANAGE)
+  @ApiOperation({ summary: 'Net Economic Value (NEV) calculation' })
+  async getNetEconomicValue() {
+    return this.economicIntelligence.calculateNetEconomicValue();
+  }
+
+  @Get('economics/governor')
+  @Permissions(AdminPermission.GAME_MANAGE)
+  @ApiOperation({ summary: 'Shadow-mode Economic Governor policy status' })
+  async getGovernorStatus() {
+    return this.economicIntelligence.getGovernorStatus();
+  }
+
+  @Post('economics/simulate')
+  @Permissions(AdminPermission.GAME_MANAGE)
+  @ApiOperation({ summary: 'Deterministic, read-only economic policy simulation' })
+  async simulatePolicy(@Body() body: any) {
+    return this.economicIntelligence.simulateScenario(body);
   }
 }

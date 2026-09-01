@@ -1,0 +1,241 @@
+{
+  "auditMetadata": {
+    "auditDate": "2026-08-31T16:55:00.000Z",
+    "auditor": "Antigravity Superengineering Forensic Audit Engine",
+    "target": "Titan Stream Mini-Game System & Economy",
+    "classification": "READ-ONLY FORENSIC AUDIT",
+    "verdict": "READY WITH HARDENING",
+    "overallScore": 6.6
+  },
+  "scorecard": {
+    "architecture": 8.0,
+    "security": 6.0,
+    "economicIntegrity": 5.5,
+    "crystalIntegrity": 7.0,
+    "serverAuthority": 6.5,
+    "antiAbuse": 6.5,
+    "idempotency": 8.5,
+    "concurrencySafety": 6.0,
+    "rewardsIntegration": 8.0,
+    "growthIntegration": 5.0,
+    "missionIntegration": 4.5,
+    "referralIntegration": 4.0,
+    "adminControl": 8.5,
+    "observability": 6.0,
+    "testing": 6.0,
+    "performance": 7.5,
+    "scalability": 7.0,
+    "maintainability": 8.5,
+    "averageScore": 6.6
+  },
+  "gameInventory": [
+    {
+      "gameId": "crypto-roulette",
+      "code": "ROULETTE",
+      "name": "Crypto Roulette",
+      "category": "chance",
+      "status": "REAL IMPLEMENTATION",
+      "frontend": "apps/web/src/pages/Games/components/RouletteGame.tsx",
+      "backend": "services/api/src/modules/games/game-catalog.service.ts",
+      "entryCost": 5,
+      "escalationEnabled": true,
+      "maxCrystalReward": 100,
+      "maxUsdtReward": "1.00",
+      "dailyLimit": 10,
+      "dailyUsdtCap": "1.00",
+      "serverAuthority": "100% Server Authoritative",
+      "randomnessSource": "Math.random() (Server-decided at session start)",
+      "expectedCrystalReturn": 5.0718,
+      "netCrystalDrain": -0.0718,
+      "expectedUsdtReturn": 0.01435
+    },
+    {
+      "gameId": "hoop-masters",
+      "code": "HOOPS",
+      "name": "Hoop Masters",
+      "category": "skill",
+      "status": "REAL IMPLEMENTATION",
+      "frontend": "apps/web/src/pages/Games/components/BasketballGame.tsx",
+      "backend": "services/api/src/modules/games/game-catalog.service.ts",
+      "entryCost": 3,
+      "escalationEnabled": false,
+      "maxCrystalReward": 10,
+      "maxUsdtReward": "0.10",
+      "dailyLimit": 15,
+      "dailyUsdtCap": null,
+      "serverAuthority": "Server Validated",
+      "antiCheat": {
+        "maxScorePerSecond": 2.0,
+        "minDurationMs": 15000,
+        "minEventIntervalMs": 350,
+        "maxEventsPerScore": 2.5
+      },
+      "expectedCrystalReturn": 3.2,
+      "netCrystalDrain": -0.2,
+      "expectedUsdtReturn": 0.0075
+    },
+    {
+      "gameId": "memory-matrix",
+      "code": "MEMORY",
+      "name": "Memory Matrix",
+      "category": "skill",
+      "status": "REAL IMPLEMENTATION",
+      "frontend": "apps/web/src/pages/Games/components/MemoryMatrixGame.tsx",
+      "backend": "services/api/src/modules/games/game-catalog.service.ts",
+      "entryCost": 3,
+      "escalationEnabled": false,
+      "maxCrystalReward": 8,
+      "maxUsdtReward": "0.05",
+      "dailyLimit": 10,
+      "dailyUsdtCap": null,
+      "serverAuthority": "Server Validated",
+      "antiCheat": {
+        "maxScorePerSecond": 1.5,
+        "minDurationMs": 10000,
+        "minEventIntervalMs": 300,
+        "maxEventsPerScore": 3.0
+      },
+      "expectedCrystalReturn": 3.0,
+      "netCrystalDrain": 0.0,
+      "expectedUsdtReturn": 0.01
+    },
+    {
+      "gameId": "titan-core-reactor",
+      "code": "REACTOR",
+      "name": "Titan Reactor",
+      "category": "skill",
+      "status": "REAL IMPLEMENTATION",
+      "frontend": "apps/web/src/pages/Games/components/TitanReactor.tsx",
+      "backend": "services/api/src/modules/games/game-catalog.service.ts",
+      "entryCost": 5,
+      "escalationEnabled": true,
+      "maxCrystalReward": 16,
+      "maxUsdtReward": "0.15",
+      "dailyLimit": 12,
+      "dailyUsdtCap": null,
+      "serverAuthority": "Server Validated",
+      "antiCheat": {
+        "maxScorePerSecond": 4.0,
+        "minDurationMs": 15000,
+        "minEventIntervalMs": 220,
+        "maxEventsPerScore": 2.5,
+        "requireScoreTelemetry": true
+      },
+      "expectedCrystalReturn": 4.8,
+      "netCrystalDrain": 0.2,
+      "expectedUsdtReturn": 0.0185
+    },
+    {
+      "gameId": "power-grid",
+      "code": "GRID",
+      "name": "Power Grid",
+      "category": "puzzle",
+      "status": "REAL IMPLEMENTATION",
+      "frontend": "apps/web/src/pages/Games/components/PowerGrid.tsx",
+      "backend": "services/api/src/modules/games/game-catalog.service.ts",
+      "entryCost": 4,
+      "escalationEnabled": true,
+      "maxCrystalReward": 15,
+      "maxUsdtReward": "0.10",
+      "dailyLimit": 10,
+      "dailyUsdtCap": null,
+      "serverAuthority": "Server Validated",
+      "antiCheat": {
+        "maxScorePerSecond": 0.5,
+        "minDurationMs": 30000,
+        "minEventIntervalMs": 150,
+        "maxMovesPerLevel": 30,
+        "requireScoreTelemetry": true
+      },
+      "expectedCrystalReturn": 4.2,
+      "netCrystalDrain": -0.2,
+      "expectedUsdtReturn": 0.008
+    }
+  ],
+  "criticalFindings": [
+    {
+      "id": "P0-01",
+      "severity": "P0",
+      "title": "Negative Crystal Balance via Concurrent Game Entry",
+      "file": "services/api/src/modules/games/game-crystal.service.ts",
+      "lines": "167-185",
+      "impact": "Users can start multiple game sessions in parallel with insufficient balance, driving CrystalAccount balance negative.",
+      "remediation": "Add SQL CHECK (balance >= 0) and use atomic conditional update where: { id: account.id, balance: { gte: amount } }."
+    },
+    {
+      "id": "P0-02",
+      "severity": "P0",
+      "title": "Read-Modify-Write Balance Race Condition in Surprise Drops",
+      "file": "services/api/src/modules/growth/reward.service.ts",
+      "lines": "311-318",
+      "impact": "Concurrent surprise drops and game debits overwrite balance states, causing balance duplication or crystal loss.",
+      "remediation": "Delegate all crystal mutations in RewardService to GameCrystalService.credit inside transactions."
+    },
+    {
+      "id": "P0-03",
+      "severity": "P0",
+      "title": "Synthetic Telegram User ID Generation Race Condition",
+      "file": "services/api/src/modules/games/games.controller.ts",
+      "lines": "39-46",
+      "impact": "Concurrent requests from web users without telegramUserId generate duplicate synthetic IDs, creating orphaned accounts.",
+      "remediation": "Refactor game tables to key by canonical User.id (UUID) or serialize fallback ID allocation."
+    },
+    {
+      "id": "P1-01",
+      "severity": "P1",
+      "title": "Insecure Pseudo-Random Number Generation (Math.random)",
+      "file": "services/api/src/modules/games/game-reward.service.ts",
+      "lines": "45, 115",
+      "impact": "PRNG state in V8 xorshift128+ can theoretically be reconstructed under high volume to predict chance outcomes.",
+      "remediation": "Use crypto.randomInt from node:crypto for all weighted rolls and probability gates."
+    },
+    {
+      "id": "P1-02",
+      "severity": "P1",
+      "title": "Client-Reported Skill Game Scores without Server Physics Replay",
+      "file": "services/api/src/modules/games/game-anti-cheat.service.ts",
+      "lines": "31-168",
+      "impact": "Automated scripts with natural jitter delays can claim maximum score rewards without playing games.",
+      "remediation": "Implement server-side move simulation for Power Grid and cryptographic challenge-response for Reactor."
+    },
+    {
+      "id": "P1-03",
+      "severity": "P1",
+      "title": "Social Missions Disconnected from Crystal Ledger",
+      "file": "services/api/src/modules/growth/social-mission.service.ts",
+      "lines": "247-260",
+      "impact": "Claiming virtual social mission rewards does not credit CrystalAccount or log CrystalTransaction.",
+      "remediation": "Call GameCrystalService.credit with type MISSION in claimVirtualReward."
+    },
+    {
+      "id": "P2-01",
+      "severity": "P2",
+      "title": "Structural Crystal Inflation & Absence of Economy Sinks",
+      "file": "Platform Economy",
+      "lines": "N/A",
+      "impact": "Active users generate 60-120 crystals/day with no available sinks outside game entry fees.",
+      "remediation": "Implement crystal shop for hardware booster items, cosmetics, and tournament buy-ins."
+    },
+    {
+      "id": "P2-02",
+      "severity": "P2",
+      "title": "Uncached Leaderboard GroupBy Queries at High Scale",
+      "file": "services/api/src/modules/games/game-leaderboard.service.ts",
+      "lines": "93-100",
+      "impact": "Expensive groupBy queries on game_sessions table will degrade database performance beyond 10,000 DAU.",
+      "remediation": "Introduce Redis sorted set caching (ZADD/ZREVRANGE) with periodic background sync."
+    }
+  ],
+  "testExecution": {
+    "testPattern": "game",
+    "testSuites": [
+      "src/modules/games/game-anti-cheat.service.spec.ts",
+      "src/modules/games/game-reward.service.spec.ts"
+    ],
+    "totalSuites": 2,
+    "passedSuites": 2,
+    "totalTests": 19,
+    "passedTests": 19,
+    "passRate": 1.0
+  }
+}

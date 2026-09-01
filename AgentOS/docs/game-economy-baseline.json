@@ -1,0 +1,179 @@
+{
+  "version": "1.0.0",
+  "baselineDate": "2026-08-31T19:17:00.000Z",
+  "contractType": "GAME_ECONOMY_BASELINE_COMPATIBILITY_CONTRACT",
+  "games": [
+    {
+      "gameId": "crypto-roulette",
+      "code": "ROULETTE",
+      "name": "Crypto Roulette",
+      "category": "chance",
+      "difficulty": "EASY",
+      "crystalCost": 5,
+      "escalationEnabled": true,
+      "dailyLimit": 10,
+      "dailyUsdtCap": "1.00",
+      "estimatedDurationSec": 30,
+      "minDurationMs": 1000,
+      "maxDurationMs": 180000,
+      "winScoreThreshold": 1,
+      "expectedCrystalReturn": 5.0718,
+      "expectedUsdtReturn": 0.01435,
+      "sectors": [
+        { "label": "5 💎", "type": "CRYSTALS", "value": 5, "weight": 25, "premium": false },
+        { "label": "2 💎", "type": "CRYSTALS", "value": 2, "weight": 40, "premium": false },
+        { "label": "10 💎", "type": "CRYSTALS", "value": 10, "weight": 15, "premium": false },
+        { "label": "25 💎", "type": "CRYSTALS", "value": 25, "weight": 5, "premium": true },
+        { "label": "100 💎", "type": "CRYSTALS", "value": 100, "weight": 0.5, "premium": true },
+        { "label": "₮0.05", "type": "USDT", "value": 0.05, "weight": 10, "premium": false },
+        { "label": "₮0.25", "type": "USDT", "value": 0.25, "weight": 3, "premium": true },
+        { "label": "₮1.00", "type": "USDT", "value": 1, "weight": 0.25, "premium": true },
+        { "label": "⚡×1.5 Boost", "type": "BOOST", "value": 1.5, "weight": 1.25, "premium": false }
+      ]
+    },
+    {
+      "gameId": "hoop-masters",
+      "code": "HOOPS",
+      "name": "Hoop Masters",
+      "category": "skill",
+      "difficulty": "MEDIUM",
+      "crystalCost": 3,
+      "escalationEnabled": false,
+      "dailyLimit": 15,
+      "dailyUsdtCap": null,
+      "estimatedDurationSec": 60,
+      "minDurationMs": 15000,
+      "maxDurationMs": 300000,
+      "minScorePerSecond": 0.02,
+      "maxScorePerSecond": 2.0,
+      "winScoreThreshold": 5,
+      "antiCheat": {
+        "maxEventsPerScore": 2.5,
+        "minEventIntervalMs": 350,
+        "maxScorePerSecond": 2.0
+      },
+      "crystalRewards": [
+        { "minScore": 0, "maxScore": 4, "crystals": 1 },
+        { "minScore": 5, "maxScore": 9, "crystals": 3 },
+        { "minScore": 10, "maxScore": 19, "crystals": 6 },
+        { "minScore": 20, "maxScore": 1000, "crystals": 10 }
+      ],
+      "usdtRewards": [
+        { "minScore": 0, "maxScore": 14, "usdt": "0", "probability": 0 },
+        { "minScore": 15, "maxScore": 29, "usdt": "0.05", "probability": 0.15 },
+        { "minScore": 30, "maxScore": 1000, "usdt": "0.10", "probability": 0.20 }
+      ]
+    },
+    {
+      "gameId": "memory-matrix",
+      "code": "MEMORY",
+      "name": "Memory Matrix",
+      "category": "skill",
+      "difficulty": "MEDIUM",
+      "crystalCost": 3,
+      "escalationEnabled": false,
+      "dailyLimit": 10,
+      "dailyUsdtCap": null,
+      "estimatedDurationSec": 75,
+      "minDurationMs": 10000,
+      "maxDurationMs": 300000,
+      "minScorePerSecond": 0.02,
+      "maxScorePerSecond": 1.5,
+      "winScoreThreshold": 3,
+      "antiCheat": {
+        "maxEventsPerScore": 3.0,
+        "minEventIntervalMs": 300,
+        "maxScorePerSecond": 1.5
+      },
+      "crystalRewards": [
+        { "minScore": 0, "maxScore": 2, "crystals": 1 },
+        { "minScore": 3, "maxScore": 5, "crystals": 3 },
+        { "minScore": 6, "maxScore": 9, "crystals": 5 },
+        { "minScore": 10, "maxScore": 1000, "crystals": 8 }
+      ],
+      "usdtRewards": [
+        { "minScore": 0, "maxScore": 9, "usdt": "0", "probability": 0 },
+        { "minScore": 10, "maxScore": 1000, "usdt": "0.05", "probability": 0.20 }
+      ]
+    },
+    {
+      "gameId": "titan-core-reactor",
+      "code": "REACTOR",
+      "name": "Titan Reactor",
+      "category": "skill",
+      "difficulty": "MEDIUM",
+      "crystalCost": 5,
+      "escalationEnabled": true,
+      "dailyLimit": 12,
+      "dailyUsdtCap": null,
+      "estimatedDurationSec": 45,
+      "minDurationMs": 15000,
+      "maxDurationMs": 180000,
+      "minScorePerSecond": 0.05,
+      "maxScorePerSecond": 4.0,
+      "winScoreThreshold": 100,
+      "antiCheat": {
+        "maxEventsPerScore": 2.5,
+        "minEventIntervalMs": 220,
+        "maxScorePerSecond": 4.0,
+        "requireScoreTelemetry": true
+      },
+      "crystalRewards": [
+        { "minScore": 0, "maxScore": 49, "crystals": 2 },
+        { "minScore": 50, "maxScore": 99, "crystals": 4 },
+        { "minScore": 100, "maxScore": 199, "crystals": 7 },
+        { "minScore": 200, "maxScore": 349, "crystals": 11 },
+        { "minScore": 350, "maxScore": 100000, "crystals": 16 }
+      ],
+      "usdtRewards": [
+        { "minScore": 0, "maxScore": 199, "usdt": "0", "probability": 0 },
+        { "minScore": 200, "maxScore": 349, "usdt": "0.05", "probability": 0.20 },
+        { "minScore": 350, "maxScore": 100000, "usdt": "0.15", "probability": 0.25 }
+      ]
+    },
+    {
+      "gameId": "power-grid",
+      "code": "GRID",
+      "name": "Power Grid",
+      "category": "puzzle",
+      "difficulty": "MEDIUM",
+      "crystalCost": 4,
+      "escalationEnabled": true,
+      "dailyLimit": 10,
+      "dailyUsdtCap": null,
+      "estimatedDurationSec": 120,
+      "minDurationMs": 30000,
+      "maxDurationMs": 600000,
+      "minScorePerSecond": 0.01,
+      "maxScorePerSecond": 0.5,
+      "winScoreThreshold": 1,
+      "antiCheat": {
+        "maxMovesPerLevel": 30,
+        "maxEventsPerScore": 3.0,
+        "minEventIntervalMs": 150,
+        "maxScorePerSecond": 0.5,
+        "requireScoreTelemetry": true
+      },
+      "crystalRewards": [
+        { "minScore": 0, "maxScore": 0, "crystals": 1 },
+        { "minScore": 1, "maxScore": 2, "crystals": 3 },
+        { "minScore": 3, "maxScore": 4, "crystals": 6 },
+        { "minScore": 5, "maxScore": 6, "crystals": 10 },
+        { "minScore": 7, "maxScore": 100000, "crystals": 15 }
+      ],
+      "usdtRewards": [
+        { "minScore": 0, "maxScore": 2, "usdt": "0", "probability": 0 },
+        { "minScore": 3, "maxScore": 4, "usdt": "0.05", "probability": 0.15 },
+        { "minScore": 5, "maxScore": 100000, "usdt": "0.10", "probability": 0.20 }
+      ]
+    }
+  ],
+  "dailyLogin": {
+    "base": 10,
+    "streakBonusPerDay": 2,
+    "streakBonusCap": 20,
+    "machineBonusPerMachine": 2,
+    "machineBonusCap": 20,
+    "maxTotalDaily": 50
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "hardeningDate": "2026-08-31T19:24:00.000Z",
+  "status": "COMPLETED",
+  "behavioralCompatibility": "100% PASS",
+  "economicGovernorMode": "OBSERVE",
+  "remediations": [
+    {
+      "id": "P0-A",
+      "issue": "Negative Crystal Balance on Concurrent Entry",
+      "targetFile": "services/api/src/modules/games/game-crystal.service.ts",
+      "solution": "Atomic conditional decrement with where: { id: account.id, balance: { gte: amount } }",
+      "verified": true
+    },
+    {
+      "id": "P0-B",
+      "issue": "Read-Modify-Write Balance Race Condition in Surprise Drops",
+      "targetFile": "services/api/src/modules/growth/reward.service.ts",
+      "solution": "Wrapped in transaction with atomic increment and CrystalTransaction balanceAfter snapshot",
+      "verified": true
+    },
+    {
+      "id": "P0-C",
+      "issue": "Synthetic Identity Race Condition",
+      "targetFile": "services/api/src/modules/games/games.controller.ts",
+      "solution": "Deterministic fallback hashing derived from canonical UUID with concurrency retry safeguard",
+      "verified": true
+    },
+    {
+      "id": "P1-A",
+      "issue": "Insecure Pseudo-Random Number Generator",
+      "targetFile": "services/api/src/modules/games/game-reward.service.ts",
+      "solution": "Replaced Math.random with crypto.randomInt from node:crypto",
+      "verified": true
+    },
+    {
+      "id": "P1-B",
+      "issue": "Social Missions Disconnected from Crystal Ledger",
+      "targetFile": "services/api/src/modules/growth/social-mission.service.ts",
+      "solution": "Integrated claimVirtualReward with atomic CrystalAccount credit and signed CrystalTransaction",
+      "verified": true
+    },
+    {
+      "id": "P1-C",
+      "issue": "Decoupled Game Domain Events",
+      "targetFile": "services/api/src/modules/games/game-session.service.ts",
+      "solution": "Injected EventBusService to publish GameSessionStarted and GameSessionCompleted events",
+      "verified": true
+    }
+  ],
+  "verificationSuite": {
+    "gameTests": { "total": 27, "passed": 27, "failed": 0 },
+    "growthTests": { "total": 76, "passed": 76, "failed": 0 },
+    "nestBuild": { "status": "SUCCESS", "exitCode": 0 }
+  }
+}

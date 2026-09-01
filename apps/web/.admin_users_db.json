@@ -75,7 +75,7 @@
     "moneyOut": 0,
     "totalDeposits": 0,
     "totalWithdrawals": 0,
-    "netBalance": 0,
+    "netBalance": 0.5,
     "riskScore": 10,
     "flags": [],
     "wallets": [
@@ -84,7 +84,22 @@
     "activeMachinesCount": 0,
     "crystalBalance": 50,
     "createdAt": "2026-08-27T00:32:39.097Z",
-    "lastLoginAt": "2026-08-27T12:39:36.892Z"
+    "lastLoginAt": "2026-08-27T12:39:36.892Z",
+    "claimedRewards": [
+      "starter_welcome"
+    ],
+    "transactions": [
+      {
+        "id": "tx_rwd_1788254828959",
+        "type": "REWARD",
+        "amount": 0.5,
+        "assetCode": "USDT",
+        "status": "COMPLETED",
+        "reference": "ref_reward_starter_welcome_1788254828959",
+        "createdAt": "2026-09-01T09:27:08.959Z",
+        "description": "Hardware Core Starter Reward"
+      }
+    ]
   },
   {
     "id": "5387655307",

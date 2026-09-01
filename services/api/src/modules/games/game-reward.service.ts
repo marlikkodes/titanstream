@@ -4,27 +4,18 @@ import { GameCatalog, GameSession, GameRewardGrantType, Prisma, RewardType } fro
 import { RewardService } from '../growth/reward.service';
 import { GameEventService } from './game-event.service';
 import type { GameRewardConfig, GameRewardResult, RewardGrantDecision, RouletteSectorConfig } from './game-types';
+import * as crypto from 'crypto';
 
 type TxClient = Prisma.TransactionClient | PrismaService;
 
 /**
- * Server-authoritative reward computation.
+ * Server-authoritative reward computation with Cryptographic Randomness.
  *
- * The client never decides payouts. Every reward is computed here from the
- * server-stored session, the game's configurable reward tables and any active
- * event multipliers:
- *
- *   Game Complete → Validation → Rewards Engine → Ledger(s) → Wallet
- *
- * Supported reward types (all configurable via GameCatalog.rewardConfig):
- *  - CRYSTALS        → crystal ledger (credited atomically by the caller)
- *  - USDT            → claimable Reward row → orchestrator → Ledger → Wallet
- *  - XP              → GameProfile XP + leveling
- *  - EVENT_POINTS    → seasonal event points (grant ledger)
- *  - MYSTERY_BOX     → chance-based mystery box grant
- *  - MACHINE_BOOST   → machine boost tokens
- *  - ACHIEVEMENT_PROGRESS → progress pushed into an achievement row
- *  - BOOST_TOKEN     → roulette BOOST sectors (crystal multiplier tokens)
+ * Responsibilities:
+ *  - The client never decides payouts. Every reward is computed server-side.
+ *  - Chance games outcomes and probability gates use cryptographically secure RNG (`crypto.randomInt`).
+ *  - Maintains exact configured statistical probability distributions.
+ *  - Enforces per-game daily USDT liability caps.
  */
 @Injectable()
 export class GameRewardService {
@@ -40,14 +31,32 @@ export class GameRewardService {
     return (game.rewardConfig as unknown as GameRewardConfig) ?? {};
   }
 
+  /**
+   * Cryptographically secure weighted selection.
+   */
   private pickWeighted(sectors: RouletteSectorConfig[]): RouletteSectorConfig {
     const totalWeight = sectors.reduce((sum, s) => sum + s.weight, 0);
-    let random = Math.random() * totalWeight;
+    const precision = 1_000_000;
+    const maxBound = Math.max(1, Math.floor(totalWeight * precision));
+    const roll = crypto.randomInt(0, maxBound) / precision;
+
+    let accumulated = 0;
     for (const sector of sectors) {
-      random -= sector.weight;
-      if (random <= 0) return sector;
+      accumulated += sector.weight;
+      if (roll < accumulated) return sector;
     }
     return sectors[sectors.length - 1];
+  }
+
+  /**
+   * Cryptographically secure probability check.
+   */
+  private secureProbability(prob: number): boolean {
+    if (prob <= 0) return false;
+    if (prob >= 1) return true;
+    const precision = 1_000_000;
+    const roll = crypto.randomInt(0, precision);
+    return roll < Math.floor(prob * precision);
   }
 
   /**
@@ -112,7 +121,7 @@ export class GameRewardService {
 
       for (const band of usdtBands) {
         if (score >= band.minScore && score <= band.maxScore) {
-          if (band.probability > 0 && Math.random() < band.probability) {
+          if (band.probability > 0 && this.secureProbability(band.probability)) {
             usdt = parseFloat(band.usdt) > 0 ? parseFloat(band.usdt).toFixed(6) : null;
           }
           break;
@@ -148,10 +157,10 @@ export class GameRewardService {
       if ((grantConfig.eventPointsOnComplete ?? 0) > 0) {
         grants.push({ type: 'EVENT_POINTS', amount: grantConfig.eventPointsOnComplete! });
       }
-      if ((grantConfig.mysteryBoxChance ?? 0) > 0 && Math.random() < grantConfig.mysteryBoxChance!) {
+      if ((grantConfig.mysteryBoxChance ?? 0) > 0 && this.secureProbability(grantConfig.mysteryBoxChance!)) {
         grants.push({ type: 'MYSTERY_BOX', amount: 1, metadata: { gameId: game.gameId } });
       }
-      if ((grantConfig.machineBoostChance ?? 0) > 0 && Math.random() < grantConfig.machineBoostChance!) {
+      if ((grantConfig.machineBoostChance ?? 0) > 0 && this.secureProbability(grantConfig.machineBoostChance!)) {
         grants.push({ type: 'MACHINE_BOOST', amount: 1, metadata: { gameId: game.gameId } });
       }
       for (const ap of grantConfig.achievementProgress ?? []) {
@@ -243,8 +252,7 @@ export class GameRewardService {
   /**
    * Create a claimable USDT reward (Reward row, AVAILABLE) through the
    * platform reward service. Idempotent via the session reference, so retries
-   * can never double-create. The user claims it from the claim queue and the
-   * existing orchestrator → ledger → wallet pipeline handles the money.
+   * can never double-create.
    */
   async createUsdtReward(game: GameCatalog, session: GameSession, score: number, amount: string) {
     const reference = `game_usdt_${session.id}`;

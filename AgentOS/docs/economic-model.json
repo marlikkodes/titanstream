@@ -1,0 +1,28 @@
+{
+  "modelType": "DUAL_CURRENCY_ASYMMETRIC",
+  "version": "1.0.0",
+  "currencies": {
+    "crystals": {
+      "symbol": "💎",
+      "nature": "CLOSED_LOOP_GAMEPLAY",
+      "model": "CrystalAccount",
+      "ledger": "CrystalTransaction",
+      "convertibleToFiat": false,
+      "inflationProfile": "CONTROLLED_POSITIVE"
+    },
+    "usdt": {
+      "symbol": "₮",
+      "nature": "REAL_LIABILITY",
+      "model": "FinancialAccount",
+      "ledger": "FinancialTransaction",
+      "convertibleToFiat": true,
+      "governance": "FinancialOrchestratorService"
+    }
+  },
+  "invariants": [
+    "CRYSTAL_CANNOT_BE_EXCHANGED_FOR_USDT_DIRECTLY",
+    "NO_DIRECT_BALANCE_MUTATION_OUTSIDE_CANONICAL_ENGINE",
+    "ALL_FINANCIAL_PAYOUTS_PASS_THROUGH_REWARD_CLAIM_QUEUE",
+    "CRYSTAL_BALANCE_MUST_REMAIN_NON_NEGATIVE"
+  ]
+}

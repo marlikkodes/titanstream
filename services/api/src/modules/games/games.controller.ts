@@ -37,12 +37,19 @@ export class GamesController {
       throw new BadRequestException('USER_IDENTITY_NOT_FOUND');
     }
     if (!user.telegramUserId) {
-      const fallbackTgId = BigInt('900' + Math.floor(100000000 + Math.random() * 900000000));
-      user = await this.prisma.user.update({
-        where: { id: user.id },
-        data: { telegramUserId: fallbackTgId },
-        select: { id: true, telegramUserId: true },
-      });
+      const hashSegment = user.id.split('-')[0] || '1';
+      const numericPart = parseInt(hashSegment, 16) % 900000000;
+      const deterministicTgId = BigInt('900' + String(100000000 + numericPart));
+      try {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: { telegramUserId: deterministicTgId },
+          select: { id: true, telegramUserId: true },
+        });
+      } catch {
+        const refreshed = await this.prisma.user.findUnique({ where: { id: user.id }, select: { id: true, telegramUserId: true } });
+        if (refreshed?.telegramUserId) user = refreshed;
+      }
     }
     return user.telegramUserId!;
   }

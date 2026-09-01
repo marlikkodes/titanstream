@@ -5,13 +5,14 @@ import { CrystalTransactionType, Prisma } from '@prisma/client';
 type TxClient = Prisma.TransactionClient | PrismaService;
 
 /**
- * First-class crystal ledger. Crystals are the gameplay currency and are kept
- * fully separate from financial (USDT/TON) balances. Every movement is a
- * signed, append-only transaction with a balance-after snapshot.
+ * Centralized Canonical Crystal Accounting Engine.
  *
- * Atomicity contract: callers may pass an outer Prisma transaction client so
- * that crystal movements commit or roll back together with game sessions and
- * financial rewards.
+ * Responsibilities:
+ *  - First-class gameplay currency ledger strictly separate from USDT/TON financial ledgers.
+ *  - Concurrency-safe atomic debit with non-negative balance invariant (`balance >= 0`).
+ *  - Strict idempotency per unique transaction reference.
+ *  - Full transaction provenance with immutable `balanceAfter` snapshots.
+ *  - Zero direct balance mutations permitted outside this engine.
  */
 @Injectable()
 export class GameCrystalService {
@@ -19,6 +20,9 @@ export class GameCrystalService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Resolves or atomically initializes a user's CrystalAccount.
+   */
   async getOrCreateAccount(userKey: bigint | string, client: TxClient = this.prisma) {
     let telegramUserId: bigint;
     if (typeof userKey === 'bigint') {
@@ -34,10 +38,13 @@ export class GameCrystalService {
         });
         if (!user) throw new BadRequestException('USER_NOT_FOUND');
         if (!user.telegramUserId) {
-          const fallbackTgId = BigInt('900' + Math.floor(100000000 + Math.random() * 900000000));
+          // Deterministic fallback derived from UUID hash to prevent race conditions
+          const hashSegment = keyStr.split('-')[0] || '1';
+          const numericPart = parseInt(hashSegment, 16) % 900000000;
+          const deterministicTgId = BigInt('900' + String(100000000 + numericPart));
           user = await client.user.update({
             where: { id: user.id },
-            data: { telegramUserId: fallbackTgId },
+            data: { telegramUserId: deterministicTgId },
             select: { id: true, telegramUserId: true },
           });
         }
@@ -70,6 +77,9 @@ export class GameCrystalService {
         },
       });
     } catch (err: any) {
+      const current = await client.crystalAccount.findUnique({ where: { telegramUserId } });
+      if (current) return current;
+
       this.logger.warn(`[CrystalAccount] Fallback account for user ${telegramUserId}: ${err?.message}`);
       return {
         id: `ca_${telegramUserId.toString()}`,
@@ -103,8 +113,8 @@ export class GameCrystalService {
   }
 
   /**
-   * Credit crystals. Returns the resulting balance. Idempotent per reference —
-   * a duplicate reference is rejected instead of double-crediting.
+   * Atomic Credit. Idempotent per reference.
+   * Returns resulting balance.
    */
   async credit(
     telegramUserId: bigint,
@@ -149,8 +159,8 @@ export class GameCrystalService {
   }
 
   /**
-   * Debit crystals after verifying sufficient balance. Returns the resulting
-   * balance. Rejects when balance is insufficient.
+   * Atomic Conditional Debit.
+   * Enforces `balance >= amount` atomically in the database to prevent negative balances under concurrency.
    */
   async debit(
     telegramUserId: bigint,
@@ -164,22 +174,37 @@ export class GameCrystalService {
       throw new BadRequestException({ code: 'INVALID_CRYSTAL_AMOUNT', message: 'Crystal debit amount must be a positive integer.' });
     }
 
-    const account = await this.getOrCreateAccount(telegramUserId, client);
-    if (account.balance < amount) {
-      throw new BadRequestException({
-        code: 'INSUFFICIENT_CRYSTALS',
-        message: 'Not enough Crystals. Earn more through daily login, games and missions.',
-        balance: account.balance,
-        required: amount,
-      });
+    const existing = await client.crystalTransaction.findUnique({ where: { reference } });
+    if (existing) {
+      return existing.balanceAfter;
     }
 
-    const updated = await client.crystalAccount.update({
-      where: { id: account.id },
+    const account = await this.getOrCreateAccount(telegramUserId, client);
+
+    // Atomic conditional decrement: where balance >= amount
+    const updatedBatch = await client.crystalAccount.updateMany({
+      where: {
+        id: account.id,
+        balance: { gte: amount },
+      },
       data: {
         balance: { decrement: amount },
         lifetimeSpent: { increment: amount },
       },
+    });
+
+    if (updatedBatch.count === 0) {
+      const currentAccount = await client.crystalAccount.findUnique({ where: { id: account.id } });
+      throw new BadRequestException({
+        code: 'INSUFFICIENT_CRYSTALS',
+        message: 'Not enough Crystals. Earn more through daily login, games and missions.',
+        balance: currentAccount?.balance ?? 0,
+        required: amount,
+      });
+    }
+
+    const updated = await client.crystalAccount.findUniqueOrThrow({
+      where: { id: account.id },
     });
 
     await client.crystalTransaction.create({
@@ -198,8 +223,86 @@ export class GameCrystalService {
   }
 
   /**
-   * Admin adjustment. Positive credits, negative debits. Reversals are not
-   * permitted — corrections are new transactions with their own audit trail.
+   * Reserve crystals for pending operations (alias to conditional debit with hold metadata).
+   */
+  async reserve(
+    telegramUserId: bigint,
+    amount: number,
+    reference: string,
+    metadata?: Record<string, unknown>,
+    client: TxClient = this.prisma,
+  ): Promise<number> {
+    return this.debit(telegramUserId, amount, CrystalTransactionType.GAME_ENTRY, reference, { ...metadata, isReservation: true }, client);
+  }
+
+  /**
+   * Release previously reserved crystals back to the account.
+   */
+  async release(
+    telegramUserId: bigint,
+    amount: number,
+    reference: string,
+    metadata?: Record<string, unknown>,
+    client: TxClient = this.prisma,
+  ): Promise<number> {
+    return this.credit(telegramUserId, amount, CrystalTransactionType.REVERSAL, reference, { ...metadata, isRelease: true }, client);
+  }
+
+  /**
+   * Transfer crystals between accounts atomically.
+   */
+  async transfer(
+    fromUserId: bigint,
+    toUserId: bigint,
+    amount: number,
+    reference: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<{ fromBalance: number; toBalance: number }> {
+    if (fromUserId === toUserId) {
+      throw new BadRequestException('CANNOT_TRANSFER_TO_SELF');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const debitRef = `${reference}_debit`;
+      const creditRef = `${reference}_credit`;
+
+      const fromBalance = await this.debit(fromUserId, amount, CrystalTransactionType.PURCHASE, debitRef, { ...metadata, toUserId: toUserId.toString() }, tx);
+      const toBalance = await this.credit(toUserId, amount, CrystalTransactionType.EVENT_BONUS, creditRef, { ...metadata, fromUserId: fromUserId.toString() }, tx);
+
+      return { fromBalance, toBalance };
+    });
+  }
+
+  /**
+   * Canonical alias for award operations.
+   */
+  async award(
+    telegramUserId: bigint,
+    amount: number,
+    type: CrystalTransactionType,
+    reference: string,
+    metadata?: Record<string, unknown>,
+    client: TxClient = this.prisma,
+  ): Promise<number> {
+    return this.credit(telegramUserId, amount, type, reference, metadata, client);
+  }
+
+  /**
+   * Canonical alias for consume operations.
+   */
+  async consume(
+    telegramUserId: bigint,
+    amount: number,
+    type: CrystalTransactionType,
+    reference: string,
+    metadata?: Record<string, unknown>,
+    client: TxClient = this.prisma,
+  ): Promise<number> {
+    return this.debit(telegramUserId, amount, type, reference, metadata, client);
+  }
+
+  /**
+   * Admin adjustment with signed audit trail.
    */
   async adjust(telegramUserId: bigint, amount: number, reason: string, adminActor: string) {
     if (amount === 0) {

@@ -298,35 +298,36 @@ export class RewardService {
         this.logger.error(`[SurpriseEngine] Ledger operation failed for surprise reward ref ${ref}: ${err.message}`);
       }
     } else {
-      // Credit Crystals in CrystalAccount & log signed transaction
+      // Credit Crystals in CrystalAccount & log signed transaction atomically
       const amountInt = parseInt(targetAmount, 10);
       try {
-        let account = await this.prisma.crystalAccount.findUnique({ where: { telegramUserId } });
-        if (!account) {
-          account = await this.prisma.crystalAccount.create({
-            data: { telegramUserId, balance: 0 },
+        await this.prisma.$transaction(async (tx) => {
+          let account = await tx.crystalAccount.findUnique({ where: { telegramUserId } });
+          if (!account) {
+            account = await tx.crystalAccount.create({
+              data: { telegramUserId, balance: 0 },
+            });
+          }
+
+          const updated = await tx.crystalAccount.update({
+            where: { id: account.id },
+            data: {
+              balance: { increment: amountInt },
+              lifetimeEarned: { increment: amountInt },
+            },
           });
-        }
 
-        const newBalance = account.balance + amountInt;
-        await this.prisma.crystalAccount.update({
-          where: { telegramUserId },
-          data: {
-            balance: newBalance,
-            lifetimeEarned: account.lifetimeEarned + amountInt,
-          },
-        });
-
-        await this.prisma.crystalTransaction.create({
-          data: {
-            telegramUserId,
-            accountId: account.id,
-            type: 'EVENT_BONUS',
-            amount: amountInt,
-            balanceAfter: newBalance,
-            reference: ref,
-            metadata: { surpriseTier: tier, triggerEvent, reason },
-          },
+          await tx.crystalTransaction.create({
+            data: {
+              telegramUserId,
+              accountId: account.id,
+              type: 'EVENT_BONUS',
+              amount: amountInt,
+              balanceAfter: updated.balance,
+              reference: ref,
+              metadata: { surpriseTier: tier, triggerEvent, reason },
+            },
+          });
         });
       } catch (err: any) {
         this.logger.warn(`[SurpriseEngine] Crystal credit transaction failed: ${err.message}`);

@@ -691,45 +691,6 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 </div>
               )}
 
-              {/* SANDBOX DEVELOPER INSTANT PAYMENT SIMULATOR */}
-              {process.env.NODE_ENV !== 'production' && (
-                <div className="pt-2 space-y-2 border-t border-white/5">
-                  <div className="text-[10px] text-text-tertiary text-left font-mono">
-                    Developer Sandbox Tool: Tests internal pipeline
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const sid = (session as any)?.settlementId || (session as any)?.id || session?.referenceCode || session?.reference || '';
-                      if (!sid) return;
-                      setIsLoading(true);
-                      setError(null);
-                      try {
-                        hapticFeedback.impactOccurred('medium');
-                        const updated = await fundingService.simulatePesapalPayment(sid);
-                        setSession(updated);
-                        try {
-                          const walletStore = (await import('../../store/useWalletStore')).useWalletStore;
-                          walletStore.getState().fetchBalanceFromEngine();
-                        } catch {
-                          // safe fallback
-                        }
-                      } catch (err: any) {
-                        console.error('Simulation failed:', err);
-                        setError(err?.response?.data?.message || err?.message || 'Sandbox simulation failed');
-                      } finally {
-                        setIsLoading(false);
-                      }
-                    }}
-                    disabled={isLoading}
-                    className="press-feedback w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-text-tertiary border border-white/10 font-bold text-[11px] flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                  >
-                    <CheckCircle2 size={14} />
-                    <span>Developer: Simulate Internal Pipeline Test</span>
-                  </button>
-                </div>
-              )}
-
               <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-text-tertiary">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-usdt-green animate-ping"></span>

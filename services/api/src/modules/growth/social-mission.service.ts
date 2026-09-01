@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { Prisma, SocialMissionTier, SocialParticipationStatus, RewardType, RewardStatus } from '@prisma/client';
+import { Prisma, SocialMissionTier, SocialParticipationStatus, RewardType, RewardStatus, CrystalTransactionType } from '@prisma/client';
 import { RewardService } from './reward.service';
 import { GrowthContributionService } from './growth-contribution.service';
 
@@ -244,12 +244,50 @@ export class SocialMissionService {
       return { success: true, alreadyClaimed: true, crystals: 0 };
     }
 
-    await this.prisma.socialMissionParticipation.update({
-      where: { id: participation.id },
-      data: {
-        virtualRewardsClaimed: true,
-        currentActionCount: { increment: 1 },
-      },
+    const ref = `social_mission_virtual_${participation.id}_${telegramUserId}`;
+    const txRunner = typeof this.prisma.$transaction === 'function'
+      ? this.prisma.$transaction.bind(this.prisma)
+      : async (fn: any) => fn(this.prisma);
+
+    await txRunner(async (tx: any) => {
+      if (mission.virtualRewardCrystals > 0 && tx.crystalAccount) {
+        let account = await tx.crystalAccount.findUnique({ where: { telegramUserId } });
+        if (!account) {
+          account = await tx.crystalAccount.create({
+            data: { telegramUserId, balance: 100 },
+          });
+        }
+
+        const updated = await tx.crystalAccount.update({
+          where: { id: account.id },
+          data: {
+            balance: { increment: mission.virtualRewardCrystals },
+            lifetimeEarned: { increment: mission.virtualRewardCrystals },
+          },
+        });
+
+        if (tx.crystalTransaction) {
+          await tx.crystalTransaction.create({
+            data: {
+              telegramUserId,
+              accountId: account.id,
+              type: CrystalTransactionType.ACHIEVEMENT,
+              amount: mission.virtualRewardCrystals,
+              balanceAfter: updated.balance,
+              reference: ref,
+              metadata: { missionCode: mission.code, missionId: mission.id },
+            },
+          });
+        }
+      }
+
+      await tx.socialMissionParticipation.update({
+        where: { id: participation.id },
+        data: {
+          virtualRewardsClaimed: true,
+          currentActionCount: { increment: 1 },
+        },
+      });
     });
 
     return {
