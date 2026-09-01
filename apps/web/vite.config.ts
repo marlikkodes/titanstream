@@ -2338,6 +2338,133 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
+        // Payment Orders Destinations
+        if (url.includes('/payment-orders/destinations')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: [
+              {
+                id: 'dest_mtn_ug',
+                network: 'MTN',
+                country: 'UG',
+                currency: 'UGX',
+                receivingNumber: '0772123456',
+                receivingName: 'TITANSTREAM OPERATIONS',
+                ussdTemplate: '*165*1*1*{number}*{amount}#',
+                exchangeRateUsdt: 3782,
+                minAmountUsdt: 5,
+                maxAmountUsdt: 10000,
+                isActive: true,
+              },
+              {
+                id: 'dest_airtel_ug',
+                network: 'AIRTEL',
+                country: 'UG',
+                currency: 'UGX',
+                receivingNumber: '0752762181',
+                receivingName: 'TITANSTREAM OPERATIONS',
+                ussdTemplate: '*185*1*1*{number}*{amount}#',
+                exchangeRateUsdt: 3782,
+                minAmountUsdt: 5,
+                maxAmountUsdt: 10000,
+                isActive: true,
+              },
+            ],
+          }));
+          return;
+        }
+
+        // Payment Orders My Orders
+        if (url.includes('/payment-orders/my')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const orders = targetUser?.paymentOrders || [];
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: orders,
+          }));
+          return;
+        }
+
+        // Create Payment Order
+        if (req.method === 'POST' && url === '/api/v1/payment-orders') {
+          let body = '';
+          req.on('data', (c) => { body += c; });
+          req.on('end', () => {
+            const allUsers = loadUsersFromDisk();
+            const targetUser = findRequestUser(req, allUsers);
+            let payload: any = {};
+            try {
+              payload = JSON.parse(body || '{}');
+            } catch {}
+
+            const orderId = `po_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+            const ref = `ORD-${Date.now().toString().slice(-6)}`;
+            const newOrder = {
+              id: orderId,
+              reference: ref,
+              telegramUserId: targetUser?.telegramId || 'usr_canonical',
+              type: payload.type || 'DEPOSIT',
+              amount: payload.amount || 50,
+              localAmount: payload.amount ? Math.round(payload.amount * 3782) : 189100,
+              currency: payload.currency || 'UGX',
+              asset: 'USDT',
+              paymentMethod: payload.paymentMethod || 'MOBILE_MONEY',
+              network: payload.network || 'MTN',
+              country: payload.country || 'UG',
+              status: 'AWAITING_PAYMENT',
+              receivingNumber: '0752762181',
+              receivingName: 'TITANSTREAM OPERATIONS',
+              ussdCode: `*165*1*1*0752762181*${payload.amount ? Math.round(payload.amount * 3782) : 189100}#`,
+              telUri: `tel:*165*1*1*0752762181*${payload.amount ? Math.round(payload.amount * 3782) : 189100}%23`,
+              mobileNumber: payload.mobileNumber || '+256752762181',
+              metadata: payload.metadata || {},
+              expiresAt: new Date(Date.now() + 3600000).toISOString(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+
+            if (targetUser) {
+              if (!Array.isArray(targetUser.paymentOrders)) targetUser.paymentOrders = [];
+              targetUser.paymentOrders.unshift(newOrder);
+              saveUsersToDisk(allUsers);
+            }
+
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              success: true,
+              data: newOrder,
+            }));
+          });
+          return;
+        }
+
+        // Verify Payment Order
+        if (url.includes('/payment-orders/') && url.includes('/verify')) {
+          const parts = url.split('/');
+          const orderId = parts[parts.indexOf('payment-orders') + 1];
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const order = (targetUser?.paymentOrders || []).find((o: any) => o.id === orderId || o.reference === orderId);
+          if (order) {
+            order.status = 'AWAITING_VERIFICATION';
+            saveUsersToDisk(allUsers);
+          }
+
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: order || { id: orderId, status: 'AWAITING_VERIFICATION' },
+          }));
+          return;
+        }
+
         // User Financial Transactions
         if (url.includes('/financial/transactions')) {
           const allUsers = loadUsersFromDisk();

@@ -63,43 +63,58 @@ export interface PaymentOrderRecord {
 
 export const paymentOrderService = {
   async getDestinations(): Promise<PaymentDestinationConfig[]> {
-    const res = await api.get('/payment-orders/destinations');
-    return res.data.data;
+    try {
+      const res = await api.get('/payment-orders/destinations');
+      const data = res.data?.data || res.data;
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
   },
 
   async createOrder(payload: CreatePaymentOrderPayload): Promise<PaymentOrderRecord> {
     const res = await api.post('/payment-orders', payload);
-    return res.data.data;
+    return res.data?.data || res.data;
   },
 
   async getMyOrders(): Promise<PaymentOrderRecord[]> {
-    const res = await api.get('/payment-orders/my');
-    return res.data.data;
+    try {
+      const res = await api.get('/payment-orders/my');
+      const data = res.data?.data || res.data;
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
   },
 
   async getOrder(id: string): Promise<PaymentOrderRecord> {
     const res = await api.get(`/payment-orders/${id}`);
-    return res.data.data;
+    return res.data?.data || res.data;
   },
 
   async submitForVerification(id: string): Promise<PaymentOrderRecord> {
     const res = await api.post(`/payment-orders/${id}/verify`);
-    return res.data.data;
+    return res.data?.data || res.data;
   },
 
   // Admin APIs
   async adminListOrders(): Promise<PaymentOrderRecord[]> {
-    const res = await api.get('/payment-orders/admin/list');
-    return res.data.data;
+    try {
+      const res = await api.get('/payment-orders/admin/list');
+      const data = res.data?.data || res.data;
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
   },
 
   async adminApproveOrder(id: string): Promise<PaymentOrderRecord> {
     const res = await api.post(`/payment-orders/admin/${id}/approve`);
-    return res.data.data;
+    return res.data?.data || res.data;
   },
 
   async adminRejectOrder(id: string, reason: string): Promise<PaymentOrderRecord> {
     const res = await api.post(`/payment-orders/admin/${id}/reject`, { reason });
-    return res.data.data;
+    return res.data?.data || res.data;
   },
 };
