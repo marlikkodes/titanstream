@@ -2020,6 +2020,324 @@ function adminMockMiddleware(): Plugin {
           return;
         }
 
+        // Mining Session State
+        if (url.includes('/mining/state')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const activeCurrency = targetUser?.miningCurrency || 'USDT';
+          const baseSpeedGhs = targetUser?.activeMachines?.length ? targetUser.activeMachines.length * 10 : 10;
+          const unclaimed = Number(targetUser?.unclaimedMiningBalance || 0);
+
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              activeCurrency,
+              baseSpeedGhs,
+              coolerMultiplier: 1.0,
+              unclaimedBalance: unclaimed,
+              machineMode: 'STANDARD',
+              lifetimePromotionalOutput: 0,
+              interactivePromotionalOutput: 0,
+              isOverheated: false,
+              cooldownRemaining: 0,
+              tapYieldPerTap: 0.0001,
+            },
+          }));
+          return;
+        }
+
+        // Mining Tap
+        if (url.includes('/mining/tap')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const activeCurrency = targetUser?.miningCurrency || 'USDT';
+          const baseSpeedGhs = targetUser?.activeMachines?.length ? targetUser.activeMachines.length * 10 : 10;
+          const currentUnclaimed = Number(targetUser?.unclaimedMiningBalance || 0);
+          const newUnclaimed = Number((currentUnclaimed + 0.0001).toFixed(6));
+
+          if (targetUser) {
+            targetUser.unclaimedMiningBalance = newUnclaimed;
+            saveUsersToDisk(allUsers);
+          }
+
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              activeCurrency,
+              baseSpeedGhs,
+              coolerMultiplier: 1.05,
+              unclaimedBalance: newUnclaimed,
+              machineMode: 'STANDARD',
+              lifetimePromotionalOutput: 0,
+              interactivePromotionalOutput: 0,
+              isOverheated: false,
+              cooldownRemaining: 0,
+              tapYieldPerTap: 0.0001,
+            },
+          }));
+          return;
+        }
+
+        // Mining Toggle Currency
+        if (url.includes('/mining/toggle')) {
+          let body = '';
+          req.on('data', (c) => { body += c; });
+          req.on('end', () => {
+            const allUsers = loadUsersFromDisk();
+            const targetUser = findRequestUser(req, allUsers);
+            let currency = 'USDT';
+            try {
+              const parsed = JSON.parse(body || '{}');
+              currency = parsed.currency || 'USDT';
+            } catch {
+              // fallback
+            }
+
+            if (targetUser) {
+              targetUser.miningCurrency = currency;
+              saveUsersToDisk(allUsers);
+            }
+
+            const baseSpeedGhs = targetUser?.activeMachines?.length ? targetUser.activeMachines.length * 10 : 10;
+            const unclaimed = Number(targetUser?.unclaimedMiningBalance || 0);
+
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              success: true,
+              data: {
+                activeCurrency: currency,
+                baseSpeedGhs,
+                coolerMultiplier: 1.0,
+                unclaimedBalance: unclaimed,
+                machineMode: 'STANDARD',
+                lifetimePromotionalOutput: 0,
+                interactivePromotionalOutput: 0,
+                isOverheated: false,
+                cooldownRemaining: 0,
+                tapYieldPerTap: 0.0001,
+              },
+            }));
+          });
+          return;
+        }
+
+        // Mining Claim Rewards
+        if (url.includes('/mining/claim')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const unclaimed = Number(targetUser?.unclaimedMiningBalance || 0);
+
+          if (targetUser && unclaimed > 0) {
+            targetUser.netBalance = Number(((targetUser.netBalance || 0) + unclaimed).toFixed(4));
+            targetUser.unclaimedMiningBalance = 0;
+            if (!Array.isArray(targetUser.transactions)) targetUser.transactions = [];
+            targetUser.transactions.unshift({
+              id: `tx_mine_${Date.now()}`,
+              type: 'MINING_YIELD',
+              amount: unclaimed.toFixed(4),
+              asset: targetUser.miningCurrency || 'USDT',
+              status: 'COMPLETED',
+              reference: `MINE-${Date.now().toString().slice(-6)}`,
+              description: 'Cloud Machine Mining Yield Claimed',
+              createdAt: new Date().toISOString(),
+            });
+            saveUsersToDisk(allUsers);
+          }
+
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              success: true,
+              amount: unclaimed.toFixed(4),
+              session: {
+                activeCurrency: targetUser?.miningCurrency || 'USDT',
+                baseSpeedGhs: targetUser?.activeMachines?.length ? targetUser.activeMachines.length * 10 : 10,
+                coolerMultiplier: 1.0,
+                unclaimedBalance: 0,
+                machineMode: 'STANDARD',
+                lifetimePromotionalOutput: 0,
+                interactivePromotionalOutput: 0,
+                isOverheated: false,
+                cooldownRemaining: 0,
+                tapYieldPerTap: 0.0001,
+              },
+            },
+          }));
+          return;
+        }
+
+        // Treasury Metrics
+        if (url.includes('/treasury/metrics')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              totalLiquidity: 250000.00,
+              userLiabilities: 45200.00,
+              reserveRatio: 553.1,
+              projectedPayouts: 12500.00,
+              settlementExposure: 8900.00,
+              capacityRemaining: 92.5,
+              healthStatus: 'HEALTHY',
+              riskScore: 'LOW',
+              forecastDays: 90,
+              countryAllocation: { 'UG': 65, 'KE': 20, 'TZ': 10, 'OTHER': 5 },
+            },
+          }));
+          return;
+        }
+
+        // User Trust Profile
+        if (url.includes('/user/trust/profile')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: {
+              telegramUserId: Number(targetUser?.telegramId || 0),
+              trustScore: 85,
+              reputationRank: 'Builder',
+              loginCount: 5,
+              educationScore: 100,
+              isReady: true,
+              operatorAccess: 'Unlocked',
+              createdAt: targetUser?.createdAt || new Date().toISOString(),
+            },
+          }));
+          return;
+        }
+
+        // Machines Catalog
+        if (url.includes('/machines/catalog')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: [
+              {
+                tierCode: 'TS_CORE_LITE',
+                name: 'Titan Core Lite',
+                priceUsdt: 25.0,
+                capacityGhs: 125,
+                powerRatingW: 15,
+                description: 'Ideal starter compute engine for everyday yield generation.',
+                dailyYieldEstimateUsdt: 0.85,
+                isPopular: false,
+              },
+              {
+                tierCode: 'TS_STREAM_PRO',
+                name: 'Stream Pro Accelerator',
+                priceUsdt: 100.0,
+                capacityGhs: 550,
+                powerRatingW: 60,
+                description: 'High-efficiency stream engine with optimized hash pipeline.',
+                dailyYieldEstimateUsdt: 3.60,
+                isPopular: true,
+              },
+              {
+                tierCode: 'TS_ENTERPRISE_TITAN',
+                name: 'Titan Enterprise Matrix',
+                priceUsdt: 500.0,
+                capacityGhs: 3200,
+                powerRatingW: 350,
+                description: 'Industrial-grade compute node for maximum continuous yield.',
+                dailyYieldEstimateUsdt: 19.50,
+                isPopular: false,
+              },
+            ],
+          }));
+          return;
+        }
+
+        // My Machines
+        if (url.includes('/machines/my') || url.includes('/machines/user-machines')) {
+          const allUsers = loadUsersFromDisk();
+          const targetUser = findRequestUser(req, allUsers);
+          const machines = targetUser?.activeMachines || [];
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            success: true,
+            data: machines,
+          }));
+          return;
+        }
+
+        // Purchase Machine
+        if (url.includes('/machines/purchase')) {
+          let body = '';
+          req.on('data', (c) => { body += c; });
+          req.on('end', () => {
+            const allUsers = loadUsersFromDisk();
+            const targetUser = findRequestUser(req, allUsers);
+            let tierCode = 'TS_CORE_LITE';
+            try {
+              const parsed = JSON.parse(body || '{}');
+              tierCode = parsed.tierCode || 'TS_CORE_LITE';
+            } catch {}
+
+            const catalog = [
+              { tierCode: 'TS_CORE_LITE', name: 'Titan Core Lite', priceUsdt: 25.0, capacityGhs: 125 },
+              { tierCode: 'TS_STREAM_PRO', name: 'Stream Pro Accelerator', priceUsdt: 100.0, capacityGhs: 550 },
+              { tierCode: 'TS_ENTERPRISE_TITAN', name: 'Titan Enterprise Matrix', priceUsdt: 500.0, capacityGhs: 3200 },
+            ];
+            const item = catalog.find((c) => c.tierCode === tierCode) || catalog[0];
+
+            if (targetUser) {
+              if (!Array.isArray(targetUser.activeMachines)) targetUser.activeMachines = [];
+              const newMachine = {
+                id: `mach_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                telegramUserId: targetUser.telegramId || targetUser.id,
+                tierCode: item.tierCode,
+                name: item.name,
+                purchasePrice: item.priceUsdt,
+                currency: 'USDT',
+                status: 'ACTIVE',
+                capacityGhs: item.capacityGhs,
+                lifetimeEarnings: 0,
+                purchasedAt: new Date().toISOString(),
+                activatedAt: new Date().toISOString(),
+              };
+              targetUser.activeMachines.push(newMachine);
+              saveUsersToDisk(allUsers);
+
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify({
+                success: true,
+                data: {
+                  success: true,
+                  requiresFunding: false,
+                  machine: newMachine,
+                  message: `Successfully commissioned ${item.name}!`,
+                },
+              }));
+            } else {
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify({
+                success: true,
+                data: {
+                  success: true,
+                  requiresFunding: false,
+                  message: 'Machine commissioned',
+                },
+              }));
+            }
+          });
+          return;
+        }
+
         // User Financial Transactions
         if (url.includes('/financial/transactions')) {
           const allUsers = loadUsersFromDisk();
