@@ -3376,6 +3376,9 @@ export default defineConfig({
     strictPort: true,
     host: true,
     allowedHosts: true,
+    watch: {
+      ignored: ['**/.admin_users_db.json', '**/.git/**'],
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3001',

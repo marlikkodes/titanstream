@@ -57,7 +57,7 @@ export interface FAQItem {
   icon: React.ReactNode;
 }
 
-export const LEARNING_CENTER_FAQS: FAQItem[] = [
+const LEARNING_CENTER_FAQS: FAQItem[] = [
   // 🚀 GETTING STARTED
   {
     id: 'gs_what_is',

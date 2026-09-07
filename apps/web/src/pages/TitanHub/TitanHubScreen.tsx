@@ -55,7 +55,7 @@ export const TitanHubScreen: React.FC = () => {
   const refreshState = useTitanStateEngine((state) => state.refreshState);
   
   const [syncStep, setSyncStep] = useState(0);
-  const [isSyncing, setIsSyncing] = useState(titanState.syncStatus !== 'COMPLETE');
+  const [isSyncing, setIsSyncing] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showShopSection, setShowShopSection] = useState(false);
   const [showHealthModal, setShowHealthModal] = useState(false);
@@ -76,8 +76,9 @@ export const TitanHubScreen: React.FC = () => {
     initializeDefaultCore();
 
     const syncSequence = async () => {
-      // If sync already completed (e.g. tab switch), just refresh silently
-      if (titanState.syncStatus === 'COMPLETE') {
+      // If sync already completed in this session, just refresh silently in the background
+      const alreadySynced = typeof window !== 'undefined' && sessionStorage.getItem('titan_hub_boot_synced') === 'true';
+      if (alreadySynced || titanState.syncStatus === 'COMPLETE') {
         try {
           await Promise.allSettled([
             fetchMiningState(),
@@ -90,11 +91,12 @@ export const TitanHubScreen: React.FC = () => {
         return;
       }
 
+      setIsSyncing(true);
       updateSyncStatus('SYNCING');
 
       // Animate through sync steps (non-blocking visual only)
       for (let i = 0; i < syncSteps.length; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 250));
         setSyncStep(i);
       }
 
@@ -115,7 +117,10 @@ export const TitanHubScreen: React.FC = () => {
       } catch (err) {
         console.warn('[SYNC] Hydration failed or timed out:', err);
       } finally {
-        // ALWAYS dismiss the sync overlay regardless of success/failure/timeout
+        // ALWAYS mark synced and dismiss the sync overlay regardless of success/failure/timeout
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('titan_hub_boot_synced', 'true');
+        }
         updateSyncStatus('COMPLETE');
         setIsSyncing(false);
 
@@ -130,20 +135,21 @@ export const TitanHubScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 2. Synchronize machine status changes to the Titan State Engine
+  // 2. Synchronize machine status changes to the Titan State Engine (without 100ms multiplier re-render loop)
   const activeRecord = getRecordByTier(selectedTierCode);
   const isSelectedPaused = activeRecord?.status === 'PAUSED';
 
   useEffect(() => {
-    const { isPaused, activeGhs } = useMiningStore.getState().syncMachineStatus();
+    const { activeGhs } = useMiningStore.getState().syncMachineStatus();
+    const currentCooler = useMiningStore.getState().coolerMultiplier || 1.0;
 
     updateMachineStatus(
       isOverheated ? 'OVERHEATED' : isSelectedPaused ? 'PAUSED' : 'RUNNING',
       activeGhs * 10,
-      coolerMultiplier,
+      currentCooler,
       isOverheated ? 85 : isSelectedPaused ? 30 : 45
     );
-  }, [isOverheated, isSelectedPaused, coolerMultiplier, updateMachineStatus]);
+  }, [isOverheated, isSelectedPaused, updateMachineStatus]);
 
   // 3. Synchronize reward status changes to the Titan State Engine
   useEffect(() => {

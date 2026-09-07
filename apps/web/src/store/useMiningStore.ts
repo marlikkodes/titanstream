@@ -513,11 +513,12 @@ export const useMiningStore = create<MiningState>()(
         const isPaused = activeGhs <= 0;
         _cachedHashSpeed = activeGhs;
         _cachedIsPaused = isPaused;
-        _hashSpeedDirty = false;
-        set({
-          isPaused,
-          activeSpeedGhs: activeGhs,
-        });
+        if (s.isPaused !== isPaused || s.activeSpeedGhs !== activeGhs) {
+          set({
+            isPaused,
+            activeSpeedGhs: activeGhs,
+          });
+        }
 
         return { isPaused, activeGhs };
       } catch (e) {

@@ -335,6 +335,11 @@ api.interceptors.response.use(
       return api(originalRequest);
     } catch (refreshError: any) {
       console.warn('[API] Token refresh notice:', refreshError?.message || 'Token refresh unavailable');
+      const refreshStatus = refreshError.response?.status;
+      if (refreshStatus === 401 || refreshStatus === 403 || String(refreshError?.message).includes('Session refresh failed')) {
+        console.warn('[API] Refresh token expired or revoked, clearing session.');
+        useAuthStore.getState().clearSession();
+      }
       return Promise.reject(refreshError);
     }
   },

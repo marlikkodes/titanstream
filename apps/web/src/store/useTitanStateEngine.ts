@@ -197,6 +197,15 @@ export const useTitanStateEngine = create<TitanStateEngine>()(
     
     // Update individual state components
     updateMachineStatus: (status, power, efficiency, temperature) => {
+      const current = get().state;
+      if (
+        current.machineStatus === status &&
+        current.machinePower === power &&
+        current.machineEfficiency === efficiency &&
+        current.machineTemperature === temperature
+      ) {
+        return;
+      }
       set((state) => {
         const newState = {
           ...state.state,
@@ -213,6 +222,14 @@ export const useTitanStateEngine = create<TitanStateEngine>()(
     },
     
     updateRewardStatus: (status, amount, streak) => {
+      const current = get().state;
+      if (
+        current.rewardStatus === status &&
+        current.unclaimedAmount === amount &&
+        current.rewardStreak === streak
+      ) {
+        return;
+      }
       set((state) => {
         const newState = {
           ...state.state,
@@ -289,6 +306,8 @@ export const useTitanStateEngine = create<TitanStateEngine>()(
     },
     
     updateSyncStatus: (status) => {
+      const current = get().state;
+      if (current.syncStatus === status) return;
       set((state) => ({
         state: {
           ...state.state,

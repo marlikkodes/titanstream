@@ -118,7 +118,9 @@ export const useMachineOwnershipStore = create<MachineOwnershipState>()(
       syncWithUserMachines: (machines: any[]) => {
         if (!Array.isArray(machines)) return;
         const currentOwnerships = { ...get().ownerships };
-        const newOwnerships: Record<string, OwnershipRecord> = {};
+        const newOwnerships: Record<string, OwnershipRecord> = {
+          TS_TRIAL: currentOwnerships['TS_TRIAL'] || DEFAULT_CORE_RECORD,
+        };
 
         for (const m of machines) {
           const norm = (m.tierCode || '').trim().toUpperCase();

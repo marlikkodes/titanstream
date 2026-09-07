@@ -7,7 +7,7 @@ import { useWalletStore } from '../../store/useWalletStore';
 import type { MissionItem } from '../../services/growthService';
 import { ClaimSuccessModal } from './ClaimSuccessModal';
 
-export const REWARD_TYPE_META: Record<string, { icon: string; color: string }> = {
+const REWARD_TYPE_META: Record<string, { icon: string; color: string }> = {
   REFERRAL: { icon: '👥', color: 'text-sky-400' },
   MILESTONE: { icon: '🏆', color: 'text-amber-400' },
   LOYALTY: { icon: '🎁', color: 'text-purple-400' },
