@@ -28,9 +28,8 @@ export class MachineController {
   async purchaseMachine(
     @CanonicalUserId() userId: string,
     @Body('tierCode') tierCode: string,
-    @Body('isSandbox') isSandbox?: boolean,
   ) {
-    return this.service.purchaseMachine(userId as any, tierCode, isSandbox);
+    return this.service.purchaseMachine(userId as any, tierCode);
   }
 
   @Post('repower')

@@ -52,13 +52,12 @@ export class GameCrystalService {
       }
     }
 
-    const existing = await client.crystalAccount.findUnique({
-      where: { telegramUserId },
-    });
-
-    if (existing) return existing;
-
     try {
+      const existing = await client.crystalAccount.findUnique({
+        where: { telegramUserId },
+      });
+      if (existing) return existing;
+
       // Ensure user record exists to satisfy foreign key constraint
       await client.user.upsert({
         where: { telegramUserId },
@@ -77,8 +76,10 @@ export class GameCrystalService {
         },
       });
     } catch (err: any) {
-      const current = await client.crystalAccount.findUnique({ where: { telegramUserId } });
-      if (current) return current;
+      try {
+        const current = await client.crystalAccount.findUnique({ where: { telegramUserId } });
+        if (current) return current;
+      } catch {}
 
       this.logger.warn(`[CrystalAccount] Fallback account for user ${telegramUserId}: ${err?.message}`);
       return {

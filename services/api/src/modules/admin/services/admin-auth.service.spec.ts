@@ -56,7 +56,7 @@ describe('AdminAuthService', () => {
       fingerprint: 'fp_123',
     });
 
-    expect(res.token).toBe('adm_sess_1234567890');
+    expect(res.token).toMatch(/^adm_sess_[a-f0-9]{64}$/);
     expect(res.admin.role).toBe(AdminRole.SUPER_ADMIN);
     expect(audit.logAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'ADMIN_TELEGRAM_LOGIN' }));
   });

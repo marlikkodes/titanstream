@@ -12,9 +12,10 @@ import { IdempotencyService } from './idempotency.service';
 import { ReconciliationService } from './reconciliation.service';
 import { LedgerReconciliationSweeperService } from './ledger-reconciliation-sweeper.service';
 import { MetricsModule } from '../metrics/metrics.module';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
-  imports: [PrismaModule, forwardRef(() => FinancialModule), MetricsModule],
+  imports: [PrismaModule, forwardRef(() => FinancialModule), MetricsModule, forwardRef(() => AdminModule)],
   controllers: [FinancialOrchestrationController],
   providers: [
     CommandProcessorService,

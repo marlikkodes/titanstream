@@ -55,8 +55,8 @@ export const machineService = {
     }
   },
 
-  async purchaseMachine(tierCode: string, isSandbox?: boolean): Promise<PurchaseMachineResult> {
-    const res = await api.post('/machines/purchase', { tierCode, isSandbox });
+  async purchaseMachine(tierCode: string): Promise<PurchaseMachineResult> {
+    const res = await api.post('/machines/purchase', { tierCode });
     return res.data.data;
   },
 

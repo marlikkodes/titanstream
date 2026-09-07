@@ -777,5 +777,85 @@
       }
     }
   },
-  "pin_514179": "wa_ch_mtgirqym_3a2d6ce8f3a8"
+  "pin_514179": "wa_ch_mtgirqym_3a2d6ce8f3a8",
+  "wa_ch_mtr4x9ui_b998194e56cc": {
+    "challengeId": "wa_ch_mtr4x9ui_b998194e56cc",
+    "shortPin": "616430",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Chrome 120 Linux",
+    "createdAt": "2026-09-07T11:05:55.485Z",
+    "expiresAt": "2026-09-07T11:15:55.485Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_616430": "wa_ch_mtr4x9ui_b998194e56cc",
+  "wa_ch_mtr4x9vt_ec4e127e29be": {
+    "challengeId": "wa_ch_mtr4x9vt_ec4e127e29be",
+    "shortPin": "312576",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Mobile Chrome",
+    "createdAt": "2026-09-07T11:05:55.529Z",
+    "expiresAt": "2026-09-07T11:15:55.529Z",
+    "sessionTokens": {
+      "accessToken": "test_access_token",
+      "refreshToken": "test_refresh_token",
+      "user": {
+        "id": "usr_test_123"
+      }
+    }
+  },
+  "pin_312576": "wa_ch_mtr4x9vt_ec4e127e29be",
+  "wa_ch_mtr4xcka_6d1280bf29cd": {
+    "challengeId": "wa_ch_mtr4xcka_6d1280bf29cd",
+    "shortPin": "295617",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Desktop Chrome 120",
+    "createdAt": "2026-09-07T11:05:59.005Z",
+    "expiresAt": "2026-09-07T11:15:59.005Z",
+    "sessionTokens": {
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
+      "user": {
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-09-07T11:05:59.020Z"
+      }
+    }
+  },
+  "pin_295617": "wa_ch_mtr4xcka_6d1280bf29cd",
+  "wa_ch_mtr4xcl8_0ed03771a2d0": {
+    "challengeId": "wa_ch_mtr4xcl8_0ed03771a2d0",
+    "shortPin": "112892",
+    "status": "APPROVED",
+    "phone": "+256770000000",
+    "deviceInfo": "Mobile Safari",
+    "createdAt": "2026-09-07T11:05:59.036Z",
+    "expiresAt": "2026-09-07T11:15:59.036Z",
+    "sessionTokens": {
+      "accessToken": "at_test_usr_canonical_256770000000",
+      "refreshToken": "rt_test_usr_canonical_256770000000",
+      "user": {
+        "id": "usr_canonical_256770000000",
+        "identityId": "uni_canonical_256770000000",
+        "firstName": "David",
+        "lastName": "Mugisha",
+        "state": "READY",
+        "isReady": true,
+        "createdAt": "2026-09-07T11:05:59.047Z"
+      }
+    }
+  },
+  "pin_112892": "wa_ch_mtr4xcl8_0ed03771a2d0"
 }

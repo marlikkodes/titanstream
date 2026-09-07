@@ -138,12 +138,12 @@ export const BoostScreen: React.FC = () => {
     }, 1200);
   };
 
-  const handlePaymentSuccess = async (isSandbox: boolean = false) => {
+  const handlePaymentSuccess = async () => {
     if (!selectedMachine) return;
     hapticFeedback.notificationOccurred('success');
 
     try {
-      const res = await machineService.purchaseMachine(selectedMachine.tierCode, isSandbox);
+      const res = await machineService.purchaseMachine(selectedMachine.tierCode);
       if (!res.success || !res.machine) {
         showToast(res.message || 'Payment could not be confirmed', 'error');
         return;

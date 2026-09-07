@@ -331,18 +331,64 @@ export class GameCatalogService {
   }
 
   async getEnabledGames(): Promise<GameCatalog[]> {
-    return this.prisma.gameCatalog.findMany({
-      where: { enabled: true },
-      orderBy: { createdAt: 'asc' },
-    });
+    try {
+      const items = await this.prisma.gameCatalog.findMany({
+        where: { enabled: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (items && items.length > 0) return items;
+    } catch (err: any) {
+      this.logger.warn(`[GameCatalog] Database query failed, using in-memory catalog fallback: ${err?.message}`);
+    }
+
+    return DEFAULT_GAMES.map((g, idx) => ({
+      id: `game_${idx + 1}`,
+      gameId: g.gameId,
+      code: g.code,
+      name: g.name,
+      description: g.description,
+      category: g.category,
+      icon: g.icon,
+      accentColor: g.accentColor,
+      crystalCost: g.crystalCost,
+      dailyLimit: g.dailyLimit,
+      estimatedDurationSec: g.estimatedDurationSec,
+      difficulty: g.difficulty,
+      enabled: true,
+      rewardConfig: g.rewardConfig as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
   }
 
   async getGame(gameId: string): Promise<GameCatalog> {
-    const game = await this.prisma.gameCatalog.findUnique({ where: { gameId } });
-    if (!game || !game.enabled) {
+    try {
+      const game = await this.prisma.gameCatalog.findUnique({ where: { gameId } });
+      if (game && game.enabled) return game;
+    } catch {}
+
+    const seed = DEFAULT_GAMES.find((g) => g.gameId === gameId);
+    if (!seed) {
       throw new NotFoundException({ code: 'GAME_NOT_FOUND', message: 'Game is not available.' });
     }
-    return game;
+    return {
+      id: `game_${seed.gameId}`,
+      gameId: seed.gameId,
+      code: seed.code,
+      name: seed.name,
+      description: seed.description,
+      category: seed.category,
+      icon: seed.icon,
+      accentColor: seed.accentColor,
+      crystalCost: seed.crystalCost,
+      dailyLimit: seed.dailyLimit,
+      estimatedDurationSec: seed.estimatedDurationSec,
+      difficulty: seed.difficulty,
+      enabled: true,
+      rewardConfig: seed.rewardConfig as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
   }
 
   async getGameStrict(gameId: string): Promise<GameCatalog | null> {

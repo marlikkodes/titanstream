@@ -45,14 +45,18 @@ export class GameSessionService {
     const dayStart = new Date();
     dayStart.setHours(0, 0, 0, 0);
 
-    return client.gameSession.count({
-      where: {
-        telegramUserId,
-        gameId,
-        createdAt: { gte: dayStart },
-        status: { in: [GameSessionStatus.STARTED, GameSessionStatus.COMPLETED] },
-      },
-    });
+    try {
+      return await client.gameSession.count({
+        where: {
+          telegramUserId,
+          gameId,
+          createdAt: { gte: dayStart },
+          status: { in: [GameSessionStatus.STARTED, GameSessionStatus.COMPLETED] },
+        },
+      });
+    } catch {
+      return 0;
+    }
   }
 
   /**

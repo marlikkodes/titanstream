@@ -312,37 +312,18 @@ export class MachineService {
     return createdMachine;
   }
 
-  async purchaseMachine(userIdOrTelegramId: string | bigint, tierCode: string, isSandbox?: boolean) {
+  async purchaseMachine(userIdOrTelegramId: string | bigint, tierCode: string) {
     const telegramUserId = await this.resolveTelegramUserId(userIdOrTelegramId);
+
+    // Explicitly reject attempt to "purchase" promotional Titan Core
+    if (tierCode === 'TS_TRIAL') {
+      throw new BadRequestException('CANNOT_PURCHASE_TRIAL_MACHINE: Titan Core is a complimentary baseline asset and cannot be purchased.');
+    }
+
     const tier = this.catalog.find((t) => t.tierCode === tierCode);
     if (!tier) throw new NotFoundException(`Machine tier ${tierCode} not found`);
 
     const userIdStr = telegramUserId.toString();
-
-    // If sandbox mode is explicitly requested, fulfill machine ownership immediately
-    if (isSandbox) {
-      const createdMachine = await this.fulfillMachineOwnershipAfterPayment(telegramUserId, tier.tierCode, tier.priceUsdt);
-      const newMachineAsset: UserMachineAsset = {
-        id: createdMachine.id,
-        telegramUserId: userIdStr,
-        tierCode: createdMachine.tierCode,
-        name: createdMachine.name,
-        purchasePrice: Number(createdMachine.purchasePrice),
-        currency: createdMachine.currency,
-        status: createdMachine.status as any,
-        capacityGhs: Number(createdMachine.capacityGhs),
-        lifetimeEarnings: Number(createdMachine.lifetimeEarnings),
-        purchasedAt: createdMachine.purchasedAt.toISOString(),
-        activatedAt: createdMachine.activatedAt.toISOString(),
-      };
-
-      return {
-        success: true,
-        requiresFunding: false,
-        machine: newMachineAsset,
-        message: `[Sandbox] Machine ${tier.name} purchased and activated successfully!`,
-      };
-    }
 
     // Check user available balance (auto-create financial account if missing)
     let account = await this.prisma.financialAccount.findUnique({

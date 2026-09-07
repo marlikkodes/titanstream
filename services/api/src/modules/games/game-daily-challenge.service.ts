@@ -161,40 +161,61 @@ export class GameDailyChallengeService {
    * Today's challenge view with the user's progress and completion state.
    */
   async getTodayView(telegramUserId: bigint, now = new Date()): Promise<DailyChallengeView | null> {
-    const { challenge } = await this.getActiveChallenge(now);
-    if (!challenge) return null;
+    try {
+      const { challenge } = await this.getActiveChallenge(now);
+      if (challenge) {
+        const day = this.dayKey(now);
+        const completion = await this.prisma.gameChallengeCompletion.findUnique({
+          where: { telegramUserId_challengeId_challengeDay: { telegramUserId, challengeId: challenge.id, challengeDay: day } },
+        });
 
-    const day = this.dayKey(now);
-    const completion = await this.prisma.gameChallengeCompletion.findUnique({
-      where: { telegramUserId_challengeId_challengeDay: { telegramUserId, challengeId: challenge.id, challengeDay: day } },
-    });
+        const sessions = await this.prisma.gameSession.findMany({
+          where: {
+            telegramUserId,
+            gameId: challenge.gameId,
+            status: { in: ['STARTED', 'COMPLETED'] },
+            createdAt: { gte: day },
+          },
+          select: { score: true, status: true, validation: true },
+        });
 
-    const sessions = await this.prisma.gameSession.findMany({
-      where: {
-        telegramUserId,
-        gameId: challenge.gameId,
-        status: { in: ['STARTED', 'COMPLETED'] },
-        createdAt: { gte: day },
-      },
-      select: { score: true, status: true, validation: true },
-    });
+        const progress = this.computeProgress(challenge.objectiveType, challenge.target, sessions);
 
-    const progress = this.computeProgress(challenge.objectiveType, challenge.target, sessions);
+        return {
+          id: challenge.id,
+          code: challenge.code,
+          gameId: challenge.gameId,
+          gameName: (challenge as any).game?.name ?? challenge.gameId,
+          gameIcon: (challenge as any).game?.icon ?? '🎮',
+          title: challenge.title,
+          description: challenge.description,
+          objectiveType: challenge.objectiveType,
+          target: challenge.target,
+          rewardCrystals: challenge.rewardCrystals,
+          rewardXp: challenge.rewardXp,
+          completedToday: !!completion,
+          progress,
+        };
+      }
+    } catch (err: any) {
+      this.logger.warn(`[DailyChallenge] Database fallback for today's challenge: ${err?.message}`);
+    }
 
+    const fallbackSeed = DEFAULT_CHALLENGES[0];
     return {
-      id: challenge.id,
-      code: challenge.code,
-      gameId: challenge.gameId,
-      gameName: (challenge as any).game?.name ?? challenge.gameId,
-      gameIcon: (challenge as any).game?.icon ?? '🎮',
-      title: challenge.title,
-      description: challenge.description,
-      objectiveType: challenge.objectiveType,
-      target: challenge.target,
-      rewardCrystals: challenge.rewardCrystals,
-      rewardXp: challenge.rewardXp,
-      completedToday: !!completion,
-      progress,
+      id: 'dc_fallback_1',
+      code: fallbackSeed.code,
+      gameId: fallbackSeed.gameId,
+      gameName: 'Titan Reactor',
+      gameIcon: '⚛️',
+      title: fallbackSeed.title,
+      description: fallbackSeed.description,
+      objectiveType: fallbackSeed.objectiveType,
+      target: fallbackSeed.target,
+      rewardCrystals: fallbackSeed.rewardCrystals,
+      rewardXp: fallbackSeed.rewardXp,
+      completedToday: false,
+      progress: 0,
     };
   }
 

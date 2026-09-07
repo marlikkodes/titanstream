@@ -3,6 +3,7 @@ import { AdminAuthGuard } from './admin-auth.guard';
 import { RbacGuard } from './rbac.guard';
 import { AdminPermission, ROLE_PERMISSIONS_MAP } from '../interfaces/admin-permissions.enum';
 import { AdminRole } from '@prisma/client';
+import { hashAdminSessionToken } from '../services/admin-auth.service';
 
 describe('Admin Security Remediation Suite', () => {
   let prismaMock: any;
@@ -56,7 +57,7 @@ describe('Admin Security Remediation Suite', () => {
       );
       expect(prismaMock.adminSession.findFirst).toHaveBeenCalledWith({
         where: {
-          tokenHash: 'admin-token:SUPER_ADMIN:attacker_id',
+          tokenHash: hashAdminSessionToken('admin-token:SUPER_ADMIN:attacker_id'),
           revokedAt: null,
           expiresAt: expect.any(Object),
         },

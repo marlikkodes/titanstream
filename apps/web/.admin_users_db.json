@@ -55,7 +55,7 @@
     "activeMachinesCount": 0,
     "crystalBalance": 50,
     "createdAt": "2026-08-27T09:55:09.960Z",
-    "lastLoginAt": "2026-08-31T00:48:04.421Z"
+    "lastLoginAt": "2026-09-07T11:05:59.055Z"
   },
   {
     "id": "256752762181",
@@ -111,8 +111,9 @@
         "description": "Hardware Core Starter Reward"
       }
     ],
-    "unclaimedMiningBalance": 0.292397,
-    "lastMiningUpdate": "2026-09-07T10:21:14.577Z"
+    "unclaimedMiningBalance": 0.430636,
+    "lastMiningUpdate": "2026-09-07T11:10:24.055Z",
+    "miningCurrency": "USDT"
   },
   {
     "id": "5387655307",

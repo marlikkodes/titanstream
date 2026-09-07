@@ -21,6 +21,14 @@ export class CreateFinancialOperationDto {
   @IsOptional()
   reference?: string;
 
+  @IsString()
+  @IsOptional()
+  telegramUserId?: string;
+
+  @IsString()
+  @IsOptional()
+  userId?: string;
+
   @IsOptional()
   @IsObject()
   metadata?: Record<string, unknown>;

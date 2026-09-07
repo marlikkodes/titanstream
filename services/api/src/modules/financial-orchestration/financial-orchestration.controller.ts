@@ -6,12 +6,15 @@ import { PrismaService } from '../../database/prisma.service';
 import { PaginationDto } from '../financial/dto/pagination.dto';
 import { CreateFinancialOperationDto } from './dto/create-financial-operation.dto';
 import { FinancialOrchestratorService } from './financial-orchestrator.service';
-
 import { ReconciliationService } from './reconciliation.service';
+import { AdminAuthGuard } from '../admin/guards/admin-auth.guard';
+import { RbacGuard } from '../admin/guards/rbac.guard';
+import { Permissions } from '../admin/decorators/permissions.decorator';
+import { AdminPermission } from '../admin/interfaces/admin-permissions.enum';
+import { CurrentAdmin, AuthenticatedAdmin } from '../admin/decorators/current-admin.decorator';
 
 @ApiTags('Financial Orchestration')
 @Controller('financial/orchestration')
-@UseGuards(AuthGuard)
 export class FinancialOrchestrationController {
   constructor(
     private readonly orchestrator: FinancialOrchestratorService,
@@ -20,13 +23,28 @@ export class FinancialOrchestrationController {
   ) {}
 
   @Post('operations')
-  @ApiOperation({ summary: 'Request a financial operation through the orchestrator' })
-  requestOperation(@CanonicalUserId() userId: string, @Body() dto: CreateFinancialOperationDto) {
-    const telegramUserId = /^\d+$/.test(userId) ? BigInt(userId) : BigInt(0);
-    return this.orchestrator.requestOperation({ userId, telegramUserId, ...dto } as any);
+  @UseGuards(AdminAuthGuard, RbacGuard)
+  @Permissions(AdminPermission.BALANCE_ADJUST)
+  @ApiOperation({ summary: 'Execute an administrative financial operation through the orchestrator' })
+  requestOperation(
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+    @Body() dto: CreateFinancialOperationDto,
+  ) {
+    const targetTelegramUserId = dto.telegramUserId ? BigInt(dto.telegramUserId) : BigInt(0);
+    return this.orchestrator.requestOperation({
+      ...dto,
+      telegramUserId: targetTelegramUserId,
+      userId: dto.userId,
+      metadata: {
+        ...(dto.metadata || {}),
+        executedByAdminId: admin.id,
+        executedByAdminUsername: admin.username,
+      },
+    } as any);
   }
 
   @Get('operations')
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'List current user financial operations' })
   async listOperations(@CanonicalUserId() userId: string, @Query() query: PaginationDto) {
     const limit = query.limit ?? 50;
@@ -47,12 +65,16 @@ export class FinancialOrchestrationController {
   }
 
   @Post('reconciliation/trigger')
+  @UseGuards(AdminAuthGuard, RbacGuard)
+  @Permissions(AdminPermission.RECONCILIATION_RUN)
   @ApiOperation({ summary: 'Trigger a full end-to-end financial reconciliation audit sweep' })
   triggerReconciliation(@Query('source') source?: string) {
     return this.reconciliation.runFullReconciliation(source || 'ADMIN_TRIGGER');
   }
 
   @Get('reconciliation/runs')
+  @UseGuards(AdminAuthGuard, RbacGuard)
+  @Permissions(AdminPermission.RECONCILIATION_RUN)
   @ApiOperation({ summary: 'List recent financial reconciliation runs and checkpoints' })
   listReconciliationRuns(@Query('limit') limit?: number) {
     return this.reconciliation.getRecentRuns(limit ? Number(limit) : 20);
