@@ -75,7 +75,7 @@
     "moneyOut": 0,
     "totalDeposits": 0,
     "totalWithdrawals": 0,
-    "netBalance": 0.5,
+    "netBalance": 1.5,
     "riskScore": 10,
     "flags": [],
     "wallets": [
@@ -86,9 +86,20 @@
     "createdAt": "2026-08-27T00:32:39.097Z",
     "lastLoginAt": "2026-08-27T12:39:36.892Z",
     "claimedRewards": [
-      "starter_welcome"
+      "starter_welcome",
+      "starter_security"
     ],
     "transactions": [
+      {
+        "id": "tx_rwd_1788766185876",
+        "type": "REWARD",
+        "amount": 1,
+        "assetCode": "USDT",
+        "status": "COMPLETED",
+        "reference": "ref_reward_starter_security_1788766185876",
+        "createdAt": "2026-09-07T07:29:45.876Z",
+        "description": "Security Configuration Reward"
+      },
       {
         "id": "tx_rwd_1788254828959",
         "type": "REWARD",
@@ -100,7 +111,8 @@
         "description": "Hardware Core Starter Reward"
       }
     ],
-    "unclaimedMiningBalance": 0.0028
+    "unclaimedMiningBalance": 0.009026,
+    "lastMiningUpdate": "2026-09-07T07:37:44.337Z"
   },
   {
     "id": "5387655307",

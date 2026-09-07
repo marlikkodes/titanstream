@@ -2025,8 +2025,32 @@ function adminMockMiddleware(): Plugin {
           const allUsers = loadUsersFromDisk();
           const targetUser = findRequestUser(req, allUsers);
           const activeCurrency = targetUser?.miningCurrency || 'USDT';
-          const baseSpeedGhs = targetUser?.activeMachines?.length ? targetUser.activeMachines.length * 10 : 10;
-          const unclaimed = Number(targetUser?.unclaimedMiningBalance || 0);
+          
+          const userMachines = Array.isArray(targetUser?.activeMachines) ? targetUser.activeMachines : [];
+          const totalCapacity = userMachines.length > 0 
+            ? userMachines.reduce((sum: number, m: any) => sum + (Number(m.capacityGhs) || 0), 0)
+            : 1.0;
+
+          const now = Date.now();
+          const lastUpdate = targetUser?.lastMiningUpdate ? new Date(targetUser.lastMiningUpdate).getTime() : 0;
+          let unclaimed = Number(targetUser?.unclaimedMiningBalance || 0);
+
+          // If this is a fresh user, give initial baseline so counter is visibly active immediately
+          if (unclaimed === 0 && !targetUser?.lastMiningUpdate) {
+            unclaimed = 0.050000;
+          } else if (lastUpdate > 0 && now > lastUpdate) {
+            // Accrue passive yield for the entire duration the user was away / logged out
+            const elapsedSec = (now - lastUpdate) / 1000;
+            const ratePerSec = 0.0000289 * totalCapacity;
+            const offlineAccrual = elapsedSec * ratePerSec;
+            unclaimed += offlineAccrual;
+          }
+
+          if (targetUser) {
+            targetUser.unclaimedMiningBalance = Number(unclaimed.toFixed(6));
+            targetUser.lastMiningUpdate = new Date(now).toISOString();
+            saveUsersToDisk(allUsers);
+          }
 
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
@@ -2034,15 +2058,15 @@ function adminMockMiddleware(): Plugin {
             success: true,
             data: {
               activeCurrency,
-              baseSpeedGhs,
+              baseSpeedGhs: totalCapacity,
               coolerMultiplier: 1.0,
-              unclaimedBalance: unclaimed,
-              machineMode: 'STANDARD',
+              unclaimedBalance: Number(unclaimed.toFixed(6)),
+              machineMode: 'PROMOTIONAL',
               lifetimePromotionalOutput: 0,
               interactivePromotionalOutput: 0,
               isOverheated: false,
               cooldownRemaining: 0,
-              tapYieldPerTap: 0.0001,
+              tapYieldPerTap: 0.0002,
             },
           }));
           return;
@@ -2053,12 +2077,26 @@ function adminMockMiddleware(): Plugin {
           const allUsers = loadUsersFromDisk();
           const targetUser = findRequestUser(req, allUsers);
           const activeCurrency = targetUser?.miningCurrency || 'USDT';
-          const baseSpeedGhs = targetUser?.activeMachines?.length ? targetUser.activeMachines.length * 10 : 10;
-          const currentUnclaimed = Number(targetUser?.unclaimedMiningBalance || 0);
-          const newUnclaimed = Number((currentUnclaimed + 0.0001).toFixed(6));
+          const userMachines = Array.isArray(targetUser?.activeMachines) ? targetUser.activeMachines : [];
+          const totalCapacity = userMachines.length > 0 
+            ? userMachines.reduce((sum: number, m: any) => sum + (Number(m.capacityGhs) || 0), 0)
+            : 1.0;
+
+          const now = Date.now();
+          const lastUpdate = targetUser?.lastMiningUpdate ? new Date(targetUser.lastMiningUpdate).getTime() : now;
+          let currentUnclaimed = Number(targetUser?.unclaimedMiningBalance || 0);
+
+          if (now > lastUpdate) {
+            const elapsedSec = (now - lastUpdate) / 1000;
+            const ratePerSec = 0.0000289 * totalCapacity;
+            currentUnclaimed += elapsedSec * ratePerSec;
+          }
+
+          const newUnclaimed = Number((currentUnclaimed + 0.0002).toFixed(6));
 
           if (targetUser) {
             targetUser.unclaimedMiningBalance = newUnclaimed;
+            targetUser.lastMiningUpdate = new Date(now).toISOString();
             saveUsersToDisk(allUsers);
           }
 
@@ -2068,15 +2106,15 @@ function adminMockMiddleware(): Plugin {
             success: true,
             data: {
               activeCurrency,
-              baseSpeedGhs,
+              baseSpeedGhs: totalCapacity,
               coolerMultiplier: 1.05,
               unclaimedBalance: newUnclaimed,
-              machineMode: 'STANDARD',
+              machineMode: 'PROMOTIONAL',
               lifetimePromotionalOutput: 0,
               interactivePromotionalOutput: 0,
               isOverheated: false,
               cooldownRemaining: 0,
-              tapYieldPerTap: 0.0001,
+              tapYieldPerTap: 0.0002,
             },
           }));
           return;
@@ -2102,7 +2140,10 @@ function adminMockMiddleware(): Plugin {
               saveUsersToDisk(allUsers);
             }
 
-            const baseSpeedGhs = targetUser?.activeMachines?.length ? targetUser.activeMachines.length * 10 : 10;
+            const userMachines = Array.isArray(targetUser?.activeMachines) ? targetUser.activeMachines : [];
+            const baseSpeedGhs = userMachines.length > 0 
+              ? userMachines.reduce((sum: number, m: any) => sum + (Number(m.capacityGhs) || 0), 0)
+              : 1.0;
             const unclaimed = Number(targetUser?.unclaimedMiningBalance || 0);
 
             res.setHeader('Content-Type', 'application/json');
@@ -2114,12 +2155,12 @@ function adminMockMiddleware(): Plugin {
                 baseSpeedGhs,
                 coolerMultiplier: 1.0,
                 unclaimedBalance: unclaimed,
-                machineMode: 'STANDARD',
+                machineMode: 'PROMOTIONAL',
                 lifetimePromotionalOutput: 0,
                 interactivePromotionalOutput: 0,
                 isOverheated: false,
                 cooldownRemaining: 0,
-                tapYieldPerTap: 0.0001,
+                tapYieldPerTap: 0.0002,
               },
             }));
           });
@@ -2135,6 +2176,7 @@ function adminMockMiddleware(): Plugin {
           if (targetUser && unclaimed > 0) {
             targetUser.netBalance = Number(((targetUser.netBalance || 0) + unclaimed).toFixed(4));
             targetUser.unclaimedMiningBalance = 0;
+            targetUser.lastMiningUpdate = new Date().toISOString();
             if (!Array.isArray(targetUser.transactions)) targetUser.transactions = [];
             targetUser.transactions.unshift({
               id: `tx_mine_${Date.now()}`,
@@ -2149,6 +2191,11 @@ function adminMockMiddleware(): Plugin {
             saveUsersToDisk(allUsers);
           }
 
+          const userMachines = Array.isArray(targetUser?.activeMachines) ? targetUser.activeMachines : [];
+          const baseSpeedGhs = userMachines.length > 0 
+            ? userMachines.reduce((sum: number, m: any) => sum + (Number(m.capacityGhs) || 0), 0)
+            : 1.0;
+
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
@@ -2158,10 +2205,10 @@ function adminMockMiddleware(): Plugin {
               amount: unclaimed.toFixed(4),
               session: {
                 activeCurrency: targetUser?.miningCurrency || 'USDT',
-                baseSpeedGhs: targetUser?.activeMachines?.length ? targetUser.activeMachines.length * 10 : 10,
+                baseSpeedGhs,
                 coolerMultiplier: 1.0,
                 unclaimedBalance: 0,
-                machineMode: 'STANDARD',
+                machineMode: 'PROMOTIONAL',
                 lifetimePromotionalOutput: 0,
                 interactivePromotionalOutput: 0,
                 isOverheated: false,

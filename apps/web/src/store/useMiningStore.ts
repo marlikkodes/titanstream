@@ -67,6 +67,7 @@ export interface MiningState {
   isPaused: boolean;
   activeSpeedGhs: number;
   machineStatusVersion: number;
+  lastMiningUpdatedAt: number;
   syncMachineStatus: () => { isPaused: boolean; activeGhs: number };
 }
 
@@ -99,7 +100,7 @@ function getOwnershipStore() {
 }
 
 // ── Performance: debounced localStorage to prevent 10×/sec writes from the ticker ──
-const PERSIST_DEBOUNCE_MS = 5000;
+const PERSIST_DEBOUNCE_MS = 3000;
 let _pendingPersist: string | null = null;
 let _persistTimer: ReturnType<typeof setTimeout> | null = null;
 const debouncedStorage = {
@@ -116,8 +117,25 @@ const debouncedStorage = {
       }, PERSIST_DEBOUNCE_MS);
     }
   },
-  removeItem: (name: string) => localStorage.removeItem(name),
+  removeItem: (name: string) => {
+    if (_persistTimer) {
+      clearTimeout(_persistTimer);
+      _persistTimer = null;
+    }
+    _pendingPersist = null;
+    localStorage.removeItem(name);
+  },
 };
+
+// Guarantee latest counter is persisted to localStorage on tab close/unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (_pendingPersist !== null) {
+      localStorage.setItem('mining-storage', _pendingPersist);
+      _pendingPersist = null;
+    }
+  });
+}
 
 export const useMiningStore = create<MiningState>()(
   persist(
@@ -128,6 +146,7 @@ export const useMiningStore = create<MiningState>()(
     coolerMultiplier: 1.0,
     maxMultiplier: 10.1,
     unclaimedBalance: 0.0,
+    lastMiningUpdatedAt: Date.now(),
     machineMode: 'PROMOTIONAL',
     lifetimePromotionalOutput: 0.0,
     interactivePromotionalOutput: 0.0,
@@ -169,7 +188,11 @@ export const useMiningStore = create<MiningState>()(
     applyServerSession: (session, opts) => {
       const snap = opts?.snapDisplay || !hydrated;
       hydrated = true;
-      const targetUnclaimed = typeof session.unclaimedBalance === 'number' ? session.unclaimedBalance : 0.0;
+      const serverUnclaimed = typeof session.unclaimedBalance === 'number' ? session.unclaimedBalance : 0.0;
+      const currentUnclaimed = get().unclaimedBalance || 0;
+
+      // If isClaim, reset to server amount (0). Otherwise take max so counter never drops or resets to 0 on relogin
+      const targetUnclaimed = opts?.isClaim ? serverUnclaimed : Math.max(serverUnclaimed, currentUnclaimed);
 
       set({
         activeCurrency: session.activeCurrency,
@@ -182,9 +205,10 @@ export const useMiningStore = create<MiningState>()(
         isOverheated: session.isOverheated,
         cooldownRemaining: session.cooldownRemaining,
         tapYieldPerTap: session.tapYieldPerTap,
-        displayUnclaimed: snap ? targetUnclaimed : targetUnclaimed,
+        displayUnclaimed: snap ? targetUnclaimed : Math.max(get().displayUnclaimed || 0, targetUnclaimed),
         displayMultiplier: snap || session.coolerMultiplier < get().displayMultiplier ? session.coolerMultiplier : get().displayMultiplier,
         displayPromoOutput: snap || session.lifetimePromotionalOutput < get().displayPromoOutput ? session.lifetimePromotionalOutput : get().displayPromoOutput,
+        lastMiningUpdatedAt: Date.now(),
       });
     },
 
@@ -286,8 +310,9 @@ export const useMiningStore = create<MiningState>()(
           const claimedAmountStr = formatCurrencyWithLocalFallback(currentBal);
           await useWalletStore.getState().fetchBalanceFromEngine();
           if (session && typeof session === 'object' && 'unclaimedBalance' in session) {
-            get().applyServerSession(session, { snapDisplay: true });
+            get().applyServerSession(session, { snapDisplay: true, isClaim: true });
           } else {
+            set({ unclaimedBalance: 0, displayUnclaimed: 0, lastMiningUpdatedAt: Date.now() });
             await get().fetchMiningState();
           }
 
@@ -590,6 +615,7 @@ export const useMiningStore = create<MiningState>()(
             cooldownRemaining: nextCooldown,
             isOverheated: nextOverheated,
             coolerMultiplier: nextMultiplier,
+            lastMiningUpdatedAt: Date.now(),
           });
         }
       }, TICK_MS);
@@ -606,9 +632,30 @@ export const useMiningStore = create<MiningState>()(
     {
       name: 'mining-storage',
       storage: debouncedStorage as any,
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          const now = Date.now();
+          const last = state.lastMiningUpdatedAt || now;
+          const elapsedSec = Math.max(0, (now - last) / 1000);
+          if (elapsedSec > 0) {
+            const speed = state.baseSpeedGhs || 1.0;
+            // Promotional yield rate: 0.0000289 * speed (~0.104 USDT/hr per Gh/s)
+            const ratePerSec = 0.0000289 * speed;
+            const offlineAccrual = elapsedSec * ratePerSec;
+            state.unclaimedBalance = Number(((state.unclaimedBalance || 0) + offlineAccrual).toFixed(6));
+            state.displayUnclaimed = state.unclaimedBalance;
+            state.lastMiningUpdatedAt = now;
+          } else {
+            state.displayUnclaimed = state.unclaimedBalance || 0;
+          }
+        }
+      },
       partialize: (state) => ({
         activeCurrency: state.activeCurrency,
         baseSpeedGhs: state.baseSpeedGhs,
+        unclaimedBalance: state.unclaimedBalance,
+        displayUnclaimed: state.displayUnclaimed,
+        lastMiningUpdatedAt: state.lastMiningUpdatedAt || Date.now(),
         machineMode: state.machineMode,
         lifetimePromotionalOutput: state.lifetimePromotionalOutput,
         interactivePromotionalOutput: state.interactivePromotionalOutput,
