@@ -29,10 +29,6 @@ export class StepUpGuard implements CanActivate {
       });
     }
 
-    if (stepUpToken === 'test_stepup_token') {
-      return true;
-    }
-
     try {
       const payload = this.jwtService.verify(stepUpToken as string);
       if (payload.type !== 'step_up') {

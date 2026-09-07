@@ -26,13 +26,18 @@ import {
   Key,
   Check,
   X,
-  ShoppingCart
+  ShoppingCart,
+  FileText,
+  RotateCcw,
+  Cookie,
+  Building2
 } from 'lucide-react';
 import { useGrowthStore } from '../../store/useGrowthStore';
 import { useTreasuryStore } from '../../store/useTreasuryStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useMachineOwnershipStore } from '../../store/useMachineOwnershipStore';
 import { useMiningStore } from '../../store/useMiningStore';
+import { useLegalModalStore } from '../../store/useLegalModalStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -58,6 +63,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
   const { setActiveTab } = useNavigationStore();
   const { hapticFeedback, user } = useTelegram();
   const settings = useSettingsStore();
+  const openLegalModal = useLegalModalStore((s) => s.openLegalModal);
 
   const [activeTab, setActiveTabState] = useState<'passport' | 'certificates' | 'settings'>('passport');
   
@@ -902,7 +908,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
               <div className="pt-2 border-t border-white/5">
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/15 border border-red-500/30 text-red-400 font-extrabold rounded-xl flex items-center justify-center gap-1.5 transition-colors press-feedback animate-pulse"
+                  className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/15 border border-red-500/30 text-red-400 font-extrabold rounded-xl flex items-center justify-center gap-1.5 transition-colors press-feedback animate-pulse focus-visible:ring-2 focus-visible:ring-red-400"
+                  aria-label="Request permanent account deletion"
                 >
                   <Trash2 size={14} />
                   <span>Delete My Account</span>
@@ -911,9 +918,76 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
             </div>
           </div>
 
+          {/* Group 7: Legal, Compliance & Disclaimers */}
+          <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
+            <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
+              <FileText size={13} /> Legal & Regulatory Center
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <button
+                onClick={() => openLegalModal('terms')}
+                className="p-3 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] text-left flex items-center justify-between transition-colors press-feedback focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label="Open Terms of Service document"
+              >
+                <div className="flex items-center gap-2">
+                  <FileText size={14} className="text-gold" />
+                  <span className="font-bold text-text-primary">Terms of Service</span>
+                </div>
+                <ChevronRight size={14} className="text-text-tertiary" />
+              </button>
+
+              <button
+                onClick={() => openLegalModal('privacy')}
+                className="p-3 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] text-left flex items-center justify-between transition-colors press-feedback focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label="Open Privacy Policy document"
+              >
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={14} className="text-usdt-green" />
+                  <span className="font-bold text-text-primary">Privacy Policy</span>
+                </div>
+                <ChevronRight size={14} className="text-text-tertiary" />
+              </button>
+
+              <button
+                onClick={() => openLegalModal('refund')}
+                className="p-3 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] text-left flex items-center justify-between transition-colors press-feedback focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label="Open Refund and Cancellation Policy document"
+              >
+                <div className="flex items-center gap-2">
+                  <RotateCcw size={14} className="text-amber-400" />
+                  <span className="font-bold text-text-primary">Refund Policy</span>
+                </div>
+                <ChevronRight size={14} className="text-text-tertiary" />
+              </button>
+
+              <button
+                onClick={() => openLegalModal('cookies')}
+                className="p-3 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] text-left flex items-center justify-between transition-colors press-feedback focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label="Open Cookie and Local Storage Policy document"
+              >
+                <div className="flex items-center gap-2">
+                  <Cookie size={14} className="text-sky-400" />
+                  <span className="font-bold text-text-primary">Cookies & Storage</span>
+                </div>
+                <ChevronRight size={14} className="text-text-tertiary" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => openLegalModal('business')}
+              className="w-full py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-text-secondary hover:text-text-primary text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors focus-visible:ring-2 focus-visible:ring-gold"
+              aria-label="Open Corporate Particulars, Licenses and Disclaimers"
+            >
+              <Building2 size={13} className="text-gold" />
+              <span>Entity Particulars, Licenses & Disclaimers</span>
+            </button>
+          </div>
+
           <button
             onClick={handleLogout}
-            className="w-full py-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-extrabold text-xs flex items-center justify-center gap-2 hover:bg-red-500/20 transition-colors press-feedback"
+            className="w-full py-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-extrabold text-xs flex items-center justify-center gap-2 hover:bg-red-500/20 transition-colors press-feedback focus-visible:ring-2 focus-visible:ring-red-400"
+            aria-label="Sign out of current account"
           >
             <LogOut size={16} />
             <span>Sign Out</span>

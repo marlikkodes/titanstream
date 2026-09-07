@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/useAuthStore';
 import { useTelegram } from '../context/TelegramContext';
+import { useLegalModalStore } from '../store/useLegalModalStore';
 import { 
   Server, 
   TrendingUp, 
@@ -9,7 +10,9 @@ import {
   ShieldCheck,
   CheckCircle2, 
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Lock,
+  ExternalLink
 } from 'lucide-react';
 
 interface OnboardingOverlayProps {
@@ -27,70 +30,78 @@ interface Slide {
 
 export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [agreedRisk, setAgreedRisk] = useState(false);
+  const [agreedEligibility, setAgreedEligibility] = useState(false);
+
   const { markOnboardingComplete } = useAuthStore();
   const { hapticFeedback } = useTelegram();
+  const openLegalModal = useLegalModalStore((s) => s.openLegalModal);
 
   const slides: Slide[] = [
     {
       id: 0,
-      title: "Welcome to Titan Stream 👋",
-      copy: "Titan Stream makes it easy to earn money every day.\n\nYou don't need any technical or crypto knowledge to get started.",
+      title: "Welcome to TitanStream 👋",
+      copy: "Access the global distributed cloud computing economy.\n\nProvision high-performance compute capacity with real-time USDT and local currency settlement.",
       icon: <Server size={28} />,
       gradient: "from-emerald-400 to-cyan-400",
       bgGlow: "bg-emerald-500/15",
     },
     {
       id: 1,
-      title: "How do your machines make money?",
-      copy: "Your machines run automatically 24/7 to earn daily money.\n\nYou can collect your earnings into your wallet anytime you want.",
+      title: "How do compute nodes operate?",
+      copy: "Your provisioned machines perform distributed computational workloads around the clock.\n\nCollect settled compute yields directly into your internal wallet whenever you want.",
       icon: <TrendingUp size={28} />,
       gradient: "from-purple-400 to-indigo-400",
       bgGlow: "bg-purple-500/15",
     },
     {
       id: 2,
-      title: "What do you need to do?",
-      copy: "Nothing! Your machines work for you automatically.\n\nAll you have to do is open the app and tap Collect Earnings.",
+      title: "Automated Fleet Telemetry",
+      copy: "Monitor real-time hashpower, hardware health, and network difficulty.\n\nManage cooling, optimize hash performance, or scale your node fleet with ease.",
       icon: <Cpu size={28} />,
       gradient: "from-rose-400 to-pink-400",
       bgGlow: "bg-rose-500/15",
     },
     {
       id: 3,
-      title: "100% Safe & Protected",
-      copy: "You are always in full control of your money.\n\n• Clear payment history\n• Easy payouts to your Mobile Money or wallet\n• 24/7 safe and protected platform",
+      title: "Audited Ledger & Security",
+      copy: "Your assets are protected with enterprise-grade safeguards:\n\n• Verified double-entry accounting ledger\n• Transparent payouts via Mobile Money or on-chain USDT\n• Cryptographic session protection & zero ad tracking",
       icon: <ShieldCheck size={28} />,
       gradient: "from-amber-400 to-orange-400",
       bgGlow: "bg-amber-500/15",
     },
     {
       id: 4,
-      title: "You're Ready!",
-      copy: "Start earning daily money right now.",
+      title: "Compliance & Consent",
+      copy: "Please review and confirm our regulatory terms before accessing your compute terminal:",
       icon: <CheckCircle2 size={28} />,
       gradient: "from-usdt-green to-emerald-400",
       bgGlow: "bg-usdt-green/15",
     }
   ];
 
+  const isConsentStep = currentStep === slides.length - 1;
+  const isConsentValid = agreedTerms && agreedRisk && agreedEligibility;
+
   const handleNext = () => {
     hapticFeedback.impactOccurred('medium');
-    if (currentStep < slides.length - 1) {
-      setCurrentStep(prev => prev + 1);
+    if (!isConsentStep) {
+      setCurrentStep((prev) => prev + 1);
     } else {
+      if (!isConsentValid) return;
       markOnboardingComplete();
       if (onComplete) onComplete();
     }
   };
 
-  const handleSkip = () => {
+  const handleSkipToConsent = () => {
     hapticFeedback.impactOccurred('light');
-    markOnboardingComplete();
-    if (onComplete) onComplete();
+    // Direct users to the mandatory compliance consent step rather than silently bypassing legal terms
+    setCurrentStep(slides.length - 1);
   };
 
   const slide = slides[currentStep];
-  const isLast = currentStep === slides.length - 1;
 
   return (
     <div className="fixed inset-0 z-50 bg-[#06070b] flex flex-col select-none overflow-hidden">
@@ -110,21 +121,22 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
       <div className="relative z-10 flex items-center justify-between px-6 pt-6">
         <div className="flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-usdt-green/20 text-usdt-green flex items-center justify-center font-black text-xs">₮</span>
-          <span className="text-sm font-extrabold text-text-primary tracking-tight font-sans">Titan Stream</span>
+          <span className="text-sm font-extrabold text-text-primary tracking-tight font-sans">TitanStream</span>
         </div>
         
-        {!isLast && (
+        {!isConsentStep && (
           <button 
-            onClick={handleSkip}
-            className="text-[11px] font-semibold text-text-tertiary hover:text-text-secondary px-3 py-1.5 rounded-full bg-white/5 border border-white/8 transition-colors"
+            onClick={handleSkipToConsent}
+            className="text-[11px] font-semibold text-text-tertiary hover:text-text-secondary px-3 py-1.5 rounded-full bg-white/5 border border-white/8 transition-colors focus-visible:ring-2 focus-visible:ring-gold"
+            aria-label="Skip to compliance consent step"
           >
-            Skip
+            Review & Accept
           </button>
         )}
       </div>
 
       {/* Slide content */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 max-w-sm mx-auto w-full">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 sm:px-8 max-w-sm mx-auto w-full overflow-y-auto py-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -135,34 +147,114 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
             className="flex flex-col items-center text-center w-full"
           >
             {/* Icon */}
-            <div className="relative mb-8">
+            <div className="relative mb-6">
               <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${slide.gradient} blur-2xl opacity-30 scale-125`} />
-              <div className={`relative w-[72px] h-[72px] rounded-3xl bg-gradient-to-br ${slide.gradient} text-white flex items-center justify-center shadow-2xl border border-white/20`}>
+              <div className={`relative w-[64px] h-[64px] rounded-3xl bg-gradient-to-br ${slide.gradient} text-white flex items-center justify-center shadow-2xl border border-white/20`}>
                 {slide.icon}
               </div>
             </div>
 
             {/* Title */}
-            <h2 className="text-[22px] font-black text-text-primary tracking-tight font-sans leading-tight mb-4">
+            <h2 className="text-[20px] font-black text-text-primary tracking-tight font-sans leading-tight mb-3">
               {slide.title}
             </h2>
 
-            {/* Copy — preserve newlines */}
-            <div className="space-y-2">
-              {slide.copy.split('\n\n').map((paragraph, i) => (
-                <p key={i} className="text-[13px] text-text-secondary leading-relaxed font-medium font-sans">
-                  {paragraph.startsWith('•') ? (
-                    <span className="text-left block">{paragraph}</span>
-                  ) : paragraph}
+            {/* Copy */}
+            {!isConsentStep ? (
+              <div className="space-y-2">
+                {slide.copy.split('\n\n').map((paragraph, i) => (
+                  <p key={i} className="text-[13px] text-text-secondary leading-relaxed font-medium font-sans">
+                    {paragraph.startsWith('•') ? (
+                      <span className="text-left block">{paragraph}</span>
+                    ) : paragraph}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              /* Mandatory Consent & Compliance Checklist */
+              <div className="w-full space-y-3 text-left">
+                <p className="text-[11px] text-text-tertiary text-center mb-1">
+                  Please acknowledge each statement to activate your node terminal:
                 </p>
-              ))}
-            </div>
+
+                <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-white/20 cursor-pointer transition-colors select-none">
+                  <input
+                    type="checkbox"
+                    checked={agreedTerms}
+                    onChange={(e) => setAgreedTerms(e.target.checked)}
+                    className="accent-gold w-4 h-4 mt-0.5 shrink-0 rounded"
+                  />
+                  <span className="text-[11px] text-text-secondary leading-snug">
+                    I accept the{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); openLegalModal('terms'); }}
+                      className="text-gold font-bold underline hover:text-gold-bright"
+                    >
+                      Terms of Service
+                    </button>
+                    {', '}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); openLegalModal('privacy'); }}
+                      className="text-gold font-bold underline hover:text-gold-bright"
+                    >
+                      Privacy Policy
+                    </button>
+                    {', and '}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); openLegalModal('refund'); }}
+                      className="text-gold font-bold underline hover:text-gold-bright"
+                    >
+                      Refund Policy
+                    </button>
+                    .
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-white/20 cursor-pointer transition-colors select-none">
+                  <input
+                    type="checkbox"
+                    checked={agreedRisk}
+                    onChange={(e) => setAgreedRisk(e.target.checked)}
+                    className="accent-gold w-4 h-4 mt-0.5 shrink-0 rounded"
+                  />
+                  <span className="text-[11px] text-text-secondary leading-snug">
+                    I understand that TitanStream is a distributed compute provider and <strong className="text-white">not a bank or investment fund</strong>. Compute yields are dynamic and not guaranteed.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-white/20 cursor-pointer transition-colors select-none">
+                  <input
+                    type="checkbox"
+                    checked={agreedEligibility}
+                    onChange={(e) => setAgreedEligibility(e.target.checked)}
+                    className="accent-gold w-4 h-4 mt-0.5 shrink-0 rounded"
+                  />
+                  <span className="text-[11px] text-text-secondary leading-snug">
+                    I confirm I am <strong className="text-white">at least 18 years of age</strong> and not a resident of an OFAC-sanctioned or legally prohibited jurisdiction.
+                  </span>
+                </label>
+
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => openLegalModal('business')}
+                    className="text-[10px] text-text-tertiary hover:text-text-secondary inline-flex items-center gap-1"
+                  >
+                    <span>View Corporate Details & Licenses</span>
+                    <ExternalLink size={10} />
+                  </button>
+                </div>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
 
       {/* Bottom controls */}
-      <div className="relative z-10 max-w-sm mx-auto w-full px-8 pb-10 space-y-5">
+      <div className="relative z-10 max-w-sm mx-auto w-full px-6 sm:px-8 pb-8 space-y-4">
         {/* Progress dots */}
         <div className="flex justify-center gap-2">
           {slides.map((_, idx) => (
@@ -182,19 +274,23 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
           ))}
         </div>
 
-        {/* CTA */}
+        {/* CTA Button */}
         <button
           onClick={handleNext}
-          className={`w-full py-4 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg press-feedback transition-all ${
-            isLast
-              ? 'bg-usdt-green text-[#06070b] shadow-usdt-green/25 hover:brightness-110'
+          disabled={isConsentStep && !isConsentValid}
+          className={`w-full py-3.5 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg press-feedback transition-all focus-visible:ring-2 focus-visible:ring-gold ${
+            isConsentStep
+              ? isConsentValid
+                ? 'bg-gold text-app-bg shadow-gold/25 hover:brightness-110'
+                : 'bg-white/5 text-text-tertiary border border-white/5 cursor-not-allowed'
               : 'bg-white/10 text-text-primary border border-white/10 hover:bg-white/15'
           }`}
+          aria-label={isConsentStep ? 'Confirm compliance consent and start' : 'Proceed to next onboarding step'}
         >
-          {isLast ? (
+          {isConsentStep ? (
             <>
-              <Sparkles size={16} />
-              <span>Start</span>
+              <Lock size={15} />
+              <span>Confirm & Activate Terminal</span>
             </>
           ) : (
             <>

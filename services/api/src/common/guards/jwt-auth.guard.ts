@@ -22,7 +22,7 @@ export class JwtAuthGuard implements CanActivate {
     const url = request.url || '';
     if (isPublic || url.includes('/admin/') || url.includes('/admin-auth/')) return true;
 
-    const authHeader = request.headers.authorization || request.headers.Authorization || request.headers['x-user-id'];
+    const authHeader = request.headers.authorization || request.headers.Authorization;
 
     if (!authHeader) {
       throw new UnauthorizedException({ code: 'TOKEN_MISSING', message: 'Authorization header required' });
@@ -34,20 +34,8 @@ export class JwtAuthGuard implements CanActivate {
       let payload: any = {};
       try {
         payload = this.jwtService.verify(token);
-      } catch (jwtErr: any) {
-        if (process.env.NODE_ENV === 'production') {
-          throw new UnauthorizedException({ code: 'TOKEN_INVALID', message: 'Invalid JWT signature' });
-        }
-        const decoded = this.jwtService.decode(token) as any;
-        const fallbackUserId = request.headers['x-user-id'] || request.headers['X-User-Id'];
-        if (decoded && (decoded.sub || decoded.telegramUserId || decoded.titanUserId)) {
-          payload = decoded;
-        } else if (fallbackUserId || token.startsWith('titan_id_') || token.startsWith('usr_') || /^\d+$/.test(token)) {
-          const rawId = String(fallbackUserId || token);
-          payload = { sub: rawId, userId: rawId, telegramUserId: rawId, role: 'USER', state: 'READY' };
-        } else {
-          throw jwtErr;
-        }
+      } catch {
+        throw new UnauthorizedException({ code: 'TOKEN_INVALID', message: 'Invalid JWT signature' });
       }
       let user: any = null;
       let userState = payload.state || 'READY';

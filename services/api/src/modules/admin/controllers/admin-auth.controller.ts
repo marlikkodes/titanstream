@@ -23,10 +23,14 @@ export class AdminAuthController {
 
   @Post('logout')
   @UseGuards(AdminAuthGuard)
-  async logout(@Headers('authorization') authHeader: string, @Headers('x-admin-token') tokenHeader: string) {
+  async logout(
+    @Headers('authorization') authHeader: string,
+    @Headers('x-admin-token') tokenHeader: string,
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
     const raw = authHeader || tokenHeader || '';
     const token = raw.startsWith('Bearer ') ? raw.slice(7) : raw;
-    return this.authService.revokeSession(token, 'SELF', false);
+    return this.authService.revokeToken(token, admin.id);
   }
 
   @Get('me')

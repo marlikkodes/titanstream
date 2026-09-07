@@ -82,6 +82,43 @@ const DECAY_PER_TICK = 0.05; // mirrors backend multiplier decay (0.5x / second)
 let displayTicker: ReturnType<typeof setInterval> | null = null;
 let hydrated = false;
 
+// ── Performance: cached hash speed to avoid recomputing inside the 100ms ticker ──
+let _cachedHashSpeed = 1.0;
+let _cachedIsPaused = false;
+let _hashSpeedDirty = true; // recompute on next read after ownership changes
+
+// Lazy ref to avoid synchronous require() on every tick
+let _ownershipStoreRef: any = null;
+function getOwnershipStore() {
+  if (!_ownershipStoreRef) {
+    try {
+      _ownershipStoreRef = require('./useMachineOwnershipStore').useMachineOwnershipStore;
+    } catch { /* not yet loaded */ }
+  }
+  return _ownershipStoreRef;
+}
+
+// ── Performance: debounced localStorage to prevent 10×/sec writes from the ticker ──
+const PERSIST_DEBOUNCE_MS = 5000;
+let _pendingPersist: string | null = null;
+let _persistTimer: ReturnType<typeof setTimeout> | null = null;
+const debouncedStorage = {
+  getItem: (name: string) => localStorage.getItem(name),
+  setItem: (name: string, value: string) => {
+    _pendingPersist = value;
+    if (!_persistTimer) {
+      _persistTimer = setTimeout(() => {
+        if (_pendingPersist !== null) {
+          localStorage.setItem(name, _pendingPersist);
+          _pendingPersist = null;
+        }
+        _persistTimer = null;
+      }, PERSIST_DEBOUNCE_MS);
+    }
+  },
+  removeItem: (name: string) => localStorage.removeItem(name),
+};
+
 export const useMiningStore = create<MiningState>()(
   persist(
     (set, get) => {
@@ -175,6 +212,7 @@ export const useMiningStore = create<MiningState>()(
             activeMachinesCount: activeCount,
             baseSpeedGhs,
           });
+          _hashSpeedDirty = true; // invalidate cached hash speed
           useWalletStore.getState().updateBalance({ activeMachines: activeCount });
 
           // Synchronize machine ownership store so only owned machines and certificates exist
@@ -344,7 +382,7 @@ export const useMiningStore = create<MiningState>()(
       return state.tapYieldPerTap;
     },
 
-    upgradeBaseSpeed: (amount, tierCode, newMachineAsset) =>
+    upgradeBaseSpeed: (amount, tierCode, newMachineAsset) => {
       set((state) => {
         const safeOwned = Array.isArray(state.ownedTierCodes) ? state.ownedTierCodes : ['TS_TRIAL'];
         const safeUserMachines = Array.isArray(state.userMachines) ? state.userMachines : [];
@@ -388,7 +426,9 @@ export const useMiningStore = create<MiningState>()(
           hasPurchasedMachine: true,
           activeMachinesCount: nextUserMachines.length,
         };
-      }),
+      });
+      _hashSpeedDirty = true; // invalidate cached hash speed
+    },
     markMachinePurchased: () => {
       set({ hasPurchasedMachine: true });
     },
@@ -431,8 +471,8 @@ export const useMiningStore = create<MiningState>()(
     syncMachineStatus: () => {
       const s = get();
       try {
-        const { useMachineOwnershipStore } = require('./useMachineOwnershipStore');
-        const ownerships = useMachineOwnershipStore.getState().ownerships || {};
+        const ownershipStore = getOwnershipStore();
+        const ownerships = ownershipStore?.getState().ownerships || {};
         const safeOwned = Array.isArray(s.ownedTierCodes) ? s.ownedTierCodes : ['TS_TRIAL'];
         let activeGhs = 0;
 
@@ -446,10 +486,12 @@ export const useMiningStore = create<MiningState>()(
         }
 
         const isPaused = activeGhs <= 0;
+        _cachedHashSpeed = activeGhs;
+        _cachedIsPaused = isPaused;
+        _hashSpeedDirty = false;
         set({
           isPaused,
           activeSpeedGhs: activeGhs,
-          machineStatusVersion: Date.now(),
         });
 
         return { isPaused, activeGhs };
@@ -459,10 +501,12 @@ export const useMiningStore = create<MiningState>()(
     },
 
     getActiveHashSpeed: () => {
+      if (!_hashSpeedDirty) return _cachedHashSpeed;
+
       const s = get();
       try {
-        const { useMachineOwnershipStore } = require('./useMachineOwnershipStore');
-        const ownerships = useMachineOwnershipStore.getState().ownerships || {};
+        const ownershipStore = getOwnershipStore();
+        const ownerships = ownershipStore?.getState().ownerships || {};
         const safeOwned = Array.isArray(s.ownedTierCodes) ? s.ownedTierCodes : ['TS_TRIAL'];
         let activeGhs = 0;
 
@@ -474,11 +518,17 @@ export const useMiningStore = create<MiningState>()(
             activeGhs += catItem?.capacityGhs || (tierCode === 'TS_TRIAL' ? 1.0 : 0);
           }
         }
-        const isPaused = activeGhs <= 0;
-        if (s.isPaused !== isPaused || s.activeSpeedGhs !== activeGhs) {
-          set({ isPaused, activeSpeedGhs: activeGhs, machineStatusVersion: Date.now() });
+
+        _cachedHashSpeed = activeGhs;
+        _cachedIsPaused = activeGhs <= 0;
+        _hashSpeedDirty = false;
+
+        // Update state only if values actually changed (not on every tick)
+        if (s.isPaused !== _cachedIsPaused || s.activeSpeedGhs !== _cachedHashSpeed) {
+          set({ isPaused: _cachedIsPaused, activeSpeedGhs: _cachedHashSpeed });
         }
-        return activeGhs;
+
+        return _cachedHashSpeed;
       } catch (e) {
         return s.baseSpeedGhs || 1.0;
       }
@@ -555,12 +605,10 @@ export const useMiningStore = create<MiningState>()(
 },
     {
       name: 'mining-storage',
+      storage: debouncedStorage as any,
       partialize: (state) => ({
         activeCurrency: state.activeCurrency,
         baseSpeedGhs: state.baseSpeedGhs,
-        coolerMultiplier: state.coolerMultiplier,
-        unclaimedBalance: state.unclaimedBalance,
-        displayUnclaimed: state.displayUnclaimed,
         machineMode: state.machineMode,
         lifetimePromotionalOutput: state.lifetimePromotionalOutput,
         interactivePromotionalOutput: state.interactivePromotionalOutput,

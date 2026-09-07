@@ -99,7 +99,8 @@
         "createdAt": "2026-09-01T09:27:08.959Z",
         "description": "Hardware Core Starter Reward"
       }
-    ]
+    ],
+    "unclaimedMiningBalance": 0.0028
   },
   {
     "id": "5387655307",

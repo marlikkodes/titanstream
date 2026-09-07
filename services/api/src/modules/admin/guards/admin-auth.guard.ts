@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
+import { hashAdminSessionToken } from '../services/admin-auth.service';
 
 @Injectable()
 export class AdminAuthGuard implements CanActivate {
@@ -19,9 +20,10 @@ export class AdminAuthGuard implements CanActivate {
 
     let session = null;
     try {
+      const tokenHash = hashAdminSessionToken(String(token));
       session = await this.prisma.adminSession.findFirst({
         where: {
-          tokenHash: token,
+          tokenHash,
           revokedAt: null,
           expiresAt: { gte: new Date() },
         },

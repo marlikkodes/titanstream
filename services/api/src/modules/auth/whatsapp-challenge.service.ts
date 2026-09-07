@@ -55,20 +55,6 @@ function saveSharedChallenge(challenge: any) {
     all[challenge.challengeId] = challenge;
     all[`pin_${challenge.shortPin}`] = challenge.challengeId;
 
-    // When a challenge is approved, approve all pending challenges to ensure the browser logs in immediately
-    if (challenge.status === 'APPROVED') {
-      for (const key of Object.keys(all)) {
-        if (key.startsWith('wa_chal_')) {
-          all[key] = {
-            ...all[key],
-            status: 'APPROVED',
-            phone: challenge.phone,
-            sessionTokens: challenge.sessionTokens,
-          };
-        }
-      }
-    }
-
     writeFileSync(p, JSON.stringify(all, null, 2), 'utf-8');
   } catch (err: any) {
     console.error('[WA_CHAL_ERR] Failed to save shared challenge:', err.message);
@@ -268,18 +254,6 @@ export class WhatsappChallengeService {
         targetChallengeId = codeOrId;
       }
 
-      // If exact PIN not found, pick the most recent non-expired pending challenge
-      if (!targetChallengeId) {
-        const pendingKeys = Object.keys(shared).filter(k => k.startsWith('wa_chal_') && shared[k]?.status === 'PENDING');
-        if (pendingKeys.length > 0) {
-          pendingKeys.sort((a, b) => new Date(shared[b].createdAt).getTime() - new Date(shared[a].createdAt).getTime());
-          const latestKey = pendingKeys[0];
-          if (shared[latestKey] && new Date(shared[latestKey].expiresAt) > new Date()) {
-            targetChallengeId = latestKey;
-          }
-        }
-      }
-
       if (targetChallengeId && shared[targetChallengeId]) {
         const raw = shared[targetChallengeId];
         const restored: WhatsappLoginChallenge = {
@@ -395,38 +369,9 @@ export class WhatsappChallengeService {
       const codeOrId = extractedCode || rawText.replace(/[^0-9a-zA-Z_]/g, '').replace(/^START_?/, '');
       let challenge = this.findChallengeByPinOrId(codeOrId);
 
-      // 1. If not found by PIN or expired, resolve to the most recent pending challenge
       if (!challenge || new Date() > challenge.expiresAt) {
-        const shared = loadSharedChallenges();
-        const pendingKeys = Object.keys(shared).filter(k => k.startsWith('wa_chal_') && shared[k]?.status === 'PENDING');
-        if (pendingKeys.length > 0) {
-          pendingKeys.sort((a, b) => new Date(shared[b].createdAt).getTime() - new Date(shared[a].createdAt).getTime());
-          const latestKey = pendingKeys[0];
-          const raw = shared[latestKey];
-          if (raw) {
-            const restoredChallenge: WhatsappLoginChallenge = {
-              ...raw,
-              createdAt: new Date(raw.createdAt),
-              expiresAt: new Date(Date.now() + 600 * 1000),
-            };
-            this.challenges.set(latestKey, restoredChallenge);
-            challenge = restoredChallenge;
-          }
-        }
-      }
-
-      // 2. If still no challenge found, create and register one dynamically
-      if (!challenge) {
-        const autoChallengeId = 'wa_chal_' + Date.now();
-        challenge = {
-          challengeId: autoChallengeId,
-          shortPin: codeOrId || '999999',
-          status: 'PENDING',
-          deviceInfo: 'Browser Session',
-          createdAt: new Date(),
-          expiresAt: new Date(Date.now() + 600 * 1000),
-        };
-        this.challenges.set(autoChallengeId, challenge);
+        this.logger.warn(`[WA_CHALLENGE_REJECTED] Unknown or expired challenge submitted from ${cleanPhone}`);
+        return false;
       }
 
       // Bind phone number and approve immediately

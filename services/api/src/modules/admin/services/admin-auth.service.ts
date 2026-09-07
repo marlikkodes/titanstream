@@ -5,6 +5,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { ROLE_PERMISSIONS_MAP } from '../interfaces/admin-permissions.enum';
 import { OperationalAuditService } from './operational-audit.service';
 import { AuthVerificationService } from '../../auth/auth-verification.service';
+import { isProduction, requiredEnv } from '../../../common/config/env.util';
 
 export interface TelegramAdminLoginDto {
   initData: string;
@@ -13,6 +14,11 @@ export interface TelegramAdminLoginDto {
   os?: string;
   browser?: string;
   ipAddress?: string;
+}
+
+export function hashAdminSessionToken(token: string): string {
+  const pepper = requiredEnv('ADMIN_SESSION_PEPPER', process.env.JWT_SECRET || 'dev-admin-session-pepper');
+  return crypto.createHmac('sha256', pepper).update(token).digest('hex');
 }
 
 @Injectable()
@@ -24,7 +30,9 @@ export class AdminAuthService implements OnModuleInit {
     private readonly auditService: OperationalAuditService,
     private readonly authVerification: AuthVerificationService,
   ) {
-    const rawEnv = process.env.SUPER_ADMIN_TELEGRAM_IDS || '5387655307';
+    const rawEnv = isProduction()
+      ? requiredEnv('SUPER_ADMIN_TELEGRAM_IDS')
+      : process.env.SUPER_ADMIN_TELEGRAM_IDS || '';
     this.superAdminTelegramIds = new Set(
       rawEnv.split(',').map((id) => id.trim()).filter(Boolean)
     );
@@ -71,18 +79,7 @@ export class AdminAuthService implements OnModuleInit {
     try {
       verified = this.authVerification.verify(dto.initData);
     } catch (err) {
-      // In dev fallback / bypass for demo testing if token matches super admin
-      if (process.env.NODE_ENV !== 'production' && dto.initData.startsWith('mock_tg_admin_')) {
-        const id = dto.initData.replace('mock_tg_admin_', '');
-        verified = {
-          telegramId: BigInt(id),
-          firstName: 'Super',
-          lastName: 'Admin',
-          username: `tg_admin_${id}`,
-        };
-      } else {
-        throw new UnauthorizedException('INVALID_TELEGRAM_AUTHENTICATION');
-      }
+      throw new UnauthorizedException('INVALID_TELEGRAM_AUTHENTICATION');
     }
 
     const tgIdStr = verified.telegramId.toString();
@@ -146,7 +143,7 @@ export class AdminAuthService implements OnModuleInit {
     const session = await this.prisma.adminSession.create({
       data: {
         adminUserId: admin.id,
-        tokenHash: token,
+        tokenHash: hashAdminSessionToken(token),
         expiresAt,
       },
     });
@@ -165,7 +162,7 @@ export class AdminAuthService implements OnModuleInit {
     });
 
     return {
-      token: session.tokenHash,
+      token,
       expiresAt: session.expiresAt.toISOString(),
       admin: {
         id: admin.id,
@@ -202,6 +199,19 @@ export class AdminAuthService implements OnModuleInit {
     });
 
     return { status: 'SESSION_REVOKED' };
+  }
+
+  async revokeToken(rawToken: string, actorId: string) {
+    const tokenHash = hashAdminSessionToken(rawToken);
+    const session = await this.prisma.adminSession.findFirst({
+      where: {
+        tokenHash,
+        revokedAt: null,
+        expiresAt: { gte: new Date() },
+      },
+    });
+    if (!session) throw new BadRequestException('SESSION_NOT_FOUND');
+    return this.revokeSession(session.id, actorId, false);
   }
 
   /**

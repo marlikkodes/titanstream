@@ -110,15 +110,15 @@
         "baseKey": "BfE1laYAOFZsvgIu95Ga82eVMzOg93bfM4gkiitCh9Vo",
         "baseKeyType": 1,
         "closed": -1,
-        "used": 1788240158953,
+        "used": 1788266584070,
         "created": 1788101401395,
         "remoteIdentityKey": "Bcd+E76mZCskWBv/pVaXf+t9+gDEUkkscvl9fwlsQ2NZ"
       },
       "_chains": {
         "BWTXu3uqrLi65HLG/dn6xHLkuosdDgjyAOntrIQBUew7": {
           "chainKey": {
-            "counter": 8,
-            "key": "CZ4uq1YPN62SsMTz4XsGVvoqzlmQdYt/x0ZA10KS/qo="
+            "counter": 9,
+            "key": "ZyR6NIDjniTH0BUY+7+jAdvpesS8IKZQnpWulJ063P4="
           },
           "chainType": 2,
           "messageKeys": {}

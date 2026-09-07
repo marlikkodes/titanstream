@@ -23,7 +23,7 @@
 
   --color-text-primary: #ffffff;
   --color-text-secondary: #9ea2b5;
-  --color-text-tertiary: #6f738a;
+  --color-text-tertiary: #8e92a8;
 
   --shadow-glow-green: 0 0 20px rgba(38, 161, 123, 0.3);
   --shadow-glow-gold: 0 0 20px rgba(255, 179, 0, 0.3);
@@ -84,8 +84,13 @@ body {
   overscroll-behavior: none;
 }
 
-button:focus, button:focus-visible, input:focus, input:focus-visible {
-  outline: none !important;
+button:focus, input:focus, select:focus, textarea:focus {
+  outline: none;
+}
+
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--color-gold) !important;
+  outline-offset: 2px !important;
 }
 
 /* --- iOS Premium Glass & Glow Panels --- */
@@ -395,13 +400,13 @@ button:focus, button:focus-visible, input:focus, input:focus-visible {
 .text-large .text-2xl {
   font-size: 1.875rem !important;
 }
-.text-large .text-[9px] {
+.text-large .\text-\[9px\] {
   font-size: 11px !important;
 }
-.text-large .text-[10px] {
+.text-large .\text-\[10px\] {
   font-size: 12px !important;
 }
-.text-large .text-[11px] {
+.text-large .\text-\[11px\] {
   font-size: 13px !important;
 }
 
