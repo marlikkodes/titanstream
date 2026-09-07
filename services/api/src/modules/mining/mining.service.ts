@@ -388,68 +388,96 @@ export class MiningService {
   }
 
   async claim(telegramUserId: string): Promise<{ success: boolean; amount: string; session: UserMiningState }> {
-    const session = await this.getOrCreateSession(telegramUserId);
+    const cleanDigits = telegramUserId.replace(/\D/g, '') || telegramUserId;
+    const tgBigInt = BigInt(cleanDigits);
 
     // Operational control switch enforcement
     if (this.opsEngine) {
-      await this.opsEngine.assertOperationalModeAllowed('CLAIM', session.activeCurrency);
+      const currentSession = await this.getOrCreateSession(telegramUserId);
+      await this.opsEngine.assertOperationalModeAllowed('CLAIM', currentSession.activeCurrency);
     }
 
     const MIN_CLAIM_THRESHOLD = 3.0;
-    const claimAmount = session.unclaimedBalance;
-    if (claimAmount < MIN_CLAIM_THRESHOLD) {
-      throw new BadRequestException({
-        code: 'MINIMUM_CLAIM_THRESHOLD',
-        message: `Minimum collection amount is $3.00 (Current balance: $${claimAmount.toFixed(4)}). Keep mining to reach $3.00.`,
-      });
-    }
+    let finalClaimAmountStr = '0.000000';
+    let committedDate: Date = new Date();
 
-    const reference = `mining_claim_${telegramUserId}_${Date.now()}`;
-    const amount = claimAmount.toFixed(6);
-    const resetState: UserMiningState = {
-      ...session,
-      unclaimedBalance: 0.0,
-      coolerMultiplier: 1.0, // Reset multiplier on claim
-      isOverheated: false,
-      cooldownRemaining: 0,
-      lastUpdatedAt: new Date(),
-    };
-
-    // ONE database transaction: the ledger credit, the financial operation
-    // bookkeeping, and the mining-state reset commit together or not at all.
-    // Any failure rolls everything back — no credited-wallet-without-reset and
-    // no reset-without-credit can ever be observed, so retries cannot double-credit.
+    // ONE atomic database transaction with pessimistic row lock (FOR UPDATE):
+    // Prevents claim races (simultaneous browser claims), double credits, and ensures
+    // the ledger credit matches the exact balance committed in the database.
     await this.prisma.$transaction(
       async (tx) => {
+        // 1. Pessimistic lock on the user's mining state record
+        const lockedRows = await tx.$queryRaw<any[]>`
+          SELECT "telegram_user_id", "active_currency", "unclaimed_balance", "cooler_multiplier", "base_speed_ghs", "machine_mode"
+          FROM "user_mining_states"
+          WHERE "telegram_user_id" = ${tgBigInt}
+          FOR UPDATE
+        `;
+
+        if (!lockedRows || lockedRows.length === 0) {
+          throw new BadRequestException({
+            code: 'SESSION_NOT_FOUND',
+            message: 'No active mining state found for user.',
+          });
+        }
+
+        const lockedRow = lockedRows[0];
+        const lockedUnclaimed = Number(lockedRow.unclaimed_balance || 0);
+
+        // 2. Strict accounting check against the locked database balance
+        if (lockedUnclaimed < MIN_CLAIM_THRESHOLD) {
+          throw new BadRequestException({
+            code: 'ALREADY_CLAIMED',
+            message: `Mining rewards already collected or below minimum threshold of $3.00 (Current: $${lockedUnclaimed.toFixed(4)}).`,
+          });
+        }
+
+        finalClaimAmountStr = lockedUnclaimed.toFixed(6);
+        const reference = `mining_claim_${telegramUserId}_${Date.now()}`;
+        const currency = lockedRow.active_currency || 'USDT';
+
+        // 3. Double-entry ledger allocation inside the SAME transaction
         await (this.orchestrator as any).requestOperation(
           {
-            telegramUserId: BigInt(telegramUserId),
+            telegramUserId: tgBigInt,
             operationType: FinancialOperationType.SYSTEM_ALLOCATION,
-            assetCode: session.activeCurrency,
-            amount,
+            assetCode: currency,
+            amount: finalClaimAmountStr,
             idempotencyKey: reference,
             reference,
-            metadata: { source: 'mining_claim', claimAmount },
+            metadata: { source: 'mining_claim', claimAmount: lockedUnclaimed },
           },
           tx,
         );
-        await this.persistSession(resetState, tx);
+
+        // 4. Reset unclaimed balance to exactly 0.0 and advance lastUpdatedAt
+        committedDate = new Date();
+        await tx.userMiningState.update({
+          where: { telegramUserId: tgBigInt },
+          data: {
+            unclaimedBalance: 0.0,
+            coolerMultiplier: 1.0,
+            lastUpdatedAt: committedDate,
+          },
+        });
       },
       { timeout: 15000, maxWait: 10000 },
     );
 
-    // Transaction committed — the in-memory session now mirrors the persisted state
+    // Transaction committed — sync the in-memory session to mirror the persisted state
+    const session = await this.getOrCreateSession(telegramUserId);
     session.unclaimedBalance = 0.0;
     session.coolerMultiplier = 1.0;
     session.isOverheated = false;
     session.cooldownRemaining = 0;
-    session.lastUpdatedAt = resetState.lastUpdatedAt;
+    session.lastUpdatedAt = committedDate;
     session.tapYieldPerTap = await this.computeTapYield(session);
     this.sessions.set(telegramUserId, session);
+    if (cleanDigits) this.sessions.set(cleanDigits, session);
 
     return {
       success: true,
-      amount,
+      amount: finalClaimAmountStr,
       session,
     };
   }

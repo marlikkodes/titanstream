@@ -188,24 +188,21 @@ export const useMiningStore = create<MiningState>()(
     applyServerSession: (session, opts) => {
       const snap = opts?.snapDisplay || !hydrated;
       hydrated = true;
+      // Single authority: Server is the sole authority for claimable financial balance
       const serverUnclaimed = typeof session.unclaimedBalance === 'number' ? session.unclaimedBalance : 0.0;
-      const currentUnclaimed = get().unclaimedBalance || 0;
-
-      // If isClaim, reset to server amount (0). Otherwise take max so counter never drops or resets to 0 on relogin
-      const targetUnclaimed = opts?.isClaim ? serverUnclaimed : Math.max(serverUnclaimed, currentUnclaimed);
 
       set({
         activeCurrency: session.activeCurrency,
         baseSpeedGhs: session.baseSpeedGhs || get().baseSpeedGhs || 1.0,
         coolerMultiplier: session.coolerMultiplier,
-        unclaimedBalance: targetUnclaimed,
+        unclaimedBalance: serverUnclaimed, // Strict single authority — never manufactured by client
         machineMode: session.machineMode,
         lifetimePromotionalOutput: session.lifetimePromotionalOutput,
         interactivePromotionalOutput: session.interactivePromotionalOutput,
         isOverheated: session.isOverheated,
         cooldownRemaining: session.cooldownRemaining,
         tapYieldPerTap: session.tapYieldPerTap,
-        displayUnclaimed: snap ? targetUnclaimed : Math.max(get().displayUnclaimed || 0, targetUnclaimed),
+        displayUnclaimed: snap ? serverUnclaimed : Math.max(serverUnclaimed, get().displayUnclaimed),
         displayMultiplier: snap || session.coolerMultiplier < get().displayMultiplier ? session.coolerMultiplier : get().displayMultiplier,
         displayPromoOutput: snap || session.lifetimePromotionalOutput < get().displayPromoOutput ? session.lifetimePromotionalOutput : get().displayPromoOutput,
         lastMiningUpdatedAt: Date.now(),
@@ -564,16 +561,17 @@ export const useMiningStore = create<MiningState>()(
       displayTicker = setInterval(() => {
         const s = get();
 
-        // Real-time continuous yield tick accumulation ONLY while active running speed > 0
+        // Real-time visual display projection for smooth 60fps odometer animation
+        // NOTE: unclaimedBalance is strictly server-authoritative and is NEVER mutated by the ticker
         const activeSpeed = s.getActiveHashSpeed();
-        let activeUnclaimed = s.unclaimedBalance;
+        let projectedDisplay = s.displayUnclaimed;
         if (activeSpeed > 0 && !s.isOverheated) {
           const ratePerSec = activeSpeed * s.coolerMultiplier * 0.001;
           const tickYield = ratePerSec * (TICK_MS / 1000);
-          activeUnclaimed = s.unclaimedBalance + tickYield;
+          projectedDisplay = s.displayUnclaimed + tickYield;
         }
 
-        const targetUnclaimed = Math.max(s.unclaimedBalance, activeUnclaimed);
+        const targetUnclaimed = Math.max(s.unclaimedBalance, projectedDisplay);
         const unclDir = targetUnclaimed >= s.displayUnclaimed ? EASE_FLAT : 1.0;
         const promoDir = s.lifetimePromotionalOutput >= s.displayPromoOutput ? EASE_FLAT : 1.0;
 
@@ -598,7 +596,7 @@ export const useMiningStore = create<MiningState>()(
         const multDir = nextMultiplier >= s.displayMultiplier ? EASE_UP : EASE_DOWN;
         const nextDisplayMult = s.displayMultiplier + (nextMultiplier - s.displayMultiplier) * multDir;
 
-        // Single batched state update strictly when values have changed
+        // Single batched state update strictly for rendering/display values
         if (
           Math.abs(nextDisplayUnclaimed - s.displayUnclaimed) > 0.0000001 ||
           Math.abs(nextDisplayPromo - s.displayPromoOutput) > 0.0000001 ||
@@ -608,14 +606,12 @@ export const useMiningStore = create<MiningState>()(
           nextMultiplier !== s.coolerMultiplier
         ) {
           set({
-            unclaimedBalance: activeUnclaimed,
             displayUnclaimed: nextDisplayUnclaimed,
             displayPromoOutput: nextDisplayPromo,
             displayMultiplier: nextDisplayMult,
             cooldownRemaining: nextCooldown,
             isOverheated: nextOverheated,
             coolerMultiplier: nextMultiplier,
-            lastMiningUpdatedAt: Date.now(),
           });
         }
       }, TICK_MS);
@@ -634,20 +630,8 @@ export const useMiningStore = create<MiningState>()(
       storage: debouncedStorage as any,
       onRehydrateStorage: () => (state) => {
         if (state) {
-          const now = Date.now();
-          const last = state.lastMiningUpdatedAt || now;
-          const elapsedSec = Math.max(0, (now - last) / 1000);
-          if (elapsedSec > 0) {
-            const speed = state.baseSpeedGhs || 1.0;
-            // Promotional yield rate: 0.0000289 * speed (~0.104 USDT/hr per Gh/s)
-            const ratePerSec = 0.0000289 * speed;
-            const offlineAccrual = elapsedSec * ratePerSec;
-            state.unclaimedBalance = Number(((state.unclaimedBalance || 0) + offlineAccrual).toFixed(6));
-            state.displayUnclaimed = state.unclaimedBalance;
-            state.lastMiningUpdatedAt = now;
-          } else {
-            state.displayUnclaimed = state.unclaimedBalance || 0;
-          }
+          // Rehydrate displayUnclaimed safely from the authoritative server balance snapshot
+          state.displayUnclaimed = state.unclaimedBalance || 0;
         }
       },
       partialize: (state) => ({

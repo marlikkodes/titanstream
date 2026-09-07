@@ -2173,23 +2173,36 @@ function adminMockMiddleware(): Plugin {
           const targetUser = findRequestUser(req, allUsers);
           const unclaimed = Number(targetUser?.unclaimedMiningBalance || 0);
 
-          if (targetUser && unclaimed > 0) {
-            targetUser.netBalance = Number(((targetUser.netBalance || 0) + unclaimed).toFixed(4));
-            targetUser.unclaimedMiningBalance = 0;
-            targetUser.lastMiningUpdate = new Date().toISOString();
-            if (!Array.isArray(targetUser.transactions)) targetUser.transactions = [];
-            targetUser.transactions.unshift({
-              id: `tx_mine_${Date.now()}`,
-              type: 'MINING_YIELD',
-              amount: unclaimed.toFixed(4),
-              asset: targetUser.miningCurrency || 'USDT',
-              status: 'COMPLETED',
-              reference: `MINE-${Date.now().toString().slice(-6)}`,
-              description: 'Cloud Machine Mining Yield Claimed',
-              createdAt: new Date().toISOString(),
-            });
-            saveUsersToDisk(allUsers);
+          if (!targetUser || unclaimed < 3.0) {
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 400;
+            res.end(JSON.stringify({
+              success: false,
+              error: {
+                code: unclaimed === 0 ? 'ALREADY_CLAIMED' : 'MINIMUM_CLAIM_THRESHOLD',
+                message: unclaimed === 0 
+                  ? 'Mining rewards have already been collected.' 
+                  : `Minimum collection amount is $3.00 (Current balance: $${unclaimed.toFixed(4)}). Keep mining to reach $3.00.`,
+              },
+            }));
+            return;
           }
+
+          targetUser.netBalance = Number(((targetUser.netBalance || 0) + unclaimed).toFixed(4));
+          targetUser.unclaimedMiningBalance = 0;
+          targetUser.lastMiningUpdate = new Date().toISOString();
+          if (!Array.isArray(targetUser.transactions)) targetUser.transactions = [];
+          targetUser.transactions.unshift({
+            id: `tx_mine_${Date.now()}`,
+            type: 'MINING_YIELD',
+            amount: unclaimed.toFixed(4),
+            asset: targetUser.miningCurrency || 'USDT',
+            status: 'COMPLETED',
+            reference: `MINE-${Date.now().toString().slice(-6)}`,
+            description: 'Cloud Machine Mining Yield Claimed',
+            createdAt: new Date().toISOString(),
+          });
+          saveUsersToDisk(allUsers);
 
           const userMachines = Array.isArray(targetUser?.activeMachines) ? targetUser.activeMachines : [];
           const baseSpeedGhs = userMachines.length > 0 
