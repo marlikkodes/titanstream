@@ -110,18 +110,42 @@
         "baseKey": "BfE1laYAOFZsvgIu95Ga82eVMzOg93bfM4gkiitCh9Vo",
         "baseKeyType": 1,
         "closed": -1,
-        "used": 1788266584070,
+        "used": 1788765957990,
         "created": 1788101401395,
         "remoteIdentityKey": "Bcd+E76mZCskWBv/pVaXf+t9+gDEUkkscvl9fwlsQ2NZ"
       },
       "_chains": {
         "BWTXu3uqrLi65HLG/dn6xHLkuosdDgjyAOntrIQBUew7": {
           "chainKey": {
-            "counter": 9,
-            "key": "ZyR6NIDjniTH0BUY+7+jAdvpesS8IKZQnpWulJ063P4="
+            "counter": 40,
+            "key": "CDePenWEOhkft2nH7+xUuaddnAk1qtLQ0HHJcjlcZSc="
           },
           "chainType": 2,
-          "messageKeys": {}
+          "messageKeys": {
+            "10": "kPq534vIvQJMEksbn9wLeQx6ui68nFTcWIsS7lVNzpA=",
+            "11": "uD4uNV+05wNbl+Mee1UE182/XoZFt10nUrZTIcsL/qo=",
+            "12": "KPC4jJ039oQDmfSp5+0ItR+nURh6QrUE6hvFc+6950U=",
+            "13": "a+Eog2EjdP6HLZS/LQEwzNvqPQ8Emr51TlY6moMNtGQ=",
+            "14": "wabVJ/bVlh+oQsac/aEHQNRFqVw3wDAq6U0qlqIDzwk=",
+            "15": "0RLdvDohHhNYyqhxnuLvNPhYvsmW7jW0uGrSoGtxiyM=",
+            "16": "uVqTA/xImd3bpnL096oQOFR0Scf3X8vQI754oPqwkI4=",
+            "17": "OLl4qu8PMQMMCqPuOiZwwFzcl3S4xM9uQEkeDOSXqHI=",
+            "18": "MCP6joUVKIn1BGliBI7jMxjQ1+1f5lkMik704vVwJ3w=",
+            "19": "YbcMct/x1w7RtDAmwNtD0rWWPVVnhi+cyW5qx1Mmago=",
+            "20": "u62mpO8hNlWWFg8OZSi9B6wRpX7G1PGy0tssuQWa6Rg=",
+            "21": "h6GMW/TXSYnrAjrIXKuANRXXnG4W5BkgiK6Fp97YCyg=",
+            "22": "7SNCFcc6vfB8HAGH2TwYztYHN6f2DuDRMdVY2689kjo=",
+            "23": "pvTWNaCS4vVoCO2MbMqWH4iuSkCXalYV0wVfLgODe6M=",
+            "24": "9f/9UCVVNXxHpDM3S9kdf0jXhZl45XyCxKCwwAOv5Fo=",
+            "25": "DxkLEkGA0oarPM2PuNRsCXyp0qS8twyCcw++jpi4Sfo=",
+            "26": "DpCFTZ8E8HoZSUBDMp/Q5U7Ood9iCXZ3FnQR3vCMj6g=",
+            "27": "HHZInBJlOkMGfXDMCLsyaxJEYbqqYPLY0tcO0MFri6A=",
+            "28": "fqYxk+I+9nmb+vd2TlK6KsqJkk+5+C6uOp/o5R2FuZc=",
+            "29": "IXpGfDOwuw+BGM1EunYdg+t7o5wjIvxPYo4nIuvAhUo=",
+            "30": "UmqbUClmc1PVnwHb5AHabV2ODtJJ+OhzXLR5FlGd0Fc=",
+            "31": "T/00R+jFm5MVA4H6lJS/O/hTwpIuGCMLoEetoubqQWg=",
+            "32": "BXYnxkV8bTd7Bj/B1R8/EUJUVHP6tbaupmc8BGzTv8I="
+          }
         },
         "BbO+oKP8suZE36mpseifbpMu9mI3pRmexGnV2h0ONJIG": {
           "chainKey": {

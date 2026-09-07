@@ -5,12 +5,15 @@ import { Zap, ShieldCheck, ArrowRight, Sparkles, UserCheck, CheckCircle2, Share2
 import { extractReferralCode, extractAttributionParams } from '../utils/referralUrl';
 import { useReferralStore } from '../store/useReferralStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { useLegalModalStore } from '../store/useLegalModalStore';
+import { LegalModal } from '../components/legal/LegalModal';
 
 export const ReferralLanding: React.FC = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const [cleanedCode, setCleanedCode] = useState<string>('');
   const [status, setStatus] = useState<'capturing' | 'ready'>('capturing');
+  const openLegalModal = useLegalModalStore((s) => s.openLegalModal);
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const session = useAuthStore((s) => s.session);
@@ -179,7 +182,8 @@ export const ReferralLanding: React.FC = () => {
             {/* Action Button */}
             <button
               onClick={handleContinue}
-              className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-usdt-green to-emerald-400 text-black font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-usdt-green/20 hover:brightness-110 active:scale-95 transition-all"
+              className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-usdt-green to-emerald-400 text-black font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-usdt-green/20 hover:brightness-110 active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-gold"
+              aria-label="Continue to Web App"
             >
               <span>Continue to Web App</span>
               <ArrowRight size={16} />
@@ -187,6 +191,44 @@ export const ReferralLanding: React.FC = () => {
           </>
         )}
       </motion.div>
+
+      {/* Legal & Regulatory Footer */}
+      <footer className="mt-8 relative z-10 flex flex-col items-center gap-2 text-center text-xs text-text-tertiary">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => openLegalModal('terms')} 
+            className="hover:text-text-secondary hover:underline transition-colors focus-visible:ring-1 focus-visible:ring-gold"
+          >
+            Terms of Service
+          </button>
+          <span>•</span>
+          <button 
+            onClick={() => openLegalModal('privacy')} 
+            className="hover:text-text-secondary hover:underline transition-colors focus-visible:ring-1 focus-visible:ring-gold"
+          >
+            Privacy Policy
+          </button>
+          <span>•</span>
+          <button 
+            onClick={() => openLegalModal('refund')} 
+            className="hover:text-text-secondary hover:underline transition-colors focus-visible:ring-1 focus-visible:ring-gold"
+          >
+            Refund Policy
+          </button>
+          <span>•</span>
+          <button 
+            onClick={() => openLegalModal('business')} 
+            className="hover:text-text-secondary hover:underline transition-colors focus-visible:ring-1 focus-visible:ring-gold"
+          >
+            Licenses & Details
+          </button>
+        </div>
+        <p className="text-[11px]">
+          © {new Date().getFullYear()} TitanStream Cloud Computing Technologies Ltd. · All rights reserved.
+        </p>
+      </footer>
+
+      <LegalModal />
     </div>
   );
 };

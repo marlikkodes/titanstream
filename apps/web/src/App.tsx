@@ -93,6 +93,8 @@ import { CountrySelector } from './components/CountrySelector';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { StepUpModal } from './components/StepUpModal';
 import { ReferralLanding } from './pages/ReferralLanding';
+import { LegalModal } from './components/legal/LegalModal';
+import { CookieConsentBanner } from './components/legal/CookieConsentBanner';
 
 // ─── Admin Routes (accessible without user auth) ─────────────────────────────
 
@@ -349,6 +351,9 @@ export function App() {
           </Routes>
         )}
       </AuthGate>
+      {/* Global Legal & Privacy Components */}
+      <LegalModal />
+      <CookieConsentBanner />
     </ErrorBoundary>
   );
 }
