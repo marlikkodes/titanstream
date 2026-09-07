@@ -54,6 +54,7 @@ export interface UserMachineAsset {
   lifetimeEarnings: number;
   purchasedAt: string;
   activatedAt: string;
+  expiresAt?: string;
 }
 
 @Injectable()
@@ -224,8 +225,8 @@ export class MachineService {
       status: 'ACTIVE',
       capacityGhs: 1.0,
       lifetimeEarnings: 0.0,
-      purchasedAt: now.toISOString(),
-      activatedAt: now.toISOString(),
+      purchasedAt: new Date(0).toISOString(),
+      activatedAt: new Date(0).toISOString(),
     };
 
     const userAssets: UserMachineAsset[] = records.map((r) => ({
@@ -240,6 +241,7 @@ export class MachineService {
       lifetimeEarnings: r.lifetimeEarnings.toNumber(),
       purchasedAt: r.purchasedAt.toISOString(),
       activatedAt: r.activatedAt.toISOString(),
+      expiresAt: (r as any).expiresAt ? (r as any).expiresAt.toISOString() : undefined,
     }));
 
     return [trialMachine, ...userAssets];

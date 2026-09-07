@@ -50,7 +50,7 @@ export interface MiningState {
   setUsdtSpinnerIdx: (idx: number) => void;
   setTonSpinnerIdx: (idx: number) => void;
   tap: () => number; // returns per-tap yield for particle feedback (-1 if tap failed)
-  applyServerSession: (session: MiningStateResponse, opts?: { snapDisplay?: boolean }) => void;
+  applyServerSession: (session: MiningStateResponse, opts?: { snapDisplay?: boolean; isClaim?: boolean }) => void;
   fetchMiningState: () => Promise<void>;
   fetchUserMachines: () => Promise<UserMachineAsset[]>;
   isMachineOwned: (tierCode: string) => boolean;
@@ -186,7 +186,7 @@ export const useMiningStore = create<MiningState>()(
      * first fetch (session restore) and after claims (wallet already updated).
      */
     applyServerSession: (session, opts) => {
-      const snap = opts?.snapDisplay || !hydrated;
+      const snap = opts?.snapDisplay || opts?.isClaim || !hydrated;
       hydrated = true;
       // Single authority: Server is the sole authority for claimable financial balance
       const serverUnclaimed = typeof session.unclaimedBalance === 'number' ? session.unclaimedBalance : 0.0;
@@ -294,7 +294,10 @@ export const useMiningStore = create<MiningState>()(
       }
 
       try {
-        const res = await miningService.claimRewards();
+        const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `claim-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        const res = await miningService.claimRewards(idempotencyKey);
         const isSuccess = Boolean(
           res &&
           (res.success !== false) &&

@@ -58,23 +58,24 @@ export class MiningService {
         let tgId = BigInt(cleanDigits);
         const MAX_POSTGRES_BIGINT = BigInt('9223372036854775807');
         if (tgId > MAX_POSTGRES_BIGINT) tgId = tgId % MAX_POSTGRES_BIGINT;
-        record = await this.prisma.userMiningState.findFirst({
+        record = await this.prisma.userMiningState.findUnique({
           where: { telegramUserId: tgId },
         });
       }
 
       if (!record) return null;
+      const toNum = (val: any) => (val && typeof val.toNumber === 'function' ? val.toNumber() : Number(val || 0));
       return {
         telegramUserId: userIdOrTelegramId,
         activeCurrency: record.activeCurrency as 'USDT' | 'TON',
-        baseSpeedGhs: record.baseSpeedGhs.toNumber(),
-        coolerMultiplier: record.coolerMultiplier.toNumber(),
-        unclaimedBalance: record.unclaimedBalance.toNumber(),
+        baseSpeedGhs: toNum(record.baseSpeedGhs),
+        coolerMultiplier: toNum(record.coolerMultiplier),
+        unclaimedBalance: toNum(record.unclaimedBalance),
         lastTappedAt: record.lastTappedAt ? new Date(record.lastTappedAt) : undefined,
         lastUpdatedAt: record.lastUpdatedAt ? new Date(record.lastUpdatedAt) : undefined,
         machineMode: record.machineMode,
-        lifetimePromotionalOutput: record.lifetimePromotionalOutput.toNumber(),
-        interactivePromotionalOutput: record.interactivePromotionalOutput.toNumber(),
+        lifetimePromotionalOutput: toNum(record.lifetimePromotionalOutput),
+        interactivePromotionalOutput: toNum(record.interactivePromotionalOutput),
         isOverheated: false,
         cooldownRemaining: 0,
         tapYieldPerTap: 0,
@@ -210,20 +211,27 @@ export class MiningService {
   private async accruePassiveYield(session: UserMiningState): Promise<void> {
     const now = new Date();
     const lastUpdate = session.lastUpdatedAt ? new Date(session.lastUpdatedAt) : new Date();
-    session.lastUpdatedAt = now;
 
     const elapsedMs = now.getTime() - lastUpdate.getTime();
     await this.applyCoolingState(session, now);
-    if (elapsedMs <= 0) return;
-
-    if (session.isOverheated) {
+    if (elapsedMs <= 0) {
+      session.lastUpdatedAt = now;
       return;
     }
+
+    if (session.isOverheated) {
+      session.lastUpdatedAt = now;
+      return;
+    }
+
+    // Enforce 24-hour maximum offline accrual window to prevent runaway unbounded accrual
+    const MAX_OFFLINE_ACCRUAL_MS = 24 * 3600 * 1000;
+    const boundedElapsedMs = Math.min(elapsedMs, MAX_OFFLINE_ACCRUAL_MS);
 
     const bestTier = await this.getBestActiveTier(session);
     const decayPerSec = bestTier?.multiplierDecayPerSec ?? MULTIPLIER_DECAY_PER_SEC;
     if (session.coolerMultiplier > 1.0) {
-      session.coolerMultiplier = Math.max(1.0, session.coolerMultiplier - decayPerSec * (elapsedMs / 1000));
+      session.coolerMultiplier = Math.max(1.0, session.coolerMultiplier - decayPerSec * (boundedElapsedMs / 1000));
     }
 
     const machines = await this.machineService.getUserMachines(session.telegramUserId);
@@ -236,12 +244,31 @@ export class MiningService {
       const tier = catalog.find((t) => t.tierCode === um.tierCode);
       if (!tier) continue;
 
+      // Exact interval intersection:
+      // Machine must be activated before or during the interval, and not expired
+      const activatedAtMs = um.activatedAt ? new Date(um.activatedAt).getTime() : 0;
+      const windowStart = Math.max(lastUpdate.getTime(), activatedAtMs);
+
+      let expiresAtMs = Number.POSITIVE_INFINITY;
+      if ((um as any).expiresAt) {
+        expiresAtMs = new Date((um as any).expiresAt).getTime();
+      } else if (tier.durationHours && activatedAtMs > 0) {
+        expiresAtMs = activatedAtMs + tier.durationHours * 3600 * 1000;
+      }
+      const windowEnd = Math.min(now.getTime(), expiresAtMs);
+
+      const eligibleMs = Math.max(0, windowEnd - windowStart);
+      if (eligibleMs <= 0) continue;
+
+      // Bound eligible time to maximum offline accrual limit
+      const effectiveMs = Math.min(eligibleMs, MAX_OFFLINE_ACCRUAL_MS);
+
       const machineCapacity = um.capacityGhs > 0 ? um.capacityGhs : tier.capacityGhs;
 
       if (tier.promoOutputCap && tier.promoYieldRate && session.machineMode === 'PROMOTIONAL') {
         const promoRatePerSec = tier.promoYieldRate;
         const multiplierInfluence = Math.min(session.coolerMultiplier, tier.promoMultiplierInfluence ?? Number.POSITIVE_INFINITY);
-        const totalPromoYield = machineCapacity * multiplierInfluence * promoRatePerSec * (elapsedMs / 1000);
+        const totalPromoYield = machineCapacity * multiplierInfluence * promoRatePerSec * (effectiveMs / 1000);
 
         const remainingCap = tier.promoOutputCap - session.lifetimePromotionalOutput;
         if (remainingCap <= 0) {
@@ -252,7 +279,7 @@ export class MiningService {
           session.machineMode = 'STANDARD';
 
           const usedFraction = remainingCap / totalPromoYield;
-          const remainingMs = elapsedMs * (1 - usedFraction);
+          const remainingMs = effectiveMs * (1 - usedFraction);
           if (remainingMs > 0) {
             const stdRatePerSec = tier.passiveYieldRate || 0.00000192935;
             const stdYield = machineCapacity * session.coolerMultiplier * stdRatePerSec * (remainingMs / 1000);
@@ -264,7 +291,7 @@ export class MiningService {
         }
       } else {
         const stdRatePerSec = tier.passiveYieldRate || 0.00000192935;
-        const stdYield = machineCapacity * session.coolerMultiplier * stdRatePerSec * (elapsedMs / 1000);
+        const stdYield = machineCapacity * session.coolerMultiplier * stdRatePerSec * (effectiveMs / 1000);
         totalYield += stdYield;
       }
     }
@@ -274,6 +301,7 @@ export class MiningService {
     totalYield += operatorBonus;
 
     session.unclaimedBalance += totalYield;
+    session.lastUpdatedAt = now;
   }
 
   async getOrCreateSession(telegramUserId: string): Promise<UserMiningState> {
@@ -387,9 +415,35 @@ export class MiningService {
     return session;
   }
 
-  async claim(telegramUserId: string): Promise<{ success: boolean; amount: string; session: UserMiningState }> {
+  async claim(telegramUserId: string, idempotencyKey?: string): Promise<{ success: boolean; amount: string; session: UserMiningState }> {
     const cleanDigits = telegramUserId.replace(/\D/g, '') || telegramUserId;
     const tgBigInt = BigInt(cleanDigits);
+
+    // Check for replayed idempotent request first
+    if (idempotencyKey) {
+      const opKey = `mining_claim_${telegramUserId}_${idempotencyKey}`;
+      try {
+        const existingRecord = await this.prisma.financialIdempotencyRecord.findUnique({
+          where: {
+            telegramUserId_idempotencyKey: {
+              telegramUserId: tgBigInt,
+              idempotencyKey: opKey,
+            },
+          },
+        });
+        if (existingRecord && existingRecord.status === 'COMPLETED') {
+          const session = await this.getOrCreateSession(telegramUserId);
+          const amount = (existingRecord.responsePayload as any)?.amount?.toString() || '0.000000';
+          return {
+            success: true,
+            amount,
+            session,
+          };
+        }
+      } catch (idempErr) {
+        // Table may not exist in mock/test setups, proceed to transaction
+      }
+    }
 
     // Operational control switch enforcement
     if (this.opsEngine) {
@@ -433,7 +487,9 @@ export class MiningService {
         }
 
         finalClaimAmountStr = lockedUnclaimed.toFixed(6);
-        const reference = `mining_claim_${telegramUserId}_${Date.now()}`;
+        const reference = idempotencyKey 
+          ? `mining_claim_${telegramUserId}_${idempotencyKey}` 
+          : `mining_claim_${telegramUserId}_${Date.now()}`;
         const currency = lockedRow.active_currency || 'USDT';
 
         // 3. Double-entry ledger allocation inside the SAME transaction

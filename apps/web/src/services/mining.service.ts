@@ -45,8 +45,8 @@ export const miningService = {
    * Claim accumulated mining yield to double-entry ledger balance.
    * Backend endpoint: POST /mining/claim
    */
-  async claimRewards(): Promise<ApiResponse<{ success: boolean; amount: string; session: MiningStateResponse }>> {
-    const response = await api.post('/mining/claim');
+  async claimRewards(idempotencyKey?: string): Promise<ApiResponse<{ success: boolean; amount: string; session: MiningStateResponse }>> {
+    const response = await api.post('/mining/claim', { idempotencyKey });
     return response.data;
   },
 };

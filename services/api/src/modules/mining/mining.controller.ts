@@ -33,7 +33,10 @@ export class MiningController {
 
   @Post('claim')
   @ApiOperation({ summary: 'Claim and disburse accumulated mining yield to double-entry ledger' })
-  async claimRewards(@CanonicalUserId() userId: string) {
-    return this.service.claim(userId);
+  async claimRewards(
+    @CanonicalUserId() userId: string,
+    @Body('idempotencyKey') idempotencyKey?: string,
+  ) {
+    return this.service.claim(userId, idempotencyKey);
   }
 }

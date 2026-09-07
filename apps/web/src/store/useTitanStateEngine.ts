@@ -170,7 +170,7 @@ export const useTitanStateEngine = create<TitanStateEngine>()(
       trustScore: 100,
       accountAge: 1,
       
-      syncStatus: 'SYNCING',
+      syncStatus: 'COMPLETE',
       lastSyncTime: Date.now(),
       
       hasNotifications: false,

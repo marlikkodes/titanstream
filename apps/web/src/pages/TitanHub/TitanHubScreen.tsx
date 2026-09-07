@@ -76,46 +76,54 @@ export const TitanHubScreen: React.FC = () => {
     initializeDefaultCore();
 
     const syncSequence = async () => {
+      // If sync already completed (e.g. tab switch), just refresh silently
       if (titanState.syncStatus === 'COMPLETE') {
-        // Just refresh backend state silently in the background
         try {
-          await Promise.all([
+          await Promise.allSettled([
             fetchMiningState(),
             fetchBalanceFromEngine(),
             fetchUserMachines(),
           ]);
         } catch (err) {
-          console.warn('[SYNC] Hydration failed:', err);
+          console.warn('[SYNC] Background refresh notice:', err);
         }
         return;
       }
 
       updateSyncStatus('SYNCING');
-      
+
+      // Animate through sync steps (non-blocking visual only)
       for (let i = 0; i < syncSteps.length; i++) {
         await new Promise((resolve) => setTimeout(resolve, 300));
         setSyncStep(i);
       }
-      
-      // Parallel backend state hydration
+
+      // Parallel backend state hydration with a hard 5-second timeout
+      // so the UI never hangs on "Synchronizing Titan..." permanently.
       try {
-        await Promise.all([
-          fetchMiningState(),
-          fetchBalanceFromEngine(),
-          fetchUserMachines(),
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Sync timeout after 5s')), 5000)
+        );
+        await Promise.race([
+          Promise.allSettled([
+            fetchMiningState(),
+            fetchBalanceFromEngine(),
+            fetchUserMachines(),
+          ]),
+          timeoutPromise,
         ]);
       } catch (err) {
-        console.warn('[SYNC] Hydration failed:', err);
+        console.warn('[SYNC] Hydration failed or timed out:', err);
+      } finally {
+        // ALWAYS dismiss the sync overlay regardless of success/failure/timeout
+        updateSyncStatus('COMPLETE');
+        setIsSyncing(false);
+
+        const hasSeen = localStorage.getItem('has_seen_machine_education_v2');
+        if (!hasSeen) {
+          setShowEducationModal(true);
+        }
       }
-      
-      updateSyncStatus('COMPLETE');
-      
-      const hasSeen = localStorage.getItem('has_seen_machine_education_v2');
-      if (!hasSeen) {
-        setShowEducationModal(true);
-      }
-      
-      setIsSyncing(false);
     };
 
     syncSequence();
