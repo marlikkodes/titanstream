@@ -1,7 +1,8 @@
 import type React from 'react';
 import { useState } from 'react';
-import { ShieldCheck, Key, ArrowRight, ShieldAlert, Zap } from 'lucide-react';
+import { ShieldCheck, Key, ArrowRight, ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { api } from '../../services/api';
 
 interface AdminLoginScreenProps {
   onAuthenticated: () => void;
@@ -11,27 +12,25 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
   const [token, setToken] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const loginWithToken = (inputToken: string) => {
-    let finalToken = inputToken.trim();
-    if (!finalToken.startsWith('admin-token:') && finalToken.length <= 25) {
-      finalToken = `admin-token:${finalToken}`;
-    }
-    localStorage.setItem('admin_auth_token', finalToken);
-    localStorage.setItem('auth_token', finalToken);
-    onAuthenticated();
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token.trim()) {
-      setError('Please enter your admin secret or Telegram ID');
+      setError('Enter a valid administrator session token.');
       return;
     }
-    loginWithToken(token);
-  };
 
-  const handleInstantSuperAdminLogin = () => {
-    loginWithToken('5387655307');
+    try {
+      await api.get('/admin/auth/me', {
+        headers: {
+          'X-Admin-Token': token.trim(),
+          Authorization: `Bearer ${token.trim()}`,
+        },
+      });
+      localStorage.setItem('admin_auth_token', token.trim());
+      onAuthenticated();
+    } catch {
+      setError('The administrator session is invalid, expired, or unauthorized.');
+    }
   };
 
   return (
@@ -63,7 +62,7 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
             </span>
             <input
               type="text"
-              placeholder="Enter Telegram ID (5387655307) or Admin Secret"
+              placeholder="Administrator session token"
               value={token}
               onChange={(e) => {
                 setToken(e.target.value);
@@ -89,16 +88,6 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
             <ArrowRight size={16} />
           </motion.button>
         </form>
-
-        <div className="w-full pt-2 border-t border-white/10">
-          <button
-            onClick={handleInstantSuperAdminLogin}
-            className="w-full py-3 rounded-xl bg-usdt-green/15 hover:bg-usdt-green/25 border border-usdt-green/40 text-usdt-green font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
-          >
-            <Zap size={14} />
-            <span>Instant Login as Super Admin (5387655307)</span>
-          </button>
-        </div>
       </motion.div>
     </div>
   );

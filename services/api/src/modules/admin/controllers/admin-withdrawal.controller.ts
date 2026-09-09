@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Headers, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { SettlementStatus } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { CurrentAdmin, AuthenticatedAdmin } from '../decorators/current-admin.decorator';
@@ -7,6 +7,7 @@ import { AdminAuthGuard } from '../guards/admin-auth.guard';
 import { RbacGuard } from '../guards/rbac.guard';
 import { AdminPermission } from '../interfaces/admin-permissions.enum';
 import { PayoutProofDto, WithdrawalService } from '../../financial/withdrawal.service';
+import { DualAuthorizationService } from '../services/dual-authorization.service';
 
 @Controller('admin/withdrawals')
 @UseGuards(AdminAuthGuard, RbacGuard)
@@ -14,6 +15,7 @@ export class AdminWithdrawalController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly withdrawalService: WithdrawalService,
+    private readonly dualAuthorizationService: DualAuthorizationService,
   ) {}
 
   @Get()
@@ -83,13 +85,23 @@ export class AdminWithdrawalController {
 
   @Post(':id/verify-and-settle')
   @Permissions(AdminPermission.WITHDRAWAL_APPROVE)
-  async verifyAndSettle(@CurrentAdmin() admin: AuthenticatedAdmin, @Param('id') id: string) {
+  async verifyAndSettle(
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+    @Param('id') id: string,
+    @Headers('x-confirmation-token') confirmationToken: string,
+  ) {
+    await this.requireSettlementConfirmation(confirmationToken, admin.id, id);
     return this.withdrawalService.verifyAndSettleWithdrawal(admin.id, id);
   }
 
   @Post(':id/approve')
   @Permissions(AdminPermission.WITHDRAWAL_APPROVE)
-  async approveWithdrawal(@CurrentAdmin() admin: AuthenticatedAdmin, @Param('id') id: string) {
+  async approveWithdrawal(
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+    @Param('id') id: string,
+    @Headers('x-confirmation-token') confirmationToken: string,
+  ) {
+    await this.requireSettlementConfirmation(confirmationToken, admin.id, id);
     return this.withdrawalService.verifyAndSettleWithdrawal(admin.id, id);
   }
 
@@ -107,5 +119,15 @@ export class AdminWithdrawalController {
   @Permissions(AdminPermission.SETTLEMENT_RETRY)
   async retryPayout(@CurrentAdmin() admin: AuthenticatedAdmin, @Param('id') id: string) {
     return this.withdrawalService.claimWithdrawalForExecution(admin.id, id);
+  }
+
+  private async requireSettlementConfirmation(token: string, adminUserId: string, withdrawalId: string) {
+    if (!token) {
+      throw new BadRequestException('CONFIRMATION_TOKEN_REQUIRED');
+    }
+    await this.dualAuthorizationService.verifyAndConsumeToken(token, adminUserId, {
+      actionType: 'WITHDRAWAL_APPROVAL',
+      actionPayload: { withdrawalId },
+    });
   }
 }

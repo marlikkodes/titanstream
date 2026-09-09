@@ -116,36 +116,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       startMirrorSession: (targetUser) => {
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem('mirror_mode', 'true');
-          sessionStorage.setItem('mirror_user', JSON.stringify(targetUser));
-        }
-        localStorage.setItem('auth_token', `mirror_auth_${targetUser.id || targetUser.telegramUserId}`);
-        localStorage.setItem('has_chosen_currency', 'true');
-
-        const sessionData: SessionData = {
-          accessToken: `mirror_auth_${targetUser.id || targetUser.telegramUserId}`,
-          refreshToken: `mirror_refresh_${targetUser.id || targetUser.telegramUserId}`,
-          user: targetUser,
-          onboarding: {
-            currentStep: 'COMPLETED',
-            isCompleted: true,
-          },
-          isNewUser: false,
-          expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-          platform: 'web',
-          provider: targetUser.state?.includes('WHATSAPP') ? 'WHATSAPP' : 'TELEGRAM',
-        };
-
+        // A client-side preview must never manufacture a user session or token.
+        // Server-authorized impersonation, if introduced, needs its own audited API.
         set({
-          isAuthenticated: true,
-          session: sessionData,
-          onboardingComplete: true,
-          countrySelected: true,
-          isAuthLoading: false,
-          authError: null,
-          isMirrorMode: true,
-          mirrorTargetUser: targetUser,
+          isMirrorMode: false,
+          mirrorTargetUser: null,
         });
       },
 

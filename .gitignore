@@ -2,6 +2,10 @@ node_modules
 dist
 .env
 .env.*
+baileys_auth_info/
+services/api/baileys_auth_info/
+.whatsapp_active_challenges.json
+apps/web/.admin_users_db.json
 .claude
 *.tmp
 package.json.tmp

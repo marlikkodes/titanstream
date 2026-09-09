@@ -11,6 +11,10 @@ export interface CreateConfirmationTokenDto {
   userAgent?: string;
 }
 
+function hashConfirmationToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 @Injectable()
 export class DualAuthorizationService {
   constructor(
@@ -27,7 +31,7 @@ export class DualAuthorizationService {
 
     const record = await this.prisma.telegramConfirmationToken.create({
       data: {
-        token,
+        token: hashConfirmationToken(token),
         adminUserId: dto.adminUserId,
         actionType: dto.actionType,
         actionPayload: dto.actionPayload,
@@ -50,7 +54,7 @@ export class DualAuthorizationService {
 
     return {
       tokenId: record.id,
-      token: record.token,
+      token,
       expiresAt: record.expiresAt.toISOString(),
       status: record.status,
     };
@@ -59,9 +63,13 @@ export class DualAuthorizationService {
   /**
    * Verifies if a token has been confirmed via Telegram bot and is valid for execution.
    */
-  async verifyAndConsumeToken(tokenStr: string, adminUserId: string): Promise<boolean> {
+  async verifyAndConsumeToken(
+    tokenStr: string,
+    adminUserId: string,
+    expected?: Pick<CreateConfirmationTokenDto, 'actionType' | 'actionPayload'>,
+  ): Promise<boolean> {
     const record = await this.prisma.telegramConfirmationToken.findUnique({
-      where: { token: tokenStr },
+      where: { token: hashConfirmationToken(tokenStr) },
     });
 
     if (!record) {
@@ -70,6 +78,20 @@ export class DualAuthorizationService {
 
     if (record.adminUserId !== adminUserId) {
       throw new UnauthorizedException('TOKEN_ADMIN_MISMATCH');
+    }
+
+    if (expected && record.actionType !== expected.actionType) {
+      throw new UnauthorizedException('TOKEN_ACTION_MISMATCH');
+    }
+
+    if (expected) {
+      const payload = record.actionPayload as Record<string, unknown>;
+      const matchesPayload = Object.entries(expected.actionPayload).every(
+        ([key, value]) => payload[key] === value,
+      );
+      if (!matchesPayload) {
+        throw new UnauthorizedException('TOKEN_ACTION_PAYLOAD_MISMATCH');
+      }
     }
 
     if (record.expiresAt < new Date()) {
@@ -111,7 +133,7 @@ export class DualAuthorizationService {
    */
   async handleTelegramCallback(tokenStr: string, isConfirmed: boolean, telegramUserId: bigint) {
     const record = await this.prisma.telegramConfirmationToken.findUnique({
-      where: { token: tokenStr },
+      where: { token: hashConfirmationToken(tokenStr) },
     });
 
     if (!record) return { success: false, reason: 'TOKEN_NOT_FOUND' };

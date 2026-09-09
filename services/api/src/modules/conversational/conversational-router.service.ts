@@ -146,36 +146,12 @@ export class ConversationalRouterService {
   }
 
   /**
-   * Handles START <PIN> sign-in request command
+   * Browser sign-in messages are processed exclusively by the Baileys inbound
+   * handler, which supplies the authenticated sender JID. The general command
+   * router must not issue sessions from arbitrary channel messages.
    */
-  private async handleStartPinCommand(pinCode: string, ctx: InboundMessageContext): Promise<string> {
-    if (!pinCode) {
-      return `⚡ *TITAN STREAM* — *Sign-In Required*\n\n🔒 Please type your 6-digit sign-in code.\n\nExample: \`START 482731\``;
-    }
-
-    const cleanPin = pinCode.trim().replace(/[^a-zA-Z0-9_]/g, '');
-    const challenge = this.whatsappChallengeService?.findChallengeByPinOrId(cleanPin);
-    if (!challenge) {
-      return `⚡ *TITAN STREAM* — *Code Error*\n\n🔒 Code \`${cleanPin}\` wasn't found or expired.\n\n🌐 Go back to your browser screen to request a new sign-in code!`;
-    }
-
-    if (new Date() > challenge.expiresAt) {
-      return `⚡ *TITAN STREAM* — *Code Expired*\n\n⌛ This sign-in code (${challenge.shortPin}) has expired.\n\n🌐 Please go back to your browser to get a fresh 1-tap code!`;
-    }
-
-    // Bind channel user and approve challenge immediately
-    challenge.phone = ctx.channelUserId;
-    this.whatsappChallengeService?.bindPhoneToChallenge(ctx.channelUserId, challenge.challengeId);
-    await this.whatsappChallengeService?.approveChallengeDirect(challenge, ctx.channelUserId);
-
-    return (
-      `⚡ *TITAN STREAM* — *You're Signed In!*\n\n` +
-      `✅ *Login Approved*\n` +
-      `• Code: *${challenge.shortPin}*\n` +
-      `• Connection: *Secure & Encrypted*\n` +
-      `• Status: *Active & Ready*\n\n` +
-      `🌐 Head back to your browser screen to start using Titan Stream!`
-    );
+  private async handleStartPinCommand(_token: string, _ctx: InboundMessageContext): Promise<string> {
+    return 'Sign-in requests must be approved from the WhatsApp QR message.';
   }
 
   /**

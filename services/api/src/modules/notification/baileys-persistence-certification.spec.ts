@@ -83,9 +83,30 @@ describe('Baileys Account Persistence & Conversational Certification Suite', () 
   });
 
   describe('P0 GATE 1: Baileys Account Persistence & Identity Invariant', () => {
+    it('MUST coalesce concurrent socket initialization requests for the same account', async () => {
+      const manager = baileysManager as any;
+      let releaseInitialization: (() => void) | undefined;
+      const pendingInitialization = new Promise<void>((resolve) => {
+        releaseInitialization = resolve;
+      });
+      const createSocket = jest
+        .spyOn(manager, 'createAccountSocket')
+        .mockReturnValue(pendingInitialization);
+
+      const first = manager.initAccountSocket('baileys_acc_18257320524');
+      const second = manager.initAccountSocket('baileys_acc_18257320524');
+
+      expect(first).toBe(second);
+      expect(createSocket).toHaveBeenCalledTimes(1);
+
+      releaseInitialization?.();
+      await first;
+    });
+
     it('MUST reuse existing database account on re-login/reconnect without creating duplicates', async () => {
       const testPhone = '+18257320524';
       const expectedAccountId = 'baileys_acc_18257320524';
+      jest.spyOn(baileysManager as any, 'initAccountSocket').mockResolvedValue(undefined);
 
       // 1. Initial creation simulation
       mockPrisma.baileysAccount.findFirst.mockResolvedValueOnce(null);
@@ -130,6 +151,7 @@ describe('Baileys Account Persistence & Conversational Certification Suite', () 
     it('MUST sustain concurrent reconnect requests without violating database uniqueness', async () => {
       const testPhone = '+256770000000';
       const expectedAccountId = 'baileys_acc_256770000000';
+      jest.spyOn(baileysManager as any, 'initAccountSocket').mockResolvedValue(undefined);
 
       mockPrisma.baileysAccount.findFirst.mockResolvedValue({
         id: 'uuid-2',
@@ -161,19 +183,23 @@ describe('Baileys Account Persistence & Conversational Certification Suite', () 
   });
 
   describe('P0 GATE 2: First WhatsApp Message & Instant 1-Tap Approval Flow', () => {
-    it('MUST receive START <PIN>, authenticate identity, issue session tokens, and send instant confirmation', async () => {
+    it('MUST receive the opaque START token from WhatsApp before issuing session tokens', async () => {
       // 1. Browser creates challenge
       const challengeInfo = whatsappChallenge.createChallenge('Chrome 120 Linux');
-      expect(challengeInfo.shortPin).toBeDefined();
+      const approvalToken = new URL(challengeInfo.waDeepLink).searchParams.get('text')?.replace('START ', '');
+      expect(approvalToken).toBeDefined();
 
-      // 2. User sends START <PIN> over WhatsApp
-      const handled = await whatsappChallenge.handleInboundMessage('256770000000@s.whatsapp.net', `START ${challengeInfo.shortPin}`);
+      // 2. User sends the deep-link token over WhatsApp
+      const handled = await whatsappChallenge.handleInboundMessage('256770000000@s.whatsapp.net', `START ${approvalToken}`);
       expect(handled).toBe(true);
 
       // 3. Verify challenge status transitioned to APPROVED & tokens issued
-      const statusObj = whatsappChallenge.getChallengeStatus(challengeInfo.challengeId) as any;
+      const statusObj = whatsappChallenge.getChallengeStatus(challengeInfo.challengeId, challengeInfo.browserProof) as any;
       expect(statusObj.status).toBe('APPROVED');
       expect(statusObj.accessToken).toBe('test_access_token');
+
+      // Browser session credentials are a one-time handoff and cannot be replayed.
+      expect(whatsappChallenge.getChallengeStatus(challengeInfo.challengeId, challengeInfo.browserProof)).toEqual({ status: 'EXPIRED' });
     });
 
     it('MUST also approve challenge if 1/YES is received during an active challenge', async () => {
@@ -188,7 +214,7 @@ describe('Baileys Account Persistence & Conversational Certification Suite', () 
       const approvedHandled = await whatsappChallenge.handleInboundMessage('256770000000@s.whatsapp.net', '1');
       expect(approvedHandled).toBe(true);
 
-      const statusObj = whatsappChallenge.getChallengeStatus(challengeInfo.challengeId) as any;
+      const statusObj = whatsappChallenge.getChallengeStatus(challengeInfo.challengeId, challengeInfo.browserProof) as any;
       expect(statusObj.status).toBe('APPROVED');
       expect(statusObj.accessToken).toBe('test_access_token');
     });

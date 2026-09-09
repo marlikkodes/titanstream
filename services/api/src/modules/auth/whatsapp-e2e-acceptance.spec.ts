@@ -87,18 +87,18 @@ describe('Titan Stream — 22-Step WhatsApp Auth End-to-End Acceptance Suite', (
     // Step 1 - 5: Browser generates challenge
     const challenge1 = whatsappChallenge.createChallenge('Desktop Chrome 120');
     expect(challenge1.challengeId).toBeDefined();
-    expect(challenge1.shortPin).toBeDefined();
-    expect(challenge1.waDeepLink).toContain(`START%20${challenge1.shortPin}`);
+    const approvalToken1 = new URL(challenge1.waDeepLink).searchParams.get('text')?.replace('START ', '');
+    expect(approvalToken1).toBeDefined();
 
     // Step 6 & 7: User sends START <PIN> over WhatsApp
     const inboundHandled1 = await whatsappChallenge.handleInboundMessage(
       '256770000000@s.whatsapp.net',
-      `START ${challenge1.shortPin}`
+      `START ${approvalToken1}`
     );
     expect(inboundHandled1).toBe(true);
 
     // Step 8 - 12: Browser polls challenge status and receives APPROVED + session tokens
-    const status1 = whatsappChallenge.getChallengeStatus(challenge1.challengeId) as any;
+    const status1 = whatsappChallenge.getChallengeStatus(challenge1.challengeId, challenge1.browserProof) as any;
     expect(status1.status).toBe('APPROVED');
     expect(status1.accessToken).toBe('at_test_usr_canonical_256770000000');
     expect(status1.refreshToken).toBe('rt_test_usr_canonical_256770000000');
@@ -107,17 +107,33 @@ describe('Titan Stream — 22-Step WhatsApp Auth End-to-End Acceptance Suite', (
     // Step 13 - 15: Signout & start second login challenge for same user
     const challenge2 = whatsappChallenge.createChallenge('Mobile Safari');
     expect(challenge2.challengeId).not.toBe(challenge1.challengeId);
+    const approvalToken2 = new URL(challenge2.waDeepLink).searchParams.get('text')?.replace('START ', '');
 
     // Step 16 & 17: User sends START <PIN2> for second login
     const inboundHandled2 = await whatsappChallenge.handleInboundMessage(
       '256770000000@s.whatsapp.net',
-      `START ${challenge2.shortPin}`
+      `START ${approvalToken2}`
     );
     expect(inboundHandled2).toBe(true);
 
     // Step 18 - 22: Browser polls status and receives SAME canonical identity
-    const status2 = whatsappChallenge.getChallengeStatus(challenge2.challengeId) as any;
+    const status2 = whatsappChallenge.getChallengeStatus(challenge2.challengeId, challenge2.browserProof) as any;
     expect(status2.status).toBe('APPROVED');
     expect(status2.user.id).toBe('usr_canonical_256770000000'); // Verified SAME TitanUser ID!
+  });
+
+  it('rejects browser polling without its one-time browser proof and never approves arbitrary input', async () => {
+    const challenge = whatsappChallenge.createChallenge('Fresh browser');
+
+    expect(() => whatsappChallenge.getChallengeStatus(challenge.challengeId, 'not-the-browser-proof'))
+      .toThrow('WHATSAPP_CHALLENGE_BROWSER_PROOF_INVALID');
+
+    await expect(
+      whatsappChallenge.handleInboundMessage('256770000000@s.whatsapp.net', 'START attacker-controlled-value'),
+    ).resolves.toBe(false);
+
+    expect(whatsappChallenge.getChallengeStatus(challenge.challengeId, challenge.browserProof)).toMatchObject({
+      status: 'PENDING',
+    });
   });
 });

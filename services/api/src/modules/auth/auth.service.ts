@@ -526,8 +526,6 @@ export class AuthService {
     const otpHash = createHash('sha256').update(code).digest('hex');
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    this.logger.log(`[DEV_WHATSAPP_OTP_CODE] OTP for ${phone}: ${code}`);
-
     try {
       await this.prisma.otpChallenge.create({
         data: {

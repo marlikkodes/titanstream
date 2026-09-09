@@ -97,7 +97,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Poll status of a WhatsApp browser login challenge' })
   async pollWhatsAppChallengeStatus(@Body() body: any) {
     const challengeId = body?.challengeId;
-    return this.whatsappChallengeService.getChallengeStatus(challengeId);
+    return this.whatsappChallengeService.getChallengeStatus(challengeId, body?.browserProof);
   }
 
   @Public()

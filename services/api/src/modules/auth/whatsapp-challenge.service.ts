@@ -1,8 +1,8 @@
-import { Injectable, Logger, Inject, Optional, forwardRef } from '@nestjs/common';
-import { randomBytes, randomInt } from 'crypto';
+import { Injectable, Logger, Inject, Optional, UnauthorizedException, forwardRef } from '@nestjs/common';
+import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import { resolve } from 'path';
 import * as fs from 'fs';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'fs';
 import { IdentityMasterEngineService } from '../identity/identity-master.service';
 import { AuthService } from './auth.service';
 import { BaileysService } from '../notification/baileys.service';
@@ -13,7 +13,8 @@ export type ChallengeStatus = 'PENDING' | 'AWAITING_APPROVAL' | 'APPROVED' | 'DE
 
 export interface WhatsappLoginChallenge {
   challengeId: string;
-  shortPin: string;
+  approvalTokenHash: string;
+  browserProofHash: string;
   phone?: string;
   status: ChallengeStatus;
   deviceInfo: string;
@@ -24,6 +25,16 @@ export interface WhatsappLoginChallenge {
     refreshToken: string;
     user: any;
   };
+}
+
+function hashSecret(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function secretsMatch(expectedHash: string, providedSecret?: string): boolean {
+  if (!providedSecret || !expectedHash) return false;
+  const providedHash = hashSecret(providedSecret);
+  return timingSafeEqual(Buffer.from(expectedHash, 'hex'), Buffer.from(providedHash, 'hex'));
 }
 
 const SHARED_CHALLENGES_FILE = resolve(process.cwd(), '../../.whatsapp_active_challenges.json');
@@ -49,15 +60,43 @@ function loadSharedChallenges(): Record<string, any> {
 }
 
 function saveSharedChallenge(challenge: any) {
+  let temporaryPath: string | undefined;
   try {
     const p = getChallengesPath();
     const all = loadSharedChallenges();
     all[challenge.challengeId] = challenge;
-    all[`pin_${challenge.shortPin}`] = challenge.challengeId;
+    all[`approval_${challenge.approvalTokenHash}`] = challenge.challengeId;
 
-    writeFileSync(p, JSON.stringify(all, null, 2), 'utf-8');
+    temporaryPath = `${p}.${process.pid}.${Date.now()}.tmp`;
+    writeFileSync(temporaryPath, JSON.stringify(all, null, 2), 'utf-8');
+    renameSync(temporaryPath, p);
   } catch (err: any) {
     console.error('[WA_CHAL_ERR] Failed to save shared challenge:', err.message);
+    if (temporaryPath) {
+      try {
+        unlinkSync(temporaryPath);
+      } catch {}
+    }
+  }
+}
+
+function deleteSharedChallenge(challengeId: string, approvalTokenHash?: string) {
+  let temporaryPath: string | undefined;
+  try {
+    const p = getChallengesPath();
+    const all = loadSharedChallenges();
+    delete all[challengeId];
+    if (approvalTokenHash) delete all[`approval_${approvalTokenHash}`];
+    temporaryPath = `${p}.${process.pid}.${Date.now()}.tmp`;
+    writeFileSync(temporaryPath, JSON.stringify(all, null, 2), 'utf-8');
+    renameSync(temporaryPath, p);
+  } catch (err: any) {
+    console.error('[WA_CHAL_ERR] Failed to delete shared challenge:', err.message);
+    if (temporaryPath) {
+      try {
+        unlinkSync(temporaryPath);
+      } catch {}
+    }
   }
 }
 
@@ -123,7 +162,7 @@ function getRealisticNameForPhone(phone: string, pushName?: string): string {
 export class WhatsappChallengeService {
   private readonly logger = new Logger(WhatsappChallengeService.name);
   private readonly challenges = new Map<string, WhatsappLoginChallenge>();
-  private readonly pinToChallengeId = new Map<string, string>();
+  private readonly approvalTokenHashToChallengeId = new Map<string, string>();
   private readonly phoneToActiveChallengeId = new Map<string, string>();
 
   constructor(
@@ -137,23 +176,19 @@ export class WhatsappChallengeService {
     private readonly conversationalRouterService?: ConversationalRouterService,
   ) {}
 
-  /**
-   * Generates a 2-minute TTL login challenge for a browser session.
-   */
-  createChallenge(deviceInfo?: string): { challengeId: string; shortPin: string; expiresAt: Date; waDeepLink: string; transportReady?: boolean; transportStatus?: string } {
-    const challengeId = `wa_ch_${Date.now().toString(36)}_${randomBytes(6).toString('hex')}`;
+  /** Generates a 10-minute, server-verified WhatsApp login challenge. */
+  createChallenge(deviceInfo?: string): { challengeId: string; browserProof: string; expiresAt: Date; waDeepLink: string; transportReady?: boolean; transportStatus?: string } {
+    const challengeId = `wa_ch_${randomBytes(32).toString('base64url')}`;
     
-    // Generate unique 6-digit numeric PIN
-    let shortPin = String(randomInt(100000, 1000000));
-    while (this.pinToChallengeId.has(shortPin)) {
-      shortPin = String(randomInt(100000, 1000000));
-    }
+    const approvalToken = randomBytes(32).toString('base64url');
+    const browserProof = randomBytes(32).toString('base64url');
 
     const expiresAt = new Date(Date.now() + 600 * 1000); // 10 minutes TTL
 
     const challenge: WhatsappLoginChallenge = {
       challengeId,
-      shortPin,
+      approvalTokenHash: hashSecret(approvalToken),
+      browserProofHash: hashSecret(browserProof),
       status: 'PENDING',
       deviceInfo: deviceInfo || 'Browser Session',
       createdAt: new Date(),
@@ -161,10 +196,11 @@ export class WhatsappChallengeService {
     };
 
     this.challenges.set(challengeId, challenge);
-    this.pinToChallengeId.set(shortPin, challengeId);
+    this.approvalTokenHashToChallengeId.set(challenge.approvalTokenHash, challengeId);
     saveSharedChallenge({
       challengeId,
-      shortPin,
+      approvalTokenHash: challenge.approvalTokenHash,
+      browserProofHash: challenge.browserProofHash,
       status: 'PENDING',
       deviceInfo: challenge.deviceInfo,
       createdAt: challenge.createdAt.toISOString(),
@@ -172,7 +208,7 @@ export class WhatsappChallengeService {
     });
 
     const botPhone = (process.env.WHATSAPP_BOT_PHONE || '+18257320524').replace(/\D/g, '');
-    const messageText = `START ${shortPin}`;
+    const messageText = `START ${approvalToken}`;
     const waDeepLink = `https://wa.me/${botPhone}?text=${encodeURIComponent(messageText)}`;
     const transportStatus = typeof this.baileysService?.getAuthTransportStatus === 'function'
       ? this.baileysService.getAuthTransportStatus()
@@ -181,10 +217,10 @@ export class WhatsappChallengeService {
       ? this.baileysService.isAuthTransportReady()
       : true;
 
-    this.logger.log(`[WA_CHALLENGE_CREATED] challengeId=${challengeId} pin=${shortPin} expiresAt=${expiresAt.toISOString()} transportReady=${isReady}`);
+    this.logger.log(`[WA_CHALLENGE_CREATED] challengeId=${challengeId} expiresAt=${expiresAt.toISOString()} transportReady=${isReady}`);
     return {
       challengeId,
-      shortPin,
+      browserProof,
       expiresAt,
       waDeepLink,
       transportReady: isReady,
@@ -195,7 +231,7 @@ export class WhatsappChallengeService {
   /**
    * Checks current challenge status.
    */
-  getChallengeStatus(challengeId: string) {
+  getChallengeStatus(challengeId: string, browserProof?: string) {
     let challenge = this.challenges.get(challengeId);
     if (!challenge) {
       const shared = loadSharedChallenges();
@@ -208,7 +244,9 @@ export class WhatsappChallengeService {
         };
         challenge = restored;
         this.challenges.set(challengeId, restored);
-        this.pinToChallengeId.set(restored.shortPin, challengeId);
+        if (restored.approvalTokenHash) {
+          this.approvalTokenHashToChallengeId.set(restored.approvalTokenHash, challengeId);
+        }
       }
     }
 
@@ -216,17 +254,25 @@ export class WhatsappChallengeService {
       return { status: 'EXPIRED' as ChallengeStatus };
     }
 
-    if (new Date() > challenge.expiresAt && challenge.status !== 'APPROVED') {
-      challenge.status = 'EXPIRED';
+    if (!secretsMatch(challenge.browserProofHash, browserProof)) {
+      this.logger.warn(`[WA_CHALLENGE_REJECTED] Invalid browser proof for challengeId=${challengeId}`);
+      throw new UnauthorizedException('WHATSAPP_CHALLENGE_BROWSER_PROOF_INVALID');
+    }
+
+    if (new Date() > challenge.expiresAt) {
       this.cleanupChallenge(challengeId);
       return { status: 'EXPIRED' as ChallengeStatus };
     }
 
-    if (challenge.status === 'APPROVED' && challenge.sessionTokens) {
-      return {
-        status: challenge.status,
-        ...challenge.sessionTokens,
-      };
+    if (challenge.status === 'APPROVED') {
+      if (!challenge.sessionTokens) {
+        this.cleanupChallenge(challengeId);
+        return { status: 'EXPIRED' as ChallengeStatus };
+      }
+
+      const sessionTokens = challenge.sessionTokens;
+      this.cleanupChallenge(challengeId);
+      return { status: challenge.status, ...sessionTokens };
     }
 
     return {
@@ -235,24 +281,15 @@ export class WhatsappChallengeService {
     };
   }
 
-  /**
-   * Finds challenge by PIN or challengeId.
-   */
-  findChallengeByPinOrId(codeOrId: string): WhatsappLoginChallenge | null {
-    let targetChallengeId = this.pinToChallengeId.get(codeOrId);
-    if (!targetChallengeId && this.challenges.has(codeOrId)) {
-      targetChallengeId = codeOrId;
-    }
+  /** Finds a challenge only from the opaque approval token sent by WhatsApp. */
+  findChallengeByApprovalToken(approvalToken: string): WhatsappLoginChallenge | null {
+    const approvalTokenHash = hashSecret(approvalToken);
+    let targetChallengeId = this.approvalTokenHashToChallengeId.get(approvalTokenHash);
 
     if (!targetChallengeId) {
-      // Check shared file from Vite dev server
       const shared = loadSharedChallenges();
-      const fromPin = shared[`pin_${codeOrId}`];
-      if (fromPin && shared[fromPin]) {
-        targetChallengeId = fromPin;
-      } else if (shared[codeOrId]) {
-        targetChallengeId = codeOrId;
-      }
+      const fromToken = shared[`approval_${approvalTokenHash}`];
+      if (fromToken && shared[fromToken]) targetChallengeId = fromToken;
 
       if (targetChallengeId && shared[targetChallengeId]) {
         const raw = shared[targetChallengeId];
@@ -262,7 +299,10 @@ export class WhatsappChallengeService {
           expiresAt: new Date(raw.expiresAt),
         };
         this.challenges.set(targetChallengeId, restored);
-        this.pinToChallengeId.set(restored.shortPin, targetChallengeId);
+        if (!restored.approvalTokenHash || !restored.browserProofHash) {
+          return null;
+        }
+        this.approvalTokenHashToChallengeId.set(restored.approvalTokenHash, targetChallengeId);
         return restored;
       }
     }
@@ -321,22 +361,6 @@ export class WhatsappChallengeService {
     const rawText = textInput.trim();
     const upperText = rawText.toUpperCase();
 
-    // Check if rawText contains an explicit phone number (e.g. "+256752762181" or "0752762181")
-    const explicitPhoneMatch = rawText.match(/(?:\+?256|0)7\d{8}/) || rawText.match(/\+\d{10,15}/);
-    if (explicitPhoneMatch) {
-      const parsed = explicitPhoneMatch[0].replace(/\D/g, '');
-      if (parsed.startsWith('0') && parsed.length === 10) {
-        cleanPhone = '+256' + parsed.slice(1);
-        cleanDigits = cleanPhone.replace(/\D/g, '');
-      } else if (parsed.startsWith('256') && parsed.length === 12) {
-        cleanPhone = '+' + parsed;
-        cleanDigits = parsed;
-      } else if (parsed.length >= 10) {
-        cleanPhone = '+' + parsed;
-        cleanDigits = parsed;
-      }
-    }
-
     // 1. Check if user is replying 1/YES or 2/NO to an awaiting approval prompt
     const pendingChallengeId = this.phoneToActiveChallengeId.get(cleanPhone);
     if (pendingChallengeId) {
@@ -360,14 +384,11 @@ export class WhatsappChallengeService {
       }
     }
 
-    // 2. Extract PIN or challenge ID from ANY format: "START_737011", "START 737011", "START737011", "737011", "wa_ch_..."
-    const pinMatch = rawText.match(/\d{6}/);
-    const challengeIdMatch = rawText.match(/wa_ch_[a-zA-Z0-9_]+/);
-    const extractedCode = pinMatch ? pinMatch[0] : (challengeIdMatch ? challengeIdMatch[0] : null);
-
-    if (upperText.startsWith('START') || extractedCode) {
-      const codeOrId = extractedCode || rawText.replace(/[^0-9a-zA-Z_]/g, '').replace(/^START_?/, '');
-      let challenge = this.findChallengeByPinOrId(codeOrId);
+    // A QR approval contains an opaque, one-time token. The sender JID remains
+    // authoritative; text content must never select the account being signed in.
+    const approvalMatch = rawText.match(/^START\s+([A-Za-z0-9_-]{32,})\s*$/i);
+    if (approvalMatch) {
+      const challenge = this.findChallengeByApprovalToken(approvalMatch[1]);
 
       if (!challenge || new Date() > challenge.expiresAt) {
         this.logger.warn(`[WA_CHALLENGE_REJECTED] Unknown or expired challenge submitted from ${cleanPhone}`);
@@ -379,6 +400,13 @@ export class WhatsappChallengeService {
       this.phoneToActiveChallengeId.set(cleanPhone, challenge.challengeId);
       await this.approveChallenge(challenge, cleanPhone, metadata);
       return true;
+    }
+
+    // START is reserved for opaque browser-login approval. Do not pass malformed
+    // or guessed values to any secondary command path.
+    if (upperText.startsWith('START')) {
+      this.logger.warn(`[WA_CHALLENGE_REJECTED] Malformed approval token submitted from ${cleanPhone}`);
+      return false;
     }
 
     // 3. Delegate all non-authentication commands (BALANCE, MISSIONS, REWARDS, SIGNOUT, HELP) to ConversationalRouterService
@@ -402,7 +430,12 @@ export class WhatsappChallengeService {
     rawPhone: string,
     metadata?: { rawJid?: string; pushName?: string }
   ) {
-    challenge.status = 'APPROVED';
+    if (new Date() > challenge.expiresAt) {
+      throw new UnauthorizedException('WHATSAPP_CHALLENGE_EXPIRED');
+    }
+    if (challenge.status !== 'PENDING' && challenge.status !== 'AWAITING_APPROVAL') {
+      throw new UnauthorizedException('WHATSAPP_CHALLENGE_ALREADY_CONSUMED');
+    }
 
     // 1. Strictly normalize phone number to E.164 format
     let cleanDigits = rawPhone.replace(/\D/g, '');
@@ -420,26 +453,16 @@ export class WhatsappChallengeService {
     const firstName = nameParts[0] || resolvedDisplayName;
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    let identityContext: any = null;
-    try {
-      identityContext = await this.identityMasterEngine.authenticate({
-        provider: IdentityProvider.WHATSAPP,
-        identifier: canonicalPhone,
-        displayName: resolvedDisplayName,
-        metadata: { phone: canonicalPhone, approvedAt: new Date().toISOString(), deviceInfo: challenge.deviceInfo },
-      });
-    } catch (err: any) {
-      this.logger.warn(`[WA_APPROVE_WARN] Identity authenticate failed (${err.message}), using canonical identity.`);
-      identityContext = {
-        userId: cleanDigits,
-        universalIdentityId: canonicalTitanId,
-        telegramUserId: Number(cleanDigits) || undefined,
-      };
-    }
+    const identityContext = await this.identityMasterEngine.authenticate({
+      provider: IdentityProvider.WHATSAPP,
+      identifier: canonicalPhone,
+      displayName: resolvedDisplayName,
+      metadata: { phone: canonicalPhone, approvedAt: new Date().toISOString(), deviceInfo: challenge.deviceInfo },
+    });
 
     const userPayload = {
-      id: identityContext?.userId || cleanDigits,
-      identityId: identityContext?.universalIdentityId || canonicalTitanId,
+      id: identityContext.userId,
+      identityId: identityContext.universalIdentityId,
       telegramUserId: identityContext?.telegramUserId ? Number(identityContext.telegramUserId) : undefined,
       firstName,
       lastName,
@@ -448,153 +471,30 @@ export class WhatsappChallengeService {
       createdAt: new Date().toISOString(),
     };
 
-    try {
-      const tokens = await this.authService.createTokensForUser(userPayload);
-      challenge.sessionTokens = {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        user: tokens.user || userPayload,
-      };
-    } catch (tokErr: any) {
-      this.logger.warn(`[WA_APPROVE_WARN] createTokensForUser failed (${tokErr.message}), generating resilient session tokens.`);
-      challenge.sessionTokens = {
-        accessToken: `wa_access_${Date.now()}_${cleanDigits}`,
-        refreshToken: `wa_refresh_${Date.now()}_${cleanDigits}`,
-        user: userPayload,
-      };
-    }
+    const tokens = await this.authService.createTokensForUser(userPayload);
+    challenge.sessionTokens = {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: tokens.user || userPayload,
+    };
+    challenge.status = 'APPROVED';
 
     saveSharedChallenge({
       challengeId: challenge.challengeId,
-      shortPin: challenge.shortPin,
+      approvalTokenHash: challenge.approvalTokenHash,
+      browserProofHash: challenge.browserProofHash,
       status: 'APPROVED',
       phone: canonicalPhone,
       deviceInfo: challenge.deviceInfo,
       createdAt: challenge.createdAt ? challenge.createdAt.toISOString() : new Date().toISOString(),
       expiresAt: challenge.expiresAt ? challenge.expiresAt.toISOString() : new Date(Date.now() + 600000).toISOString(),
-      sessionTokens: challenge.sessionTokens,
     });
 
-    // Automatically sync approved operator to Admin User Intelligence database (single bound account, no duplicates)
-    try {
-      const adminUsersPath = resolve('/home/wendy/Desktop/tetherstream/apps/web/.admin_users_db.json');
-      let adminUsers: any[] = [];
-      if (existsSync(adminUsersPath)) {
-        adminUsers = JSON.parse(readFileSync(adminUsersPath, 'utf-8'));
-      }
-
-      // Filter out raw LID placeholder entries
-      adminUsers = adminUsers.filter((u: any) => !u.phoneNumber?.includes('8660902223957') && u.id !== '8660902223957');
-
-      // Check if user already exists by phone, identifier, id, or titanId
-      const existingIdx = adminUsers.findIndex((u: any) =>
-        u.phoneNumber === canonicalPhone ||
-        u.primaryIdentifier === canonicalPhone ||
-        u.id === cleanDigits ||
-        u.titanId === canonicalTitanId ||
-        (u.phoneNumber && u.phoneNumber.replace(/\D/g, '') === cleanDigits)
-      );
-
-      const isNewUser = existingIdx < 0;
-
-      if (existingIdx >= 0) {
-        // UPDATE EXISTING USER - GUARANTEE UNIQUE ACCOUNT PER NUMBER
-        const existingName = adminUsers[existingIdx].name;
-        const finalName = (existingName && !existingName.includes('WhatsApp Operator') && !existingName.includes('Unknown'))
-          ? existingName
-          : resolvedDisplayName;
-
-        adminUsers[existingIdx] = {
-          ...adminUsers[existingIdx],
-          phoneNumber: canonicalPhone,
-          primaryIdentifier: canonicalPhone,
-          titanId: adminUsers[existingIdx].titanId || canonicalTitanId,
-          name: finalName,
-          username: canonicalPhone,
-          activityStatus: adminUsers[existingIdx].activityStatus === 'FROZEN' ? 'FROZEN' : 'ACTIVE',
-          state: adminUsers[existingIdx].state || 'ACTIVE_USER',
-          lastActiveIp: '102.218.42.10',
-          lastLoginAt: new Date().toISOString(),
-        };
-      } else {
-        // REGISTER NEW OPERATOR ACCOUNT
-        const newUser = {
-          id: cleanDigits,
-          telegramId: cleanDigits,
-          titanId: canonicalTitanId,
-          phoneNumber: canonicalPhone,
-          primaryIdentifier: canonicalPhone,
-          joinChannel: 'WHATSAPP',
-          activityStatus: 'ACTIVE',
-          hasSharedDevice: false,
-          lastActiveIp: '102.218.42.10',
-          name: resolvedDisplayName,
-          username: canonicalPhone,
-          state: 'ACTIVE_USER',
-          totalVolume: 0,
-          moneyIn: 0,
-          moneyOut: 0,
-          totalDeposits: 0,
-          totalWithdrawals: 0,
-          netBalance: 0,
-          riskScore: 10,
-          flags: [],
-          wallets: [`fin_acc_${cleanDigits}`],
-          activeMachinesCount: 0,
-          crystalBalance: 50,
-          createdAt: new Date().toISOString(),
-        };
-        adminUsers.unshift(newUser);
-      }
-
-      writeFileSync(adminUsersPath, JSON.stringify(adminUsers, null, 2), 'utf-8');
-
-      // Send Instant WhatsApp Sign-In / Sign-Up Success Confirmation Message over Baileys
-      try {
-        const phoneClean = canonicalPhone.replace(/\D/g, '');
-        const primaryTarget = `${phoneClean}@s.whatsapp.net`;
-        const confirmText = isNewUser
-          ? (
-              `⚡ *TITAN STREAM* — *Welcome to Titan Stream!*\n\n` +
-              `🎉 *Signup Approved & Account Created*\n` +
-              `• Status: *Active & Verified*\n` +
-              `• Phone: *${canonicalPhone}*\n` +
-              `• Titan ID: *${canonicalTitanId}*\n` +
-              `• Welcome Bonus: *+50 Energy Crystals Credited*\n\n` +
-              `🌐 *Browser Authenticated*: Your browser window is now unlocked and ready to stream!\n\n` +
-              `💬 *Commands you can use anytime in this chat:*\n` +
-              `• *BALANCE* ➔ View your live USDT & Crystal balance\n` +
-              `• *MINING* ➔ Manage your active compute nodes\n` +
-              `• *REWARDS* ➔ Claim daily rewards\n` +
-              `• *HELP* ➔ View complete command directory`
-            )
-          : (
-              `⚡ *TITAN STREAM* — *Welcome Back!*\n\n` +
-              `✅ *Login Approved*\n` +
-              `• Status: *Active & Online*\n` +
-              `• Phone: *${canonicalPhone}*\n` +
-              `• Titan ID: *${canonicalTitanId}*\n` +
-              `• Security: *Browser Session Authorized*\n\n` +
-              `🌐 *Browser Authenticated*: Head back to your browser screen to continue using Titan Stream!\n\n` +
-              `💬 *Commands you can use anytime in this chat:*\n` +
-              `• *BALANCE* ➔ Check your live USDT & Crystal balance\n` +
-              `• *MINING* ➔ Compute nodes status & yield\n` +
-              `• *REWARDS* ➔ Claim daily rewards\n` +
-              `• *HELP* ➔ View command directory`
-            );
-
-        await this.baileysService.sendTextMessage(primaryTarget, confirmText, 'CRITICAL');
-        this.logger.log(`[WA_CONFIRMATION_SENT] ${isNewUser ? 'Signup' : 'Login'} approval confirmation sent to ${primaryTarget}`);
-
-        if (metadata?.rawJid && metadata.rawJid !== primaryTarget) {
-          await this.baileysService.sendTextMessage(metadata.rawJid, confirmText, 'CRITICAL').catch(() => null);
-        }
-      } catch (msgErr: any) {
-        this.logger.error(`[WA_CONFIRMATION_FAILED] Failed to send confirmation to ${canonicalPhone}: ${msgErr.message}`);
-      }
-    } catch (adminErr: any) {
-      this.logger.warn(`[WA_ADMIN_SYNC_WARN] Failed to sync to admin users db: ${adminErr.message}`);
-    }
+    const primaryTarget = `${cleanDigits}@s.whatsapp.net`;
+    const confirmation = 'Titan Stream: your browser sign-in has been approved.';
+    await this.baileysService.sendTextMessage(primaryTarget, confirmation, 'CRITICAL').catch((err: any) => {
+      this.logger.warn(`[WA_CONFIRMATION_FAILED] Failed to send approval confirmation: ${err.message}`);
+    });
 
     this.logger.log(`[WA_CHALLENGE_APPROVED] challengeId=${challenge.challengeId} phone=${canonicalPhone} titanId=${canonicalTitanId}`);
   }
@@ -605,18 +505,20 @@ export class WhatsappChallengeService {
   private declineChallenge(challenge: WhatsappLoginChallenge, phone: string) {
     challenge.status = 'DECLINED';
     this.phoneToActiveChallengeId.delete(phone);
-    this.pinToChallengeId.delete(challenge.shortPin);
+    this.approvalTokenHashToChallengeId.delete(challenge.approvalTokenHash);
+    deleteSharedChallenge(challenge.challengeId, challenge.approvalTokenHash);
     this.logger.log(`[WA_CHALLENGE_DECLINED] challengeId=${challenge.challengeId} phone=${phone}`);
   }
 
   private cleanupChallenge(challengeId: string) {
     const challenge = this.challenges.get(challengeId);
     if (challenge) {
-      this.pinToChallengeId.delete(challenge.shortPin);
+      this.approvalTokenHashToChallengeId.delete(challenge.approvalTokenHash);
       if (challenge.phone) {
         this.phoneToActiveChallengeId.delete(challenge.phone);
       }
       this.challenges.delete(challengeId);
+      deleteSharedChallenge(challengeId, challenge.approvalTokenHash);
     }
   }
 }

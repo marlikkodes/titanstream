@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Loader2, AlertCircle, RefreshCw, ShieldCheck, Send, Smartphone, Laptop, QrCode, MessageSquare, Copy, Check, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, ShieldCheck, Send, Smartphone, Laptop, QrCode, MessageSquare, ArrowLeft, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { api } from '../services/api';
 import { useAuthStore, type SessionData } from '../store/useAuthStore';
@@ -37,6 +37,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const isAuthLoading = useAuthStore((s) => s.isAuthLoading);
   const authError = useAuthStore((s) => s.authError);
   const setSession = useAuthStore((s) => s.setSession);
+  const clearSession = useAuthStore((s) => s.clearSession);
   const setAuthLoading = useAuthStore((s) => s.setAuthLoading);
   const setAuthError = useAuthStore((s) => s.setAuthError);
 
@@ -46,6 +47,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [webDeepLink, setWebDeepLink] = useState<string | null>(null);
   const [webSessionCode, setWebSessionCode] = useState<string | null>(null);
   const [isWaitingForTelegramAuth, setIsWaitingForTelegramAuth] = useState(false);
+  const [sessionVerified, setSessionVerified] = useState(false);
 
   const [authTab, setAuthTab] = useState<'telegram' | 'whatsapp'>('telegram');
 
@@ -54,8 +56,10 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [waViewMode, setWaViewMode] = useState<'auto' | 'qr_pin' | 'deep_link' | 'otp'>('otp');
   
   const [waChallengeId, setWaChallengeId] = useState<string | null>(null);
-  const [waShortPin, setWaShortPin] = useState<string | null>(null);
+  const [waBrowserProof, setWaBrowserProof] = useState<string | null>(null);
   const [waDeepLink, setWaDeepLink] = useState<string | null>(null);
+  const [waTransportReady, setWaTransportReady] = useState<boolean | null>(null);
+  const [waTransportStatus, setWaTransportStatus] = useState<string | null>(null);
   const [waExpiresAt, setWaExpiresAt] = useState<Date | null>(null);
   const [waTimeRemaining, setWaTimeRemaining] = useState<number>(120);
   const [waStatus, setWaStatus] = useState<'PENDING' | 'AWAITING_APPROVAL' | 'APPROVED' | 'DECLINED' | 'EXPIRED'>('PENDING');
@@ -63,7 +67,6 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [waLoading, setWaLoading] = useState(false);
   const [waError, setWaError] = useState<string | null>(null);
   const [waMessage, setWaMessage] = useState<string | null>(null);
-  const [copiedPin, setCopiedPin] = useState(false);
 
   // Traditional OTP fallback states
   const [waStep, setWaStep] = useState<'phone' | 'otp'>('phone');
@@ -74,6 +77,28 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   useEffect(() => {
     setDeviceContext(detectDeviceContext());
   }, []);
+
+  // Persisted browser state is never authentication proof. A protected backend
+  // request must validate the signed token before this gate renders the app.
+  useEffect(() => {
+    if (!hasHydrated) return;
+    if (!isAuthenticated) {
+      setSessionVerified(false);
+      return;
+    }
+
+    let active = true;
+    setSessionVerified(false);
+    api.get('/auth/profile')
+      .then(() => {
+        if (active) setSessionVerified(true);
+      })
+      .catch(() => {
+        if (active) clearSession();
+      });
+
+    return () => { active = false; };
+  }, [hasHydrated, isAuthenticated, clearSession]);
 
   // ── Mini App authentication (initData HMAC) ────────────────────────────────
   const authenticateMiniApp = useCallback(async () => {
@@ -197,26 +222,6 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
           console.warn(`[AUTH_GATE:${traceId}] API telegram-login notice:`, apiErr?.message);
         }
 
-        if (!sessionData && userId) {
-          const tgId = String(userId);
-          sessionData = {
-            accessToken: `tg_token_${tgId}`,
-            refreshToken: `tg_refresh_${tgId}`,
-            user: {
-              id: tgId,
-              telegramUserId: Number(tgId),
-              firstName: userPayload.first_name || userPayload.firstName || 'Operator',
-              lastName: userPayload.last_name || userPayload.lastName || '',
-              username: userPayload.username || `op_${tgId.slice(-6)}`,
-              state: 'READY',
-              isReady: true,
-              role: 'USER',
-            },
-            onboarding: { currentStep: 'welcome', isCompleted: true },
-            isNewUser: false,
-          };
-        }
-
         if (!sessionData) {
           throw new Error('Telegram verification failed. Invalid user payload.');
         }
@@ -296,13 +301,15 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
       const payload = res.data?.data || res.data;
       if (payload?.challengeId) {
         setWaChallengeId(payload.challengeId);
-        setWaShortPin(payload.shortPin);
+        setWaBrowserProof(payload.browserProof);
         setWaDeepLink(payload.waDeepLink);
+        setWaTransportReady(payload.transportReady === true);
+        setWaTransportStatus(payload.transportStatus || null);
         setWaExpiresAt(new Date(payload.expiresAt));
         setWaTimeRemaining(600);
         setWaStatus('PENDING');
         if (payload.transportReady === false) {
-          setWaError('WhatsApp gateway is connecting or pending pairing. Please scan QR or try again shortly.');
+          setWaError('WhatsApp sign-in is temporarily unavailable. The secure gateway is offline or needs pairing. Please try again shortly.');
         }
       }
     } catch (err: any) {
@@ -321,7 +328,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // Challenge Polling & Timer Effect
   useEffect(() => {
-    if (!waChallengeId || isAuthenticated || authTab !== 'whatsapp') return;
+    if (!waChallengeId || !waBrowserProof || waTransportReady !== true || isAuthenticated || authTab !== 'whatsapp') return;
 
     // Timer countdown
     const timerInterval = setInterval(() => {
@@ -337,7 +344,10 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     // Poll challenge status every 2s
     const pollInterval = setInterval(async () => {
       try {
-        const res = await api.post('/auth/whatsapp/challenge-status', { challengeId: waChallengeId });
+        const res = await api.post('/auth/whatsapp/challenge-status', {
+          challengeId: waChallengeId,
+          browserProof: waBrowserProof,
+        });
         const payload = res.data?.data || res.data;
         const status = String(payload?.status || '').toUpperCase();
         const accessToken = payload?.accessToken || payload?.sessionTokens?.accessToken || res.data?.accessToken;
@@ -346,19 +356,17 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
           clearInterval(pollInterval);
           clearInterval(timerInterval);
           setWaStatus('APPROVED');
-          const validToken = accessToken || `wa_access_${Date.now()}`;
+          const refreshToken = payload?.refreshToken || payload?.sessionTokens?.refreshToken || res.data?.refreshToken;
+          const user = payload?.user || payload?.sessionTokens?.user || res.data?.user;
+          if (!accessToken || !refreshToken || !user) {
+            setWaError('WhatsApp approval completed, but the secure browser session could not be issued. Please try again.');
+            return;
+          }
           const sessionPayload = {
             ...payload,
-            accessToken: validToken,
-            refreshToken: payload?.refreshToken || payload?.sessionTokens?.refreshToken || res.data?.refreshToken || `wa_refresh_${Date.now()}`,
-            user: payload?.user || payload?.sessionTokens?.user || res.data?.user || {
-              id: '18257320524',
-              identityId: 'titan_wa_18257320524',
-              telegramUserId: 18257320524,
-              firstName: 'WhatsApp Operator',
-              state: 'ACTIVE_USER',
-              isReady: true,
-            },
+            accessToken,
+            refreshToken,
+            user,
             onboarding: { currentStep: 'COMPLETED', isCompleted: true },
             isNewUser: false,
           };
@@ -379,15 +387,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
       clearInterval(timerInterval);
       clearInterval(pollInterval);
     };
-  }, [waChallengeId, isAuthenticated, authTab, setSession]);
-
-  // Copy PIN helper
-  const handleCopyPin = () => {
-    if (!waShortPin) return;
-    navigator.clipboard.writeText(`START ${waShortPin}`);
-    setCopiedPin(true);
-    setTimeout(() => setCopiedPin(false), 2000);
-  };
+  }, [waChallengeId, waBrowserProof, isAuthenticated, authTab, setSession]);
 
   // Traditional OTP Handlers
   const handleRequestWaOtp = async (e: React.FormEvent) => {
@@ -451,8 +451,16 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     );
   }
 
-  if (isAuthenticated) {
+  if (isAuthenticated && sessionVerified) {
     return <>{children}</>;
+  }
+
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-app-bg text-text-secondary">
+        <Loader2 className="animate-spin" size={22} />
+      </div>
+    );
   }
 
   if (isAuthLoading) {
@@ -526,7 +534,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
             <button
               type="button"
-              onClick={() => { setAuthTab('whatsapp'); setWaError(null); }}
+              onClick={() => { setAuthTab('whatsapp'); setWaViewMode('auto'); setWaError(null); }}
               className={`py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${
                 authTab === 'whatsapp'
                   ? 'bg-[#25D366] text-white shadow-md shadow-[#25D366]/20'
@@ -610,7 +618,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
                     </div>
                   ) : waStatus === 'EXPIRED' ? (
                     <div className="w-full py-8 flex flex-col items-center justify-center text-center">
-                      <p className="text-xs text-gray-400 font-semibold mb-4">Sign-in request expired after 2 minutes.</p>
+                        <p className="text-xs text-gray-400 font-semibold mb-4">Sign-in request expired after 10 minutes.</p>
                       <button
                         onClick={createWhatsAppChallenge}
                         className="py-3 px-6 rounded-2xl bg-[#25D366] text-white font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-[#25D366]/20 active:scale-95 transition-all"
@@ -626,31 +634,21 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
                         <span>Desktop Cross-Device Sign In</span>
                       </div>
 
-                      {/* QR Code */}
-                      {waDeepLink && <QRCodeDisplay value={waDeepLink} size={160} />}
-
-                      {/* 6-Digit PIN Display & One-Click Copy */}
-                      {waShortPin && (
-                        <div className="w-full p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Sign-In PIN</span>
-                            <span className="text-sm font-mono font-extrabold text-[#25D366] tracking-widest">{waShortPin}</span>
-                          </div>
-                          <button
-                            onClick={handleCopyPin}
-                            className="py-1.5 px-3 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366]/30 text-[#25D366] text-xs font-bold transition-all flex items-center gap-1.5 border border-[#25D366]/30"
-                          >
-                            {copiedPin ? <Check size={14} /> : <Copy size={14} />}
-                            <span>{copiedPin ? 'Copied!' : 'Copy START Code'}</span>
-                          </button>
+                      {waTransportReady === false ? (
+                        <div className="w-full p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-200 text-xs text-center leading-relaxed">
+                          <p className="font-bold">WhatsApp gateway unavailable</p>
+                          <p className="mt-1 text-amber-100/80">{waTransportStatus === 'ACCOUNT_CONNECTING' ? 'The gateway is reconnecting. Please wait, then retry.' : 'The gateway needs an administrator to reconnect or pair the WhatsApp account.'}</p>
                         </div>
-                      )}
+                      ) : (
+                        <>
+                          {waDeepLink && <QRCodeDisplay value={waDeepLink} size={160} />}
 
-                      {/* Instructions */}
-                      <div className="text-[11px] text-gray-400 text-center leading-relaxed space-y-1">
-                        <p>1. Scan QR code above with your phone camera or WhatsApp.</p>
-                        <p>2. Send the pre-filled <strong className="text-white font-mono">START {waShortPin}</strong> message.</p>
-                      </div>
+                          <div className="text-[11px] text-gray-400 text-center leading-relaxed space-y-1">
+                            <p>1. Scan QR code above with your phone camera or WhatsApp.</p>
+                            <p>2. Send the pre-filled approval message from WhatsApp.</p>
+                          </div>
+                        </>
+                      )}
 
                       {/* Countdown Timer */}
                       <div className="flex items-center gap-2 text-xs text-gray-400 font-mono">
@@ -659,7 +657,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
                       </div>
 
                       {/* Action buttons */}
-                      {waDeepLink && (
+                      {waDeepLink && waTransportReady === true && (
                         <a
                           href={waDeepLink}
                           target="_blank"
@@ -691,7 +689,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
                   </div>
 
                   <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                    Tap Open WhatsApp to dispatch your secure sign-in request directly.
+                    {waTransportReady === false ? 'WhatsApp sign-in will be available after the gateway reconnects.' : 'Tap Open WhatsApp to dispatch your secure sign-in request directly.'}
                   </p>
 
                   {waLoading ? (
@@ -701,14 +699,16 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
                     </div>
                   ) : (
                     <button
+                      disabled={waTransportReady === false}
                       onClick={() => {
+                        if (waTransportReady === false) return;
                         if (waDeepLink) {
                           window.location.href = waDeepLink;
                         } else {
                           createWhatsAppChallenge();
                         }
                       }}
-                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#25D366] via-[#20bd5a] to-[#128C7E] hover:brightness-110 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-[#25D366]/25 transition-all border border-white/20 active:scale-[0.98]"
+                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#25D366] via-[#20bd5a] to-[#128C7E] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-[#25D366]/25 transition-all border border-white/20 active:scale-[0.98]"
                     >
                       <MessageSquare size={18} className="fill-current" />
                       <span>Open WhatsApp</span>

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/Badge';
 import { AdminLoginScreen } from '@/components/admin/AdminLoginScreen';
+import { api } from '@/services/api';
 
 const pageTitles: Record<string, string> = {
   '/admin': 'Overview',
@@ -40,10 +41,7 @@ const bottomNavItems = [
 export const AdminLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const adminToken = localStorage.getItem('admin_auth_token');
-    return !!adminToken && (adminToken.startsWith('admin-token:') || adminToken.length > 10);
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const title = pageTitles[location.pathname] || 'Admin';
@@ -51,6 +49,18 @@ export const AdminLayout: React.FC = () => {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_auth_token');
+    if (!token) return;
+
+    api.get('/admin/auth/me')
+      .then(() => setIsAuthenticated(true))
+      .catch(() => {
+        localStorage.removeItem('admin_auth_token');
+        setIsAuthenticated(false);
+      });
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 

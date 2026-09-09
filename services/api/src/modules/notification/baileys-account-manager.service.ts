@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, NotFoundException, BadRequestException, ServiceUnavailableException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, NotFoundException, BadRequestException, ServiceUnavailableException, Inject, forwardRef } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../../database/prisma.service';
@@ -17,6 +17,10 @@ export interface ManagedBaileysAccount {
   isQuarantined: boolean;
   pairingCode?: string;
   socket?: any;
+  socketGeneration?: number;
+  reconnectAttempts?: number;
+  manualDisconnect?: boolean;
+  requiresReauthentication?: boolean;
   metrics: {
     lastConnectedAt?: Date;
     lastMessageAt?: Date;
@@ -63,9 +67,15 @@ function extractMessageText(msg: any): string | null {
 }
 
 @Injectable()
-export class BaileysAccountManagerService implements OnModuleInit {
+export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(BaileysAccountManagerService.name);
   private readonly accounts = new Map<string, ManagedBaileysAccount>();
+  private readonly socketInitializations = new Map<string, Promise<void>>();
+  private readonly reconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly credentialWrites = new Map<string, Promise<void>>();
+  private queueProcessorTimer?: ReturnType<typeof setInterval>;
+  private watchdogTimer?: ReturnType<typeof setInterval>;
+  private isShuttingDown = false;
 
   // Operational Outbound Throttle & Rate Control Configuration
   private readonly maxConcurrency = parseInt(process.env.WHATSAPP_MAX_CONCURRENCY || '2', 10);
@@ -93,7 +103,7 @@ export class BaileysAccountManagerService implements OnModuleInit {
     });
 
     // 2. Start bounded queue processor tick
-    setInterval(() => {
+    this.queueProcessorTimer = setInterval(() => {
       this.processOutboundQueue().catch((err) => {
         this.logger.error(`[BAILEYS_QUEUE_ERROR] ${err.message}`);
       });
@@ -103,13 +113,28 @@ export class BaileysAccountManagerService implements OnModuleInit {
     this.startSafetyNetWatchdog();
   }
 
+  async onModuleDestroy() {
+    this.isShuttingDown = true;
+    if (this.queueProcessorTimer) clearInterval(this.queueProcessorTimer);
+    if (this.watchdogTimer) clearInterval(this.watchdogTimer);
+
+    for (const timer of this.reconnectTimers.values()) clearTimeout(timer);
+    this.reconnectTimers.clear();
+
+    await Promise.allSettled(
+      Array.from(this.accounts.values()).map((account) => this.closeCurrentSocket(account, 'Application shutdown')),
+    );
+    await Promise.allSettled(Array.from(this.credentialWrites.values()));
+  }
+
   /**
    * Safety Net Watchdog: Continuously monitors account health every 15 seconds.
    * Non-destructively auto-reconnects disconnected sockets using DB-backed auth credentials.
    */
   private startSafetyNetWatchdog() {
     this.logger.log('🛡️  Starting Baileys Safety Net Watchdog (15s health heartbeat loop)...');
-    setInterval(async () => {
+    this.watchdogTimer = setInterval(async () => {
+      if (this.isShuttingDown) return;
       try {
         const primaryPhone = process.env.WHATSAPP_BOT_PHONE || '+18257320524';
         const cleanDigits = primaryPhone.replace(/\D/g, '');
@@ -124,12 +149,12 @@ export class BaileysAccountManagerService implements OnModuleInit {
           primaryAccount = this.accounts.get(primaryAccountId);
         }
 
-        if (primaryAccount && primaryAccount.isEnabled && !primaryAccount.isQuarantined) {
+        if (primaryAccount && primaryAccount.isEnabled && !primaryAccount.isQuarantined && !primaryAccount.manualDisconnect && !primaryAccount.requiresReauthentication) {
           // Auto-reconnect if socket dropped or disconnected
           if (primaryAccount.state !== 'CONNECTED' || !primaryAccount.socket) {
             if (primaryAccount.state !== 'CONNECTING') {
               this.logger.log(`[SAFETY_NET_RECOVER] Primary account [${primaryAccount.accountId}] is ${primaryAccount.state}. Triggering non-destructive socket reconnect...`);
-              await this.initAccountSocket(primaryAccount.accountId);
+              this.scheduleReconnect(primaryAccount.accountId);
             }
           }
         }
@@ -420,36 +445,60 @@ export class BaileysAccountManagerService implements OnModuleInit {
     if (primary.state === 'CONNECTED' && primary.socket) {
       return { status: 'ACCOUNT_READY', accountId: primary.accountId, phone: primary.phone, hasCreds: true };
     } else if (primary.state === 'CONNECTED') {
-      return { status: 'ACCOUNT_CONNECTED', accountId: primary.accountId, phone: primary.phone, hasCreds: true };
+      return { status: 'ACCOUNT_CONNECTED', accountId: primary.accountId, phone: primary.phone, hasCreds };
     } else if (primary.state === 'CONNECTING') {
-      return { status: 'ACCOUNT_CONNECTING', accountId: primary.accountId, phone: primary.phone, hasCreds: true };
+      return { status: 'ACCOUNT_CONNECTING', accountId: primary.accountId, phone: primary.phone, hasCreds };
     } else {
-      return { status: 'ACCOUNT_DISCONNECTED', accountId: primary.accountId, phone: primary.phone, hasCreds: true };
+      return { status: 'ACCOUNT_DISCONNECTED', accountId: primary.accountId, phone: primary.phone, hasCreds };
     }
   }
 
   isAuthTransportReady(): boolean {
     const status = this.getAuthTransportStatus();
-    return status.status !== 'ACCOUNT_NOT_CONFIGURED';
+    return status.status === 'ACCOUNT_READY';
   }
 
   /**
    * Initializes or reconnects a Baileys socket for a given account.
    */
-  private async initAccountSocket(accountId: string) {
-    const account = this.accounts.get(accountId);
-    if (!account || !account.isEnabled || account.isQuarantined) return;
-    if (account.state === 'CONNECTING') return;
+  private initAccountSocket(accountId: string): Promise<void> {
+    const existingInitialization = this.socketInitializations.get(accountId);
+    if (existingInitialization) return existingInitialization;
 
-    if (account.socket) {
-      try {
-        account.socket.ws?.close();
-        account.socket.ev?.removeAllListeners();
-      } catch {}
-      account.socket = null;
-    }
+    let initialization: Promise<void>;
+    initialization = this.createAccountSocket(accountId).finally(() => {
+      if (this.socketInitializations.get(accountId) === initialization) {
+        this.socketInitializations.delete(accountId);
+      }
+      const account = this.accounts.get(accountId);
+      if (account?.state === 'DISCONNECTED' && !account.socket) {
+        this.scheduleReconnect(accountId);
+      }
+    });
+    this.socketInitializations.set(accountId, initialization);
+    return initialization;
+  }
+
+  private async createAccountSocket(accountId: string) {
+    const account = this.accounts.get(accountId);
+    if (
+      !account ||
+      this.isShuttingDown ||
+      !account.isEnabled ||
+      account.isQuarantined ||
+      account.manualDisconnect ||
+      account.requiresReauthentication ||
+      account.socket
+    ) return;
+
+    this.clearReconnectTimer(accountId);
+    // Set this before the first await. Concurrent callers now join the promise
+    // above instead of creating another auth state or WebSocket.
+    account.state = 'CONNECTING';
+    await this.updateDbAccountState(accountId, 'CONNECTING', account.healthState);
 
     try {
+      await this.waitForCredentialWrites(accountId);
       const baileys = await import('@whiskeysockets/baileys').catch(() => null);
       if (!baileys) {
         this.logger.warn(`[BAILEYS] @whiskeysockets/baileys package not available for account ${accountId}.`);
@@ -461,6 +510,10 @@ export class BaileysAccountManagerService implements OnModuleInit {
       const makeWASocket = bAny.makeWASocket || bAny.default?.makeWASocket || bAny.default;
       const DisconnectReason = bAny.DisconnectReason || bAny.default?.DisconnectReason;
       const { state, saveCreds } = await usePrismaAuthState(this.prisma, account.accountId, account.authFolder);
+      if (!this.canOpenSocket(account)) return;
+
+      const generation = (account.socketGeneration || 0) + 1;
+      account.socketGeneration = generation;
 
       const pinoLogger: any = {
         level: 'silent',
@@ -471,9 +524,6 @@ export class BaileysAccountManagerService implements OnModuleInit {
         debug: () => {},
         child: () => pinoLogger,
       };
-
-      account.state = 'CONNECTING';
-      await this.updateDbAccountState(accountId, 'CONNECTING', account.healthState);
 
       const socket = makeWASocket({
         auth: state,
@@ -486,11 +536,22 @@ export class BaileysAccountManagerService implements OnModuleInit {
         retryRequestDelayMs: 2500,
       });
 
+      if (!this.canOpenSocket(account) || account.socketGeneration !== generation) {
+        try {
+          await socket.end(new Error('Superseded Baileys initialization'));
+        } catch {}
+        return;
+      }
       account.socket = socket;
-      socket.ev.on('creds.update', saveCreds);
+      socket.ev.on('creds.update', () => {
+        if (this.isCurrentSocket(account, socket, generation)) {
+          this.queueCredentialSave(accountId, saveCreds);
+        }
+      });
 
       // Inbound listener for conversational approval
       socket.ev.on('messages.upsert', async (m: any) => {
+        if (!this.isCurrentSocket(account, socket, generation)) return;
         try {
           if (!m.messages || !m.messages.length) return;
           for (const msg of m.messages) {
@@ -520,7 +581,7 @@ export class BaileysAccountManagerService implements OnModuleInit {
                   } catch {}
                 }
 
-                this.logger.log(`[BAILEYS_INBOUND] Account [${account.accountId}] received message from ${senderJid} (raw: ${msg.key.remoteJid}): "${text}"`);
+                this.logger.log(`[BAILEYS_INBOUND] Account [${account.accountId}] received a message from ${senderJid}.`);
                 await this.whatsappChallengeService.handleInboundMessage(senderJid, text, {
                   rawJid: msg.key.remoteJid,
                   pushName: msg.pushName || undefined,
@@ -537,6 +598,7 @@ export class BaileysAccountManagerService implements OnModuleInit {
       let pairingCodeRequested = false;
 
       socket.ev.on('connection.update', async (update: any) => {
+        if (!this.isCurrentSocket(account, socket, generation)) return;
         const { connection, lastDisconnect, qr } = update;
 
         // When Baileys emits a QR, request a pairing code instead
@@ -546,16 +608,7 @@ export class BaileysAccountManagerService implements OnModuleInit {
           try {
             const pairingCode = await socket.requestPairingCode(phoneForPairing);
             account.pairingCode = pairingCode;
-            this.logger.log(`\n` +
-              `╔══════════════════════════════════════════════════════════════╗\n` +
-              `║         WHATSAPP PAIRING CODE FOR ${account.phone}          ║\n` +
-              `║                                                            ║\n` +
-              `║   Code:  ${pairingCode.padEnd(48)}║\n` +
-              `║                                                            ║\n` +
-              `║   Open WhatsApp on your phone → Linked Devices             ║\n` +
-              `║   → Link a Device → Link with phone number instead         ║\n` +
-              `║   → Enter this code                                        ║\n` +
-              `╚══════════════════════════════════════════════════════════════╝`);
+            this.logger.log(`[BAILEYS_PAIRING_CODE_ISSUED] Account ${accountId} received a pairing code.`);
             // Persist pairing code to DB so admin endpoints can read it
             try {
               await this.prisma.baileysAccount.update({
@@ -571,26 +624,31 @@ export class BaileysAccountManagerService implements OnModuleInit {
 
         if (connection === 'close') {
           const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-          const isLoggedOut = statusCode === DisconnectReason?.loggedOut;
-          this.logger.warn(`[BAILEYS_DISCONNECT] Account ${accountId} disconnected (Reason ${statusCode}). Logged out status: ${isLoggedOut}`);
+          const requiresReauthentication = [
+            DisconnectReason?.loggedOut,
+            DisconnectReason?.badSession,
+            DisconnectReason?.forbidden,
+          ].includes(statusCode);
+          this.logger.warn(`[BAILEYS_DISCONNECT] Account ${accountId} disconnected (reason ${statusCode}). Re-authentication required: ${requiresReauthentication}`);
           account.state = 'DISCONNECTED';
           account.socket = undefined;
 
-          if (account.isEnabled && !account.isQuarantined) {
-            if (isLoggedOut) {
-              this.logger.warn(`[BAILEYS_LOGGED_OUT_NOTICE] Account ${accountId} reported 401/LoggedOut status. Preserving DB credentials & scheduling non-destructive reconnect in 15s...`);
-              account.healthState = 'DEGRADED';
-              await this.updateDbAccountState(accountId, 'DISCONNECTED', 'DEGRADED');
-              setTimeout(() => this.initAccountSocket(accountId), 15000);
-            } else {
-              await this.updateDbAccountState(accountId, 'DISCONNECTED', account.healthState);
-              setTimeout(() => this.initAccountSocket(accountId), 5000);
-            }
+          if (requiresReauthentication) {
+            account.requiresReauthentication = true;
+            account.healthState = 'DEGRADED';
+            this.clearReconnectTimer(accountId);
+            await this.updateDbAccountState(accountId, 'DISCONNECTED', 'DEGRADED');
+            return;
           }
+
+          await this.updateDbAccountState(accountId, 'DISCONNECTED', account.healthState);
+          this.scheduleReconnect(accountId);
         } else if (connection === 'open') {
           account.state = 'CONNECTED';
           account.healthState = 'HEALTHY';
           account.pairingCode = undefined;
+          account.reconnectAttempts = 0;
+          account.requiresReauthentication = false;
           account.metrics.lastConnectedAt = new Date();
           this.logger.log(`[BAILEYS] ✅ WhatsApp account [${accountId}] connected successfully.`);
           await this.updateDbAccountState(accountId, 'CONNECTED', 'HEALTHY', new Date());
@@ -600,7 +658,85 @@ export class BaileysAccountManagerService implements OnModuleInit {
       account.state = 'DISCONNECTED';
       await this.updateDbAccountState(accountId, 'DISCONNECTED', account.healthState);
       this.logger.error(`[BAILEYS_INIT_ERROR] Account ${accountId}: ${err.message}`);
+      this.scheduleReconnect(accountId);
     }
+  }
+
+  private canOpenSocket(account: ManagedBaileysAccount): boolean {
+    return !this.isShuttingDown && account.isEnabled && !account.isQuarantined && !account.manualDisconnect && !account.requiresReauthentication && !account.socket;
+  }
+
+  private isCurrentSocket(account: ManagedBaileysAccount, socket: any, generation: number): boolean {
+    return !this.isShuttingDown && account.socket === socket && account.socketGeneration === generation;
+  }
+
+  private queueCredentialSave(accountId: string, saveCreds: () => Promise<void>) {
+    const previousWrite = this.credentialWrites.get(accountId) || Promise.resolve();
+    const nextWrite = previousWrite.catch(() => undefined).then(saveCreds);
+    this.credentialWrites.set(accountId, nextWrite);
+    void nextWrite.then(
+      () => this.clearCredentialWrite(accountId, nextWrite),
+      (err) => {
+        this.logger.error(`[BAILEYS_CREDENTIAL_SAVE_ERROR] Account ${accountId}: ${err.message}`);
+        this.clearCredentialWrite(accountId, nextWrite);
+      },
+    );
+  }
+
+  private clearCredentialWrite(accountId: string, write: Promise<void>) {
+    if (this.credentialWrites.get(accountId) === write) {
+      this.credentialWrites.delete(accountId);
+    }
+  }
+
+  private async waitForCredentialWrites(accountId: string) {
+    const pendingWrite = this.credentialWrites.get(accountId);
+    if (pendingWrite) await pendingWrite.catch(() => undefined);
+  }
+
+  private scheduleReconnect(accountId: string) {
+    const account = this.accounts.get(accountId);
+    if (
+      !account ||
+      this.isShuttingDown ||
+      !account.isEnabled ||
+      account.isQuarantined ||
+      account.manualDisconnect ||
+      account.requiresReauthentication ||
+      this.reconnectTimers.has(accountId) ||
+      this.socketInitializations.has(accountId)
+    ) return;
+
+    const attempt = account.reconnectAttempts || 0;
+    const delayMs = Math.min(5000 * 2 ** attempt, 60000);
+    account.reconnectAttempts = attempt + 1;
+    const timer = setTimeout(() => {
+      this.reconnectTimers.delete(accountId);
+      void this.initAccountSocket(accountId).catch((err) => {
+        this.logger.error(`[BAILEYS_RECONNECT_ERROR] Account ${accountId}: ${err.message}`);
+      });
+    }, delayMs);
+    this.reconnectTimers.set(accountId, timer);
+    this.logger.log(`[BAILEYS_RECONNECT_SCHEDULED] Account ${accountId} retry ${attempt + 1} in ${delayMs}ms.`);
+  }
+
+  private clearReconnectTimer(accountId: string) {
+    const timer = this.reconnectTimers.get(accountId);
+    if (timer) clearTimeout(timer);
+    this.reconnectTimers.delete(accountId);
+  }
+
+  private async closeCurrentSocket(account: ManagedBaileysAccount, reason: string) {
+    this.clearReconnectTimer(account.accountId);
+    account.socketGeneration = (account.socketGeneration || 0) + 1;
+    const socket = account.socket;
+    account.socket = undefined;
+    if (!socket) return;
+
+    try {
+      socket.ev?.removeAllListeners();
+      await socket.end(new Error(reason));
+    } catch {}
   }
 
   /**
@@ -633,6 +769,12 @@ export class BaileysAccountManagerService implements OnModuleInit {
       case 'reconnect':
         account.isEnabled = true;
         account.isQuarantined = false;
+        account.manualDisconnect = false;
+        account.requiresReauthentication = false;
+        if (action === 'reconnect') {
+          await this.closeCurrentSocket(account, 'Manual admin reconnect');
+          account.state = 'DISCONNECTED';
+        }
         await this.prisma.baileysAccount.update({
           where: { accountId },
           data: { isEnabled: true, isQuarantined: false },
@@ -641,25 +783,17 @@ export class BaileysAccountManagerService implements OnModuleInit {
         break;
 
       case 'disconnect':
-        if (account.socket) {
-          try {
-            await account.socket.end(new Error('Manual admin disconnect'));
-          } catch {}
-        }
+        account.manualDisconnect = true;
+        await this.closeCurrentSocket(account, 'Manual admin disconnect');
         account.state = 'DISCONNECTED';
-        account.socket = undefined;
         await this.updateDbAccountState(accountId, 'DISCONNECTED', account.healthState);
         break;
 
       case 'disable':
         account.isEnabled = false;
-        if (account.socket) {
-          try {
-            await account.socket.end(new Error('Admin disabled account'));
-          } catch {}
-        }
+        account.manualDisconnect = true;
+        await this.closeCurrentSocket(account, 'Admin disabled account');
         account.state = 'DISABLED';
-        account.socket = undefined;
         await this.prisma.baileysAccount.update({
           where: { accountId },
           data: { isEnabled: false, state: 'DISABLED' },
@@ -670,12 +804,8 @@ export class BaileysAccountManagerService implements OnModuleInit {
         account.isQuarantined = true;
         account.healthState = 'QUARANTINED';
         account.state = 'QUARANTINED';
-        if (account.socket) {
-          try {
-            await account.socket.end(new Error('Admin quarantined account'));
-          } catch {}
-        }
-        account.socket = undefined;
+        account.manualDisconnect = true;
+        await this.closeCurrentSocket(account, 'Admin quarantined account');
         await this.prisma.baileysAccount.update({
           where: { accountId },
           data: { isQuarantined: true, healthState: 'QUARANTINED', state: 'QUARANTINED' },
@@ -685,6 +815,8 @@ export class BaileysAccountManagerService implements OnModuleInit {
       case 'unquarantine':
         account.isQuarantined = false;
         account.healthState = 'HEALTHY';
+        account.manualDisconnect = false;
+        account.requiresReauthentication = false;
         await this.prisma.baileysAccount.update({
           where: { accountId },
           data: { isQuarantined: false, healthState: 'HEALTHY' },
@@ -693,11 +825,7 @@ export class BaileysAccountManagerService implements OnModuleInit {
         break;
 
       case 'remove':
-        if (account.socket) {
-          try {
-            await account.socket.end(new Error('Account removed'));
-          } catch {}
-        }
+        await this.closeCurrentSocket(account, 'Account removed');
         this.accounts.delete(accountId);
         await this.prisma.baileysAuthKey.deleteMany({
           where: { accountId },
@@ -741,9 +869,7 @@ export class BaileysAccountManagerService implements OnModuleInit {
       }
     }
 
-    const code = `${Math.floor(100000 + Math.random() * 900000)}`;
-    account.pairingCode = code;
-    return { pairingCode: code };
+    throw new ServiceUnavailableException('Baileys pairing transport is not ready. No pairing code was generated.');
   }
 
   /**
