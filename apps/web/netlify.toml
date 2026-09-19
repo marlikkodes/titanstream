@@ -5,8 +5,8 @@
 [build.environment]
   NODE_VERSION = "20"
   PNPM_FLAGS = "--no-frozen-lockfile"
-  VITE_API_BASE_URL = "https://tetherstream-production-e99c.up.railway.app/api/v1"
-  VITE_TELEGRAM_BOT_USERNAME = "titanstream_bot"
+# Set VITE_API_BASE_URL and VITE_TELEGRAM_BOT_USERNAME in Netlify's production
+# environment. Do not commit a stale deployment host into the build config.
 
 # SPA Fallback Redirects for React Router
 [[redirects]]

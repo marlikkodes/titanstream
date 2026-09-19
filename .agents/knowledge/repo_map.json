@@ -1,6 +1,6 @@
 {
   "root": "/home/wendy/Desktop/tetherstream",
-  "total_files": 6930,
+  "total_files": 7037,
   "files": [
     {
       "path": "P0_IDENTITY_HARDENING_FIXES_SUMMARY.md",
@@ -1575,7 +1575,7 @@
     {
       "path": "apps/web/.env.example",
       "extension": ".example",
-      "size_bytes": 113
+      "size_bytes": 100
     },
     {
       "path": "apps/web/index.html",
@@ -1645,7 +1645,7 @@
     {
       "path": "apps/web/src/App.tsx",
       "extension": ".tsx",
-      "size_bytes": 16627
+      "size_bytes": 16780
     },
     {
       "path": "apps/web/src/vite-env.d.ts",
@@ -1750,7 +1750,7 @@
     {
       "path": "apps/web/src/components/CountrySelector.tsx",
       "extension": ".tsx",
-      "size_bytes": 5964
+      "size_bytes": 6009
     },
     {
       "path": "apps/web/src/components/index.ts",
@@ -2530,7 +2530,7 @@
     {
       "path": "apps/web/src/services/api.ts",
       "extension": ".ts",
-      "size_bytes": 13295
+      "size_bytes": 12796
     },
     {
       "path": "apps/web/src/services/exchangeRateService.ts",
@@ -2855,7 +2855,7 @@
     {
       "path": ".agents/knowledge/repo_map.json",
       "extension": ".json",
-      "size_bytes": 940041
+      "size_bytes": 951959
     },
     {
       "path": ".agents/bin/agent-commander",
@@ -3800,7 +3800,7 @@
     {
       "path": ".agents/state/mission_1789823605_a062a8.json",
       "extension": ".json",
-      "size_bytes": 573
+      "size_bytes": 10393
     },
     {
       "path": ".agents/state/mission_1788112952_2a8256.json",
@@ -3970,7 +3970,7 @@
     {
       "path": ".agents/state/metrics.json",
       "extension": ".json",
-      "size_bytes": 11763
+      "size_bytes": 12027
     },
     {
       "path": ".agents/state/model_performance.json",
@@ -4498,6 +4498,11 @@
       "size_bytes": 10157
     },
     {
+      "path": ".agents/state/mission_1789823874_90d779.json",
+      "extension": ".json",
+      "size_bytes": 613
+    },
+    {
       "path": ".agents/state/mission_1788175846_720605.json",
       "extension": ".json",
       "size_bytes": 6171
@@ -4940,7 +4945,12 @@
     {
       "path": "services/api/.env.example",
       "extension": ".example",
-      "size_bytes": 316
+      "size_bytes": 1015
+    },
+    {
+      "path": "services/api/PRODUCTION_RELEASE.md",
+      "extension": ".md",
+      "size_bytes": 1122
     },
     {
       "path": "services/api/tsconfig.build.json",
@@ -4955,7 +4965,7 @@
     {
       "path": "services/api/tsconfig.build.tsbuildinfo",
       "extension": ".tsbuildinfo",
-      "size_bytes": 305403
+      "size_bytes": 305999
     },
     {
       "path": "services/api/start_local_dev_server.py",
@@ -4985,7 +4995,7 @@
     {
       "path": "services/api/start.sh",
       "extension": ".sh",
-      "size_bytes": 2415
+      "size_bytes": 1213
     },
     {
       "path": "services/api/package.json",
@@ -5154,6 +5164,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-895.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2847.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -5433,6 +5448,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2854.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-393.json",
       "extension": ".json",
       "size_bytes": 164
@@ -5444,6 +5464,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1032.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2793.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -5643,6 +5668,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2762.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-256786229743.json",
       "extension": ".json",
       "size_bytes": 17
@@ -5738,6 +5768,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2820.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1808.json",
       "extension": ".json",
       "size_bytes": 203
@@ -5751,6 +5786,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-256701035284.json",
       "extension": ".json",
       "size_bytes": 17
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2815.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-23.json",
@@ -5826,6 +5866,11 @@
       "path": "services/api/baileys_auth_info/pre-key-35.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2767.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/lid-mapping-56260196045053_reverse.json",
@@ -6383,6 +6428,11 @@
       "size_bytes": 14
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2779.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-364.json",
       "extension": ".json",
       "size_bytes": 164
@@ -6551,6 +6601,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-46729186659.json",
       "extension": ".json",
       "size_bytes": 16
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2765.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-117.json",
@@ -7163,6 +7218,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2754.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-2739.json",
       "extension": ".json",
       "size_bytes": 203
@@ -7571,6 +7631,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-30460361052364_reverse.json",
       "extension": ".json",
       "size_bytes": 14
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2770.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-141.json",
@@ -8278,6 +8343,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2837.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-191.json",
       "extension": ".json",
       "size_bytes": 164
@@ -8528,6 +8598,11 @@
       "size_bytes": 164
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2764.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1410.json",
       "extension": ".json",
       "size_bytes": 203
@@ -8556,6 +8631,11 @@
       "path": "services/api/baileys_auth_info/pre-key-209.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2761.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-395.json",
@@ -8728,6 +8808,11 @@
       "size_bytes": 13
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2795.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-971553608477.json",
       "extension": ".json",
       "size_bytes": 17
@@ -8853,6 +8938,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2759.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-976.json",
       "extension": ".json",
       "size_bytes": 203
@@ -8926,6 +9016,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-67194914361437_reverse.json",
       "extension": ".json",
       "size_bytes": 13
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2785.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1121.json",
@@ -9116,6 +9211,11 @@
       "path": "services/api/baileys_auth_info/pre-key-715.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2819.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/lid-mapping-102344842842345_reverse.json",
@@ -9359,6 +9459,16 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1938.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2846.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2780.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -9848,6 +9958,11 @@
       "size_bytes": 16
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2823.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-132710261633262_reverse.json",
       "extension": ".json",
       "size_bytes": 14
@@ -9908,6 +10023,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2800.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-256769013390.json",
       "extension": ".json",
       "size_bytes": 17
@@ -9949,6 +10069,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-915.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2805.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -10383,7 +10508,17 @@
       "size_bytes": 17
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2834.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1503.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2832.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -10541,6 +10676,11 @@
       "path": "services/api/baileys_auth_info/pre-key-575.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2807.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-535.json",
@@ -10873,6 +11013,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2794.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1312.json",
       "extension": ".json",
       "size_bytes": 203
@@ -11048,6 +11193,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2851.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-2062.json",
       "extension": ".json",
       "size_bytes": 203
@@ -11061,6 +11211,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-83520034717894_reverse.json",
       "extension": ".json",
       "size_bytes": 14
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2788.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-2371.json",
@@ -11519,6 +11674,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1008.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2763.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -12038,6 +12198,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2808.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-2711.json",
       "extension": ".json",
       "size_bytes": 203
@@ -12128,6 +12293,11 @@
       "size_bytes": 164
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2773.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-800.json",
       "extension": ".json",
       "size_bytes": 164
@@ -12146,6 +12316,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-57814689017868_reverse.json",
       "extension": ".json",
       "size_bytes": 14
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2753.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-2312.json",
@@ -12288,6 +12463,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2850.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-188961381208310_reverse.json",
       "extension": ".json",
       "size_bytes": 14
@@ -12358,6 +12538,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2792.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1698.json",
       "extension": ".json",
       "size_bytes": 203
@@ -12376,6 +12561,11 @@
       "path": "services/api/baileys_auth_info/pre-key-165.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2802.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-909.json",
@@ -12411,6 +12601,11 @@
       "path": "services/api/baileys_auth_info/pre-key-820.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2783.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-2345.json",
@@ -12458,6 +12653,16 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2752.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2811.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-302.json",
       "extension": ".json",
       "size_bytes": 164
@@ -12494,6 +12699,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-2745.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2775.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -12758,6 +12968,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2806.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-256702391590.json",
       "extension": ".json",
       "size_bytes": 16
@@ -12806,6 +13021,11 @@
       "path": "services/api/baileys_auth_info/pre-key-588.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2768.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-71.json",
@@ -12903,6 +13123,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2816.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-256753949516.json",
       "extension": ".json",
       "size_bytes": 17
@@ -12941,6 +13166,11 @@
       "path": "services/api/baileys_auth_info/pre-key-617.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2809.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/lid-mapping-46064161784035_reverse.json",
@@ -13059,6 +13289,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1291.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2817.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -13193,6 +13428,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2797.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-257.json",
       "extension": ".json",
       "size_bytes": 164
@@ -13206,6 +13446,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-256772047501.json",
       "extension": ".json",
       "size_bytes": 17
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2810.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1.json",
@@ -13688,6 +13933,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2824.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1964.json",
       "extension": ".json",
       "size_bytes": 203
@@ -13744,6 +13994,16 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1172.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2771.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2799.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -13823,6 +14083,11 @@
       "size_bytes": 17
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2789.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1263.json",
       "extension": ".json",
       "size_bytes": 203
@@ -13896,6 +14161,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-256782898598.json",
       "extension": ".json",
       "size_bytes": 16
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2829.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/lid-mapping-44170148323486_reverse.json",
@@ -13974,6 +14244,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1471.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2852.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -14208,6 +14483,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2786.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-2503.json",
       "extension": ".json",
       "size_bytes": 203
@@ -14409,6 +14689,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-2198.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2772.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -14948,6 +15233,11 @@
       "size_bytes": 164
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2776.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1891.json",
       "extension": ".json",
       "size_bytes": 203
@@ -14974,6 +15264,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1914.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2790.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -15673,6 +15968,11 @@
       "size_bytes": 14
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2755.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-17076088750.json",
       "extension": ".json",
       "size_bytes": 16
@@ -15751,6 +16051,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-260761831375.json",
       "extension": ".json",
       "size_bytes": 17
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2760.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1470.json",
@@ -16438,6 +16743,11 @@
       "size_bytes": 164
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2825.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-2586.json",
       "extension": ".json",
       "size_bytes": 203
@@ -16524,6 +16834,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1074.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2842.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -17018,6 +17333,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2757.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-256787107941.json",
       "extension": ".json",
       "size_bytes": 16
@@ -17074,6 +17394,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1468.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2778.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -17198,12 +17523,22 @@
       "size_bytes": 164
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2848.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-2311.json",
       "extension": ".json",
       "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-2220.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2833.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -17368,6 +17703,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2813.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-2730.json",
       "extension": ".json",
       "size_bytes": 203
@@ -17528,6 +17868,11 @@
       "size_bytes": 13
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2841.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-367.json",
       "extension": ".json",
       "size_bytes": 164
@@ -17539,6 +17884,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-903.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2845.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -17913,6 +18263,11 @@
       "size_bytes": 17
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2830.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1164.json",
       "extension": ".json",
       "size_bytes": 203
@@ -18138,6 +18493,11 @@
       "size_bytes": 15
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2781.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1488.json",
       "extension": ".json",
       "size_bytes": 203
@@ -18289,6 +18649,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1089.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2801.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -18488,6 +18853,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2843.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-2288.json",
       "extension": ".json",
       "size_bytes": 203
@@ -18511,6 +18881,11 @@
       "path": "services/api/baileys_auth_info/pre-key-337.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2827.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/lid-mapping-182107016028229_reverse.json",
@@ -18698,6 +19073,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2766.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-18042980949.json",
       "extension": ".json",
       "size_bytes": 16
@@ -18853,6 +19233,11 @@
       "size_bytes": 164
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2751.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-2583.json",
       "extension": ".json",
       "size_bytes": 203
@@ -18953,6 +19338,11 @@
       "size_bytes": 16
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2782.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1142.json",
       "extension": ".json",
       "size_bytes": 203
@@ -19041,6 +19431,11 @@
       "path": "services/api/baileys_auth_info/pre-key-385.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2784.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1634.json",
@@ -19278,6 +19673,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2836.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1036.json",
       "extension": ".json",
       "size_bytes": 203
@@ -19306,6 +19706,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-256759263135.json",
       "extension": ".json",
       "size_bytes": 16
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2803.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-145.json",
@@ -19593,9 +19998,19 @@
       "size_bytes": 164
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2812.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-67448837554224_reverse.json",
       "extension": ".json",
       "size_bytes": 14
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2855.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-2269.json",
@@ -19713,6 +20128,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2839.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-256744000065.json",
       "extension": ".json",
       "size_bytes": 17
@@ -19741,6 +20161,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-147047416111209_reverse.json",
       "extension": ".json",
       "size_bytes": 14
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2844.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1499.json",
@@ -19816,6 +20241,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-76029796307196_reverse.json",
       "extension": ".json",
       "size_bytes": 14
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2814.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-204.json",
@@ -19938,6 +20368,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2838.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-2652.json",
       "extension": ".json",
       "size_bytes": 203
@@ -19971,6 +20406,16 @@
       "path": "services/api/baileys_auth_info/pre-key-208.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2828.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2849.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1716.json",
@@ -20013,6 +20458,11 @@
       "size_bytes": 164
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2777.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-61413194950.json",
       "extension": ".json",
       "size_bytes": 16
@@ -20039,6 +20489,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-2647.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2796.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -20256,6 +20711,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-198247217909767_reverse.json",
       "extension": ".json",
       "size_bytes": 14
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2835.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1162.json",
@@ -20743,6 +21203,11 @@
       "size_bytes": 17
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2758.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1540.json",
       "extension": ".json",
       "size_bytes": 203
@@ -20899,6 +21364,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-2504.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2787.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -21238,6 +21708,11 @@
       "size_bytes": 164
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2821.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-125907134083300_reverse.json",
       "extension": ".json",
       "size_bytes": 14
@@ -21493,6 +21968,11 @@
       "size_bytes": 17
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2831.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1792.json",
       "extension": ".json",
       "size_bytes": 203
@@ -21621,6 +22101,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-447918016259.json",
       "extension": ".json",
       "size_bytes": 17
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2822.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-2130.json",
@@ -21794,6 +22279,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1153.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2840.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -22533,6 +23023,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2853.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-2061.json",
       "extension": ".json",
       "size_bytes": 203
@@ -22643,6 +23138,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2769.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-254703949463.json",
       "extension": ".json",
       "size_bytes": 16
@@ -22714,6 +23214,11 @@
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1449.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2798.json",
       "extension": ".json",
       "size_bytes": 203
     },
@@ -23218,6 +23723,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2818.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1052.json",
       "extension": ".json",
       "size_bytes": 203
@@ -23278,9 +23788,19 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2756.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-256764136217.json",
       "extension": ".json",
       "size_bytes": 17
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2791.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-2621.json",
@@ -23331,6 +23851,11 @@
       "path": "services/api/baileys_auth_info/pre-key-600.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2826.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-1947.json",
@@ -23608,6 +24133,11 @@
       "size_bytes": 203
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-2804.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-1185.json",
       "extension": ".json",
       "size_bytes": 203
@@ -23641,6 +24171,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-78078428594287_reverse.json",
       "extension": ".json",
       "size_bytes": 14
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-2774.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-275.json",
@@ -23700,7 +24235,7 @@
     {
       "path": "services/api/src/main.ts",
       "extension": ".ts",
-      "size_bytes": 5231
+      "size_bytes": 5599
     },
     {
       "path": "services/api/src/database/prisma.module.ts",
@@ -23980,7 +24515,7 @@
     {
       "path": "services/api/src/modules/admin/services/command-center-config.service.ts",
       "extension": ".ts",
-      "size_bytes": 13125
+      "size_bytes": 13189
     },
     {
       "path": "services/api/src/modules/admin/services/admin-auth.service.spec.ts",
@@ -24665,7 +25200,7 @@
     {
       "path": "services/api/src/modules/settlement/usdt/usdt.provider.ts",
       "extension": ".ts",
-      "size_bytes": 11355
+      "size_bytes": 11370
     },
     {
       "path": "services/api/src/modules/settlement/usdt/usdt.reconciliation.service.ts",
@@ -24700,7 +25235,7 @@
     {
       "path": "services/api/src/modules/settlement/usdt/usdt.admin.service.ts",
       "extension": ".ts",
-      "size_bytes": 6844
+      "size_bytes": 6908
     },
     {
       "path": "services/api/src/modules/settlement/usdt/usdt.admin.controller.ts",
