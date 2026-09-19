@@ -95,7 +95,9 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
       .then((response) => {
         if (!active) return;
         
-        const verificationData = response.data;
+        // API responses are wrapped by TransformInterceptor as { success, data }.
+        // Unwrap the envelope before validating the canonical identity mapping.
+        const verificationData = response.data?.data ?? response.data;
         const { verified, userId, identityId, telegramUserId, mappingConsistent, hasChannels, channels } = verificationData;
         
         // Log identity verification for audit trail
