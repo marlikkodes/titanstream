@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronRight, Globe } from 'lucide-react';
-import { useCountryStore, SUPPORTED_COUNTRIES } from '../store/useCountryStore';
+import { supportsLocalPaymentRails, useCountryStore, SUPPORTED_COUNTRIES } from '../store/useCountryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTelegram } from '../context/TelegramContext';
 
@@ -40,7 +40,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({ onComplete }) 
     selectCountry(code);
 
     // Sync to settings store for backward compatibility
-    const isLocal = country.code !== 'US';
+    const isLocal = supportsLocalPaymentRails(country.code);
     setCurrencyPreference(
       isLocal,
       country.name,

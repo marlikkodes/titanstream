@@ -25,6 +25,10 @@ const REQUIRED_CONFIG: { name: string; purpose: string }[] = [
   { name: 'JWT_SECRET', purpose: 'access-token signing' },
   { name: 'JWT_REFRESH_SECRET', purpose: 'refresh-token signing' },
   { name: 'TELEGRAM_BOT_TOKEN', purpose: 'Telegram bot authentication' },
+  { name: 'TELEGRAM_WEBAPP_URL', purpose: 'canonical web application origin' },
+  { name: 'ADMIN_SESSION_PEPPER', purpose: 'administrator session-token hashing' },
+  { name: 'SUPER_ADMIN_TELEGRAM_IDS', purpose: 'administrator bootstrap allow-list' },
+  { name: 'USDT_RECEIVING_ADDRESS', purpose: 'treasury-controlled USDT receiving address' },
 ];
 
 function validateProductionConfig() {
@@ -115,6 +119,7 @@ async function bootstrap() {
       'Content-Type',
       'Authorization',
       'X-Telegram-Init-Data',
+      'X-Admin-Token',
       'X-StepUp-Token',
       'x-stepup-token',
       'ngrok-skip-browser-warning',

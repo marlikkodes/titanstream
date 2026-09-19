@@ -62,8 +62,8 @@ export class UsdtProvider implements SettlementProvider {
     // 1. Load active USDT config to fetch administrator-configured receiving address
     let config = await this.prisma.usdtConfig.findUnique({ where: { id: 'default' } });
     if (!config || !config.receivingAddress) {
-      // Fallback default address if not seeded yet
-      const defaultAddress = process.env.USDT_RECEIVING_ADDRESS || 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf';
+      const defaultAddress = process.env.USDT_RECEIVING_ADDRESS?.trim();
+      if (!defaultAddress) throw new BadRequestException('USDT_RECEIVING_ADDRESS_NOT_CONFIGURED');
       config = await this.prisma.usdtConfig.upsert({
         where: { id: 'default' },
         update: {},

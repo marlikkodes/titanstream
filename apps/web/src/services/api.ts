@@ -2,12 +2,12 @@ import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
 const getBaseURL = () => {
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return `${window.location.origin}/api/v1`;
-  }
   const envUrl = import.meta.env.VITE_API_BASE_URL;
   if (envUrl && (envUrl.startsWith('http://') || envUrl.startsWith('https://'))) {
     return envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/$/, '')}/api/v1`;
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/api/v1`;
   }
   return 'http://localhost:3001/api/v1';
 };
@@ -318,18 +318,6 @@ api.interceptors.response.use(
     if (status === 403 && (errorCode === 'STEP_UP_REQUIRED' || errorCode === 'STEP_UP_EXPIRED')) {
       console.warn('[API] Step-up authentication required for action:', url);
       useAuthStore.getState().openStepUpModal();
-    }
-
-    // Gracefully handle 404/5xx server errors on admin endpoints without throwing unhandled exceptions
-    const isOfflineOrError = !status || status >= 400;
-    if (isOfflineOrError && status !== 401 && status !== 403 && (url.includes('/admin/') || url.includes('/settlement/'))) {
-      return Promise.resolve({
-        data: { success: true, data: getAdminFallbackData(url) },
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: originalRequest,
-      });
     }
 
     if (status !== 401 || originalRequest?._retry || url.includes('/auth/refresh') || url.includes('/auth/telegram')) {

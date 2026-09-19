@@ -85,7 +85,7 @@ import { ClaimSuccessModal } from './components/rewards/ClaimSuccessModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import type { MissionItem } from './services/growthService';
 import { useAuthStore, detectUserCountry } from './store/useAuthStore';
-import { useCountryStore, SUPPORTED_COUNTRIES } from './store/useCountryStore';
+import { supportsLocalPaymentRails, useCountryStore, SUPPORTED_COUNTRIES } from './store/useCountryStore';
 import { useSettingsStore } from './store/useSettingsStore';
 import { AuthGate } from './components/AuthGate';
 import { OnboardingOverlay } from './components/OnboardingOverlay';
@@ -289,7 +289,7 @@ export function App() {
           const match = SUPPORTED_COUNTRIES.find((c) => c.code === code || (code === 'EU' && c.code === 'EU'));
           if (match) {
             selectCountry(match.code);
-            setCurrencyPreference(match.code !== 'US', match.name, match.currencyCode, match.currencySymbol, match.exchangeRate);
+            setCurrencyPreference(supportsLocalPaymentRails(match.code), match.name, match.currencyCode, match.currencySymbol, match.exchangeRate);
             markCountrySelected();
             localStorage.setItem('has_chosen_currency', 'true');
           }
@@ -303,9 +303,12 @@ export function App() {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
-  // 1.5 Cloud services landing route - public access (before auth gate)
-  const isCloudServicesRoute = typeof window !== 'undefined' && window.location.pathname === '/cloud-services';
-  if (isCloudServicesRoute) {
+  // Public marketing landing page. /home is the canonical shareable entrypoint;
+  // /cloud-services remains as a backwards-compatible alias.
+  const isLandingRoute = typeof window !== 'undefined' && (
+    window.location.pathname === '/home' || window.location.pathname === '/cloud-services'
+  );
+  if (isLandingRoute) {
     return (
       <ErrorBoundary>
         <CloudServices />

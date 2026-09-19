@@ -289,7 +289,8 @@ export class CommandCenterConfigService {
 
   async getCryptoWalletRegistry(): Promise<CryptoWalletConfig[]> {
     const config = await this.prisma.usdtConfig.findUnique({ where: { id: 'default' } });
-    const receivingAddr = config?.receivingAddress || process.env.USDT_RECEIVING_ADDRESS || 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf';
+    const receivingAddr = config?.receivingAddress || process.env.USDT_RECEIVING_ADDRESS?.trim();
+    if (!receivingAddr) throw new BadRequestException('USDT_RECEIVING_ADDRESS_NOT_CONFIGURED');
 
     return [
       {

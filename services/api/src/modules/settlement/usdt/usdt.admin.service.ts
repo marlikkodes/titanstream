@@ -22,7 +22,8 @@ export class UsdtAdminService {
   async getConfig() {
     let config = await this.prisma.usdtConfig.findUnique({ where: { id: 'default' } });
     if (!config) {
-      const defaultAddr = process.env.USDT_RECEIVING_ADDRESS || 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf';
+      const defaultAddr = process.env.USDT_RECEIVING_ADDRESS?.trim();
+      if (!defaultAddr) throw new BadRequestException('USDT_RECEIVING_ADDRESS_NOT_CONFIGURED');
       config = await this.prisma.usdtConfig.create({
         data: {
           id: 'default',

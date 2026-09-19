@@ -16,48 +16,25 @@ validate_env() {
 validate_env "DATABASE_URL"
 validate_env "JWT_SECRET"
 validate_env "JWT_REFRESH_SECRET"
+validate_env "TELEGRAM_BOT_TOKEN"
+validate_env "TELEGRAM_WEBAPP_URL"
+validate_env "ADMIN_SESSION_PEPPER"
+validate_env "SUPER_ADMIN_TELEGRAM_IDS"
+validate_env "USDT_RECEIVING_ADDRESS"
 
 echo "All required environment variables are present."
 
-# Inspect database using Prisma Client
-echo "Checking database schema status..."
-HAS_USERS_TABLE=$(node -e "
+# Schema changes are a release operation, never an application-start side
+# effect. Run `prisma migrate deploy` once from a reviewed release job after a
+# tested backup; this process only verifies that the database is reachable.
+echo "Checking database connectivity..."
+node -e "
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-prisma.user.findFirst()
-  .then(() => console.log('true'))
-  .catch(err => {
-    if (err.code === 'P2021') {
-      console.log('false');
-    } else {
-      console.log('true'); // DB connects but table query failed (e.g. empty but structural connection OK)
-    }
-  })
+prisma.\$queryRawUnsafe('SELECT 1')
   .finally(() => prisma.\$disconnect());
-" 2>/dev/null || echo "false")
-
-echo "Database contains core schema tables: $HAS_USERS_TABLE"
-
-if [ "$HAS_USERS_TABLE" = "false" ]; then
-  echo "Database is empty. Running one-time bootstrap schema (db push)..."
-  npx prisma db push --accept-data-loss
-  
-  echo "Marking migrations as resolved/applied in migration history..."
-  npx prisma migrate resolve --applied 0_init || true
-  npx prisma migrate resolve --applied 20240101000000_add_asset_license_system || true
-  npx prisma migrate resolve --applied 20260728120000_financial_foundation || true
-  npx prisma migrate resolve --applied 20260728130000_financial_orchestration || true
-  npx prisma migrate resolve --applied 20260728150000_merchant_settlement_engine || true
-  npx prisma migrate resolve --applied 20260801160000_add_interactive_promotional_output || true
-  npx prisma migrate resolve --applied 20260804000300_achievement_model || true
-  npx prisma migrate resolve --applied 20260809120000_add_pesapal_provider || true
-  npx prisma migrate resolve --applied 20260810130000_add_usdt_settlement_provider || true
-  echo "Database bootstrap and migration resolution completed successfully."
-else
-  echo "Database already contains schema. Resolving legacy migrations and syncing database schema..."
-  npx prisma migrate resolve --applied 20240101000000_add_asset_license_system || true
-  npx prisma db push --accept-data-loss || true
-fi
+"
+echo "Database connectivity verified. No schema mutation was performed."
 
 # Run main application
 exec node dist/main
