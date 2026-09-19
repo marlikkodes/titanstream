@@ -306,7 +306,7 @@ export function App() {
   // Public marketing landing page. /home is the canonical shareable entrypoint;
   // /cloud-services remains as a backwards-compatible alias.
   const isLandingRoute = typeof window !== 'undefined' && (
-    window.location.pathname === '/' || window.location.pathname === '/home' || window.location.pathname === '/cloud-services'
+    window.location.pathname === '/home' || window.location.pathname === '/cloud-services'
   );
   if (isLandingRoute) {
     return (

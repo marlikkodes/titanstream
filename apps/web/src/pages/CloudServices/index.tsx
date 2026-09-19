@@ -681,7 +681,7 @@ export const CloudServices: React.FC = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={handleContactSales}
+              onClick={activeTab === 'investor' ? handleJoinTitanStream : handleContactSales}
               className={`w-full py-3 text-white font-bold rounded-xl ${
                 activeTab === 'investor'
                   ? 'bg-gradient-to-r from-usdt-green to-emerald-400'

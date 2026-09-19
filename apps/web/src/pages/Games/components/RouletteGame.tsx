@@ -173,7 +173,11 @@ export const RouletteGame: React.FC<RouletteGameProps> = ({ session, sectors, on
       const endAngle = startAngle + arcStep;
       const midAngle = startAngle + arcStep / 2;
 
-      const styleKey = sector.value >= 1.0 && sector.type === 'USDT' ? 'JACKPOT' : sector.type;
+      const styleKey = sector.value >= 10.0 && sector.type === 'USDT'
+        ? 'GRAND'
+        : sector.value >= 1.0 && sector.type === 'USDT'
+          ? 'JACKPOT'
+          : sector.type;
       const style = SECTOR_STYLES[styleKey] || SECTOR_STYLES.USDT;
 
       // 1. Sector Wedge Path
@@ -577,7 +581,7 @@ export const RouletteGame: React.FC<RouletteGameProps> = ({ session, sectors, on
             </div>
             <div>
               <p className="text-[9px] uppercase font-black tracking-wider text-gold">Top Jackpot</p>
-              <p className="text-xs font-mono font-extrabold text-white">₮ 1.00 USDT + 100 💎</p>
+              <p className="text-xs font-mono font-extrabold text-white">₮ 50.00 USDT · GRAND VAULT</p>
             </div>
           </div>
           <div className="text-right">
