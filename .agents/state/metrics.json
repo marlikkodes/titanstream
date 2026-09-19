@@ -1,7 +1,7 @@
 {
-  "total_missions": 43,
-  "total_tasks_executed": 156,
-  "total_tokens_consumed": 130050,
+  "total_missions": 44,
+  "total_tasks_executed": 160,
+  "total_tokens_consumed": 133450,
   "total_repairs": 0,
   "total_escalations": 0,
   "missions": [
@@ -434,6 +434,16 @@
       "repair_attempts": 0,
       "escalated": false,
       "tool_calls": 10
+    },
+    {
+      "mission_id": "mission_1789823385_e86114",
+      "timestamp": 1789823386.1667798,
+      "duration_seconds": 1.12,
+      "tokens_consumed": 3400,
+      "tasks_count": 4,
+      "repair_attempts": 0,
+      "escalated": false,
+      "tool_calls": 8
     }
   ]
 }
