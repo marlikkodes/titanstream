@@ -1,0 +1,14 @@
+{
+  "wa_ch_Rlc-hNffWldUOa7aAiXq3d98UcymrUrfFDH8Dd9TkVQ": {
+    "challengeId": "wa_ch_Rlc-hNffWldUOa7aAiXq3d98UcymrUrfFDH8Dd9TkVQ",
+    "approvalTokenHash": "f7163288621e4dbade3205ee3c4a7c4c518155e3505a50eb6593552fbcf9607c",
+    "browserProofHash": "60a0f613b4d1ff94f989c6b8f56efc9abf1f419d112b8824a99e9b3ba30acac9",
+    "shortPin": "871365",
+    "status": "PENDING",
+    "deviceInfo": "Fresh browser",
+    "createdAt": "2026-09-19T14:04:53.352Z",
+    "expiresAt": "2026-09-19T14:14:53.352Z"
+  },
+  "approval_f7163288621e4dbade3205ee3c4a7c4c518155e3505a50eb6593552fbcf9607c": "wa_ch_Rlc-hNffWldUOa7aAiXq3d98UcymrUrfFDH8Dd9TkVQ",
+  "pin_871365": "wa_ch_Rlc-hNffWldUOa7aAiXq3d98UcymrUrfFDH8Dd9TkVQ"
+}
