@@ -58,17 +58,7 @@ export class MerchantPaymentMatchingService implements OnModuleInit {
       this.logger.warn(`[PAYMENT_CLAIM_DB_WARN] Could not find session: ${dbErr?.message}`);
     }
 
-    if (!session) {
-      const isAirtel = settlementId.toLowerCase().includes('airtel');
-      session = {
-        id: settlementId,
-        telegramUserId,
-        merchantId: isAirtel ? 'merchant_airtel_prod_1' : 'merchant_mtn_prod_1',
-        mobileMoneyNetwork: isAirtel ? 'AIRTEL' : 'MTN',
-        requestedAmount: 37000,
-        status: SettlementStatus.WAITING_FOR_PAYMENT,
-      };
-    }
+    if (!session || session.telegramUserId !== telegramUserId) throw new NotFoundException('SETTLEMENT_NOT_FOUND');
 
     if (session.status === SettlementStatus.COMPLETED) {
       throw new BadRequestException('SETTLEMENT_ALREADY_COMPLETED');

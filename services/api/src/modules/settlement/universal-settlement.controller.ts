@@ -42,8 +42,8 @@ export class UniversalSettlementController {
   }
 
   @Post(['session/:id/cancel', 'session/:settlementId/cancel'])
-  cancel(@Param('id') id: string, @Param('settlementId') settlementId: string) {
-    return this.registry.cancel(id || settlementId);
+  cancel(@CanonicalUserId() userId: string, @Param('id') id: string, @Param('settlementId') settlementId: string) {
+    return this.registry.cancel(userId, id || settlementId);
   }
 
   @Get('history')

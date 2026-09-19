@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Smartphone, Wallet, ArrowDownToLine, CheckCircle2, AlertCircle, Zap, Clock, Users } from 'lucide-react';
 import { useWalletStore } from '../../store/useWalletStore';
 import { useTelegram } from '../../context/TelegramContext';
-import { useCountryStore } from '../../store/useCountryStore';
+import { supportsLocalPaymentRails, useCountryStore } from '../../store/useCountryStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useGrowthStore } from '../../store/useGrowthStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
@@ -22,6 +22,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
   const { usdtBalance, fetchBalanceFromEngine } = useWalletStore();
   const { hapticFeedback } = useTelegram();
   const { selectedCountry, getLocalAmountRaw } = useCountryStore();
+  const hasLocalPaymentRails = supportsLocalPaymentRails(selectedCountry?.code);
   const { preferLocalCurrency } = useSettingsStore();
   const { qualification, fetchQualification } = useGrowthStore();
 
@@ -40,7 +41,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [completedSession, setCompletedSession] = useState<WithdrawalSession | null>(null);
 
-  const isLocalPreferred = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
+  const isLocalPreferred = preferLocalCurrency && hasLocalPaymentRails;
   const currencyCode = isLocalPreferred ? (selectedCountry?.currencyCode || 'UGX') : 'USDT';
   const currencySymbol = isLocalPreferred ? (selectedCountry?.currencyCode || 'UGX') : 'USDT';
   const exchangeRate = selectedCountry?.exchangeRate || 3700;
@@ -100,7 +101,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
       description: 'Withdraw directly to your USDT (TRC-20) wallet address',
       status: 'ENABLED',
     },
-  ];
+  ].filter((method) => method.id === 'USDT_ADDRESS' || hasLocalPaymentRails);
 
   const handleWithdraw = async () => {
     if (isProcessing) return;

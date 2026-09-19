@@ -87,7 +87,15 @@ export class FinancialRulesService {
     }
 
     // Available balance check for reserves (withdrawals and purchases)
-    if (params.operationType === FinancialOperationType.WITHDRAWAL_RESERVE) {
+    const debitReserveOperations: FinancialOperationType[] = [
+      FinancialOperationType.WITHDRAWAL_RESERVE,
+      FinancialOperationType.MACHINE_PURCHASE_RESERVE,
+      FinancialOperationType.MACHINE_REPOWER_RESERVE,
+      FinancialOperationType.MACHINE_UPGRADE_RESERVE,
+      FinancialOperationType.MACHINE_RENEWAL_RESERVE,
+      FinancialOperationType.MACHINE_REACTIVATION_RESERVE,
+    ];
+    if (debitReserveOperations.includes(params.operationType)) {
       const entries = await client.ledgerEntry.findMany({
         where: {
           financialAccountId: params.financialAccountId,

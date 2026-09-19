@@ -94,7 +94,7 @@ export class CryptoBotReconciliationService {
     const reference = `cryptobot_inv_${externalInvoiceId}`;
     await this.orchestrator.requestOperation({
       telegramUserId: dbInvoice.telegramUserId,
-      operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+      operationType: FinancialOperationType.DEPOSIT_SETTLEMENT,
       assetCode: dbInvoice.asset,
       amount: dbInvoice.amount.toString(),
       idempotencyKey: reference,

@@ -141,6 +141,7 @@ enum TransactionType {
 enum FinancialOperationType {
   INTERNAL_ADJUSTMENT
   SYSTEM_ALLOCATION
+  DEPOSIT_SETTLEMENT
   REVERSAL
   WITHDRAWAL_RESERVE
   WITHDRAWAL_SETTLE
@@ -829,6 +830,7 @@ model SettlementSession {
   @@index([provider])
   @@index([status])
   @@index([expiresAt])
+  @@unique([orchestratorReference])
   @@map("settlement_sessions")
 }
 
@@ -2114,6 +2116,7 @@ model UserMachine {
   name             String   @map("name")
   purchasePrice    Decimal  @map("purchase_price") @db.Decimal(36, 18)
   currency         String   @default("USDT") @map("currency")
+  purchaseReference String? @unique @map("purchase_reference")
   status           String   @default("ACTIVE") @map("status")
   capacityGhs      Decimal  @map("capacity_ghs") @db.Decimal(36, 18)
   lifetimeEarnings Decimal  @default(0.0) @map("lifetime_earnings") @db.Decimal(36, 18)
@@ -3070,4 +3073,3 @@ model UsdtBlockchainTransaction {
   @@index([settlementSessionId])
   @@map("usdt_blockchain_transactions")
 }
-

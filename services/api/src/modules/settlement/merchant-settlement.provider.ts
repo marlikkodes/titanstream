@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { SettlementEventType, SettlementProviderId, SettlementStatus, Prisma } from '@prisma/client';
 import { CreateSettlementSessionDto } from './dto/create-settlement-session.dto';
 import { ProviderEventService } from './provider-event.service';
@@ -39,8 +39,9 @@ export class MerchantSettlementProvider implements SettlementProvider {
     const country = (dto.country || 'UG').toUpperCase();
     const currency = 'UGX';
 
-    const exchangeRate = Number(dto.exchangeRate || 3774.62);
-    const expectedCryptoAmount = Number(dto.expectedCryptoAmount || dto.requestedAmount);
+    const expectedCryptoAmount = Number(dto.requestedAmount);
+    if (!Number.isFinite(expectedCryptoAmount) || expectedCryptoAmount <= 0) throw new BadRequestException('INVALID_DEPOSIT_AMOUNT');
+    const exchangeRate = 3774.62;
     const requestedLocalAmount = Math.round(expectedCryptoAmount * exchangeRate);
 
     // 1. Select active merchant for network & limits
@@ -53,8 +54,6 @@ export class MerchantSettlementProvider implements SettlementProvider {
 
     const referenceCode = `MM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 mins expiry
-    const fallbackId = `settle_${network.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-
     // 2. Create SettlementSession record with merchantId
     let session: any = null;
     try {
@@ -88,24 +87,8 @@ export class MerchantSettlementProvider implements SettlementProvider {
         include: { merchant: true },
       });
     } catch (dbErr: any) {
-      this.logger.warn(`[MERCHANT_SETTLEMENT_DB_WARN] Could not persist session to DB: ${dbErr?.message}`);
-      session = {
-        id: fallbackId,
-        telegramUserId,
-        merchantId: merchant.id,
-        provider: SettlementProviderId.MERCHANT_MOBILE_MONEY,
-        asset: dto.asset || 'USDT',
-        requestedAmount: new Prisma.Decimal(requestedLocalAmount),
-        expectedCryptoAmount: new Prisma.Decimal(expectedCryptoAmount),
-        exchangeRate: new Prisma.Decimal(exchangeRate),
-        country,
-        mobileMoneyNetwork: network,
-        referenceCode,
-        status: SettlementStatus.WAITING_FOR_PAYMENT,
-        expiresAt,
-        createdAt: new Date(),
-        merchant,
-      };
+      this.logger.error(`[MERCHANT_SETTLEMENT_DB_ERR] Could not persist session: ${dbErr?.message}`);
+      throw new ServiceUnavailableException('SETTLEMENT_PERSISTENCE_UNAVAILABLE');
     }
 
     this.logger.log(`[MERCHANT_SETTLEMENT] Created session [${session.id}] assigned to Merchant ${merchant.merchantName} (${merchant.merchantNumber})`);
@@ -163,42 +146,7 @@ export class MerchantSettlementProvider implements SettlementProvider {
       this.logger.warn(`[MERCHANT_SETTLEMENT_DB_WARN] Could not query session ${settlementId}: ${dbErr?.message}`);
     }
 
-    if (!session) {
-      const isAirtel = settlementId.toLowerCase().includes('airtel');
-      const network = isAirtel ? 'AIRTEL' : 'MTN';
-      const mNum = isAirtel ? '7183443' : '234654';
-      const mName = isAirtel ? 'TitanStream Escrow Airtel' : 'TitanStream Escrow MTN';
-      return {
-        settlementId,
-        referenceCode: `MM-${settlementId.substring(0, 6).toUpperCase()}`,
-        provider: SettlementProviderId.MERCHANT_MOBILE_MONEY,
-        status: SettlementStatus.WAITING_FOR_PAYMENT,
-        network,
-        merchantId: `merchant_${network.toLowerCase()}_prod_1`,
-        merchantName: mName,
-        merchantNumber: mNum,
-        requestedAmount: '37000',
-        expectedCryptoAmount: '10',
-        exchangeRate: '3700',
-        asset: 'USDT',
-        paymentCurrency: 'UGX',
-        paymentAmount: '37000',
-        submittedReference: null,
-        expiresAt: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
-        createdAt: new Date().toISOString(),
-        completedAt: null,
-        instructions: {
-          title: `Pay via ${mName}`,
-          network,
-          merchantName: mName,
-          merchantNumber: mNum,
-          amountUgx: '37000',
-          ussdCode: network === 'AIRTEL'
-            ? `*185*9*${mNum}*37000#`
-            : `*165*1*1*${mNum}*37000#`,
-        },
-      };
-    }
+    if (!session) throw new NotFoundException('SETTLEMENT_NOT_FOUND');
 
     const network = session.mobileMoneyNetwork || 'MTN';
     const mNum = session.merchant?.merchantNumber || (network === 'AIRTEL' ? '7183443' : '234654');

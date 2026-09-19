@@ -229,7 +229,7 @@ describe('USDT Static-Address Funding Rail (Phase H Verification)', () => {
       provider = new UsdtProvider(prismaMock as any, eventsMock as any, orchestratorMock as any, {} as any);
     });
 
-    it('executes atomic updateMany and requests SYSTEM_ALLOCATION operation on orchestrator', async () => {
+    it('executes atomic updateMany and requests DEPOSIT_SETTLEMENT operation on orchestrator', async () => {
       prismaMock.settlementSession.findUnique.mockResolvedValue({
         id: 'session_usdt_777',
         telegramUserId: 500n,
@@ -258,7 +258,7 @@ describe('USDT Static-Address Funding Rail (Phase H Verification)', () => {
 
       expect(orchestratorMock.requestOperation).toHaveBeenCalledWith({
         telegramUserId: 500n,
-        operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+        operationType: FinancialOperationType.DEPOSIT_SETTLEMENT,
         assetCode: 'USDT',
         amount: '75',
         idempotencyKey: 'usdt_settlement_session_usdt_777',

@@ -192,7 +192,7 @@ export class SettlementService {
     const reference = `settlement_${settlementId}`;
     await this.orchestrator.requestOperation({
       telegramUserId: session.telegramUserId,
-      operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+      operationType: FinancialOperationType.DEPOSIT_SETTLEMENT,
       assetCode: session.asset,
       amount: session.expectedCryptoAmount.toString(),
       idempotencyKey: reference,
@@ -250,7 +250,7 @@ export class SettlementService {
     const reference = `settlement_${settlementId}`;
     await this.orchestrator.requestOperation({
       telegramUserId: session.telegramUserId,
-      operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+      operationType: FinancialOperationType.DEPOSIT_SETTLEMENT,
       assetCode: session.asset,
       amount: session.expectedCryptoAmount.toString(),
       idempotencyKey: reference,

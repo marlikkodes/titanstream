@@ -8,6 +8,7 @@ import { EventBusService } from '../automation/event-bus.service';
 import { TreasuryService } from '../treasury/treasury.service';
 import { PlatformOperationsEngineService } from '../admin/services/platform-operations-engine.service';
 import { DurableOutboxService } from '../automation/durable-outbox.service';
+import { supportsLocalPaymentRails } from '../settlement/payment-region.policy';
 
 export interface InitiateWithdrawalDto {
   telegramUserId: bigint;
@@ -61,6 +62,9 @@ export class WithdrawalService {
     }
 
     const isMobileMoney = ['MOMO', 'MOBILE_MONEY', 'MTN', 'AIRTEL'].includes(netUpper);
+    if (isMobileMoney && !supportsLocalPaymentRails(dto.country)) {
+      throw new BadRequestException('LOCAL_PAYOUT_NOT_AVAILABLE: Outside East Africa, withdrawals are available via USDT (TRC-20) only');
+    }
 
     // 1. Recipient Binding Lock (Phase 3 & 4 Server-Side Recipient Lock)
     const user = await this.prisma.user.findFirst({
@@ -94,33 +98,18 @@ export class WithdrawalService {
 
     if (isMobileMoney) {
       mmNetwork = dto.mobileMoneyNetwork || (netUpper === 'AIRTEL' ? 'AIRTEL' : 'MTN');
-      // If user has no withdrawal phone or registered phone on record yet, set initial configured phone
-      if (!user.withdrawalPhoneNumber && !user.phoneNumber && dto.destinationAddress) {
-        const initialPhone = this.normalizeUgandaPhone(dto.destinationAddress.trim());
-        await this.prisma.user.update({
-          where: { telegramUserId: dto.telegramUserId },
-          data: {
-            withdrawalPhoneNumber: initialPhone,
-            withdrawalPhoneVerified: true,
-            withdrawalPhoneVerifiedAt: new Date(),
-          },
-        });
-        user.withdrawalPhoneNumber = initialPhone;
+      // A withdrawal request must never be able to enroll and verify its own
+      // recipient. Enrollment is a separate, step-up protected settings flow.
+      if (!user.withdrawalPhoneNumber && !user.phoneNumber) {
+        throw new BadRequestException('MOBILE_MONEY_NUMBER_REQUIRED: Configure and verify a withdrawal number before requesting a payout.');
       }
-
       verifiedRecipient = this.resolveMobileMoneyWithdrawalNumber(user);
     } else {
       // USDT TRC-20 Recipient Lock
       if (netUpper !== 'TRC20' && netUpper !== 'TRON' && netUpper !== 'USDT') {
         throw new BadRequestException(`UNSUPPORTED_CRYPTO_NETWORK: USDT withdrawals require TRON (TRC-20) network. Provided: ${dto.network}`);
       }
-      if (!user.verifiedUsdtAddress && dto.destinationAddress) {
-        await this.prisma.user.update({
-          where: { telegramUserId: dto.telegramUserId },
-          data: { verifiedUsdtAddress: dto.destinationAddress.trim(), usdtAddressVerified: true, usdtAddressVerifiedAt: new Date() },
-        });
-        verifiedRecipient = dto.destinationAddress.trim();
-      } else if (user.verifiedUsdtAddress) {
+      if (user.verifiedUsdtAddress) {
         // Authoritative lock: ignore client recipient, resolve server-side address
         verifiedRecipient = user.verifiedUsdtAddress;
       } else {
@@ -149,57 +138,56 @@ export class WithdrawalService {
     // Determine Four-Eyes Dual Control Threshold ($40 / 150,000 UGX)
     const requiresFourEyes = dto.amount >= 40 || requestedFiatAmount >= 150000;
 
-    // 3. Reserve User Balance in Double-Entry Ledger (WITHDRAWAL_RESERVE)
+    // 3. Reserve the balance and persist the payout record atomically. A retry
+    // returns the exact payout record instead of creating a second payout.
     const orchestratorRef = `wd_reserve_${idKey}`;
-    const financialOp = await this.orchestrator.requestOperation({
-      telegramUserId: dto.telegramUserId,
-      operationType: FinancialOperationType.WITHDRAWAL_RESERVE,
-      assetCode: asset,
-      amount: amountStr,
-      idempotencyKey: idKey,
-      reference: orchestratorRef,
-      metadata: {
-        network: dto.network,
-        destinationAddress: verifiedRecipient,
-        requiresManualReview: riskEval.requiresManualReview,
-      },
-    });
+    const session = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.settlementSession.findUnique({ where: { orchestratorReference: orchestratorRef } });
+      if (existing) return existing;
 
-    const refCode = `WD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-    // 4. Create SettlementSession Payout Record (Phase 5 Manual Settlement Model)
-    const session = await this.prisma.settlementSession.create({
-      data: {
+      const financialOp = await this.orchestrator.requestOperation({
         telegramUserId: dto.telegramUserId,
-        referenceCode: refCode,
-        provider: providerId,
-        sessionType: 'PAYOUT',
-        asset,
-        requestedAmount: new Prisma.Decimal(requestedFiatAmount),
-        expectedCryptoAmount: new Prisma.Decimal(dto.amount),
-        exchangeRate: new Prisma.Decimal(exchangeRate),
-        country: dto.country || 'UG',
-        mobileMoneyNetwork: mmNetwork,
-        status: SettlementStatus.AWAITING_ADMIN_EXECUTION,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hour expiration policy
-        orchestratorReference: orchestratorRef,
-        verifiedRecipientAddress: verifiedRecipient,
-        recipientVerifiedAt: new Date(),
-        requiresFourEyes,
-        feeAmount: new Prisma.Decimal(0),
-        netPayoutAmount: new Prisma.Decimal(requestedFiatAmount),
-        providerMetadata: {
-          network: dto.network,
-          destinationAddress: verifiedRecipient,
-          userTier: riskEval.userTier,
-          requiresManualReview: riskEval.requiresManualReview,
+        operationType: FinancialOperationType.WITHDRAWAL_RESERVE,
+        assetCode: asset,
+        amount: amountStr,
+        idempotencyKey: idKey,
+        reference: orchestratorRef,
+        metadata: { network: dto.network, destinationAddress: verifiedRecipient, requiresManualReview: riskEval.requiresManualReview },
+      }, tx);
+
+      return tx.settlementSession.create({
+        data: {
+          telegramUserId: dto.telegramUserId,
+          referenceCode: `WD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          provider: providerId,
+          sessionType: 'PAYOUT',
+          asset,
+          requestedAmount: new Prisma.Decimal(requestedFiatAmount),
+          expectedCryptoAmount: new Prisma.Decimal(dto.amount),
+          exchangeRate: new Prisma.Decimal(exchangeRate),
+          country: dto.country || 'UG',
+          mobileMoneyNetwork: mmNetwork,
+          status: SettlementStatus.AWAITING_ADMIN_EXECUTION,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          orchestratorReference: orchestratorRef,
+          verifiedRecipientAddress: verifiedRecipient,
+          recipientVerifiedAt: new Date(),
           requiresFourEyes,
-          riskReason: riskEval.riskReason || null,
-          financialOperationId: (financialOp as any)?.id,
-          paymentCurrency: isMobileMoney ? 'UGX' : 'USDT',
+          feeAmount: new Prisma.Decimal(0),
+          netPayoutAmount: new Prisma.Decimal(requestedFiatAmount),
+          providerMetadata: {
+            network: dto.network,
+            destinationAddress: verifiedRecipient,
+            userTier: riskEval.userTier,
+            requiresManualReview: riskEval.requiresManualReview,
+            requiresFourEyes,
+            riskReason: riskEval.riskReason || null,
+            financialOperationId: (financialOp as any)?.id,
+            paymentCurrency: isMobileMoney ? 'UGX' : 'USDT',
+          },
         },
-      },
-    });
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 15000, maxWait: 10000 });
 
     // 5. Emit Event-Driven Notifications (Phase 12)
     this.eventBus.publish({

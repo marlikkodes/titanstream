@@ -16,6 +16,7 @@ import { MerchantSettlementProvider } from './merchant-settlement.provider';
 import { InternalOperationsProvider } from './operator-settlement.provider';
 import { SettlementProvider } from './settlement-provider.interface';
 import { SettlementRiskService } from './settlement-risk.service';
+import { normalizePaymentCountry, supportsLocalPaymentRails } from './payment-region.policy';
 
 const ACTIVE_STATUSES = [
   SettlementStatus.CREATED,
@@ -186,6 +187,9 @@ export class ProviderRegistryService implements OnModuleInit {
     const telegramUserIdBig = telegramUserId || BigInt(0);
 
     let providerId = dto.provider;
+    if (dto.paymentMethod?.toUpperCase() === 'CARD') {
+      throw new BadRequestException('CARD_PAYMENTS_UNAVAILABLE: Card payments are not available');
+    }
 
     // Provider Routing:
     // 1. USDT -> USDT Provider
@@ -195,8 +199,6 @@ export class ProviderRegistryService implements OnModuleInit {
       providerId = SettlementProviderId.USDT;
     } else if (dto.provider) {
       providerId = dto.provider as SettlementProviderId;
-    } else if (dto.paymentMethod?.toUpperCase() === 'CARD') {
-      providerId = SettlementProviderId.PESAPAL;
     } else if (dto.paymentMethod?.toUpperCase() === 'MOBILE_MONEY') {
       providerId = SettlementProviderId.MERCHANT_MOBILE_MONEY;
     }
@@ -204,8 +206,16 @@ export class ProviderRegistryService implements OnModuleInit {
       providerId = SettlementProviderId.MERCHANT_MOBILE_MONEY;
     }
 
+    dto.country = normalizePaymentCountry(dto.country);
+
     if (providerId === SettlementProviderId.CRYPTOBOT || (dto.provider as string) === 'CRYPTOBOT') {
       throw new BadRequestException('UNSUPPORTED_PROVIDER: CryptoBot settlement has been retired');
+    }
+    if ((dto.asset || 'USDT').toUpperCase() !== 'USDT') {
+      throw new BadRequestException('UNSUPPORTED_ASSET: Deposits are settled in USDT only');
+    }
+    if (providerId !== SettlementProviderId.USDT && !supportsLocalPaymentRails(dto.country)) {
+      throw new BadRequestException('LOCAL_PAYMENT_METHOD_NOT_AVAILABLE: Outside East Africa, deposits are available via USDT (TRC-20) only');
     }
 
     // Only check for active sessions of the SAME provider type and SAME mobile money network
@@ -229,7 +239,7 @@ export class ProviderRegistryService implements OnModuleInit {
     }
 
     if (this.riskService && telegramUserIdBig > 0) {
-      await this.riskService.assertSessionCreationRisk(telegramUserIdBig, Number(dto.expectedCryptoAmount));
+      await this.riskService.assertSessionCreationRisk(telegramUserIdBig, Number(dto.requestedAmount));
     }
     const provider = await this.getEnabledAdapter(providerId, dto.asset, dto.country);
     return provider.createSettlement(telegramUserIdBig, dto);
@@ -240,22 +250,22 @@ export class ProviderRegistryService implements OnModuleInit {
     return provider.approveSettlement(settlementId, context);
   }
 
-  async cancel(settlementId: string) {
-    const session = await this.prisma.settlementSession.findUnique({ where: { id: settlementId } });
+  async cancel(userKey: bigint | string, settlementId: string) {
+    const { telegramUserId } = await this.resolveUserAndTelegramId(userKey);
+    const session = await this.prisma.settlementSession.findFirst({ where: { id: settlementId, telegramUserId } });
     if (!session) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
     const provider = await this.getEnabledAdapter(session.provider);
     return provider.cancelSettlement(settlementId);
   }
 
   async getSession(userKey: bigint | string, settlementId: string) {
+    const { telegramUserId } = await this.resolveUserAndTelegramId(userKey);
     let session: any = null;
     try {
-      session = await this.prisma.settlementSession.findUnique({
-        where: { id: settlementId },
-      });
+      session = await this.prisma.settlementSession.findFirst({ where: { id: settlementId, telegramUserId } });
       if (!session && typeof this.prisma?.settlementSession?.findFirst === 'function') {
         session = await this.prisma.settlementSession.findFirst({
-          where: { id: settlementId },
+          where: { id: settlementId, telegramUserId },
         });
       }
     } catch (dbErr: any) {
@@ -268,13 +278,6 @@ export class ProviderRegistryService implements OnModuleInit {
         return adapter.getSettlementStatus(settlementId);
       }
       return this.toProviderIndependentView(session);
-    }
-
-    // Direct fallback to merchant mobile money adapter
-    const merchantAdapter = this.adapters.get(SettlementProviderId.MERCHANT_MOBILE_MONEY);
-    if (merchantAdapter && typeof merchantAdapter.getSettlementStatus === 'function') {
-      const status = await merchantAdapter.getSettlementStatus(settlementId);
-      if (status) return status;
     }
 
     throw new BadRequestException('SETTLEMENT_NOT_FOUND');
@@ -328,7 +331,7 @@ export class ProviderRegistryService implements OnModuleInit {
     let displayName = 'Mobile Money';
     if (provider.providerId === SettlementProviderId.CRYPTOBOT) displayName = 'CryptoBot';
     if (provider.providerId === SettlementProviderId.MERCHANT_MOBILE_MONEY) displayName = 'Merchant Mobile Money';
-    if (provider.providerId === SettlementProviderId.PESAPAL) displayName = 'Pesapal (Card & Mobile Money)';
+    if (provider.providerId === SettlementProviderId.PESAPAL) displayName = 'Pesapal (Mobile Money)';
     if (provider.providerId === SettlementProviderId.USDT) displayName = 'USDT Direct Wallet';
 
     try {
@@ -454,4 +457,3 @@ export class ProviderRegistryService implements OnModuleInit {
 
 @Injectable()
 export class SettlementProviderRegistry extends ProviderRegistryService {}
-

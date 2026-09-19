@@ -128,7 +128,8 @@ export class PesapalProvider implements SettlementProvider {
       throw new BadRequestException('INVALID_SETTLEMENT_ROUTING: USDT payments must use the TRC-20 blockchain rail and cannot be processed via Pesapal.');
     }
 
-    const expectedCryptoUsd = Number(dto.expectedCryptoAmount);
+    const expectedCryptoUsd = Number(dto.requestedAmount);
+    if (!Number.isFinite(expectedCryptoUsd) || expectedCryptoUsd <= 0) throw new BadRequestException('INVALID_DEPOSIT_AMOUNT');
 
     // Consult the centralized risk engine for both hard limits AND manual review requirements
     const riskResult: RiskEvaluationResult = await this.riskService.evaluateUserRisk(telegramUserId, expectedCryptoUsd);
@@ -166,7 +167,7 @@ export class PesapalProvider implements SettlementProvider {
       provider: SettlementProviderId.PESAPAL,
       asset: dto.asset,
       requestedAmount: new Prisma.Decimal(dto.requestedAmount),
-      expectedCryptoAmount: new Prisma.Decimal(dto.expectedCryptoAmount),
+        expectedCryptoAmount: new Prisma.Decimal(expectedCryptoUsd),
       exchangeRate: new Prisma.Decimal(authoritativeRate.toString()),
       country,
       mobileMoneyNetwork: dto.paymentNetwork || dto.mobileMoneyNetwork || 'MOBILE_MONEY',
@@ -730,7 +731,7 @@ export class PesapalProvider implements SettlementProvider {
       // Step 3: Ledger posting + balance credit (joins this transaction)
       await this.orchestrator.requestOperation({
         telegramUserId: session.telegramUserId,
-        operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+        operationType: FinancialOperationType.DEPOSIT_SETTLEMENT,
         assetCode: session.asset,
         amount: session.expectedCryptoAmount.toString(),
         idempotencyKey: reference,

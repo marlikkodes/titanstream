@@ -102,7 +102,7 @@ export class CommandProcessorService {
 
       // Post balanced double-entry ledger entries matching the transaction type
       const lines = [];
-      if (command.operationType === FinancialOperationType.SYSTEM_ALLOCATION) {
+      if (command.operationType === FinancialOperationType.SYSTEM_ALLOCATION || command.operationType === FinancialOperationType.DEPOSIT_SETTLEMENT) {
         lines.push({
           ledgerAccountCode: 'PLATFORM_RESERVE',
           entryType: LedgerEntryType.DEBIT,

@@ -2,9 +2,9 @@ import { FinancialOperationType, SettlementStatus, SettlementType } from '@prism
 import { WithdrawalService } from './withdrawal.service';
 
 describe('WithdrawalService', () => {
-  const prisma = {
+  const prisma: any = {
     user: {
-      findFirst: jest.fn().mockResolvedValue({ id: 'u1', telegramUserId: BigInt(123456789), qualifiedReferrals: 5 }),
+      findFirst: jest.fn().mockResolvedValue({ id: 'u1', telegramUserId: BigInt(123456789), qualifiedReferrals: 5, verifiedUsdtAddress: 'TXYZ1234567890' }),
       findUnique: jest.fn().mockResolvedValue({ id: 'u1', telegramUserId: BigInt(123456789), qualifiedReferrals: 5 }),
       update: jest.fn().mockResolvedValue({}),
     },
@@ -15,6 +15,7 @@ describe('WithdrawalService', () => {
       findMany: jest.fn(),
       count: jest.fn(),
     },
+    $transaction: jest.fn(async (callback: (tx: any) => Promise<unknown>) => callback(prisma)),
   };
 
   const orchestrator = {
@@ -57,14 +58,10 @@ describe('WithdrawalService', () => {
       status: SettlementStatus.WAITING_FOR_PAYMENT,
     });
 
-    prisma.settlementSession.findUnique.mockResolvedValue({
-      id: 'sess_wd_1',
-      telegramUserId,
-      asset: 'USDT',
-      requestedAmount: 100,
-      status: SettlementStatus.WAITING_FOR_PAYMENT,
-      providerMetadata: {},
-    });
+    prisma.settlementSession.findUnique.mockImplementation(({ where }: any) => where?.orchestratorReference ? null : ({
+      id: 'sess_wd_1', telegramUserId, asset: 'USDT', requestedAmount: 100,
+      status: SettlementStatus.WAITING_FOR_PAYMENT, providerMetadata: {},
+    }));
 
     prisma.settlementSession.update.mockResolvedValue({
       id: 'sess_wd_1',
@@ -84,6 +81,7 @@ describe('WithdrawalService', () => {
         operationType: FinancialOperationType.WITHDRAWAL_RESERVE,
         amount: '100',
       }),
+      expect.anything(),
     );
     expect(prisma.settlementSession.create).toHaveBeenCalled();
   });

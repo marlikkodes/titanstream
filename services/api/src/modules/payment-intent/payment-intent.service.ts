@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { PaymentIntentStatus, PaymentMethod, Prisma } from '@prisma/client';
+import { FinancialOperationType, PaymentIntentStatus, PaymentMethod, Prisma } from '@prisma/client';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
 import { ExchangeRateService } from '../financial/exchange-rate.service';
 import { NotificationService } from '../notification/notification.service';
@@ -425,7 +425,7 @@ export class PaymentIntentService {
     const reference = `pay_settle_${intent.reference}`;
     await this.orchestrator.requestOperation({
       telegramUserId: intent.telegramUserId,
-      operationType: 'SYSTEM_ALLOCATION',
+      operationType: FinancialOperationType.DEPOSIT_SETTLEMENT,
       assetCode: intent.asset,
       amount: intent.expectedCryptoAmount.toString(),
       idempotencyKey: reference,

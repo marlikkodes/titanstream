@@ -536,7 +536,7 @@ describe('PesapalProvider Unit Tests', () => {
   // ──────────────────────────────────────────────────────
 
   describe('Ledger Invariants', () => {
-    it('verified provider success triggers exactly one SYSTEM_ALLOCATION with correct fields', async () => {
+    it('verified provider success triggers exactly one DEPOSIT_SETTLEMENT with correct fields', async () => {
       const session = {
         id: 'sess_ledger', telegramUserId: BigInt(12345),
         provider: SettlementProviderId.PESAPAL, referenceCode: 'PSP-LEDGER',
@@ -564,7 +564,7 @@ describe('PesapalProvider Unit Tests', () => {
       expect(mockOrchestrator.requestOperation).toHaveBeenCalledWith(
         expect.objectContaining({
           telegramUserId: BigInt(12345),
-          operationType: 'SYSTEM_ALLOCATION',
+          operationType: 'DEPOSIT_SETTLEMENT',
           assetCode: 'USDT',
           amount: '100',
           idempotencyKey: 'pesapal_settlement_sess_ledger',

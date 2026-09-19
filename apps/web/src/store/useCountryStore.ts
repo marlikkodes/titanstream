@@ -27,6 +27,10 @@ export interface CountryConfig {
   settlementProviders: string[];
 }
 
+export const EAST_AFRICA_COUNTRY_CODES = new Set(['UG', 'KE', 'TZ', 'RW']);
+export const supportsLocalPaymentRails = (countryCode?: string | null) =>
+  EAST_AFRICA_COUNTRY_CODES.has(String(countryCode || '').toUpperCase());
+
 export const SUPPORTED_COUNTRIES: CountryConfig[] = [
   {
     code: 'UG',

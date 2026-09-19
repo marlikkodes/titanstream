@@ -56,7 +56,8 @@ export const machineService = {
   },
 
   async purchaseMachine(tierCode: string): Promise<PurchaseMachineResult> {
-    const res = await api.post('/machines/purchase', { tierCode });
+    const idempotencyKey = crypto.randomUUID();
+    const res = await api.post('/machines/purchase', { tierCode }, { headers: { 'x-idempotency-key': idempotencyKey } });
     return res.data.data;
   },
 

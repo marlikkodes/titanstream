@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Headers, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { MachineService } from './machine.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
@@ -28,8 +28,10 @@ export class MachineController {
   async purchaseMachine(
     @CanonicalUserId() userId: string,
     @Body('tierCode') tierCode: string,
+    @Headers('x-idempotency-key') idempotencyKey?: string,
   ) {
-    return this.service.purchaseMachine(userId as any, tierCode);
+    if (!idempotencyKey) throw new BadRequestException('IDEMPOTENCY_KEY_REQUIRED');
+    return this.service.purchaseMachine(userId as any, tierCode, idempotencyKey);
   }
 
   @Post('repower')
@@ -38,8 +40,10 @@ export class MachineController {
   async repowerMachine(
     @CanonicalUserId() userId: string,
     @Body('machineId') machineId: string,
+    @Headers('x-idempotency-key') idempotencyKey?: string,
   ) {
-    return this.service.repowerMachine(userId as any, machineId);
+    if (!idempotencyKey) throw new BadRequestException('IDEMPOTENCY_KEY_REQUIRED');
+    return this.service.repowerMachine(userId as any, machineId, idempotencyKey);
   }
 
   @Post('upgrade')
@@ -49,8 +53,10 @@ export class MachineController {
     @CanonicalUserId() userId: string,
     @Body('currentMachineId') currentMachineId: string,
     @Body('targetTierCode') targetTierCode: string,
+    @Headers('x-idempotency-key') idempotencyKey?: string,
   ) {
-    return this.service.upgradeMachineTier(userId as any, currentMachineId, targetTierCode);
+    if (!idempotencyKey) throw new BadRequestException('IDEMPOTENCY_KEY_REQUIRED');
+    return this.service.upgradeMachineTier(userId as any, currentMachineId, targetTierCode, idempotencyKey);
   }
 
   @Post(':id/nickname')

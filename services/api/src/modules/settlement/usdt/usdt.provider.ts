@@ -57,6 +57,8 @@ export class UsdtProvider implements SettlementProvider {
    * Create a USDT static address deposit session.
    */
   async createSettlement(telegramUserId: bigint, dto: CreateSettlementSessionDto) {
+    const depositAmount = new Prisma.Decimal(dto.requestedAmount);
+    if (!depositAmount.isFinite() || depositAmount.lte(0)) throw new BadRequestException('INVALID_DEPOSIT_AMOUNT');
     // 1. Load active USDT config to fetch administrator-configured receiving address
     let config = await this.prisma.usdtConfig.findUnique({ where: { id: 'default' } });
     if (!config || !config.receivingAddress) {
@@ -82,7 +84,7 @@ export class UsdtProvider implements SettlementProvider {
 
     UsdtAddressValidator.validateOrThrow(config.receivingAddress, config.network);
 
-    const expectedCryptoUsd = Number(dto.expectedCryptoAmount);
+    const expectedCryptoUsd = depositAmount.toNumber();
 
     // 2. Risk evaluation
     const riskResult = await this.riskService.evaluateUserRisk(telegramUserId, expectedCryptoUsd);
@@ -100,9 +102,9 @@ export class UsdtProvider implements SettlementProvider {
         telegramUserId,
         provider: SettlementProviderId.USDT,
         asset: dto.asset || 'USDT',
-        requestedAmount: new Prisma.Decimal(dto.requestedAmount),
-        expectedCryptoAmount: new Prisma.Decimal(dto.expectedCryptoAmount),
-        exchangeRate: new Prisma.Decimal(dto.exchangeRate || '1.0'),
+        requestedAmount: depositAmount,
+        expectedCryptoAmount: depositAmount,
+        exchangeRate: new Prisma.Decimal('1'),
         country: dto.country || 'GLOBAL',
         mobileMoneyNetwork: 'TRON_TRC20',
         referenceCode,
@@ -185,11 +187,12 @@ export class UsdtProvider implements SettlementProvider {
 
     await this.emitSettlementEvent(settlementId, SettlementEventType.SettlementApproved, context);
 
-    // Call Financial Orchestrator with SYSTEM_ALLOCATION
+    // Provider-confirmed deposits use a dedicated credit operation, not the
+    // administrative allocation escape hatch.
     const orchestratorRef = `usdt_settlement_${settlementId}`;
     await this.orchestrator.requestOperation({
       telegramUserId: session.telegramUserId,
-      operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+      operationType: FinancialOperationType.DEPOSIT_SETTLEMENT,
       assetCode: session.asset,
       amount: session.expectedCryptoAmount.toString(),
       idempotencyKey: orchestratorRef,
