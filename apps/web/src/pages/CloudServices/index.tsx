@@ -30,7 +30,9 @@ export const CloudServices: React.FC = () => {
   const [modalContent, setModalContent] = useState<string | null>(null);
 
   const handleJoinTitanStream = () => {
-    window.location.href = '/';
+    // Keep the public landing page at `/`; `/start` is the explicit
+    // pre-auth onboarding entrypoint before authentication begins.
+    window.location.href = '/start';
   };
 
   const handleContactSales = () => {
