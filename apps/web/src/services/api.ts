@@ -1,12 +1,17 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
+const PRODUCTION_API_BASE_URL = 'https://outstanding-fascination-production-eb14.up.railway.app';
+
 const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
   if (envUrl && (envUrl.startsWith('http://') || envUrl.startsWith('https://'))) {
     return envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/$/, '')}/api/v1`;
   }
   if (typeof window !== 'undefined' && window.location?.origin) {
+    if (import.meta.env.PROD) {
+      return `${PRODUCTION_API_BASE_URL}/api/v1`;
+    }
     return `${window.location.origin}/api/v1`;
   }
   return 'http://localhost:3001/api/v1';
