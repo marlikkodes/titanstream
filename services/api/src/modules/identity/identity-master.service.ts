@@ -88,8 +88,8 @@ export class IdentityMasterEngineService {
 
       if (!channelIdentity) return null;
 
-      const users = (channelIdentity as any).identity?.users || [];
-      const user = users[0] || null;
+      const identityObj = (channelIdentity as any).identity;
+      const user = identityObj?.user || (identityObj?.users ? identityObj.users[0] : null);
       
       // Cache successfully resolved identity for DB unavailability scenarios
       const result = {
@@ -152,7 +152,17 @@ export class IdentityMasterEngineService {
 
         const isTelegram = dto.provider === IdentityProvider.TELEGRAM;
         const isWhatsapp = dto.provider === IdentityProvider.WHATSAPP;
-        const telegramUserIdBig = isTelegram && /^\d+$/.test(normalizedId) ? BigInt(normalizedId) : BigInt(normalizedId.replace(/\D/g, '').slice(0, 15) || Date.now());
+        const numericIdentifier = normalizedId.replace(/\D/g, '').slice(0, 15);
+        // `telegram_user_id` is retained as the legacy numeric key used by
+        // several financial tables. Keep WhatsApp identities in a separate
+        // namespace so a phone number can never collide with a Telegram ID.
+        // Existing WhatsApp identities are resolved by ChannelIdentity and
+        // keep their original value; this only applies to new registrations.
+        const telegramUserIdBig = isTelegram && /^\d+$/.test(normalizedId)
+          ? BigInt(normalizedId)
+          : isWhatsapp && numericIdentifier
+            ? -BigInt(numericIdentifier)
+            : BigInt(numericIdentifier || Date.now());
 
         // 2. Create User (id = identity.id to guarantee User.id === UniversalIdentity.id)
         const user = await tx.user.create({
