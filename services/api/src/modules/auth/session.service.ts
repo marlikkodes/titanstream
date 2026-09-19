@@ -19,43 +19,32 @@ export class SessionService {
     const payload = this.jwtService.verify(token);
     const subStr = String(payload.sub || payload.userId || '').trim();
     let user: any = null;
-    let telegramUserId = BigInt(0);
 
     if (this.prisma?.user) {
-      try {
-        user = await this.prisma.user.findUnique({ where: { id: subStr } });
-      } catch {
-        // safe fallback
+      if (subStr) {
+        if (/^\d+$/.test(subStr)) {
+          user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(subStr) } });
+        } else {
+          user = (await this.prisma.user.findUnique({ where: { id: subStr } })) ||
+                 (await this.prisma.user.findFirst({ where: { identityId: subStr } }));
+        }
       }
-      if (!user) {
-        const digits = subStr.replace(/\D/g, '');
-        if (digits) {
-          try {
-            user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(digits) } });
-          } catch {
-            // safe fallback
-          }
+      if (!user && payload.telegramUserId) {
+        const rawTgId = String(payload.telegramUserId).trim();
+        if (/^\d+$/.test(rawTgId)) {
+          user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(rawTgId) } });
         }
       }
     }
 
-    if (user?.telegramUserId) {
-      telegramUserId = user.telegramUserId;
-    } else {
-      const digits = subStr.replace(/\D/g, '');
-      if (digits) {
-        try {
-          telegramUserId = BigInt(digits);
-        } catch {
-          telegramUserId = BigInt(0);
-        }
-      }
-    }
-
-    if (!user && telegramUserId === BigInt(0)) {
+    if (!user) {
       throw new UnauthorizedException({ code: 'USER_NOT_FOUND', message: 'User not found' });
     }
 
-    return { telegramUserId, role: payload.role || 'USER', state: user?.state || 'READY' };
+    return {
+      telegramUserId: user.telegramUserId || BigInt(0),
+      role: payload.role || 'USER',
+      state: user.state || 'READY',
+    };
   }
 }

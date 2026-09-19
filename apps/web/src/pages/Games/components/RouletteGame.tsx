@@ -22,15 +22,17 @@ interface RouletteGameProps {
 }
 
 const DEFAULT_SECTORS: Sector[] = [
-  { label: '₮1.00', type: 'USDT', value: 1.0, premium: true, badge: 'JACKPOT' },
+  { label: '₮50.00', type: 'USDT', value: 50.0, premium: true, badge: 'GRAND VAULT' },
   { label: '15 💎', type: 'CRYSTALS', value: 15, premium: false, badge: 'LUCKY' },
-  { label: '₮0.25', type: 'USDT', value: 0.25, premium: true, badge: 'VAULT' },
+  { label: '₮25.00', type: 'USDT', value: 25.0, premium: true, badge: 'MEGA VAULT' },
   { label: '10 💎', type: 'CRYSTALS', value: 10, premium: false, badge: 'WIN' },
+  { label: '₮10.00', type: 'USDT', value: 10.0, premium: true, badge: 'TITAN POT' },
   { label: '⚡×2.0', type: 'BOOST', value: 2.0, premium: true, badge: 'BOOST' },
-  { label: '₮0.10', type: 'USDT', value: 0.10, premium: false, badge: 'CASH' },
-  { label: '50 💎', type: 'CRYSTALS', value: 50, premium: true, badge: 'MEGA' },
+  { label: '₮1.00', type: 'USDT', value: 1.0, premium: true, badge: 'JACKPOT' },
+  { label: '50 💎', type: 'CRYSTALS', value: 50, premium: true, badge: 'BIG POT' },
   { label: '₮0.50', type: 'USDT', value: 0.50, premium: true, badge: 'HIGH ROLLER' },
   { label: '100 💎', type: 'CRYSTALS', value: 100, premium: true, badge: 'MEGA POT' },
+  { label: '₮0.25', type: 'USDT', value: 0.25, premium: true, badge: 'VAULT' },
   { label: '⚡×1.5', type: 'BOOST', value: 1.5, premium: false, badge: 'BOOST' },
 ];
 
@@ -47,6 +49,17 @@ interface SectorStyleConfig {
 }
 
 const SECTOR_STYLES: Record<string, SectorStyleConfig> = {
+  GRAND: {
+    outerColor: '#ffd700',
+    midColor: '#d50000',
+    innerColor: '#3e0007',
+    textColor: '#ffffff',
+    badgeBg: 'rgba(213, 0, 0, 0.45)',
+    badgeText: '#ffd700',
+    glow: 'rgba(255, 215, 0, 0.95)',
+    icon: '👑',
+    symbol: '₮',
+  },
   JACKPOT: {
     outerColor: '#ffd700',
     midColor: '#ff9100',

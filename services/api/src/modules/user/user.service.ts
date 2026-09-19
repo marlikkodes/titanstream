@@ -68,80 +68,62 @@ export class UserService {
   }
 
   async getProfile(userKey: string | bigint) {
-    try {
-      const isUuid = typeof userKey === 'string' && userKey.includes('-');
-      let user: any = null;
+    let user: any = null;
 
-      if (isUuid) {
-        user = await this.findById(userKey as string) || await this.findByIdentityId(userKey as string);
+    if (typeof userKey === 'string') {
+      const trimmed = userKey.trim();
+      if (/^\d+$/.test(trimmed)) {
+        user = await this.findByTelegramUserId(BigInt(trimmed));
       } else {
-        const telegramUserId = typeof userKey === 'bigint' ? userKey : BigInt(userKey);
-        user = await this.findByTelegramUserId(telegramUserId);
+        user = (await this.findById(trimmed)) || (await this.findByIdentityId(trimmed));
       }
-
-      if (user) return user;
-    } catch {
-      // ignore
+    } else if (typeof userKey === 'bigint') {
+      user = await this.findByTelegramUserId(userKey);
     }
 
-    return {
-      id: String(userKey),
-      telegramUserId: typeof userKey === 'bigint' ? userKey : BigInt(String(userKey).replace(/\D/g, '') || '0'),
-      firstName: 'Operator',
-      state: UserState.ACTIVE_USER,
-      isReady: true,
-      createdAt: new Date(),
-    };
+    if (!user) {
+      throw new NotFoundException('USER_NOT_FOUND');
+    }
+
+    return user;
   }
 
   async updateProfile(userKey: string | bigint, dto: UpdateUserData) {
-    try {
-      const user = await this.getProfile(userKey);
-      const updateData: any = {};
-      const chosenName = (dto.displayName || dto.firstName || '').trim();
-      if (chosenName) {
-        updateData.firstName = chosenName;
-      }
-      if (dto.lastName) updateData.lastName = dto.lastName.trim();
-      if (dto.photoUrl) updateData.photoUrl = dto.photoUrl;
-      if (dto.languageCode) updateData.languageCode = dto.languageCode;
-      if (dto.phoneNumber || dto.connectedWhatsApp) {
-        updateData.phoneNumber = (dto.phoneNumber || dto.connectedWhatsApp)!.trim();
-      }
-      if (dto.telegramUsername) updateData.telegramUsername = dto.telegramUsername.trim();
-
-      const updated = await this.prisma.user.update({
-        where: { id: user.id },
-        data: updateData,
-      });
-
-      return updated;
-    } catch {
-      return { id: String(userKey), ...dto };
+    const user = await this.getProfile(userKey);
+    const updateData: any = {};
+    const chosenName = (dto.displayName || dto.firstName || '').trim();
+    if (chosenName) {
+      updateData.firstName = chosenName;
     }
+    if (dto.lastName) updateData.lastName = dto.lastName.trim();
+    if (dto.photoUrl) updateData.photoUrl = dto.photoUrl;
+    if (dto.languageCode) updateData.languageCode = dto.languageCode;
+    if (dto.phoneNumber || dto.connectedWhatsApp) {
+      updateData.phoneNumber = (dto.phoneNumber || dto.connectedWhatsApp)!.trim();
+    }
+    if (dto.telegramUsername) updateData.telegramUsername = dto.telegramUsername.trim();
+
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: updateData,
+    });
+
+    return updated;
   }
 
   async getTrustProfile(userKey: string | bigint) {
-    try {
-      const user = await this.getProfile(userKey);
-      const trust = await this.prisma.userTrustProfile.findFirst({
-        where: { telegramUserId: user.telegramUserId || undefined },
-      });
-      if (trust) return trust;
-    } catch {
-      // fallback
+    const user = await this.getProfile(userKey);
+    if (!user.telegramUserId) {
+      throw new NotFoundException('TRUST_PROFILE_NOT_FOUND');
     }
 
-    return {
-      telegramUserId: typeof userKey === 'bigint' ? userKey.toString() : String(userKey),
-      trustScore: 85,
-      verificationStatus: 'VERIFIED',
-      accountAgeDays: 30,
-      completedSettlements: 0,
-      activeDisputes: 0,
-      antiFraudScore: 95,
-      tier: 'STANDARD',
-    };
+    const trust = await this.prisma.userTrustProfile.findFirst({
+      where: { telegramUserId: user.telegramUserId },
+    });
+    if (!trust) {
+      throw new NotFoundException('TRUST_PROFILE_NOT_FOUND');
+    }
+    return trust;
   }
 
   async createUser(data: CreateUserData) {

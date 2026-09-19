@@ -35,17 +35,20 @@ export class GameRewardService {
    * Cryptographically secure weighted selection.
    */
   private pickWeighted(sectors: RouletteSectorConfig[]): RouletteSectorConfig {
-    const totalWeight = sectors.reduce((sum, s) => sum + s.weight, 0);
+    const validSectors = sectors.filter((s) => s.weight > 0);
+    if (!validSectors.length) return sectors[0];
+
+    const totalWeight = validSectors.reduce((sum, s) => sum + s.weight, 0);
     const precision = 1_000_000;
     const maxBound = Math.max(1, Math.floor(totalWeight * precision));
     const roll = crypto.randomInt(0, maxBound) / precision;
 
     let accumulated = 0;
-    for (const sector of sectors) {
+    for (const sector of validSectors) {
       accumulated += sector.weight;
       if (roll < accumulated) return sector;
     }
-    return sectors[sectors.length - 1];
+    return validSectors[validSectors.length - 1];
   }
 
   /**

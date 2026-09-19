@@ -248,15 +248,17 @@ class TitanDevServer(BaseHTTPRequestHandler):
                             'personalBest': None,
                             'leaderboardRank': 1,
                             'sectors': [
-                                {'label': '₮1.00 JACKPOT', 'type': 'USDT', 'value': 1.0, 'weight': 1, 'premium': True},
+                                {'label': '₮50.00 GRAND', 'type': 'USDT', 'value': 50.0, 'weight': 0, 'premium': True},
                                 {'label': '15 💎 LUCKY', 'type': 'CRYSTALS', 'value': 15, 'weight': 20, 'premium': False},
-                                {'label': '₮0.25 VAULT', 'type': 'USDT', 'value': 0.25, 'weight': 8, 'premium': True},
+                                {'label': '₮25.00 MEGA', 'type': 'USDT', 'value': 25.0, 'weight': 0, 'premium': True},
                                 {'label': '10 💎 WIN', 'type': 'CRYSTALS', 'value': 10, 'weight': 25, 'premium': False},
-                                {'label': '⚡×2.0 BOOST', 'type': 'BOOST', 'value': 2.0, 'weight': 5, 'premium': True},
-                                {'label': '₮0.10 CASH', 'type': 'USDT', 'value': 0.10, 'weight': 15, 'premium': False},
+                                {'label': '₮10.00 TITAN', 'type': 'USDT', 'value': 10.0, 'weight': 0, 'premium': True},
+                                {'label': '⚡×2.0 BOOST', 'type': 'BOOST', 'value': 2.0, 'weight': 8, 'premium': True},
+                                {'label': '₮1.00 JACKPOT', 'type': 'USDT', 'value': 1.0, 'weight': 1, 'premium': True},
                                 {'label': '50 💎 BIG POT', 'type': 'CRYSTALS', 'value': 50, 'weight': 4, 'premium': True},
-                                {'label': '₮0.50 HIGH ROLLER', 'type': 'USDT', 'value': 0.50, 'weight': 3, 'premium': True},
-                                {'label': '100 💎 MEGA POT', 'type': 'CRYSTALS', 'value': 100, 'weight': 1, 'premium': True},
+                                {'label': '₮0.50 HIGH', 'type': 'USDT', 'value': 0.50, 'weight': 3, 'premium': True},
+                                {'label': '100 💎 MEGA', 'type': 'CRYSTALS', 'value': 100, 'weight': 1, 'premium': True},
+                                {'label': '₮0.25 VAULT', 'type': 'USDT', 'value': 0.25, 'weight': 8, 'premium': True},
                                 {'label': '⚡×1.5 BOOST', 'type': 'BOOST', 'value': 1.5, 'weight': 18, 'premium': False},
                             ]
                         },
@@ -525,10 +527,10 @@ class TitanDevServer(BaseHTTPRequestHandler):
             session['crystalsBalance'] = max(0, session.get('crystalsBalance', 50) - cost)
             save_dev_sessions(DEV_SESSIONS)
             
-            # Weighted random outcome for roulette
-            # Sectors: 0: ₮1.00, 1: 15 💎, 2: ₮0.25, 3: 10 💎, 4: ⚡×2.0, 5: ₮0.10, 6: 50 💎, 7: ₮0.50, 8: 100 💎, 9: ⚡×1.5
-            weights = [1, 20, 8, 25, 5, 15, 4, 3, 1, 18]
-            outcome = random.choices(range(10), weights=weights, k=1)[0]
+            # Weighted random outcome for roulette (12 sectors)
+            # Sectors: 0: ₮50(0), 1: 15💎(20), 2: ₮25(0), 3: 10💎(25), 4: ₮10(0), 5: ⚡2x(8), 6: ₮1.00(1), 7: 50💎(4), 8: ₮0.50(3), 9: 100💎(1), 10: ₮0.25(8), 11: ⚡1.5x(18)
+            weights = [0, 20, 0, 25, 0, 8, 1, 4, 3, 1, 8, 18]
+            outcome = random.choices(range(12), weights=weights, k=1)[0]
             
             session_id = f'sess_{int(time.time())}_{random.randint(1000, 9999)}'
             return self._send_json({

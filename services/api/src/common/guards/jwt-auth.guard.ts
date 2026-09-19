@@ -1,4 +1,11 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+  ServiceUnavailableException,
+  HttpException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
@@ -37,45 +44,56 @@ export class JwtAuthGuard implements CanActivate {
       } catch {
         throw new UnauthorizedException({ code: 'TOKEN_INVALID', message: 'Invalid JWT signature' });
       }
-      let user: any = null;
-      let userState = payload.state || 'READY';
 
-      const subStr = String(payload.sub || payload.userId || '');
+      const subStr = String(payload.sub || payload.userId || '').trim();
+      let user: any = null;
 
       try {
         if (subStr) {
-          user = (await this.prisma.user.findUnique({ where: { id: subStr } })) ||
-                 (await this.prisma.user.findFirst({ where: { identityId: subStr } }));
-        }
-        if (!user && (payload.telegramUserId || subStr)) {
-          const rawId = payload.telegramUserId || subStr;
-          if (!isNaN(Number(rawId))) {
-            const telegramUserId = BigInt(rawId);
-            user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+          if (/^\d+$/.test(subStr)) {
+            user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(subStr) } });
+          } else {
+            user = (await this.prisma.user.findUnique({ where: { id: subStr } })) ||
+                   (await this.prisma.user.findFirst({ where: { identityId: subStr } }));
           }
         }
-        if (user) userState = user.state;
-      } catch (dbErr) {
-        // Fallback user state on database connection lag/blip
+        if (!user && payload.telegramUserId) {
+          const rawTgId = String(payload.telegramUserId).trim();
+          if (/^\d+$/.test(rawTgId)) {
+            user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(rawTgId) } });
+          }
+        }
+      } catch (dbErr: any) {
+        throw new ServiceUnavailableException({
+          code: 'DATABASE_UNAVAILABLE',
+          message: 'Database unavailable during identity validation',
+        });
       }
 
-      const canonicalUserId = user?.id || user?.identityId || subStr;
-      const legacyTelegramUserId = user?.telegramUserId
+      if (!user) {
+        throw new UnauthorizedException({
+          code: 'USER_NOT_FOUND',
+          message: 'Authenticated user does not exist in database',
+        });
+      }
+
+      const canonicalUserId = user.id;
+      const universalIdentityId = user.identityId || user.id;
+      const legacyTelegramUserId = user.telegramUserId
         ? user.telegramUserId.toString()
-        : payload.telegramUserId
-        ? String(payload.telegramUserId)
-        : subStr;
+        : (payload.telegramUserId ? String(payload.telegramUserId) : undefined);
+      const userState = user.state;
 
       const identityContext = {
         userId: canonicalUserId,
-        universalIdentityId: user?.identityId || canonicalUserId,
+        universalIdentityId,
         channel: payload.provider || 'TELEGRAM',
         channelIdentityId: payload.channelIdentityId || canonicalUserId,
         providerSubject: payload.providerSubject || legacyTelegramUserId || canonicalUserId,
         assuranceLevel: payload.assuranceLevel || 'HIGH',
         role: payload.role || 'USER',
         userState,
-        telegramUserId: legacyTelegramUserId && /^\d+$/.test(legacyTelegramUserId) ? BigInt(legacyTelegramUserId) : undefined,
+        telegramUserId: user.telegramUserId || (legacyTelegramUserId && /^\d+$/.test(legacyTelegramUserId) ? BigInt(legacyTelegramUserId) : undefined),
       };
 
       request.identity = identityContext;
@@ -88,6 +106,9 @@ export class JwtAuthGuard implements CanActivate {
       };
       return true;
     } catch (error: any) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new UnauthorizedException({ code: error.code || 'TOKEN_INVALID', message: error.message });
     }
   }
