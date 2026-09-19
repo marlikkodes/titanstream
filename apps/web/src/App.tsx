@@ -303,11 +303,13 @@ export function App() {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
-  // Public marketing landing page. /home is the canonical shareable entrypoint;
-  // /cloud-services remains as a backwards-compatible alias.
+  // Public marketing landing page. The site root is public by default; the
+  // explicit onboarding query is reserved for the login flow's CTA.
   const isLandingRoute = typeof window !== 'undefined' && (
-    window.location.pathname === '/home' || window.location.pathname === '/cloud-services'
-  );
+    window.location.pathname === '/' ||
+    window.location.pathname === '/home' ||
+    window.location.pathname === '/cloud-services'
+  ) && new URLSearchParams(window.location.search).get('onboarding') !== 'true';
   if (isLandingRoute) {
     return (
       <ErrorBoundary>
