@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "start": "pnpm --filter @titanstream/api start:prod",
     "dev": "pnpm --filter web dev",
     "dev:web": "pnpm --filter web dev",
-    "build": "pnpm --filter web build",
+    "build": "pnpm --filter @titanstream/api build && pnpm --filter web build",
     "build:web": "pnpm --filter web build",
     "build:api": "pnpm --filter @titanstream/api build",
     "start:api": "pnpm --filter @titanstream/api start:prod",
