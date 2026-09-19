@@ -21,6 +21,7 @@ describe('UserService - deleteAccount', () => {
       financialAccount: { findUnique: jest.fn().mockResolvedValue(null), delete: jest.fn().mockResolvedValue({}) },
       financialTransaction: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       ledgerEntry: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      // AssetBalance deletion is still needed for account cleanup
       assetBalance: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       userAssetLicense: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       userMiningState: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },

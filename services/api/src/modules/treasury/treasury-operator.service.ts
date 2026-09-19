@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PaymentOrderService } from '../payment-order/payment-order.service';
 import { AuditService } from '../audit/audit.service';
 import { AuditEventType } from '@prisma/client';
@@ -76,10 +76,12 @@ export class TreasuryOperatorService {
   }
 
   async getVerificationQueue() {
-    const allOrders = await this.paymentOrderService.getAllOrders();
-    return allOrders.filter(
-      (o) => o.status === 'AWAITING_VERIFICATION' || o.status === 'AWAITING_PAYMENT' || o.status === 'CREATED',
-    );
+    // LEGACY: PaymentOrderService quarantined - use PaymentIntent approval queue instead
+    // const allOrders = await this.paymentOrderService.getAllOrders();
+    // return allOrders.filter(
+    //   (o: any) => o.status === 'AWAITING_VERIFICATION' || o.status === 'AWAITING_PAYMENT' || o.status === 'CREATED',
+    // );
+    return [];
   }
 
   async verifyPaymentOrder(
@@ -88,32 +90,35 @@ export class TreasuryOperatorService {
     operatorId: string,
     reason?: string,
   ) {
-    const operator = this.operators.get(operatorId) || {
-      id: operatorId,
-      name: 'Treasury Admin',
-      role: 'TREASURY_OPERATOR',
-      dutyStatus: 'ACTIVE',
-      countryScope: 'GLOBAL',
-      verificationsCompletedCount: 0,
-      lastActiveAt: new Date().toISOString(),
-    };
+    // LEGACY: PaymentOrderService quarantined - use PaymentIntent verification instead
+    throw new BadRequestException('LEGACY_PAYMENT_ORDER_DEPRECATED: Use PaymentIntent verification endpoints instead');
 
-    if (action === 'APPROVE') {
-      const order = await this.paymentOrderService.approveOrder(orderId, operatorId);
-      operator.verificationsCompletedCount += 1;
-      operator.lastActiveAt = new Date().toISOString();
-      this.operators.set(operatorId, operator);
+    // const operator = this.operators.get(operatorId) || {
+    //   id: operatorId,
+    //   name: 'Treasury Admin',
+    //   role: 'TREASURY_OPERATOR',
+    //   dutyStatus: 'ACTIVE',
+    //   countryScope: 'GLOBAL',
+    //   verificationsCompletedCount: 0,
+    //   lastActiveAt: new Date().toISOString(),
+    // };
 
-      this.logger.log(`[TreasuryOperator] Order ${order.reference} APPROVED by ${operator.name}`);
-      return order;
-    } else {
-      const order = await this.paymentOrderService.rejectOrder(
-        orderId,
-        reason || 'Rejected by Treasury Operator',
-        operatorId,
-      );
-      this.logger.log(`[TreasuryOperator] Order ${order.reference} REJECTED by ${operator.name}: ${reason}`);
-      return order;
-    }
+    // if (action === 'APPROVE') {
+    //   const order = await this.paymentOrderService.approveOrder(orderId, operatorId);
+    //   operator.verificationsCompletedCount += 1;
+    //   operator.lastActiveAt = new Date().toISOString();
+    //   this.operators.set(operatorId, operator);
+
+    //   this.logger.log(`[TreasuryOperator] Order ${order.reference} APPROVED by ${operator.name}`);
+    //   return order;
+    // } else {
+    //   const order = await this.paymentOrderService.rejectOrder(
+    //     orderId,
+    //     reason || 'Rejected by Treasury Operator',
+    //     operatorId,
+    //   );
+    //   this.logger.log(`[TreasuryOperator] Order ${order.reference} REJECTED by ${operator.name}: ${reason}`);
+    //   return order;
+    // }
   }
 }

@@ -42,7 +42,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
         <div className="flex flex-col items-center gap-1 text-center font-sans">
           <h1 className="text-3xl font-extrabold text-gradient-usdt tracking-tight">TitanStream</h1>
-          <p className="text-xs text-text-secondary tracking-wide font-semibold mt-1">Earn Daily Money Automatically</p>
+          <p className="text-xs text-text-secondary tracking-wide font-semibold mt-1">Distributed cloud compute, in one place</p>
         </div>
 
         <Loader size="md" color="green" className="mt-4" />

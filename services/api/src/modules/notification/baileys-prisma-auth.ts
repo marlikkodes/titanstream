@@ -63,11 +63,19 @@ export async function usePrismaAuthState(
 
   const writeLocalCache = (keyId: string, content: any) => {
     if (!localCacheDir) return;
+    let temporaryPath: string | undefined;
     try {
       const filePath = path.join(localCacheDir, `${keyId}.json`);
-      fs.writeFileSync(filePath, JSON.stringify(content, BufferJSON?.replacer, 2));
+      temporaryPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+      fs.writeFileSync(temporaryPath, JSON.stringify(content, BufferJSON?.replacer, 2));
+      fs.renameSync(temporaryPath, filePath);
     } catch (err: any) {
       logger.debug(`Failed to write local auth cache for ${keyId}: ${err.message}`);
+      if (temporaryPath) {
+        try {
+          fs.unlinkSync(temporaryPath);
+        } catch {}
+      }
     }
   };
 
@@ -261,26 +269,25 @@ export async function usePrismaAuthState(
         }
       }
 
-      // Async DB persistence in background without blocking the Baileys event loop
+      // Baileys awaits this store. Persist before resolving so a reconnect never
+      // observes a partially saved key set.
       if (isDbAvailable && (upsertOperations.length > 0 || deleteIds.length > 0)) {
-        setImmediate(async () => {
-          try {
-            if (deleteIds.length > 0) {
-              await prisma.baileysAuthKey.deleteMany({
-                where: { accountId, keyId: { in: deleteIds } },
-              });
-            }
-            for (const item of upsertOperations) {
-              await prisma.baileysAuthKey.upsert({
-                where: { accountId_keyId: { accountId: item.accountId, keyId: item.keyId } },
-                create: item,
-                update: { data: item.data },
-              });
-            }
-          } catch {
-            isDbAvailable = false;
+        try {
+          if (deleteIds.length > 0) {
+            await prisma.baileysAuthKey.deleteMany({
+              where: { accountId, keyId: { in: deleteIds } },
+            });
           }
-        });
+          for (const item of upsertOperations) {
+            await prisma.baileysAuthKey.upsert({
+              where: { accountId_keyId: { accountId: item.accountId, keyId: item.keyId } },
+              create: item,
+              update: { data: item.data },
+            });
+          }
+        } catch {
+          isDbAvailable = false;
+        }
       }
     },
   };

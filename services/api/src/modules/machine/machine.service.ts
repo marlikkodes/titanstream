@@ -339,30 +339,31 @@ export class MachineService {
     const availableUsdt = parseFloat(usdtBalance?.availableBalance || '0');
 
     if (availableUsdt < tier.priceUsdt) {
-      // Create a deposit payment order for missing amount so user can pay & auto-resume
-      const missingUsdt = tier.priceUsdt - availableUsdt;
-      const order = await this.paymentOrderService.createOrder(telegramUserId, {
-        type: 'MACHINE_PURCHASE',
-        amount: tier.priceUsdt,
-        currency: 'USDT',
-        paymentMethod: 'MOBILE_MONEY',
-        metadata: { targetTierCode: tierCode, missingAmount: missingUsdt },
-      });
+      // LEGACY: PaymentOrderService quarantined - use PaymentIntent instead
+      // const missingUsdt = tier.priceUsdt - availableUsdt;
+      // const order = await this.paymentOrderService.createOrder(telegramUserId, {
+      //   type: 'MACHINE_PURCHASE',
+      //   amount: tier.priceUsdt,
+      //   currency: 'USDT',
+      //   paymentMethod: 'MOBILE_MONEY',
+      //   metadata: { targetTierCode: tierCode, missingAmount: missingUsdt },
+      // });
 
+      // For now, just return insufficient balance error
+      const missingUsdt = tier.priceUsdt - availableUsdt;
       return {
         success: false,
         requiresFunding: true,
         missingAmountUsdt: missingUsdt,
-        paymentOrder: order,
-        message: `Insufficient balance. Deposit order ${order.reference} initiated.`,
+        message: `Insufficient balance. Please deposit ${missingUsdt.toFixed(2)} USDT to purchase this machine.`,
       };
     }
 
-    // Balance is sufficient: execute financial deduction via orchestrator
+    // Balance is sufficient: execute financial deduction via orchestrator using dedicated machine purchase operation type
     const reference = `mach_buy_${tierCode}_${Date.now()}`;
     await this.orchestrator.requestOperation({
       telegramUserId,
-      operationType: FinancialOperationType.WITHDRAWAL_RESERVE,
+      operationType: FinancialOperationType.MACHINE_PURCHASE_RESERVE,
       assetCode: 'USDT',
       amount: tier.priceUsdt.toString(),
       idempotencyKey: reference,
@@ -377,23 +378,43 @@ export class MachineService {
         name: tier.name,
         purchasePrice: tier.priceUsdt,
         currency: 'USDT',
-        status: 'ACTIVE',
+        status: 'PAYMENT_VERIFIED',
         capacityGhs: tier.capacityGhs,
       },
     });
 
+    // Settle the machine purchase transaction
+    await this.orchestrator.requestOperation({
+      telegramUserId,
+      operationType: FinancialOperationType.MACHINE_PURCHASE_SETTLE,
+      assetCode: 'USDT',
+      amount: tier.priceUsdt.toString(),
+      idempotencyKey: `${reference}_settle`,
+      reference: `${reference}_settle`,
+      metadata: { source: 'machine_purchase_settle', tierCode, price: tier.priceUsdt, machineId: createdMachine.id },
+    });
+
+    // Activate the machine after settlement
+    const activatedMachine = await this.prisma.userMachine.update({
+      where: { id: createdMachine.id },
+      data: {
+        status: 'ACTIVE',
+        activatedAt: new Date(),
+      },
+    });
+
     const newMachineAsset: UserMachineAsset = {
-      id: createdMachine.id,
+      id: activatedMachine.id,
       telegramUserId: userIdStr,
-      tierCode: createdMachine.tierCode,
-      name: createdMachine.name,
-      purchasePrice: createdMachine.purchasePrice.toNumber(),
-      currency: createdMachine.currency,
-      status: createdMachine.status as any,
-      capacityGhs: createdMachine.capacityGhs.toNumber(),
-      lifetimeEarnings: createdMachine.lifetimeEarnings.toNumber(),
-      purchasedAt: createdMachine.purchasedAt.toISOString(),
-      activatedAt: createdMachine.activatedAt.toISOString(),
+      tierCode: activatedMachine.tierCode,
+      name: activatedMachine.name,
+      purchasePrice: activatedMachine.purchasePrice.toNumber(),
+      currency: activatedMachine.currency,
+      status: activatedMachine.status as any,
+      capacityGhs: activatedMachine.capacityGhs.toNumber(),
+      lifetimeEarnings: activatedMachine.lifetimeEarnings.toNumber(),
+      purchasedAt: activatedMachine.purchasedAt.toISOString(),
+      activatedAt: activatedMachine.activatedAt.toISOString(),
     };
 
     if (this.miningService) {
@@ -456,10 +477,10 @@ export class MachineService {
     const tier = this.catalog.find((t) => t.tierCode === machine.tierCode);
     const repowerFee = tier ? tier.priceUsdt * 0.15 : 1.65;
 
-    // Record double-entry repower transaction in Ledger
+    // Record double-entry repower transaction in Ledger using dedicated operation type
     await this.orchestrator.requestOperation({
       telegramUserId,
-      operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+      operationType: FinancialOperationType.MACHINE_REPOWER_RESERVE,
       assetCode: 'USDT',
       amount: repowerFee.toString(),
       idempotencyKey: `repower_${machineId}_${Date.now()}`,
@@ -512,7 +533,7 @@ export class MachineService {
     if (upgradeCost > 0) {
       await this.orchestrator.requestOperation({
         telegramUserId,
-        operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+        operationType: FinancialOperationType.MACHINE_UPGRADE_RESERVE,
         assetCode: 'USDT',
         amount: upgradeCost.toString(),
         idempotencyKey: `upgrade_${currentMachineId}_${Date.now()}`,

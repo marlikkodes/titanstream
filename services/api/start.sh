@@ -60,4 +60,4 @@ else
 fi
 
 # Run main application
-exec node dist/src/main
+exec node dist/main

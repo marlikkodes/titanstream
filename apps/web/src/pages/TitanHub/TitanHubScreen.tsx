@@ -469,7 +469,7 @@ export const TitanHubScreen: React.FC = () => {
         </h3>
         <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={() => openGames()}
+            onClick={() => openGames('crypto-roulette')}
             className="web3-card p-3 rounded-xl border border-white/10 flex flex-col items-center text-center gap-1.5 hover:border-purple-400/30 transition-colors press-feedback"
           >
             <div className="text-2xl">🎰</div>
@@ -477,15 +477,15 @@ export const TitanHubScreen: React.FC = () => {
             <div className="text-[10px] text-text-tertiary">Win up to 100 Crystals</div>
           </button>
           <button
-            onClick={() => openGames()}
+            onClick={() => openGames('hoop-masters')}
             className="web3-card p-3 rounded-xl border border-white/10 flex flex-col items-center text-center gap-1.5 hover:border-purple-400/30 transition-colors press-feedback"
           >
             <div className="text-2xl">🏀</div>
-            <div className="text-xs font-extrabold text-text-primary">Basketball</div>
+            <div className="text-xs font-extrabold text-text-primary">Titan Hoop</div>
             <div className="text-[10px] text-text-tertiary">Score shots for rewards</div>
           </button>
           <button
-            onClick={() => openGames()}
+            onClick={() => openGames('titan-core-reactor')}
             className="web3-card p-3 rounded-xl border border-white/10 flex flex-col items-center text-center gap-1.5 hover:border-purple-400/30 transition-colors press-feedback"
           >
             <div className="text-2xl">⚛️</div>
@@ -493,7 +493,7 @@ export const TitanHubScreen: React.FC = () => {
             <div className="text-[10px] text-text-tertiary">Chain reactions</div>
           </button>
           <button
-            onClick={() => openGames()}
+            onClick={() => openGames('power-grid')}
             className="web3-card p-3 rounded-xl border border-white/10 flex flex-col items-center text-center gap-1.5 hover:border-purple-400/30 transition-colors press-feedback"
           >
             <div className="text-2xl">⚡</div>

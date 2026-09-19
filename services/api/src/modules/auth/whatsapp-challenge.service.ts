@@ -20,6 +20,7 @@ export interface WhatsappLoginChallenge {
   deviceInfo: string;
   createdAt: Date;
   expiresAt: Date;
+  shortPin?: string; // 6-digit code for easier UX
   sessionTokens?: {
     accessToken: string;
     refreshToken: string;
@@ -51,7 +52,68 @@ function loadSharedChallenges(): Record<string, any> {
   try {
     const p = getChallengesPath();
     if (existsSync(p)) {
-      return JSON.parse(readFileSync(p, 'utf-8'));
+      const raw = JSON.parse(readFileSync(p, 'utf-8'));
+      const cleaned: Record<string, any> = {};
+      const now = new Date();
+      let cleanedCount = 0;
+
+      // Filter out expired challenges and old format challenges
+      for (const [key, value] of Object.entries(raw)) {
+        // Skip helper entries (pin_*, approval_*) - they'll be recreated if needed
+        if (key.startsWith('pin_') || key.startsWith('approval_')) {
+          continue;
+        }
+
+        // Validate challenge format
+        if (!value || typeof value !== 'object') continue;
+
+        // Check if it's a valid challenge object
+        const challenge = value as any;
+        
+        // Skip old format challenges (missing required hash fields)
+        if (!challenge.approvalTokenHash || !challenge.browserProofHash) {
+          cleanedCount++;
+          continue;
+        }
+
+        // Skip expired challenges
+        if (challenge.expiresAt) {
+          const expiresAt = new Date(challenge.expiresAt);
+          if (expiresAt < now) {
+            cleanedCount++;
+            continue;
+          }
+        }
+
+        // Keep valid challenges
+        cleaned[key] = challenge;
+        // Recreate approval token index for valid challenges
+        if (challenge.approvalTokenHash) {
+          cleaned[`approval_${challenge.approvalTokenHash}`] = key;
+        }
+        // Recreate PIN index for 6-digit codes
+        if (challenge.shortPin) {
+          cleaned[`pin_${challenge.shortPin}`] = key;
+        }
+        // Recreate PIN index for 6-digit codes
+        if (challenge.shortPin) {
+          cleaned[`pin_${challenge.shortPin}`] = key;
+        }
+      }
+
+      // If we cleaned anything, save the cleaned version
+      if (cleanedCount > 0) {
+        console.log(`[WA_CHAL_CLEAN] Removed ${cleanedCount} expired/invalid challenges from shared file`);
+        try {
+          const temporaryPath = `${p}.${process.pid}.${Date.now()}.tmp`;
+          writeFileSync(temporaryPath, JSON.stringify(cleaned, null, 2), 'utf-8');
+          renameSync(temporaryPath, p);
+        } catch (saveErr: any) {
+          console.error('[WA_CHAL_ERR] Failed to save cleaned challenges:', saveErr.message);
+        }
+      }
+
+      return cleaned;
     }
   } catch (err: any) {
     console.error('[WA_CHAL_ERR] Failed to load shared challenges:', err.message);
@@ -66,6 +128,10 @@ function saveSharedChallenge(challenge: any) {
     const all = loadSharedChallenges();
     all[challenge.challengeId] = challenge;
     all[`approval_${challenge.approvalTokenHash}`] = challenge.challengeId;
+    // Also save PIN index for 6-digit codes
+    if (challenge.shortPin) {
+      all[`pin_${challenge.shortPin}`] = challenge.challengeId;
+    }
 
     temporaryPath = `${p}.${process.pid}.${Date.now()}.tmp`;
     writeFileSync(temporaryPath, JSON.stringify(all, null, 2), 'utf-8');
@@ -174,13 +240,51 @@ export class WhatsappChallengeService {
     @Optional()
     @Inject(forwardRef(() => ConversationalRouterService))
     private readonly conversationalRouterService?: ConversationalRouterService,
-  ) {}
+  ) {
+    // Initialize cleanup on service start
+    this.initializeCleanup();
+  }
+
+  /** Initialize cleanup of expired challenges on service startup */
+  private initializeCleanup() {
+    // Trigger cleanup of shared challenges file on load
+    loadSharedChallenges();
+    
+    // Set up periodic cleanup of in-memory challenges (every 5 minutes)
+    setInterval(() => {
+      this.cleanupExpiredChallenges();
+    }, 5 * 60 * 1000);
+  }
+
+  /** Clean up expired in-memory challenges */
+  private cleanupExpiredChallenges() {
+    const now = new Date();
+    let cleanedCount = 0;
+
+    for (const [challengeId, challenge] of this.challenges.entries()) {
+      if (now > challenge.expiresAt) {
+        this.challenges.delete(challengeId);
+        if (challenge.approvalTokenHash) {
+          this.approvalTokenHashToChallengeId.delete(challenge.approvalTokenHash);
+        }
+        if (challenge.phone) {
+          this.phoneToActiveChallengeId.delete(challenge.phone);
+        }
+        cleanedCount++;
+      }
+    }
+
+    if (cleanedCount > 0) {
+      this.logger.log(`[WA_CHAL_CLEANUP] Cleaned ${cleanedCount} expired in-memory challenges`);
+    }
+  }
 
   /** Generates a 10-minute, server-verified WhatsApp login challenge. */
   createChallenge(deviceInfo?: string): { challengeId: string; browserProof: string; expiresAt: Date; waDeepLink: string; transportReady?: boolean; transportStatus?: string } {
     const challengeId = `wa_ch_${randomBytes(32).toString('base64url')}`;
     
-    const approvalToken = randomBytes(32).toString('base64url');
+    // Use 6-digit code instead of opaque token for better UX
+    const approvalToken = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit code
     const browserProof = randomBytes(32).toString('base64url');
 
     const expiresAt = new Date(Date.now() + 600 * 1000); // 10 minutes TTL
@@ -201,6 +305,7 @@ export class WhatsappChallengeService {
       challengeId,
       approvalTokenHash: challenge.approvalTokenHash,
       browserProofHash: challenge.browserProofHash,
+      shortPin: approvalToken, // Include 6-digit code for backward compatibility
       status: 'PENDING',
       deviceInfo: challenge.deviceInfo,
       createdAt: challenge.createdAt.toISOString(),
@@ -217,7 +322,7 @@ export class WhatsappChallengeService {
       ? this.baileysService.isAuthTransportReady()
       : true;
 
-    this.logger.log(`[WA_CHALLENGE_CREATED] challengeId=${challengeId} expiresAt=${expiresAt.toISOString()} transportReady=${isReady}`);
+    this.logger.log(`[WA_CHALLENGE_CREATED] challengeId=${challengeId} code=${approvalToken} expiresAt=${expiresAt.toISOString()} transportReady=${isReady}`);
     return {
       challengeId,
       browserProof,
@@ -293,22 +398,43 @@ export class WhatsappChallengeService {
 
       if (targetChallengeId && shared[targetChallengeId]) {
         const raw = shared[targetChallengeId];
+        
+        // Validate challenge has required fields before restoring
+        if (!raw.approvalTokenHash || !raw.browserProofHash) {
+          this.logger.warn(`[WA_CHALLENGE_REJECTED] Invalid challenge format for ${targetChallengeId} - missing required hash fields`);
+          return null;
+        }
+
         const restored: WhatsappLoginChallenge = {
           ...raw,
           createdAt: new Date(raw.createdAt),
           expiresAt: new Date(raw.expiresAt),
         };
-        this.challenges.set(targetChallengeId, restored);
-        if (!restored.approvalTokenHash || !restored.browserProofHash) {
+        
+        // Check if expired
+        if (new Date() > restored.expiresAt) {
+          this.logger.warn(`[WA_CHALLENGE_REJECTED] Expired challenge ${targetChallengeId}`);
           return null;
         }
+
+        this.challenges.set(targetChallengeId, restored);
         this.approvalTokenHashToChallengeId.set(restored.approvalTokenHash, targetChallengeId);
         return restored;
       }
     }
 
     if (!targetChallengeId) return null;
-    return this.challenges.get(targetChallengeId) || null;
+    
+    const challenge = this.challenges.get(targetChallengeId);
+    if (!challenge) return null;
+    
+    // Check if expired
+    if (new Date() > challenge.expiresAt) {
+      this.logger.warn(`[WA_CHALLENGE_REJECTED] Expired in-memory challenge ${targetChallengeId}`);
+      return null;
+    }
+    
+    return challenge;
   }
 
   /**
@@ -361,6 +487,8 @@ export class WhatsappChallengeService {
     const rawText = textInput.trim();
     const upperText = rawText.toUpperCase();
 
+    this.logger.log(`[WA_CHAL_DEBUG] Received message from ${cleanPhone}: "${rawText}" (length: ${rawText.length})`);
+
     // 1. Check if user is replying 1/YES or 2/NO to an awaiting approval prompt
     const pendingChallengeId = this.phoneToActiveChallengeId.get(cleanPhone);
     if (pendingChallengeId) {
@@ -368,10 +496,6 @@ export class WhatsappChallengeService {
       if (activeChallenge && (activeChallenge.status === 'AWAITING_APPROVAL' || activeChallenge.status === 'PENDING') && new Date() <= activeChallenge.expiresAt) {
         if (upperText === '1' || upperText === 'YES' || upperText === 'APPROVE') {
           await this.approveChallenge(activeChallenge, cleanPhone, metadata);
-          await this.baileysService.sendTextMessage(
-            cleanPhone,
-            `Titan Stream ✅\n\nYour browser sign-in has been approved successfully!\n\n🛒 Send or share any product link (e.g. jumia.ug) here to process orders, check compute deals, or earn rewards!`
-          );
           return true;
         } else if (upperText === '2' || upperText === 'NO' || upperText === 'DECLINE') {
           this.declineChallenge(activeChallenge, cleanPhone);
@@ -386,7 +510,8 @@ export class WhatsappChallengeService {
 
     // A QR approval contains an opaque, one-time token. The sender JID remains
     // authoritative; text content must never select the account being signed in.
-    const approvalMatch = rawText.match(/^START\s+([A-Za-z0-9_-]{32,})\s*$/i);
+    // Accept both 6-digit codes and longer opaque tokens
+    const approvalMatch = rawText.match(/^START\s+([A-Za-z0-9_-]{6,})\s*$/i);
     if (approvalMatch) {
       const challenge = this.findChallengeByApprovalToken(approvalMatch[1]);
 
@@ -491,12 +616,46 @@ export class WhatsappChallengeService {
     });
 
     const primaryTarget = `${cleanDigits}@s.whatsapp.net`;
-    const confirmation = 'Titan Stream: your browser sign-in has been approved.';
+    const isNewUser = identityContext.assuranceLevel !== 'HIGH';
+    const roleText = identityContext.role && identityContext.role !== 'USER' ? `\n• Role: *${identityContext.role}*` : '';
+
+    const confirmation = isNewUser
+      ? (
+          `⚡ *TITAN STREAM* — *Welcome to Titan Stream!*\n\n` +
+          `🎉 *Signup Approved & Account Created*\n` +
+          `• Status: *Active & Verified*\n` +
+          `• Phone: *${canonicalPhone}*\n` +
+          `• Titan ID: *${canonicalTitanId}*${roleText}\n` +
+          `• Account UUID: \`${identityContext.userId}\`\n` +
+          `• Welcome Bonus: *+50 Energy Crystals Credited*\n\n` +
+          `🌐 *Browser Authenticated*: Your browser window is now unlocked and ready to stream!\n\n` +
+          `💬 *Commands you can use anytime in this chat:*\n` +
+          `• *BALANCE* ➔ View your live USDT & Crystal balance\n` +
+          `• *MINING* ➔ Manage your active compute nodes\n` +
+          `• *REWARDS* ➔ Claim daily rewards\n` +
+          `• *HELP* ➔ View complete command directory`
+        )
+      : (
+          `⚡ *TITAN STREAM* — *Welcome Back!*\n\n` +
+          `✅ *Login Approved*\n` +
+          `• Status: *Active & Online*\n` +
+          `• Phone: *${canonicalPhone}*\n` +
+          `• Titan ID: *${canonicalTitanId}*${roleText}\n` +
+          `• Account UUID: \`${identityContext.userId}\`\n` +
+          `• Security: *Browser Session Authorized*\n\n` +
+          `🌐 *Browser Authenticated*: Head back to your browser screen to continue using Titan Stream!\n\n` +
+          `💬 *Commands you can use anytime in this chat:*\n` +
+          `• *BALANCE* ➔ Check your live USDT & Crystal balance\n` +
+          `• *MINING* ➔ Compute nodes status & yield\n` +
+          `• *REWARDS* ➔ Claim daily rewards\n` +
+          `• *HELP* ➔ View command directory`
+        );
+
     await this.baileysService.sendTextMessage(primaryTarget, confirmation, 'CRITICAL').catch((err: any) => {
       this.logger.warn(`[WA_CONFIRMATION_FAILED] Failed to send approval confirmation: ${err.message}`);
     });
 
-    this.logger.log(`[WA_CHALLENGE_APPROVED] challengeId=${challenge.challengeId} phone=${canonicalPhone} titanId=${canonicalTitanId}`);
+    this.logger.log(`[WA_CHALLENGE_APPROVED] challengeId=${challenge.challengeId} phone=${canonicalPhone} titanId=${canonicalTitanId} userId=${identityContext.userId}`);
   }
 
   /**

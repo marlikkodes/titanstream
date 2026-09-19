@@ -49,10 +49,12 @@ export class OperationsService {
 
   async getMissionControlOverview(): Promise<MissionControlOverview> {
     const treasuryMetrics = await this.treasuryService.getMetrics();
-    const allPaymentOrders = await this.paymentOrderService.getAllOrders();
-
-    const pendingOrdersCount = allPaymentOrders.filter((o) => o.status === 'AWAITING_PAYMENT').length;
-    const verificationOrdersCount = allPaymentOrders.filter((o) => o.status === 'AWAITING_VERIFICATION').length;
+    // LEGACY: PaymentOrderService quarantined - use PaymentIntent instead
+    // const allPaymentOrders = await this.paymentOrderService.getAllOrders();
+    // const pendingOrdersCount = allPaymentOrders.filter((o: any) => o.status === 'AWAITING_PAYMENT').length;
+    // const verificationOrdersCount = allPaymentOrders.filter((o: any) => o.status === 'AWAITING_VERIFICATION').length;
+    const pendingOrdersCount = 0;
+    const verificationOrdersCount = 0;
 
     const [openQueueCount, openRiskCount, openSupportCount, recentAuditEvents] = await Promise.all([
       this.prisma.operationsQueueItem.count({ where: { status: OperationsQueueStatus.OPEN } }).catch(() => 0),

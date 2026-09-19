@@ -6,7 +6,7 @@ import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decor
 import { AdminAuthGuard } from '../admin/guards/admin-auth.guard';
 import { CurrentAdmin, AuthenticatedAdmin } from '../admin/decorators/current-admin.decorator';
 
-@ApiTags('Payment Orders')
+@ApiTags('Payment Orders - LEGACY')
 @Controller('payment-orders')
 export class PaymentOrderController {
   constructor(private readonly service: PaymentOrderService) {}
@@ -17,92 +17,6 @@ export class PaymentOrderController {
     return {
       success: true,
       data: this.service.getDestinationConfigs(),
-    };
-  }
-
-  @Post()
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Create a new Payment Order (Deposit, Withdrawal, Machine Purchase)' })
-  async createOrder(
-    @CanonicalUserId() userId: string,
-    @Body() dto: CreatePaymentOrderDto,
-  ) {
-    const order = await this.service.createOrder(userId, dto);
-    return {
-      success: true,
-      data: order,
-    };
-  }
-
-  @Get('my')
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Get current user payment orders' })
-  getMyOrders(@CanonicalUserId() userId: string) {
-    return {
-      success: true,
-      data: this.service.getUserOrders(userId),
-    };
-  }
-
-  @Get(':id')
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Get payment order details by ID' })
-  getOrder(@Param('id') id: string) {
-    return {
-      success: true,
-      data: this.service.getOrder(id),
-    };
-  }
-
-  @Post(':id/verify')
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Submit payment order for operator verification after USSD completion' })
-  async submitForVerification(@Param('id') id: string) {
-    const order = await this.service.submitForVerification(id);
-    return {
-      success: true,
-      data: order,
-    };
-  }
-
-  // ─── ADMIN ENDPOINTS ────────────────────────────────────────────────────────
-
-  @Get('admin/list')
-  @UseGuards(AdminAuthGuard)
-  @ApiOperation({ summary: 'Admin list all payment orders across all users' })
-  adminListOrders() {
-    return {
-      success: true,
-      data: this.service.getAllOrders(),
-    };
-  }
-
-  @Post('admin/:id/approve')
-  @UseGuards(AdminAuthGuard)
-  @ApiOperation({ summary: 'Admin approve payment order and execute double-entry ledger posting' })
-  async adminApproveOrder(
-    @CurrentAdmin() admin: AuthenticatedAdmin,
-    @Param('id') id: string,
-  ) {
-    const order = await this.service.approveOrder(id, admin.id);
-    return {
-      success: true,
-      data: order,
-    };
-  }
-
-  @Post('admin/:id/reject')
-  @UseGuards(AdminAuthGuard)
-  @ApiOperation({ summary: 'Admin reject payment order with reason' })
-  async adminRejectOrder(
-    @CurrentAdmin() admin: AuthenticatedAdmin,
-    @Param('id') id: string,
-    @Body('reason') reason: string,
-  ) {
-    const order = await this.service.rejectOrder(id, reason || 'Operator rejected', admin.id);
-    return {
-      success: true,
-      data: order,
     };
   }
 

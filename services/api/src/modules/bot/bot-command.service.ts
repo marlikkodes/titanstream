@@ -216,6 +216,7 @@ export class BotCommandService {
     let reservedUSDT = '0.00';
     if (user?.financialAccount?.id) {
       try {
+        // Use authoritative ledger-based balance
         const balanceData = await this.balanceService.getBalances(userCtx.id, user.financialAccount.id);
         const usdtAsset = balanceData.balances.find((b) => b.assetCode === 'USDT');
         if (usdtAsset) {
@@ -223,7 +224,10 @@ export class BotCommandService {
           reservedUSDT = Number(usdtAsset.reservedBalance || 0).toFixed(2);
         }
       } catch (err) {
-        this.logger.error(`Error fetching balance: ${err.message}`);
+        this.logger.error(`Error fetching ledger balance: ${err.message}`);
+        // Do NOT fallback to stale AssetBalance - keep default values
+        availableUSDT = '0.00';
+        reservedUSDT = '0.00';
       }
     }
 

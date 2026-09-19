@@ -22,6 +22,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { TreasuryModule } from './modules/treasury/treasury.module';
 import { MiningModule } from './modules/mining/mining.module';
 import { PaymentOrderModule } from './modules/payment-order/payment-order.module';
+import { PaymentIntentModule } from './modules/payment-intent/payment-intent.module';
 import { MachineModule } from './modules/machine/machine.module';
 import { GamesModule } from './modules/games/games.module';
 import { QueueModule } from './modules/queue/queue.module';
@@ -54,6 +55,7 @@ import { ConversationalModule } from './modules/conversational/conversational.mo
     BotModule,
     MiningModule,
     PaymentOrderModule,
+    PaymentIntentModule,
     MachineModule,
     GamesModule,
     QueueModule,

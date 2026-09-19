@@ -1,0 +1,23 @@
+# TitanStream Caddyfile
+# Automatic HTTPS — replace yourdomain.com with your actual domain
+
+yourdomain.com {
+    reverse_proxy web:80
+}
+
+api.yourdomain.com {
+    reverse_proxy api:3000
+
+    # CORS headers for Telegram Mini App
+    header {
+        Access-Control-Allow-Origin https://yourdomain.com
+        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Authorization, Content-Type"
+    }
+
+    # Handle preflight
+    @options {
+        method OPTIONS
+    }
+    respond @options 204
+}

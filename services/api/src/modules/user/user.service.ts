@@ -154,8 +154,17 @@ export class UserService {
     }
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const identity = await tx.universalIdentity.create({
+        data: {
+          displayName: data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : `User_${data.telegramUserId}`,
+          avatarUrl: data.photoUrl,
+        },
+      });
+
       const user = await tx.user.create({
         data: {
+          id: identity.id,
+          identityId: identity.id,
           telegramUserId: data.telegramUserId,
           telegramUsername: data.telegramUsername,
           firstName: data.firstName,
@@ -163,6 +172,16 @@ export class UserService {
           photoUrl: data.photoUrl,
           languageCode: data.languageCode || 'en',
           state: UserState.NEW as any,
+        },
+      });
+
+      await tx.channelIdentity.create({
+        data: {
+          identityId: identity.id,
+          provider: 'TELEGRAM',
+          identifier: String(data.telegramUserId),
+          telegramId: String(data.telegramUserId),
+          verified: true,
         },
       });
 

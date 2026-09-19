@@ -1,21 +1,26 @@
-import { Controller, Post, Get, Body, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, UseGuards, HttpCode, HttpStatus, ForbiddenException, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { AuthTelegramDto } from './dto/auth-telegram.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
+import { IdentityProvider } from '@prisma/client';
 
 import { WebAuthSessionService } from './web-auth-session.service';
 import { WhatsappChallengeService } from './whatsapp-challenge.service';
+import { IdentityMasterEngineService } from '../identity/identity-master.service';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly authService: AuthService,
     private readonly webAuthSessionService: WebAuthSessionService,
     private readonly whatsappChallengeService: WhatsappChallengeService,
+    private readonly identityMasterEngine: IdentityMasterEngineService,
   ) {}
 
   @Public()
@@ -81,6 +86,15 @@ export class AuthController {
     return this.authService.getProfile(userId);
   }
 
+  @UseGuards(AuthGuard)
+  @Get('verify-identity')
+  @ApiOperation({ summary: 'Verify canonical identity mapping for current session' })
+  @ApiResponse({ status: 200, description: 'Identity verified successfully' })
+  @ApiResponse({ status: 401, description: 'Identity verification failed' })
+  async verifyIdentity(@CanonicalUserId() userId: string) {
+    return this.authService.verifyIdentity(userId);
+  }
+
   @Public()
   @Post('whatsapp/login-challenge')
   @HttpCode(HttpStatus.OK)
@@ -134,5 +148,26 @@ export class AuthController {
   async verifyStepUpChallenge(@Req() req: any, @Body('code') code: string) {
     const userId = req.user.id || req.user.titanUserId || req.user.sub;
     return this.authService.verifyStepUpChallenge(userId, code);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('reconcile-identity')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reconcile duplicate identities created by old fallback system (ADMIN ONLY)' })
+  @ApiResponse({ status: 200, description: 'Identity reconciliation successful' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - admin access required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - insufficient permissions' })
+  @ApiResponse({ status: 404, description: 'No identities found to reconcile' })
+  async reconcileIdentity(@Req() req: any, @Body() body: { provider: IdentityProvider; identifier: string }) {
+    // Require admin role for identity reconciliation
+    const userRole = req.user?.role || req.user?.state;
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('IDENTITY_RECONCILIATION_FORBIDDEN: Admin access required');
+    }
+    
+    // Log admin action for audit trail
+    this.logger.log(`[IDENTITY_RECONCILIATION] Admin ${req.user?.userId} initiating reconciliation for ${body.provider}:${body.identifier}`);
+    
+    return { success: true, data: await this.identityMasterEngine.reconcileDuplicateIdentities(body.provider, body.identifier) };
   }
 }

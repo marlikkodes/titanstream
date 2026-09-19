@@ -44,6 +44,35 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+function sanitizeDecimals(data: any): any {
+  if (data === null || data === undefined) return data;
+  if (typeof data === 'object') {
+    if (data.s !== undefined && data.e !== undefined && Array.isArray(data.d)) {
+      if (typeof data.toNumber === 'function') return data.toNumber();
+      const sign = data.s === -1 ? '-' : '';
+      const digits = (data.d || []).join('');
+      return Number(`${sign}${digits}`) || 0;
+    }
+    if (Array.isArray(data)) return data.map(sanitizeDecimals);
+    const res: any = {};
+    for (const key of Object.keys(data)) {
+      res[key] = sanitizeDecimals(data[key]);
+    }
+    return res;
+  }
+  return data;
+}
+
+api.interceptors.response.use(
+  (response) => {
+    if (response.data) {
+      response.data = sanitizeDecimals(response.data);
+    }
+    return response;
+  },
+  (error) => Promise.reject(error)
+);
+
 export function getAdminFallbackData(url: string): any {
   if (url.includes('/admin/machines-hq/economy/profiles')) {
     return [

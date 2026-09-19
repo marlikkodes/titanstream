@@ -32,9 +32,6 @@ describe('Titan Stream — 22-Step WhatsApp Auth End-to-End Acceptance Suite', (
     channelIdentity: {
       findFirst: jest.fn().mockResolvedValue(null),
     },
-    assetBalance: {
-      findFirst: jest.fn().mockResolvedValue(null),
-    },
   };
 
   const mockIdentityMaster = {

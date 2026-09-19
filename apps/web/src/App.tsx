@@ -93,8 +93,11 @@ import { CountrySelector } from './components/CountrySelector';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { StepUpModal } from './components/StepUpModal';
 import { ReferralLanding } from './pages/ReferralLanding';
+import { CloudServices } from './pages/CloudServices';
 import { LegalModal } from './components/legal/LegalModal';
 import { CookieConsentBanner } from './components/legal/CookieConsentBanner';
+import { PreAuthOnboarding } from './components/PreAuthOnboarding';
+import { hasSeenPreAuthOnboarding } from './utils/preAuthOnboarding';
 
 // ─── Admin Routes (accessible without user auth) ─────────────────────────────
 
@@ -256,6 +259,7 @@ function MainApp() {
 
 export function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const [showPreAuthOnboarding, setShowPreAuthOnboarding] = useState(() => !hasSeenPreAuthOnboarding());
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const onboardingComplete = useAuthStore((s) => s.onboardingComplete);
@@ -299,7 +303,17 @@ export function App() {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
-  // 1.5 Referral landing route (/ref/:code) - captured prior to auth gate
+  // 1.5 Cloud services landing route - public access (before auth gate)
+  const isCloudServicesRoute = typeof window !== 'undefined' && window.location.pathname === '/cloud-services';
+  if (isCloudServicesRoute) {
+    return (
+      <ErrorBoundary>
+        <CloudServices />
+      </ErrorBoundary>
+    );
+  }
+
+  // 1.6 Referral landing route (/ref/:code) - captured prior to auth gate
   const isRefRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/ref/');
   if (isRefRoute) {
     return (
@@ -331,6 +345,9 @@ export function App() {
   //    Only renders children when auth is confirmed.
   return (
     <ErrorBoundary>
+      {!isAuthenticated && showPreAuthOnboarding && (
+        <PreAuthOnboarding onComplete={() => setShowPreAuthOnboarding(false)} />
+      )}
       <AuthGate>
         {/* 4. Onboarding overlay (new users) */}
         {!onboardingComplete ? (

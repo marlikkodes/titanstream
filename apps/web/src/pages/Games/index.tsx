@@ -82,7 +82,7 @@ const ShimmerCard: React.FC = () => (
 );
 
 export const GamesScreen: React.FC = () => {
-  const { closeGames } = useNavigationStore();
+  const { closeGames, selectedGameId } = useNavigationStore();
   const store = useGameStore();
   const wallet = useWalletStore();
 
@@ -101,6 +101,16 @@ export const GamesScreen: React.FC = () => {
     store.loadLeaderboard({ period, scope });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-launch selected game from TitanHub Game Arena
+  useEffect(() => {
+    if (selectedGameId && store.games.length > 0 && !activeGame && !pendingEntry) {
+      const target = store.games.find((g) => g.gameId === selectedGameId);
+      if (target) {
+        setPendingEntry(target);
+      }
+    }
+  }, [selectedGameId, store.games, activeGame, pendingEntry]);
 
   useEffect(() => {
     if (!activeGame) return;
@@ -149,7 +159,7 @@ export const GamesScreen: React.FC = () => {
     }
   };
 
-  const activeEvents = useMemo(() => store.events.filter((e) => e.active), [store.events]);
+  const activeEvents = useMemo(() => (store.events ?? []).filter((e) => e.active), [store.events]);
   const challenge = store.dailyChallenge;
 
   const playFromChallenge = () => {

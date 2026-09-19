@@ -54,8 +54,8 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         await Promise.all([gamesService.getCatalog(), gamesService.getProfile()]);
       set({
         balance: catalog.balance,
-        games: catalog.games,
-        events: catalog.events,
+        games: catalog.games ?? [],
+        events: catalog.events ?? [],
         dailyChallenge: catalog.dailyChallenge,
         profile: profileData.profile,
         dailyLogin: profileData.dailyLogin,

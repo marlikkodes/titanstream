@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Zap, RotateCw } from 'lucide-react';
+import { X, Zap, RotateCw, Volume2, VolumeX, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import type { GameStartSession, GameEndResult } from '../../../services/gamesService';
 import { gamesService } from '../../../services/gamesService';
 import { CountdownOverlay } from './CountdownOverlay';
+import { gameAudio } from '../../../utils/gameAudio';
 
 interface PowerGridProps {
   session: GameStartSession;
@@ -22,7 +23,7 @@ interface Tile {
 const ROWS = 4;
 const COLS = 4;
 const CELL_COUNT = ROWS * COLS;
-const ROUND_MS = 120_000; // 120 second session
+const ROUND_MS = 120_000;
 const MAX_MOVES_PER_LEVEL = 30;
 
 const OPPOSITE: Record<Dir, Dir> = { N: 'S', S: 'N', E: 'W', W: 'E' };
@@ -38,18 +39,12 @@ const rotateBits = (bits: BitMask, q: number): BitMask => {
   return b;
 };
 
-const rotateDir = (d: Dir, q: number): Dir => {
-  const order: Dir[] = ['N', 'E', 'S', 'W'];
-  return order[((order.indexOf(d) + q) % 4 + 4) % 4];
-};
-
 interface Level {
   tiles: Tile[];
-  path: { cell: number; dir: Dir; correctBits: BitMask }[];
+  path: { cell: number; dir: Dir }[];
   startCell: number;
 }
 
-/** Generate a random path from the top edge to the bottom edge, then build tiles. */
 const generateLevel = (pathLength: number): Level => {
   const startCol = Math.floor(Math.random() * COLS);
   const startCell = startCol;
@@ -58,7 +53,7 @@ const generateLevel = (pathLength: number): Level => {
   const visited = new Set<number>([startCell]);
   let r = 0;
   let c = startCol;
-  let lastDir: Dir = 'N'; // entrance direction at start = N (from top edge)
+  let lastDir: Dir = 'N';
   path.push({ cell: startCell, dir: lastDir });
   let ended = false;
   let guard = 0;
@@ -68,7 +63,6 @@ const generateLevel = (pathLength: number): Level => {
       ended = true;
       break;
     }
-    // Weighted neighbor choice: prefer downward progress
     const options: { dir: Dir; nr: number; nc: number }[] = [];
     for (const d of ALL_DIRS) {
       const [dr, dc] = DELTAS[d];
@@ -77,23 +71,19 @@ const generateLevel = (pathLength: number): Level => {
       if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
       const cell = nr * COLS + nc;
       if (visited.has(cell)) continue;
-      // avoid adjacent-but-not-consecutive cells (prevents tight loops)
-      let bad = false;
-      for (const p of path) {
-        if (Math.abs(Math.floor(p.cell / COLS) - nr) + Math.abs((p.cell % COLS) - nc) === 1) { bad = true; break; }
-      }
-      if (bad) continue;
       options.push({ dir: d, nr, nc });
     }
-    if (options.length === 0) break; // dead end, accept shorter path
-    // Weight: S 45%, E/W 30%, N 15%
+    if (options.length === 0) break;
     const weights = options.map((o) => (o.dir === 'S' ? 0.45 : o.dir === 'N' ? 0.15 : 0.2));
     const total = weights.reduce((a, b) => a + b, 0);
     let roll = Math.random() * total;
     let pick = options[0];
     for (let i = 0; i < options.length; i++) {
       roll -= weights[i];
-      if (roll <= 0) { pick = options[i]; break; }
+      if (roll <= 0) {
+        pick = options[i];
+        break;
+      }
     }
     const { dir, nr, nc } = pick;
     visited.add(nr * COLS + nc);
@@ -103,99 +93,159 @@ const generateLevel = (pathLength: number): Level => {
     c = nc;
   }
   if (!ended && guard >= 200) return generateLevel(pathLength);
-  // Trim to target length if longer
+
   const maxLen = Math.max(3, pathLength);
   const trimmed = path.slice(0, maxLen);
-  const exitDir = lastDir;
 
-  // Build tiles with correct orientations
   const tiles: Tile[] = Array.from({ length: CELL_COUNT }, () => ({ bits: 0, rot: 0 }));
-  const placed = new Map<number, BitMask>();
-
   const orientAt = (cell: number, entrance: Dir, exit: Dir | null): BitMask => {
-    if (!exit) return BIT[entrance] | BIT[OPPOSITE[entrance]]; // endpoint: dead-end cap, treat as straight
+    if (!exit) return BIT[entrance] | BIT[OPPOSITE[entrance]];
     return BIT[entrance] | BIT[exit];
   };
 
   for (let i = 0; i < trimmed.length; i++) {
-    const { cell, dir } = trimmed[i];
-    const next = trimmed[i + 1];
-    const exit = next ? rotateDir(OPPOSITE[next.dir], 0) : exitDir === 'S' ? 'S' : OPPOSITE[dir];
-    // For the final cell the exit is opposite of entrance (bottom edge) — enforce:
-    const finalExit = i === trimmed.length - 1 ? 'S' : exit;
-    const bits = orientAt(cell, dir, finalExit);
-    tiles[cell] = { bits, rot: 0 };
-    placed.set(cell, bits);
+    const entrance = trimmed[i].dir;
+    const exit = i < trimmed.length - 1 ? trimmed[i + 1].dir : null;
+    const correct = orientAt(trimmed[i].cell, entrance, exit);
+    const scrambleRot = Math.floor(Math.random() * 3) + 1;
+    tiles[trimmed[i].cell] = {
+      bits: rotateBits(correct, -scrambleRot),
+      rot: 0,
+    };
   }
 
-  // Decoy tiles on remaining cells
   for (let i = 0; i < CELL_COUNT; i++) {
-    if (placed.has(i)) continue;
-    const isCorner = Math.random() < 0.5;
-    const bits = isCorner ? BIT['N'] | BIT['E'] : BIT['N'] | BIT['S'];
-    tiles[i] = { bits, rot: 0 };
-  }
-
-  // Scramble: rotate every tile by random quarter turns
-  for (const t of tiles) t.rot = Math.floor(Math.random() * 4);
-
-  const pathDef = trimmed.map((p) => ({
-    cell: p.cell,
-    dir: p.dir,
-    correctBits: rotateBits(placed.get(p.cell)!, 0),
-  }));
-
-  return { tiles, path: pathDef, startCell };
-};
-
-/** BFS flow from the source; returns set of lit cells. */
-const flowLit = (tiles: Tile[], startCell: number, entrance: Dir): Set<number> => {
-  const lit = new Set<number>();
-  const queue: { cell: number; from: Dir }[] = [{ cell: startCell, from: entrance }];
-  while (queue.length) {
-    const { cell, from } = queue.shift()!;
-    const bits = rotateBits(tiles[cell].bits, tiles[cell].rot);
-    if (!(bits & BIT[from])) continue;
-    lit.add(cell);
-    for (const d of ALL_DIRS) {
-      if (d === OPPOSITE[from]) continue;
-      if (!(bits & BIT[d])) continue;
-      const [dr, dc] = DELTAS[d];
-      const nr = Math.floor(cell / COLS) + dr;
-      const nc = (cell % COLS) + dc;
-      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
-      const ncell = nr * COLS + nc;
-      if (lit.has(ncell)) continue;
-      queue.push({ cell: ncell, from: d });
+    if (tiles[i].bits === 0) {
+      const patterns = [3, 6, 9, 12, 5, 10];
+      tiles[i] = {
+        bits: patterns[Math.floor(Math.random() * patterns.length)],
+        rot: 0,
+      };
     }
   }
-  return lit;
+
+  return { tiles, path: trimmed, startCell };
 };
 
 export const PowerGrid: React.FC<PowerGridProps> = ({ session, onClose, onComplete }) => {
-  const [phase, setPhase] = useState<'countdown' | 'playing' | 'over'>('countdown');
   const [levelIndex, setLevelIndex] = useState(1);
-  const [level, setLevel] = useState<Level>(() => generateLevel(7));
-  const [lit, setLit] = useState<Set<number>>(new Set());
   const [score, setScore] = useState(0);
-  const [moves, setMoves] = useState(0);
-  const [levelMoves, setLevelMoves] = useState(0);
+  const [movesLeft, setMovesLeft] = useState(MAX_MOVES_PER_LEVEL);
+  const [totalMoves, setTotalMoves] = useState(0);
   const [timeLeft, setTimeLeft] = useState(ROUND_MS / 1000);
-  const [feedback, setFeedback] = useState<{ kind: 'flow' | 'fail' } | null>(null);
+  const [phase, setPhase] = useState<'countdown' | 'playing' | 'over'>('countdown');
+  const [tiles, setTiles] = useState<Tile[]>([]);
+  const [startCol, setStartCol] = useState(0);
+  const [endCol, setEndCol] = useState(0);
+  const [poweredCells, setPoweredCells] = useState<Set<number>>(new Set());
+  const [levelComplete, setLevelComplete] = useState(false);
   const [roundOver, setRoundOver] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [muted, setMuted] = useState(gameAudio.getMuted());
 
   const sessionStartMs = useRef(Date.now());
   const playStartMs = useRef(0);
   const telemetry = useRef<Array<{ action: string; t: number }>>([]);
-  const statsRef = useRef({ moves: 0, levels: 0, perfect: true, efficiencies: [] as number[] });
-  const levelRef = useRef<Level>(level);
+  const totalMovesRef = useRef(0);
+  const levelsSolvedRef = useRef(0);
+
+  const handleToggleMute = () => {
+    const isMute = gameAudio.toggleMute();
+    setMuted(isMute);
+  };
+
+  const loadLevel = useCallback((lvl: number) => {
+    const targetPathLen = 4 + Math.min(lvl, 4);
+    const lvlData = generateLevel(targetPathLen);
+    setTiles(lvlData.tiles);
+    setStartCol(lvlData.startCell % COLS);
+    const lastCell = lvlData.path[lvlData.path.length - 1].cell;
+    setEndCol(lastCell % COLS);
+    setMovesLeft(MAX_MOVES_PER_LEVEL);
+    setLevelComplete(false);
+  }, []);
 
   useEffect(() => {
-    levelRef.current = level;
-  }, [level]);
+    if (phase === 'playing' && tiles.length === 0) {
+      loadLevel(1);
+    }
+  }, [phase, tiles.length, loadLevel]);
 
-  // ── Timer ─────────────────────────────────────────────────────────────────
+  // Compute energized circuit path
+  useEffect(() => {
+    if (tiles.length !== CELL_COUNT) return;
+    const powered = new Set<number>();
+    const startCell = startCol;
+    const startTile = tiles[startCell];
+    const effStart = rotateBits(startTile.bits, startTile.rot);
+
+    if ((effStart & BIT.N) === 0) {
+      setPoweredCells(powered);
+      return;
+    }
+
+    const queue: { cell: number; fromDir: Dir }[] = [{ cell: startCell, fromDir: 'N' }];
+    powered.add(startCell);
+
+    while (queue.length > 0) {
+      const { cell, fromDir } = queue.shift()!;
+      const t = tiles[cell];
+      const eff = rotateBits(t.bits, t.rot);
+      const r = Math.floor(cell / COLS);
+      const c = cell % COLS;
+
+      for (const d of ALL_DIRS) {
+        if (d === fromDir) continue;
+        if ((eff & BIT[d]) === 0) continue;
+
+        const [dr, dc] = DELTAS[d];
+        const nr = r + dr;
+        const nc = c + dc;
+        if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+
+        const nCell = nr * COLS + nc;
+        const nTile = tiles[nCell];
+        const nEff = rotateBits(nTile.bits, nTile.rot);
+        const requiredFrom = OPPOSITE[d];
+
+        if ((nEff & BIT[requiredFrom]) !== 0 && !powered.has(nCell)) {
+          powered.add(nCell);
+          queue.push({ cell: nCell, fromDir: requiredFrom });
+        }
+      }
+    }
+
+    setPoweredCells(powered);
+
+    // Check win condition
+    const bottomRow = Array.from({ length: COLS }, (_, c) => (ROWS - 1) * COLS + c);
+    const completed = bottomRow.some((c) => {
+      if (!powered.has(c)) return false;
+      const t = tiles[c];
+      const eff = rotateBits(t.bits, t.rot);
+      return (eff & BIT.S) !== 0 && c % COLS === endCol;
+    });
+
+    if (completed && !levelComplete && phase === 'playing') {
+      setLevelComplete(true);
+      levelsSolvedRef.current += 1;
+      const pts = 25 + movesLeft * 2;
+      setScore((s) => s + pts);
+      telemetry.current.push({ action: 'level_complete', t: Date.now() - sessionStartMs.current });
+      gameAudio.playScore(levelIndex);
+      gameAudio.haptic('success');
+
+      window.setTimeout(() => {
+        setLevelIndex((idx) => {
+          const next = idx + 1;
+          loadLevel(next);
+          return next;
+        });
+      }, 1100);
+    }
+  }, [tiles, startCol, endCol, levelComplete, phase, levelIndex, movesLeft, loadLevel]);
+
+  // Round countdown
   useEffect(() => {
     if (phase !== 'playing') return;
     const timer = window.setInterval(() => {
@@ -212,272 +262,256 @@ export const PowerGrid: React.FC<PowerGridProps> = ({ session, onClose, onComple
     setPhase('over');
     setRoundOver(true);
     setSubmitting(true);
+    gameAudio.playGameOver();
     void submitResult();
   };
 
-  const rotateTile = (cell: number) => {
-    const lv = levelRef.current;
-    const now = Date.now();
-    telemetry.current.push({ action: 'rotate', t: now - sessionStartMs.current });
+  const rotateTile = (idx: number) => {
+    if (phase !== 'playing' || levelComplete || movesLeft <= 0) return;
+    const next = [...tiles];
+    next[idx] = { ...next[idx], rot: (next[idx].rot + 1) % 4 };
+    setTiles(next);
 
-    const tiles = lv.tiles.map((t, i) => (i === cell ? { ...t, rot: (t.rot + 1) % 4 } : t));
-    lv.tiles = tiles;
-    setLevel({ ...lv });
-
-    const newMoves = moves + 1;
-    setMoves(newMoves);
-    setLevelMoves(levelMoves + 1);
-    statsRef.current.moves += 1;
-
-    // Fail check: exceeded per-level move cap
-    if (levelMoves + 1 >= MAX_MOVES_PER_LEVEL) {
-      statsRef.current.perfect = false;
-      setFeedback({ kind: 'fail' });
-      telemetry.current.push({ action: 'level_failed', t: now - sessionStartMs.current });
-      window.setTimeout(() => {
-        // Scramble all tiles again and restart this level
-        const re = generateLevel(lv.path.length);
-        re.tiles.forEach((t) => (t.rot = Math.floor(Math.random() * 4)));
-        setLevel(re);
-        setLit(new Set());
-        setLevelMoves(0);
-        setFeedback(null);
-      }, 350);
-      return;
-    }
-
-    // Flow simulation
-    const lits = flowLit(tiles, lv.startCell, 'N');
-    setLit(lits);
-
-    // Sink reached (any lit cell on bottom row exits S)?
-    let completed = false;
-    for (const cell of lits) {
-      const r = Math.floor(cell / COLS);
-      if (r === ROWS - 1 && rotateBits(tiles[cell].bits, tiles[cell].rot) & BIT['S']) {
-        completed = true;
-        break;
+    setMovesLeft((m) => {
+      const nextM = m - 1;
+      if (nextM <= 0) {
+        window.setTimeout(() => loadLevel(levelIndex), 350);
       }
-    }
+      return nextM;
+    });
 
-    if (completed) {
-      const now2 = Date.now();
-      const pathLen = lv.path.length;
-      const eff = Math.round((pathLen / (levelMoves + 1)) * 100);
-      statsRef.current.efficiencies.push(eff);
-      statsRef.current.levels += 1;
-      const gain = 60 + 5 * pathLen + (eff >= 50 ? 20 : 0);
-      setScore((s) => s + gain);
-      setFeedback({ kind: 'flow' });
-      telemetry.current.push({ action: 'level_complete', t: now2 - sessionStartMs.current });
-      window.setTimeout(() => {
-        const next = levelIndex + 1;
-        setLevelIndex(next);
-        const lv2 = generateLevel(Math.min(12, 7 + next - 1));
-        setLevel(lv2);
-        setLit(new Set());
-        setLevelMoves(0);
-        setFeedback(null);
-      }, 600);
-    }
+    totalMovesRef.current += 1;
+    setTotalMoves(totalMovesRef.current);
+    telemetry.current.push({ action: 'rotate', t: Date.now() - sessionStartMs.current });
+    gameAudio.playWheelTick(1.3);
   };
 
   const submitResult = async () => {
     const durationMs = Date.now() - sessionStartMs.current;
-    const s = statsRef.current;
-    const efficiency = s.efficiencies.length
-      ? Math.round(s.efficiencies.reduce((a, b) => a + b, 0) / s.efficiencies.length)
-      : 0;
-
     try {
       const result = await gamesService.endSession(session.gameId, session.sessionId, {
         score,
         durationMs,
         telemetry: telemetry.current,
         stats: {
-          moves: s.moves,
-          efficiency,
-          levelsCompleted: s.levels,
-          perfect: s.perfect && s.levels > 0,
+          levelsCompleted: levelsSolvedRef.current,
+          moves: totalMovesRef.current,
+          accuracy: totalMovesRef.current > 0 ? Math.min(100, Math.round((levelsSolvedRef.current * 8 / totalMovesRef.current) * 100)) : 0,
         },
       });
       onComplete(result);
-    } catch (err: any) {
+    } catch {
       onClose();
     }
   };
 
-  const completeProgress = lit.size;
+  const renderTileConductors = (bits: BitMask, isPowered: boolean) => {
+    const strokeColor = isPowered ? '#00e676' : 'rgba(255, 255, 255, 0.25)';
+    const glowShadow = isPowered ? 'drop-shadow(0 0 6px #00e676)' : 'none';
+
+    return (
+      <svg className="w-full h-full p-2" viewBox="0 0 100 100" style={{ filter: glowShadow }}>
+        {/* Center Node */}
+        <circle cx="50" cy="50" r="8" fill={strokeColor} />
+
+        {/* N Conductor */}
+        {(bits & BIT.N) !== 0 && (
+          <line x1="50" y1="50" x2="50" y2="0" stroke={strokeColor} strokeWidth="10" strokeLinecap="round" />
+        )}
+        {/* S Conductor */}
+        {(bits & BIT.S) !== 0 && (
+          <line x1="50" y1="50" x2="50" y2="100" stroke={strokeColor} strokeWidth="10" strokeLinecap="round" />
+        )}
+        {/* E Conductor */}
+        {(bits & BIT.E) !== 0 && (
+          <line x1="50" y1="50" x2="100" y2="50" stroke={strokeColor} strokeWidth="10" strokeLinecap="round" />
+        )}
+        {/* W Conductor */}
+        {(bits & BIT.W) !== 0 && (
+          <line x1="50" y1="50" x2="0" y2="50" stroke={strokeColor} strokeWidth="10" strokeLinecap="round" />
+        )}
+      </svg>
+    );
+  };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#050608]/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-[#050608]/95 backdrop-blur-2xl flex flex-col items-center justify-center p-3 select-none touch-none">
       <div className="w-full max-w-[420px] relative flex flex-col items-center animate-fade-in">
-        {/* Header */}
-        <div className="w-full flex items-center justify-between mb-4 px-4">
-          <div>
-            <h2 className="text-xl font-black text-white tracking-wide flex items-center gap-1.5">
-              <Zap size={20} className="text-[#00e5ff]" />
-              POWER GRID
-            </h2>
-            <p className="text-xs text-text-tertiary">Rotate tiles to connect current · {ROUND_MS / 1000}s</p>
+        {/* ═══ Top Header ═══ */}
+        <div className="w-full flex items-center justify-between mb-2.5 px-2">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#ffb300]/25 to-transparent border border-[#ffb300]/40 flex items-center justify-center shadow-lg">
+              <Zap size={18} className="text-[#ffb300]" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-white tracking-wide leading-tight flex items-center gap-1.5">
+                CYBER GRID
+              </h2>
+              <p className="text-[10px] text-text-tertiary">Route Power to Generator · 120s Run</p>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-text-secondary active:scale-95 transition-transform"
-          >
-            <X size={20} />
-          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleToggleMute}
+              className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-text-secondary active:scale-95 transition-transform"
+            >
+              {muted ? <VolumeX size={15} /> : <Volume2 size={15} className="text-[#a7ffeb]" />}
+            </button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-text-secondary active:scale-95 transition-transform"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
-        {/* Dashboard */}
-        <div className="w-[92%] grid grid-cols-4 gap-2 mb-4">
-          <div className="bg-white/[0.03] border border-white/5 rounded-2xl py-2 px-2 flex flex-col items-center">
-            <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Score</span>
-            <span className="font-mono text-sm text-usdt-green font-black mt-0.5">{score}</span>
+        {/* ═══ Dashboard Status Cards ═══ */}
+        <div className="w-full grid grid-cols-4 gap-2 mb-2.5">
+          {/* Level */}
+          <div className="bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 rounded-2xl py-1.5 px-2 flex flex-col items-center shadow-md">
+            <span className="text-[8px] font-extrabold uppercase tracking-wider text-text-tertiary">Stage</span>
+            <span className="font-mono text-base text-gold font-black mt-0.5">#{levelIndex}</span>
           </div>
-          <div className="bg-white/[0.03] border border-white/5 rounded-2xl py-2 px-2 flex flex-col items-center">
-            <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Level</span>
-            <span className="font-mono text-sm text-[#00e5ff] font-black mt-0.5">#{levelIndex}</span>
+
+          {/* Score */}
+          <div className="bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 rounded-2xl py-1.5 px-2 flex flex-col items-center shadow-md">
+            <span className="text-[8px] font-extrabold uppercase tracking-wider text-text-tertiary">Score</span>
+            <span className="font-mono text-base text-usdt-green font-black mt-0.5">{score} ⚡</span>
           </div>
-          <div className="bg-white/[0.03] border border-white/5 rounded-2xl py-2 px-2 flex flex-col items-center">
-            <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Moves</span>
-            <motion.span
-              key={levelMoves}
-              initial={{ scale: 1.3 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-              className="font-mono text-sm text-white font-black mt-0.5"
-            >
-              {levelMoves}
-              <span className="text-text-tertiary text-[10px]">/{MAX_MOVES_PER_LEVEL}</span>
-            </motion.span>
+
+          {/* Moves Left */}
+          <div className="bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 rounded-2xl py-1.5 px-2 flex flex-col items-center shadow-md">
+            <span className="text-[8px] font-extrabold uppercase tracking-wider text-text-tertiary">Moves</span>
+            <span className={`font-mono text-base font-black mt-0.5 ${movesLeft <= 5 ? 'text-[#ff3d00]' : 'text-white'}`}>
+              {movesLeft}
+            </span>
           </div>
-          <div className={`bg-white/[0.03] border rounded-2xl py-2 px-2 flex flex-col items-center ${timeLeft <= 15 ? 'border-error-red/40' : 'border-white/5'}`}>
-            <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Time</span>
-            <span className={`font-mono text-sm font-black mt-0.5 ${timeLeft <= 15 ? 'text-error-red animate-pulse' : 'text-[#a7ffeb]'}`}>
+
+          {/* Time Remaining */}
+          <div className={`bg-gradient-to-br from-white/[0.04] to-transparent border rounded-2xl py-1.5 px-2 flex flex-col items-center shadow-md ${
+            timeLeft <= 10 ? 'border-error-red/40 bg-error-red/5' : 'border-white/10'
+          }`}>
+            <span className="text-[8px] font-extrabold uppercase tracking-wider text-text-tertiary">Time</span>
+            <span className={`font-mono text-base font-black mt-0.5 ${timeLeft <= 10 ? 'text-error-red animate-pulse' : 'text-[#a7ffeb]'}`}>
               {timeLeft}s
             </span>
           </div>
         </div>
 
-        {/* Grid */}
-        <div className="relative border border-white/10 rounded-3xl bg-gradient-to-b from-[#0d1520] to-[#0a0d14] shadow-2xl overflow-hidden mb-4 w-[92%]">
-          <div
-            className="grid gap-1.5 p-3"
-            style={{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${ROWS}, minmax(0, 1fr))` }}
-          >
-            {Array.from({ length: CELL_COUNT }, (_, cell) => {
-              const t = level.tiles[cell];
-              const bits = rotateBits(t.bits, t.rot);
-              const isLit = lit.has(cell);
-              const r = Math.floor(cell / COLS);
-              const isStart = cell === level.startCell;
-              const isExit = r === ROWS - 1 && (bits & BIT['S']);
+        {/* ═══ Circuit Chamber Grid ═══ */}
+        <div className="relative w-full rounded-3xl overflow-hidden border border-white/15 bg-gradient-to-b from-[#111422] via-[#0c0e18] to-[#07080f] shadow-[0_8px_32px_rgba(0,0,0,0.7)] p-3 mb-2.5">
+          {/* Top Source Power Line */}
+          <div className="w-full flex justify-around mb-2">
+            {Array.from({ length: COLS }, (_, c) => (
+              <div
+                key={c}
+                className={`w-6 h-3 rounded-full transition-all duration-300 ${
+                  c === startCol ? 'bg-[#00e676] shadow-[0_0_12px_#00e676]' : 'bg-white/10'
+                }`}
+              />
+            ))}
+          </div>
 
-              const seg = (dir: Dir) => bits & BIT[dir] && isLit;
+          {/* Circuit Tiles 4x4 Grid */}
+          <div
+            className="grid gap-2"
+            style={{
+              gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${ROWS}, minmax(0, 1fr))`,
+            }}
+          >
+            {tiles.map((t, idx) => {
+              const isPowered = poweredCells.has(idx);
+              const effBits = rotateBits(t.bits, t.rot);
 
               return (
                 <button
-                  key={cell}
-                  onClick={() => phase === 'playing' && rotateTile(cell)}
-                  className="relative aspect-square rounded-xl border press-feedback overflow-hidden"
+                  key={idx}
+                  onClick={() => rotateTile(idx)}
+                  disabled={phase !== 'playing' || levelComplete}
+                  className="relative aspect-square rounded-2xl border transition-all duration-200 press-feedback overflow-hidden flex items-center justify-center"
                   style={{
-                    background: isLit
-                      ? 'radial-gradient(circle, rgba(0,229,255,0.25) 0%, rgba(8,18,30,0.9) 100%)'
-                      : 'rgba(255,255,255,0.02)',
-                    borderColor: isLit ? 'rgba(0,229,255,0.5)' : isStart ? 'rgba(0,229,255,0.35)' : 'rgba(255,255,255,0.06)',
-                    boxShadow: isLit ? '0 0 12px rgba(0,229,255,0.35)' : 'none',
+                    background: isPowered
+                      ? 'radial-gradient(circle, rgba(0,230,118,0.2) 0%, rgba(8,24,16,0.95) 100%)'
+                      : 'rgba(255,255,255,0.025)',
+                    borderColor: isPowered ? 'rgba(0,230,118,0.5)' : 'rgba(255,255,255,0.08)',
+                    boxShadow: isPowered ? '0 0 16px rgba(0,230,118,0.35)' : 'none',
                   }}
                 >
-                  {/* Pipe segments */}
-                  <div className="absolute inset-0">
-                    <div
-                      className="absolute left-1/2 top-0 h-1/2 w-[3px] -translate-x-1/2 rounded-full"
-                      style={{ background: seg('N') ? '#00e5ff' : 'rgba(120,140,160,0.35)' }}
-                    />
-                    <div
-                      className="absolute left-1/2 bottom-0 h-1/2 w-[3px] -translate-x-1/2 rounded-full"
-                      style={{ background: seg('S') ? '#00e5ff' : 'rgba(120,140,160,0.35)' }}
-                    />
-                    <div
-                      className="absolute top-1/2 left-0 w-1/2 h-[3px] -translate-y-1/2 rounded-full"
-                      style={{ background: seg('W') ? '#00e5ff' : 'rgba(120,140,160,0.35)' }}
-                    />
-                    <div
-                      className="absolute top-1/2 right-0 w-1/2 h-[3px] -translate-y-1/2 rounded-full"
-                      style={{ background: seg('E') ? '#00e5ff' : 'rgba(120,140,160,0.35)' }}
-                    />
-                    {/* Center hub */}
-                    <div
-                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
-                      style={{ background: isLit ? '#00e5ff' : 'rgba(120,140,160,0.5)' }}
-                    />
-                    {isStart && (
-                      <>
-                        <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 text-[8px]">⚡</div>
-                        {/* Source tile hint pulse */}
-                        {phase === 'playing' && !isLit && (
-                          <div
-                            className="absolute inset-0 rounded-xl animate-pulse pointer-events-none"
-                            style={{ boxShadow: '0 0 16px 4px rgba(0,229,255,0.35)', border: '1px solid rgba(0,229,255,0.3)' }}
-                          />
-                        )}
-                      </>
-                    )}
-                    {isExit && (
-                      <div className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 text-[8px]">⚡</div>
-                    )}
-                  </div>
+                  <motion.div
+                    animate={{ rotate: t.rot * 90 }}
+                    transition={{ type: 'spring', stiffness: 450, damping: 25 }}
+                    className="w-full h-full flex items-center justify-center pointer-events-none"
+                  >
+                    {renderTileConductors(t.bits, isPowered)}
+                  </motion.div>
                 </button>
               );
             })}
           </div>
 
-          {/* Countdown */}
+          {/* Bottom Destination Terminal Target */}
+          <div className="w-full flex justify-around mt-2">
+            {Array.from({ length: COLS }, (_, c) => (
+              <div
+                key={c}
+                className={`w-6 h-3 rounded-full transition-all duration-300 ${
+                  c === endCol
+                    ? levelComplete
+                      ? 'bg-[#00e676] shadow-[0_0_16px_#00e676] animate-pulse'
+                      : 'bg-gold shadow-[0_0_10px_#ffb300]'
+                    : 'bg-white/10'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Level Complete Flash Banner */}
+          {levelComplete && (
+            <div className="absolute inset-0 z-20 bg-[#00e676]/20 backdrop-blur-sm flex flex-col items-center justify-center animate-fade-in">
+              <CheckCircle2 size={36} className="text-[#00e676] animate-bounce mb-1" />
+              <p className="text-sm font-black text-white uppercase tracking-wider">CIRCUIT CONNECTED!</p>
+              <p className="text-xs text-gold font-bold">+25 PTS + BONUS</p>
+            </div>
+          )}
+
+          {/* Ignition Countdown Overlay */}
           {phase === 'countdown' && (
             <CountdownOverlay
-              label="Grid Energizing"
+              label="Grid Startup"
               onDone={() => {
                 playStartMs.current = Date.now();
                 setPhase('playing');
-                setLit(flowLit(level.tiles, level.startCell, 'N'));
               }}
             />
           )}
 
+          {/* Round Over Overlay */}
           {roundOver && (
-            <div className="absolute inset-0 z-30 bg-[#050608]/80 backdrop-blur-sm flex flex-col items-center justify-center">
-              <p className="text-lg font-black text-white uppercase tracking-widest animate-pulse">Grid Down</p>
-              <p className="text-xs text-text-secondary mt-2">Validating output server-side...</p>
+            <div className="absolute inset-0 z-30 bg-[#050608]/85 backdrop-blur-md flex flex-col items-center justify-center gap-3 animate-fade-in">
+              <div className="w-14 h-14 rounded-2xl bg-gold/15 border border-gold/30 flex items-center justify-center shadow-lg">
+                <ShieldCheck size={28} className="text-gold animate-bounce" />
+              </div>
+              <p className="text-lg font-black text-white uppercase tracking-widest">Grid Run Complete!</p>
+              <div className="flex items-center gap-2 text-xs text-[#a7ffeb]">
+                <Zap size={14} className="animate-spin-slow" />
+                <span>Validating solver score &amp; crediting crystals...</span>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Hint row */}
-        <div className="flex items-center gap-1.5 text-xs text-[#00e5ff] font-bold">
-          <RotateCw size={14} className="text-[#00e5ff]" />
-          <span>Tap tiles to rotate · reach the ⚡ at the bottom · {completeProgress} cells lit</span>
+        {/* ═══ Footer Info ═══ */}
+        <div className="flex items-center justify-between w-full px-3 text-[10px] text-text-tertiary">
+          <span className="flex items-center gap-1">
+            <Zap size={11} className="text-gold" /> Tap tiles to rotate circuit paths
+          </span>
+          <span className="flex items-center gap-1">
+            <RotateCw size={11} className="text-[#a7ffeb]" /> Connect Top to Bottom Target
+          </span>
         </div>
-
-        {/* Level feedback */}
-        <AnimatePresence>
-          {feedback && (
-            <motion.div
-              key={feedback.kind + String(levelIndex)}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="fixed top-[22%] left-1/2 -translate-x-1/2 z-40 px-5 py-2 rounded-full text-sm font-black tracking-wider uppercase"
-              style={{
-                background: feedback.kind === 'flow' ? 'rgba(0,229,255,0.15)' : 'rgba(244,67,54,0.15)',
-                color: feedback.kind === 'flow' ? '#00e5ff' : '#ff5252',
-                border: `1px solid ${feedback.kind === 'flow' ? 'rgba(0,229,255,0.4)' : 'rgba(244,67,54,0.4)'}`,
-              }}
-            >
-              {feedback.kind === 'flow' ? `Level ${levelIndex} Complete · +${60 + 5 * level.path.length + (statsRef.current.efficiencies[statsRef.current.efficiencies.length - 1] >= 50 ? 20 : 0)} pts` : 'Overload — Grid Reset'}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );

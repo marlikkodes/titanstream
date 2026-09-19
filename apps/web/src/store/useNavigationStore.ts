@@ -25,10 +25,11 @@ const getInitialTab = (): TabId => {
 interface NavigationState {
   activeTab: TabId;
   showGames: boolean;
+  selectedGameId: string | null;
   showShop: boolean;
   isProfileDrawerOpen: boolean;
   setActiveTab: (tab: TabId | DeprecatedTabId) => void;
-  openGames: () => void;
+  openGames: (gameId?: string) => void;
   closeGames: () => void;
   openShop: () => void;
   closeShop: () => void;
@@ -39,6 +40,7 @@ interface NavigationState {
 export const useNavigationStore = create<NavigationState>((set) => ({
   activeTab: getInitialTab(),
   showGames: false,
+  selectedGameId: null,
   showShop: false,
   isProfileDrawerOpen: false,
   setActiveTab: (tab) => {
@@ -50,8 +52,8 @@ export const useNavigationStore = create<NavigationState>((set) => ({
     const mappedTab = (tab in TAB_REDIRECTS) ? TAB_REDIRECTS[tab as DeprecatedTabId] : tab as TabId;
     set({ activeTab: mappedTab, showGames: false, showShop: false, isProfileDrawerOpen: false });
   },
-  openGames: () => set({ showGames: true }),
-  closeGames: () => set({ showGames: false }),
+  openGames: (gameId?: string) => set({ showGames: true, selectedGameId: gameId ?? null }),
+  closeGames: () => set({ showGames: false, selectedGameId: null }),
   openShop: () => set({ activeTab: 'shop', showShop: true }),
   closeShop: () => set({ showShop: false }),
   openProfileDrawer: () => set({ isProfileDrawerOpen: true }),

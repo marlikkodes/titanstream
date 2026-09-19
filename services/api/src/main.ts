@@ -1,3 +1,17 @@
+import { Prisma } from '@prisma/client';
+
+// Polyfill BigInt JSON serialization globally
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
+// Polyfill Prisma Decimal JSON serialization globally
+if (Prisma && (Prisma as any).Decimal) {
+  (Prisma as any).Decimal.prototype.toJSON = function () {
+    return this.toNumber ? this.toNumber() : Number(this.toString());
+  };
+}
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -35,6 +49,7 @@ async function bootstrap() {
   validateProductionConfig();
 
   const app = await NestFactory.create(AppModule);
+  app.enableShutdownHooks();
 
   app.setGlobalPrefix('api/v1');
 

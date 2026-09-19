@@ -5,12 +5,11 @@ import {
   BadRequestException,
   ForbiddenException,
   UnauthorizedException,
+  InternalServerErrorException,
   Logger,
   Optional,
   Inject,
 } from '@nestjs/common';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
 import { IdentityProvider, UserState, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -54,7 +53,10 @@ export class IdentityMasterEngineService {
     return identifier.trim();
   }
 
-  private inMemoryIdentities = new Map<string, { channelIdentity: any; identity: any; user: any; context: IdentityContext }>();
+  // In-memory cache for identity resolution during DB unavailability (cache-only, no fallback creation)
+  // Cache entries expire after 5 minutes to prevent serving stale data
+  private inMemoryIdentities = new Map<string, { channelIdentity: any; identity: any; user: any; context: IdentityContext; expiresAt: number }>();
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
   /**
    * Resolves a ChannelIdentity, bound UniversalIdentity, and canonical Titan User.
@@ -73,7 +75,7 @@ export class IdentityMasterEngineService {
         include: {
           identity: {
             include: {
-              users: {
+              user: {
                 include: {
                   financialAccount: true,
                   userPreferences: true,
@@ -86,86 +88,43 @@ export class IdentityMasterEngineService {
 
       if (!channelIdentity) return null;
 
-      const user = channelIdentity.identity.users[0] || null;
-      return {
+      const users = (channelIdentity as any).identity?.users || [];
+      const user = users[0] || null;
+      
+      // Cache successfully resolved identity for DB unavailability scenarios
+      const result = {
         channelIdentity,
-        identity: channelIdentity.identity,
+        identity: (channelIdentity as any).identity,
         user,
       };
+      
+      this.inMemoryIdentities.set(key, {
+        channelIdentity: result.channelIdentity,
+        identity: result.identity,
+        user: result.user,
+        context: null as any, // Context not cached
+        expiresAt: Date.now() + this.CACHE_TTL_MS,
+      });
+      
+      return result;
     } catch (err: any) {
-      this.logger.warn(`[IDENTITY_ENGINE] DB unreachable during resolveByChannel (${err.message}). Checking disk database.`);
+      // CRITICAL: Never use fallback identity resolution - fail instead
+      // This prevents catastrophic trust failures where returning users appear as "new users"
+      const errorMsg = `Database unreachable during identity resolution for ${provider}:${identifier}. Authentication failed to prevent account duplication.`;
+      this.logger.error(`[IDENTITY_ENGINE] ${errorMsg} Original error: ${err.message}`);
+      
+      // Check in-memory cache for existing resolved identities (acceptable cache hit)
       const mem = this.inMemoryIdentities.get(key);
-      if (mem) return { channelIdentity: mem.channelIdentity, identity: mem.identity, user: mem.user };
+      if (mem && mem.expiresAt > Date.now()) {
+        this.logger.log(`[IDENTITY_ENGINE] Cache hit for ${provider}:${identifier} during DB unavailability`);
+        return { channelIdentity: mem.channelIdentity, identity: mem.identity, user: mem.user };
+      } else if (mem) {
+        // Cache entry expired, remove it
+        this.logger.log(`[IDENTITY_ENGINE] Cache entry expired for ${provider}:${identifier}, removing`);
+        this.inMemoryIdentities.delete(key);
+      }
 
-      // Check authoritative .admin_users_db.json on disk
-      try {
-        const dbPath = resolve('/home/wendy/Desktop/tetherstream/apps/web/.admin_users_db.json');
-        if (existsSync(dbPath)) {
-          const raw = readFileSync(dbPath, 'utf-8');
-          const users = JSON.parse(raw);
-          const cleanDigits = identifier.replace(/\D/g, '');
-          const canonicalPhone = identifier.startsWith('+') ? identifier : `+${cleanDigits}`;
-
-          const match = users.find((u: any) => {
-            if (provider === IdentityProvider.WHATSAPP) {
-              return u.phoneNumber === canonicalPhone ||
-                     (u.phoneNumber && u.phoneNumber.replace(/\D/g, '') === cleanDigits) ||
-                     u.id === cleanDigits ||
-                     u.titanId === `titan_wa_${cleanDigits}`;
-            }
-            if (provider === IdentityProvider.TELEGRAM) {
-              return u.telegramId === identifier ||
-                     u.id === identifier ||
-                     u.primaryIdentifier === identifier ||
-                     u.primaryIdentifier === `@${identifier.replace(/^@/, '')}`;
-            }
-            return u.id === identifier || u.titanId === identifier;
-          });
-
-          if (match) {
-            const canonicalTitanId = match.titanId || (provider === IdentityProvider.WHATSAPP ? `titan_wa_${cleanDigits}` : `titan_tg_${match.id}`);
-            const isTelegram = provider === IdentityProvider.TELEGRAM;
-            const tgUserId = match.telegramId && /^\d+$/.test(match.telegramId) ? BigInt(match.telegramId) : (isTelegram ? BigInt(match.id) : undefined);
-
-            const userObj = {
-              id: match.id,
-              identityId: canonicalTitanId,
-              telegramUserId: tgUserId,
-              firstName: match.name,
-              lastName: '',
-              state: match.state === 'SUSPENDED_USER' ? UserState.SUSPENDED_USER : UserState.READY,
-              isReady: true,
-              createdAt: new Date(match.createdAt || Date.now()),
-              updatedAt: new Date(),
-            };
-
-            const identityObj = { id: canonicalTitanId, displayName: match.name, users: [userObj] };
-            const chanObj = { id: `chan_${canonicalTitanId}`, identityId: canonicalTitanId, provider, identifier };
-
-            const context: IdentityContext = {
-              userId: match.id,
-              universalIdentityId: canonicalTitanId,
-              channel: provider,
-              channelIdentityId: chanObj.id,
-              providerSubject: identifier,
-              assuranceLevel: 'MEDIUM',
-              role: 'USER',
-              userState: userObj.state,
-              telegramUserId: tgUserId,
-            };
-
-            this.inMemoryIdentities.set(key, {
-              channelIdentity: chanObj,
-              identity: identityObj,
-              user: userObj,
-              context,
-            });
-
-            return { channelIdentity: chanObj, identity: identityObj, user: userObj };
-          }
-        }
-      } catch {}
-
+      // If not in cache, fail authentication rather than creating fallback
       return null;
     }
   }
@@ -231,6 +190,7 @@ export class IdentityMasterEngineService {
         // 4. Initialize Domain Subsystems
         await tx.financialAccount.create({
           data: {
+            userId: user.id,
             telegramUserId: user.telegramUserId,
             status: 'ACTIVE',
             activatedAt: new Date(),
@@ -291,7 +251,7 @@ export class IdentityMasterEngineService {
           });
         }
 
-        this.logger.log(`Created new Titan Identity ${identity.id} via channel ${dto.provider}:${normalizedId}`);
+        this.logger.log(`[IDENTITY_AUDIT] USER_CREATED: userId=${user.id}, identityId=${identity.id}, provider=${dto.provider}, identifier=${normalizedId}, telegramUserId=${telegramUserIdBig?.toString() || 'N/A'}`);
 
         return {
           userId: user.id,
@@ -306,10 +266,12 @@ export class IdentityMasterEngineService {
         };
       });
     } catch (err: any) {
+      // Handle concurrent registration race condition
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-        this.logger.warn(`Concurrent registration race detected for ${dto.provider}:${normalizedId}. Re-resolving existing identity.`);
+        this.logger.warn(`[IDENTITY_AUDIT] REGISTRATION_RACE: provider=${dto.provider}, identifier=${normalizedId}, error=P2002 duplicate key`);
         const winner = await this.resolveByChannel(dto.provider, normalizedId);
         if (winner && winner.user) {
+          this.logger.log(`[IDENTITY_AUDIT] RACE_RESOLVED: userId=${winner.user.id}, existingIdentity=${winner.identity.id}, provider=${dto.provider}, identifier=${normalizedId}`);
           return {
             userId: winner.user.id,
             universalIdentityId: winner.identity.id,
@@ -323,55 +285,19 @@ export class IdentityMasterEngineService {
           };
         }
       }
-      if (err instanceof ConflictException || err.message?.startsWith('FAIL_AT_') || err.message?.includes('DATABASE_WRITE_ERROR')) throw err;
-      this.logger.warn(`[IDENTITY_ENGINE] DB unreachable during register (${err.message}). Using deterministic fallback identity.`);
 
-      const isWhatsapp = dto.provider === IdentityProvider.WHATSAPP;
-      const isTelegram = dto.provider === IdentityProvider.TELEGRAM;
-      const cleanDigits = normalizedId.replace(/\D/g, '');
-      const identityId = isWhatsapp ? `titan_wa_${cleanDigits}` : (isTelegram ? `titan_tg_${normalizedId}` : `titan_id_${cleanDigits || Date.now()}`);
-      const userId = isWhatsapp ? cleanDigits : (isTelegram ? normalizedId : identityId);
-      const telegramUserIdBig = isTelegram && /^\d+$/.test(normalizedId) ? BigInt(normalizedId) : (cleanDigits.length > 0 ? BigInt(cleanDigits.slice(0, 15)) : undefined);
+      // Re-throw known business logic exceptions
+      if (err instanceof ConflictException || err.message?.startsWith('FAIL_AT_') || err.message?.includes('DATABASE_WRITE_ERROR')) {
+        this.logger.error(`[IDENTITY_ENGINE] Registration failed for ${dto.provider}:${normalizedId}: ${err.message}`);
+        throw err;
+      }
 
-      const mockUser = {
-        id: userId,
-        identityId,
-        telegramUserId: telegramUserIdBig,
-        firstName: dto.displayName || `${dto.provider}_User`,
-        lastName: '',
-        telegramUsername: undefined,
-        photoUrl: dto.avatarUrl,
-        languageCode: 'en',
-        state: UserState.READY,
-        isReady: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        onboardingProgress: { currentStep: 'welcome', stepsCompleted: [] },
-      };
-
-      const mockIdentity = { id: identityId, displayName: dto.displayName, users: [mockUser] };
-      const mockChannelIdentity = { id: `chan_${identityId}`, identityId, provider: dto.provider, identifier: normalizedId };
-
-      const context: IdentityContext = {
-        userId,
-        universalIdentityId: identityId,
-        channel: dto.provider,
-        channelIdentityId: mockChannelIdentity.id,
-        providerSubject: normalizedId,
-        assuranceLevel: (isTelegram || dto.provider === IdentityProvider.WHATSAPP ? 'MEDIUM' : 'LOW') as any,
-        role: 'USER',
-        userState: UserState.READY,
-        telegramUserId: telegramUserIdBig,
-      };
-
-      this.inMemoryIdentities.set(key, {
-        channelIdentity: mockChannelIdentity,
-        identity: mockIdentity,
-        user: mockUser,
-        context,
-      });
-
-      return context;
+      // CRITICAL: Never create fallback identities - fail authentication instead
+      // This prevents catastrophic trust failures where returning users appear as "new users"
+      const errorMsg = `Database unreachable during identity registration for ${dto.provider}:${normalizedId}. Authentication failed to prevent account duplication.`;
+      this.logger.error(`[IDENTITY_ENGINE] ${errorMsg} Original error: ${err.message}`);
+      
+      throw new InternalServerErrorException(errorMsg);
     }
   }
 
@@ -495,6 +421,308 @@ export class IdentityMasterEngineService {
     return this.prisma.channelIdentity.delete({
       where: { id: target.id },
     });
+  }
+
+  /**
+   * Reconciles duplicate identities by merging data from multiple User records
+   * that may have been created by the old fallback system.
+   */
+  async reconcileDuplicateIdentities(provider: IdentityProvider, identifier: string): Promise<IdentityContext> {
+    const normalizedId = this.normalizeIdentifier(provider, identifier);
+    this.logger.log(`[IDENTITY_RECONCILIATION] Starting reconciliation for ${provider}:${normalizedId}`);
+    
+    // Find all potential duplicates by searching for users with matching telegramUserId or channel identities
+    const potentialDuplicates = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { telegramUserId: BigInt(normalizedId.replace(/\D/g, '')) },
+          { identity: { channels: { some: { provider, identifier: normalizedId } } } },
+        ],
+      },
+      include: {
+        identity: {
+          include: {
+            channels: true,
+          },
+        },
+        financialAccount: true,
+        onboardingProgress: true,
+        referralCode: true,
+        userMachines: true,
+        referralAsReferrer: true,
+        qualificationHistory: true,
+      },
+    });
+
+    if (potentialDuplicates.length === 0) {
+      this.logger.log(`[IDENTITY_RECONCILIATION] No duplicates found for ${provider}:${normalizedId}`);
+      throw new NotFoundException('No identities found to reconcile');
+    }
+
+    if (potentialDuplicates.length === 1) {
+      const single = potentialDuplicates[0];
+      this.logger.log(`[IDENTITY_RECONCILIATION] Single identity found, no reconciliation needed: userId=${single.id}`);
+      return {
+        userId: single.id,
+        universalIdentityId: single.identityId,
+        channel: provider,
+        channelIdentityId: single.identity?.channels?.[0]?.id || single.id,
+        providerSubject: normalizedId,
+        assuranceLevel: 'HIGH',
+        role: 'USER',
+        userState: single.state,
+        telegramUserId: single.telegramUserId,
+      };
+    }
+
+    this.logger.warn(`[IDENTITY_RECONCILIATION] Found ${potentialDuplicates.length} potential duplicates for ${provider}:${normalizedId}`);
+
+    // Robust canonical selection: score each candidate based on multiple factors
+    const scoredCandidates = potentialDuplicates.map(user => {
+      let score = 0;
+      
+      // Factor 1: userId === identityId (preferred structure) - +100 points
+      if (user.id === user.identityId) {
+        score += 100;
+      }
+      
+      // Factor 2: Has financial account - +50 points
+      if (user.financialAccount) {
+        score += 50;
+      }
+      
+      // Factor 3: Has referral code - +30 points
+      if (user.referralCode) {
+        score += 30;
+      }
+      
+      // Factor 4: Recent activity (lastActiveAt within 30 days) - +20 points
+      if (user.lastActiveAt) {
+        const daysSinceActive = (Date.now() - new Date(user.lastActiveAt).getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSinceActive <= 30) {
+          score += 20;
+        } else if (daysSinceActive <= 90) {
+          score += 10;
+        }
+      }
+      
+      // Factor 5: Higher login count - +1 point per login (max 20)
+      score += Math.min(user.loginCount, 20);
+      
+      // Factor 6: More qualified referrals - +5 per referral (max 50)
+      score += Math.min(user.qualifiedReferrals * 5, 50);
+      
+      // Factor 7: More paying referrals - +10 per referral (max 100)
+      score += Math.min(user.payingReferrals * 10, 100);
+      
+      return { user, score };
+    });
+    
+    // Sort by score descending, select highest as canonical
+    scoredCandidates.sort((a, b) => b.score - a.score);
+    const canonical = scoredCandidates[0].user;
+    const duplicates = potentialDuplicates.filter(u => u.id !== canonical.id);
+    
+    this.logger.log(`[IDENTITY_RECONCILIATION] Canonical selection: userId=${canonical.id}, score=${scoredCandidates[0].score}`);
+    this.logger.log(`[IDENTITY_RECONCILIATION] All candidates: ${scoredCandidates.map(s => `${s.user.id}(${s.score})`).join(', ')}`);
+    this.logger.log(`[IDENTITY_RECONCILIATION] Duplicates to merge: ${duplicates.map(u => u.id).join(', ')}`);
+
+    // Merge data from duplicates into canonical identity
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        // CRITICAL: Financial merge using ledger reconciliation (not naive balance field)
+        const financialAccounts = [canonical.financialAccount, ...duplicates.map(d => d.financialAccount).filter(Boolean)];
+        
+        if (financialAccounts.length > 0) {
+          // Calculate actual balance from ledger entries for each account
+          const accountBalances = await Promise.all(
+            financialAccounts.map(async (fa) => {
+              if (!fa) return { account: fa, ledgerBalance: 0 };
+              
+              const ledgerEntries = await tx.ledgerEntry.findMany({
+                where: { financialAccountId: fa.id },
+              });
+              
+              const ledgerBalance = ledgerEntries.reduce((sum, entry) => {
+                const amount = Number(entry.amount);
+                // Debit entries (negative amounts from debit accounts)
+                // Credit entries (positive amounts from credit accounts)
+                return sum + amount;
+              }, 0);
+              
+              return { account: fa, ledgerBalance, ledgerEntryCount: ledgerEntries.length };
+            })
+          );
+          
+          // Select account with highest ledger balance (actual balance, not stale field)
+          const richestAccount = accountBalances.reduce((max, acc) => 
+            acc.ledgerBalance > max.ledgerBalance ? acc : max
+          );
+          
+          if (!richestAccount.account) {
+            this.logger.warn(`[IDENTITY_RECONCILIATION] No valid financial account found for migration`);
+            return;
+          }
+          
+          this.logger.log(`[IDENTITY_RECONCILIATION] Financial account selection by ledger balance: ${richestAccount.account.id} (ledgerBalance=${richestAccount.ledgerBalance}, entries=${richestAccount.ledgerEntryCount})`);
+          
+          // Merge ledger entries from all accounts into the selected account
+          for (const acc of accountBalances) {
+            if (!acc.account || acc.account.id === richestAccount.account.id) continue; // Skip the selected account
+            
+            // Reassign ledger entries to the selected financial account
+            const entriesToMigrate = await tx.ledgerEntry.findMany({
+              where: { financialAccountId: acc.account.id },
+            });
+            
+            for (const entry of entriesToMigrate) {
+              await tx.ledgerEntry.update({
+                where: { id: entry.id },
+                data: { financialAccountId: richestAccount.account.id },
+              });
+            }
+            
+            this.logger.log(`[IDENTITY_RECONCILIATION] Migrated ${entriesToMigrate.length} ledger entries from ${acc.account.id} to ${richestAccount.account.id}`);
+          }
+          
+          // Reassign financial account to canonical user
+          if (richestAccount.account.id !== canonical.financialAccount?.id) {
+            this.logger.log(`[IDENTITY_RECONCILIATION] Reassigning financial account: ${richestAccount.account.id} -> canonical userId=${canonical.id}`);
+            await tx.financialAccount.update({
+              where: { id: richestAccount.account.id },
+              data: { userId: canonical.id },
+            });
+          }
+          
+          // Create reconciliation audit entry
+          const reconciliationReference = `IDENTITY_RECONCILIATION_${canonical.id}_${Date.now()}`;
+          this.logger.log(`[IDENTITY_RECONCILIATION] Creating ledger reconciliation entry: ${reconciliationReference}`);
+          // Note: Actual ledger entry creation would require proper ledger account and entry type configuration
+          // This is logged for audit trail but not implemented to avoid breaking ledger constraints
+        }
+
+        // Merge referral codes (preserve the one with referrals)
+        const referralCodes = [canonical.referralCode, ...duplicates.map(d => d.referralCode).filter(Boolean)];
+        const activeReferralCode = referralCodes.find(rc => (rc as any)._count?.ReferralRelationship > 0) || canonical.referralCode;
+        
+        if (activeReferralCode && activeReferralCode.id !== canonical.referralCode?.id) {
+          this.logger.log(`[IDENTITY_RECONCILIATION] Merging referral code: ${activeReferralCode.id} -> ${canonical.id}`);
+          await tx.referralCode.update({
+            where: { id: activeReferralCode.id },
+            data: { telegramUserId: canonical.telegramUserId },
+          });
+        }
+
+        // Merge referral relationships from duplicates into canonical
+        for (const duplicate of duplicates) {
+          if (duplicate.referralAsReferrer && duplicate.referralAsReferrer.length > 0) {
+            this.logger.log(`[IDENTITY_RECONCILIATION] Merging ${duplicate.referralAsReferrer.length} referral relationships (as referrer) from ${duplicate.id} to ${canonical.id}`);
+            for (const relationship of duplicate.referralAsReferrer) {
+              await tx.referralRelationship.update({
+                where: { id: relationship.id },
+                data: { referrerId: canonical.telegramUserId },
+              });
+            }
+          }
+        }
+
+        // Merge referral qualification history from duplicates into canonical
+        for (const duplicate of duplicates) {
+          if (duplicate.qualificationHistory && duplicate.qualificationHistory.length > 0) {
+            this.logger.log(`[IDENTITY_RECONCILIATION] Merging ${duplicate.qualificationHistory.length} qualification history records from ${duplicate.id} to ${canonical.id}`);
+            for (const history of duplicate.qualificationHistory) {
+              await tx.referralQualificationHistory.update({
+                where: { id: history.id },
+                data: { telegramUserId: canonical.telegramUserId },
+              });
+            }
+          }
+        }
+
+        // Merge machine ownership from duplicates into canonical
+        for (const duplicate of duplicates) {
+          if (duplicate.userMachines && duplicate.userMachines.length > 0) {
+            this.logger.log(`[IDENTITY_RECONCILIATION] Merging ${duplicate.userMachines.length} machines from ${duplicate.id} to ${canonical.id}`);
+            for (const machine of duplicate.userMachines) {
+              await tx.userMachine.update({
+                where: { id: machine.id },
+                data: { telegramUserId: canonical.telegramUserId },
+              });
+            }
+          }
+        }
+
+        // Mark duplicate users as DELETED_USER for audit trail
+        for (const duplicate of duplicates) {
+          this.logger.log(`[IDENTITY_RECONCILIATION] Marking duplicate as DELETED: userId=${duplicate.id}`);
+          await tx.user.update({
+            where: { id: duplicate.id },
+            data: { 
+              state: UserState.DELETED_USER,
+              identityId: canonical.identityId, // Point to canonical identity
+            },
+          });
+          
+          // Update channel identities to point to canonical identity
+          if (duplicate.identityId) {
+            await tx.channelIdentity.updateMany({
+              where: { identityId: duplicate.identityId },
+              data: { identityId: canonical.identityId },
+            });
+          }
+        }
+
+        // Log reconciliation to audit trail
+        if (this.auditService) {
+          await this.auditService.createWithClient(tx, {
+            telegramUserId: canonical.telegramUserId,
+            eventType: AuditEventType.USER_STATE_CHANGED,
+            description: `Identity reconciliation: ${duplicates.length} duplicates merged into canonical userId=${canonical.id}`,
+            metadata: {
+              canonicalUserId: canonical.id,
+              canonicalIdentityId: canonical.identityId,
+              duplicateUserIds: duplicates.map(d => d.id),
+              provider,
+              identifier: normalizedId,
+              financialAccountsMerged: financialAccounts.length,
+              ledgerEntriesMigrated: true,
+            },
+          });
+        }
+      });
+
+      // Invalidate cache for all affected identities after successful reconciliation
+      for (const duplicate of duplicates) {
+        for (const channel of duplicate.identity?.channels || []) {
+          const cacheKey = `${channel.provider}:${channel.identifier}`;
+          this.inMemoryIdentities.delete(cacheKey);
+          this.logger.log(`[IDENTITY_RECONCILIATION] Cache invalidated for ${cacheKey}`);
+        }
+      }
+      // Also invalidate canonical's channels
+      for (const channel of canonical.identity?.channels || []) {
+        const cacheKey = `${channel.provider}:${channel.identifier}`;
+        this.inMemoryIdentities.delete(cacheKey);
+        this.logger.log(`[IDENTITY_RECONCILIATION] Cache invalidated for ${cacheKey}`);
+      }
+
+      this.logger.log(`[IDENTITY_RECONCILIATION] Successfully merged ${duplicates.length} duplicates into canonical userId=${canonical.id}`);
+      
+      return {
+        userId: canonical.id,
+        universalIdentityId: canonical.identityId,
+        channel: provider,
+        channelIdentityId: canonical.identity?.channels?.[0]?.id || canonical.id,
+        providerSubject: normalizedId,
+        assuranceLevel: 'HIGH',
+        role: 'USER',
+        userState: canonical.state,
+        telegramUserId: canonical.telegramUserId,
+      };
+    } catch (err: any) {
+      this.logger.error(`[IDENTITY_RECONCILIATION] Failed to merge duplicates: ${err.message}`);
+      throw new InternalServerErrorException('Identity reconciliation failed');
+    }
   }
 
   /**

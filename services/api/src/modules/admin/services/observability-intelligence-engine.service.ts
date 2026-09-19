@@ -160,7 +160,7 @@ export class ObservabilityIntelligenceEngineService {
    * 3. Machine & Asset Intelligence
    */
   async getMachineAssetIntelligence() {
-    const [machineTiers, fleetDistribution, assetBalances] = await Promise.all([
+    const [machineTiers, fleetDistribution, ledgerDistribution] = await Promise.all([
       this.prisma.machineCatalogItem.findMany({
         include: { _count: { select: { userFleet: true } } },
       }),
@@ -169,9 +169,10 @@ export class ObservabilityIntelligenceEngineService {
         _count: { _all: true },
         _sum: { lifetimeEarnings: true },
       }),
-      this.prisma.assetBalance.groupBy({
+      // Use authoritative ledger instead of deprecated AssetBalance
+      this.prisma.ledgerEntry.groupBy({
         by: ['assetCode'],
-        _sum: { availableBalance: true, lockedBalance: true, totalEarned: true },
+        _sum: { amount: true },
         _count: { _all: true },
       }),
     ]);
@@ -195,12 +196,10 @@ export class ObservabilityIntelligenceEngineService {
             : 0,
         };
       }),
-      assetDistributionAnalytics: assetBalances.map((a) => ({
+      assetDistributionAnalytics: ledgerDistribution.map((a) => ({
         assetCode: a.assetCode,
         holdersCount: a._count?._all || 0,
-        availableSupply: Number(a._sum?.availableBalance || 0),
-        lockedSupply: Number(a._sum?.lockedBalance || 0),
-        totalEarnedHistorical: Number(a._sum?.totalEarned || 0),
+        totalSupply: Number(a._sum?.amount || 0), // Authoritative ledger total
       })),
     };
   }

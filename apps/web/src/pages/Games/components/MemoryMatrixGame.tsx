@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
-import { X, Sparkles, Brain } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Sparkles, Brain, Volume2, VolumeX, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import type { GameStartSession, GameEndResult } from '../../../services/gamesService';
 import { gamesService } from '../../../services/gamesService';
+import { gameAudio } from '../../../utils/gameAudio';
 
 interface MemoryMatrixGameProps {
   session: GameStartSession;
@@ -10,12 +11,14 @@ interface MemoryMatrixGameProps {
   onComplete: (result: GameEndResult) => void;
 }
 
-const GRID = 3;
 const MAX_LEVEL = 12;
-const SHOW_MS = 450;
+const SHOW_MS = 420;
 const TAP_TIMEOUT_MS = 6000;
 
 type Phase = 'idle' | 'showing' | 'input' | 'feedback' | 'over';
+
+// Pentatonic musical scale for the 9 matrix cells
+const CELL_NOTES = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99];
 
 export const MemoryMatrixGame: React.FC<MemoryMatrixGameProps> = ({ session, onClose, onComplete }) => {
   const [sequence, setSequence] = useState<number[]>([]);
@@ -24,10 +27,10 @@ export const MemoryMatrixGame: React.FC<MemoryMatrixGameProps> = ({ session, onC
   const [litCell, setLitCell] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
-  const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [shakeCell, setShakeCell] = useState<number | null>(null);
-  const [tapTimeRemaining, setTapTimeRemaining] = useState(100); // percentage
+  const [tapTimeRemaining, setTapTimeRemaining] = useState(100);
+  const [muted, setMuted] = useState(gameAudio.getMuted());
 
   const sessionStartMs = useRef(Date.now());
   const telemetry = useRef<Array<{ action: string; t: number }>>([]);
@@ -37,14 +40,24 @@ export const MemoryMatrixGame: React.FC<MemoryMatrixGameProps> = ({ session, onC
   const tapsRef = useRef(0);
   const correctTapsRef = useRef(0);
 
+  const handleToggleMute = () => {
+    const isMute = gameAudio.toggleMute();
+    setMuted(isMute);
+  };
+
+  const playCellTone = (cell: number) => {
+    const freq = CELL_NOTES[cell % CELL_NOTES.length];
+    gameAudio.playWheelTick(freq / 500);
+    gameAudio.haptic('light');
+  };
+
   const startRound = () => {
     setPhase('showing');
     setInputIndex(0);
-    setFeedback(null);
     setShakeCell(null);
     setTapTimeRemaining(100);
 
-    const nextSequence = Array.from({ length: Math.min(level + 1, MAX_LEVEL) }, () => Math.floor(Math.random() * 9));
+    const nextSequence = Array.from({ length: Math.min(level + 2, MAX_LEVEL) }, () => Math.floor(Math.random() * 9));
     setSequence(nextSequence);
 
     telemetry.current.push({ action: 'round_start', t: Date.now() - sessionStartMs.current });
@@ -52,7 +65,9 @@ export const MemoryMatrixGame: React.FC<MemoryMatrixGameProps> = ({ session, onC
     let idx = 0;
     const showTimer = setInterval(() => {
       if (idx < nextSequence.length) {
-        setLitCell(nextSequence[idx]);
+        const cell = nextSequence[idx];
+        setLitCell(cell);
+        playCellTone(cell);
         idx += 1;
       } else {
         clearInterval(showTimer);
@@ -63,6 +78,11 @@ export const MemoryMatrixGame: React.FC<MemoryMatrixGameProps> = ({ session, onC
     }, SHOW_MS);
   };
 
+  useEffect(() => {
+    startRound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const armTapTimeout = () => {
     if (inputTimeout.current) clearTimeout(inputTimeout.current);
     if (tapTimerInterval.current) clearInterval(tapTimerInterval.current);
@@ -70,7 +90,6 @@ export const MemoryMatrixGame: React.FC<MemoryMatrixGameProps> = ({ session, onC
     tapTimerStart.current = Date.now();
     setTapTimeRemaining(100);
 
-    // Visual countdown bar
     tapTimerInterval.current = window.setInterval(() => {
       const elapsed = Date.now() - tapTimerStart.current;
       const remaining = Math.max(0, 100 - (elapsed / TAP_TIMEOUT_MS) * 100);
@@ -82,7 +101,7 @@ export const MemoryMatrixGame: React.FC<MemoryMatrixGameProps> = ({ session, onC
 
     inputTimeout.current = window.setTimeout(() => {
       if (tapTimerInterval.current) clearInterval(tapTimerInterval.current);
-      endGame(false, 'TIME_OUT');
+      endGame(false);
     }, TAP_TIMEOUT_MS);
   };
 
@@ -93,6 +112,7 @@ export const MemoryMatrixGame: React.FC<MemoryMatrixGameProps> = ({ session, onC
 
     telemetry.current.push({ action: 'tap', t: Date.now() - sessionStartMs.current });
     tapsRef.current += 1;
+    playCellTone(cell);
 
     if (cell === sequence[inputIndex]) {
       correctTapsRef.current += 1;
@@ -102,39 +122,42 @@ export const MemoryMatrixGame: React.FC<MemoryMatrixGameProps> = ({ session, onC
         const nextScore = score + 1;
         setScore(nextScore);
         setLevel((l) => l + 1);
-        setFeedback('correct');
         setPhase('feedback');
         telemetry.current.push({ action: 'level_clear', t: Date.now() - sessionStartMs.current });
+        gameAudio.playScore(nextScore);
+        gameAudio.haptic('success');
 
         window.setTimeout(() => {
           if (nextScore >= MAX_LEVEL) {
-            endGame(true, 'MAX_LEVEL');
+            endGame(true);
           } else {
             startRound();
           }
-        }, 700);
+        }, 750);
       } else {
         setInputIndex(nextIndex);
         armTapTimeout();
       }
     } else {
-      // Wrong — shake animation
+      // Wrong sequence — shake and end
       setShakeCell(cell);
+      gameAudio.playGameOver();
+      gameAudio.haptic('error');
       setTimeout(() => setShakeCell(null), 400);
-      endGame(false, 'WRONG_SEQUENCE');
+      endGame(false);
     }
   };
 
-  const endGame = (cleared: boolean, reason: string) => {
+  const endGame = (cleared: boolean) => {
     if (submitting) return;
     setPhase('over');
     setSubmitting(true);
     if (tapTimerInterval.current) clearInterval(tapTimerInterval.current);
     telemetry.current.push({ action: 'round_end', t: Date.now() - sessionStartMs.current });
-    void submitResult(cleared, reason);
+    void submitResult(cleared);
   };
 
-  const submitResult = async (cleared: boolean, reason: string) => {
+  const submitResult = async (cleared: boolean) => {
     const durationMs = Date.now() - sessionStartMs.current;
     const taps = tapsRef.current;
     try {
@@ -143,146 +166,145 @@ export const MemoryMatrixGame: React.FC<MemoryMatrixGameProps> = ({ session, onC
         durationMs,
         telemetry: telemetry.current,
         stats: {
-          accuracy: taps > 0 ? Math.round((correctTapsRef.current / taps) * 100) : 0,
           levelsCompleted: score,
-          perfect: cleared && reason === 'MAX_LEVEL',
+          moves: taps,
+          accuracy: taps > 0 ? Math.round((correctTapsRef.current / taps) * 100) : 0,
+          perfect: cleared && taps === correctTapsRef.current,
         },
       });
       onComplete(result);
-    } catch (err: any) {
+    } catch {
       onClose();
     }
   };
 
-  useEffect(() => {
-    startRound();
-    return () => {
-      if (inputTimeout.current) clearTimeout(inputTimeout.current);
-      if (tapTimerInterval.current) clearInterval(tapTimerInterval.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Color for the timer bar
-  const timerBarColor = tapTimeRemaining > 50 ? '#00e5ff' : tapTimeRemaining > 20 ? '#ffb300' : '#ff5252';
-
   return (
-    <div className="fixed inset-0 z-50 bg-[#050608]/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-[420px] relative flex flex-col items-center">
-        {/* Header */}
-        <div className="w-full flex items-center justify-between mb-4 px-2">
-          <div>
-            <h2 className="text-lg font-black text-white tracking-wide flex items-center gap-1.5">
+    <div className="fixed inset-0 z-50 bg-[#050608]/95 backdrop-blur-2xl flex flex-col items-center justify-center p-3 select-none touch-none">
+      <div className="w-full max-w-[420px] relative flex flex-col items-center animate-fade-in">
+        {/* ═══ Top Header ═══ */}
+        <div className="w-full flex items-center justify-between mb-2.5 px-2">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00e5ff]/25 to-transparent border border-[#00e5ff]/40 flex items-center justify-center shadow-lg">
               <Brain size={18} className="text-[#00e5ff]" />
-              MEMORY MATRIX
-            </h2>
-            <p className="text-[10px] text-text-tertiary">Memorize the sequence and repeat it</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-text-secondary active:scale-95 transition-transform"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Score dashboard */}
-        <div className="w-full grid grid-cols-3 gap-2 mb-4 px-2">
-          <div className="bg-white/[0.03] border border-white/5 rounded-2xl py-2 px-3 flex flex-col items-center">
-            <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Level</span>
-            <span className="font-mono text-base text-[#00e5ff] font-black mt-0.5">{level}</span>
-          </div>
-          <div className="bg-white/[0.03] border border-white/5 rounded-2xl py-2 px-3 flex flex-col items-center">
-            <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Score</span>
-            <span className="font-mono text-base text-usdt-green font-black mt-0.5">{score}</span>
-          </div>
-          <div className="bg-white/[0.03] border border-white/5 rounded-2xl py-2 px-3 flex flex-col items-center">
-            <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Sequence</span>
-            <span className="font-mono text-base text-gold font-black mt-0.5">{sequence.length}</span>
-          </div>
-        </div>
-
-        {/* Tap timer bar — visible during input phase */}
-        {phase === 'input' && (
-          <div className="w-full px-2 mb-3">
-            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-              <motion.div
-                animate={{ width: `${tapTimeRemaining}%` }}
-                transition={{ duration: 0.05 }}
-                className="h-full rounded-full"
-                style={{ backgroundColor: timerBarColor, boxShadow: `0 0 8px ${timerBarColor}80` }}
-              />
             </div>
+            <div>
+              <h2 className="text-base font-black text-white tracking-wide leading-tight flex items-center gap-1.5">
+                CYBER MATRIX
+              </h2>
+              <p className="text-[10px] text-text-tertiary">Memorize &amp; Decrypt Sequence</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleToggleMute}
+              className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-text-secondary active:scale-95 transition-transform"
+            >
+              {muted ? <VolumeX size={15} /> : <Volume2 size={15} className="text-[#a7ffeb]" />}
+            </button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-text-secondary active:scale-95 transition-transform"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* ═══ Dashboard Status Cards ═══ */}
+        <div className="w-full grid grid-cols-3 gap-2 mb-2.5">
+          <div className="bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 rounded-2xl py-1.5 px-2 flex flex-col items-center shadow-md">
+            <span className="text-[8px] font-extrabold uppercase tracking-wider text-text-tertiary">Level</span>
+            <span className="font-mono text-base text-gold font-black mt-0.5">#{level}</span>
+          </div>
+          <div className="bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 rounded-2xl py-1.5 px-2 flex flex-col items-center shadow-md">
+            <span className="text-[8px] font-extrabold uppercase tracking-wider text-text-tertiary">Decrypted</span>
+            <span className="font-mono text-base text-usdt-green font-black mt-0.5">{score} 🧠</span>
+          </div>
+          <div className="bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 rounded-2xl py-1.5 px-2 flex flex-col items-center shadow-md">
+            <span className="text-[8px] font-extrabold uppercase tracking-wider text-text-tertiary">Status</span>
+            <span className="font-mono text-xs font-black mt-1 text-[#00e5ff] uppercase">
+              {phase === 'showing' ? 'MEMORIZE' : phase === 'input' ? 'REPEAT' : 'SYNCING'}
+            </span>
+          </div>
+        </div>
+
+        {/* ═══ Response Countdown Bar ═══ */}
+        {phase === 'input' && (
+          <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden mb-3">
+            <div
+              className="h-full rounded-full transition-all duration-75"
+              style={{
+                width: `${tapTimeRemaining}%`,
+                background: tapTimeRemaining < 30 ? '#ff3d00' : '#00e5ff',
+                boxShadow: `0 0 8px ${tapTimeRemaining < 30 ? '#ff3d00' : '#00e5ff'}`,
+              }}
+            />
           </div>
         )}
 
-        {/* Status pill */}
-        <div className="mb-4 h-6 flex items-center justify-center">
-          {phase === 'showing' && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-[11px] font-extrabold uppercase tracking-widest text-[#00e5ff] animate-pulse"
-            >
-              Watch carefully...
-            </motion.span>
+        {/* ═══ The Matrix 3x3 Grid ═══ */}
+        <div className="relative w-full aspect-square max-w-[340px] rounded-3xl overflow-hidden border border-white/15 bg-gradient-to-b from-[#111422] via-[#0c0e18] to-[#07080f] shadow-[0_8px_32px_rgba(0,0,0,0.7)] p-3 mb-2.5 flex items-center justify-center">
+          <div className="grid grid-cols-3 gap-3 w-full h-full">
+            {Array.from({ length: 9 }, (_, cell) => {
+              const isLit = litCell === cell;
+              const isShaking = shakeCell === cell;
+
+              return (
+                <button
+                  key={cell}
+                  onClick={() => handleCellTap(cell)}
+                  disabled={phase !== 'input'}
+                  className={`relative rounded-2xl border transition-all duration-150 press-feedback flex items-center justify-center ${
+                    isShaking ? 'animate-shake border-error-red bg-error-red/20' : ''
+                  }`}
+                  style={{
+                    background: isLit
+                      ? 'radial-gradient(circle, rgba(0, 229, 255, 0.7) 0%, rgba(0, 150, 255, 0.95) 100%)'
+                      : 'rgba(255, 255, 255, 0.03)',
+                    borderColor: isLit ? '#00e5ff' : 'rgba(255, 255, 255, 0.08)',
+                    boxShadow: isLit ? '0 0 24px rgba(0, 229, 255, 0.8), inset 0 0 12px #ffffff' : 'none',
+                  }}
+                >
+                  <span className={`text-xl font-mono font-black ${isLit ? 'text-white' : 'text-white/20'}`}>
+                    {cell + 1}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Level Complete Flash */}
+          {phase === 'feedback' && (
+            <div className="absolute inset-0 z-20 bg-[#00e5ff]/20 backdrop-blur-sm flex flex-col items-center justify-center animate-fade-in">
+              <CheckCircle2 size={36} className="text-[#00e5ff] animate-bounce mb-1" />
+              <p className="text-sm font-black text-white uppercase tracking-wider">SEQUENCE DECRYPTED!</p>
+            </div>
           )}
-          {phase === 'input' && (
-            <span className="text-[11px] font-extrabold uppercase tracking-widest text-white">
-              Your turn — repeat the pattern ({inputIndex}/{sequence.length})
-            </span>
-          )}
-          {phase === 'feedback' && feedback === 'correct' && (
-            <motion.span
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              className="text-[11px] font-extrabold uppercase tracking-widest text-usdt-green"
-            >
-              ✔ Level clear!
-            </motion.span>
-          )}
+
+          {/* Round Over */}
           {phase === 'over' && (
-            <span className="text-[11px] font-extrabold uppercase tracking-widest text-gold">Validating... ⏳</span>
+            <div className="absolute inset-0 z-30 bg-[#050608]/85 backdrop-blur-md flex flex-col items-center justify-center gap-3 animate-fade-in">
+              <div className="w-14 h-14 rounded-2xl bg-gold/15 border border-gold/30 flex items-center justify-center shadow-lg">
+                <ShieldCheck size={28} className="text-gold animate-bounce" />
+              </div>
+              <p className="text-lg font-black text-white uppercase tracking-widest">Session Complete!</p>
+              <div className="flex items-center gap-2 text-xs text-[#a7ffeb]">
+                <Sparkles size={14} className="animate-spin-slow" />
+                <span>Validating score &amp; crediting crystals...</span>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Matrix grid — RESPONSIVE: uses aspect-ratio and max-w to prevent overflow */}
-        <div className="grid grid-cols-3 gap-2.5 mb-5 w-full px-2" style={{ maxWidth: '320px' }}>
-          {Array.from({ length: GRID * GRID }, (_, i) => {
-            const isLit = litCell === i;
-            const isHighlighted = phase === 'feedback' && feedback === 'wrong';
-            const isShaking = shakeCell === i;
-            return (
-              <motion.button
-                key={i}
-                onClick={() => handleCellTap(i)}
-                disabled={phase !== 'input' || submitting}
-                animate={
-                  isShaking
-                    ? { x: [0, -6, 6, -4, 4, 0], transition: { duration: 0.35 } }
-                    : isLit
-                      ? { scale: [1, 1.05, 1], transition: { duration: 0.2 } }
-                      : {}
-                }
-                className={`aspect-square rounded-2xl border transition-all duration-150 active:scale-95 disabled:cursor-default flex items-center justify-center ${
-                  isLit
-                    ? 'bg-[#00e5ff]/80 border-[#00e5ff] shadow-[0_0_25px_rgba(0,229,255,0.7)]'
-                    : isHighlighted || isShaking
-                      ? 'bg-[#ff5252]/20 border-error-red/50'
-                      : 'bg-[#0d0e17] border-white/10 hover:border-[#00e5ff]/40'
-                }`}
-                style={{ boxShadow: isLit ? '0 0 25px rgba(0,229,255,0.7)' : undefined }}
-              >
-                {phase === 'input' && <span className="text-[10px] text-text-tertiary font-mono">{i + 1}</span>}
-              </motion.button>
-            );
-          })}
-        </div>
-
-        {/* Hint row */}
-        <div className="flex items-center gap-1.5 text-xs text-[#a7ffeb] font-bold">
-          <Sparkles size={14} className="text-[#00e5ff] animate-spin-slow" />
-          <span>Each cleared level adds one more step to the matrix</span>
+        {/* ═══ Footer Info ═══ */}
+        <div className="flex items-center justify-between w-full px-3 text-[10px] text-text-tertiary">
+          <span className="flex items-center gap-1">
+            <Sparkles size={11} className="text-[#00e5ff]" /> Memorize flashing sequence
+          </span>
+          <span className="flex items-center gap-1">
+            <Brain size={11} className="text-gold" /> Repeat in correct order
+          </span>
         </div>
       </div>
     </div>

@@ -3,6 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service';
 import { UserState } from '../../common/interfaces/user-state.enum';
 import { requiredEnv } from '../../common/config/env.util';
+import { IdentityMasterEngineService } from '../identity/identity-master.service';
+import { IdentityProvider } from '@prisma/client';
 
 @Injectable()
 export class WebAuthSessionService {
@@ -16,6 +18,7 @@ export class WebAuthSessionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly identityMasterEngine: IdentityMasterEngineService,
   ) {}
 
   createWebAuthSession() {
@@ -68,42 +71,42 @@ export class WebAuthSessionService {
       return false;
     }
 
-    const telegramUserIdBig = BigInt(telegramUser.id);
-    let user: any = null;
+    const identifierStr = String(telegramUser.id);
+    let identityContext: any = null;
 
     try {
-      user = await this.prisma.user.findUnique({
-        where: { telegramUserId: telegramUserIdBig },
+      identityContext = await this.identityMasterEngine.authenticate({
+        provider: IdentityProvider.TELEGRAM,
+        identifier: identifierStr,
+        displayName: telegramUser.first_name ? `${telegramUser.first_name} ${telegramUser.last_name || ''}`.trim() : `Telegram_${identifierStr}`,
+        avatarUrl: telegramUser.photo_url,
+        metadata: {
+          sessionCode,
+          username: telegramUser.username,
+          languageCode: telegramUser.language_code,
+          authorizedVia: 'web_auth_session',
+        },
       });
-
-      if (!user) {
-        user = await this.prisma.user.create({
-          data: {
-            telegramUserId: telegramUserIdBig,
-            firstName: telegramUser.first_name,
-            lastName: telegramUser.last_name,
-            telegramUsername: telegramUser.username,
-            languageCode: telegramUser.language_code || 'en',
-            photoUrl: telegramUser.photo_url,
-            state: UserState.READY,
-          },
-        });
-      }
     } catch (dbErr: any) {
-      this.logger.error(`[WEB_AUTH] Database registration failed for Telegram user ${telegramUser.id}: ${dbErr.message}`);
-      throw new UnauthorizedException('AUTHENTICATION_FAILED: Unable to persist user identity to database');
+      this.logger.error(`[WEB_AUTH] IdentityMaster resolution failed for Telegram user ${telegramUser.id}: ${dbErr.message}`);
+      throw new UnauthorizedException('AUTHENTICATION_FAILED: Unable to resolve canonical identity');
     }
 
+    const canonicalUserId = identityContext.userId;
     const payload = {
-      sub: String(telegramUser.id),
+      sub: canonicalUserId,
+      userId: canonicalUserId,
+      titanUserId: canonicalUserId,
       telegramUserId: Number(telegramUser.id),
-      state: user.state || 'READY',
-      role: 'USER',
+      provider: 'TELEGRAM',
+      channelIdentityId: identityContext.channelIdentityId,
+      state: identityContext.userState || 'READY',
+      role: identityContext.role || 'USER',
     };
 
     const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refreshToken = this.jwtService.sign(
-      { sub: String(telegramUser.id), type: 'refresh' },
+      { sub: canonicalUserId, userId: canonicalUserId, telegramUserId: Number(telegramUser.id), type: 'refresh' },
       { expiresIn: '30d', secret: process.env.JWT_REFRESH_SECRET || requiredEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret') },
     );
 
@@ -113,19 +116,20 @@ export class WebAuthSessionService {
         accessToken,
         refreshToken,
         user: {
-          id: String(user.id),
+          id: canonicalUserId,
+          identityId: identityContext.universalIdentityId,
           telegramUserId: String(telegramUser.id),
-          firstName: user.firstName,
-          lastName: user.lastName,
-          username: user.telegramUsername,
-          state: user.state,
+          firstName: telegramUser.first_name,
+          lastName: telegramUser.last_name,
+          username: telegramUser.username,
+          state: identityContext.userState || UserState.READY,
         },
-        isNewUser: false,
+        isNewUser: identityContext.assuranceLevel !== 'HIGH',
       },
       createdAt: session.createdAt,
     });
 
-    this.logger.log(`Web auth session ${sessionCode} successfully authorized for Telegram ID ${telegramUser.id}`);
+    this.logger.log(`Web auth session ${sessionCode} successfully authorized for canonical User ${canonicalUserId} (Telegram ID ${telegramUser.id})`);
     return true;
   }
 }

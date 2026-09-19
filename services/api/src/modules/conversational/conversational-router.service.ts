@@ -1,5 +1,5 @@
 import { Injectable, Logger, Inject, Optional, forwardRef } from '@nestjs/common';
-import { IdentityProvider, UserState } from '@prisma/client';
+import { IdentityProvider, UserState, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { IdentityMasterEngineService } from '../identity/identity-master.service';
 import { WhatsappChallengeService } from '../auth/whatsapp-challenge.service';
@@ -7,6 +7,8 @@ import { BaileysAccountManagerService } from '../notification/baileys-account-ma
 import { BotNotificationService } from '../bot/bot-notification.service';
 import { AuthService } from '../auth/auth.service';
 import { RewardService } from '../growth/reward.service';
+import { BalanceService } from '../financial/balance.service';
+import { FinancialAccountService } from '../financial/financial-account.service';
 
 export interface InboundMessageContext {
   channel: 'WHATSAPP' | 'TELEGRAM';
@@ -50,6 +52,10 @@ export class ConversationalRouterService {
     @Optional()
     @Inject(forwardRef(() => RewardService))
     private readonly rewardService?: RewardService,
+    @Optional()
+    private readonly balanceService?: BalanceService,
+    @Optional()
+    private readonly financialAccountService?: FinancialAccountService,
   ) {}
 
   /**
@@ -210,11 +216,27 @@ export class ConversationalRouterService {
         return `⚡ *TITAN STREAM* — *Sign-In Required*\n\n🔒 Please sign in first using \`START <code>\` before checking your balance.`;
       }
 
-      const balanceRecord = await this.prisma?.assetBalance.findFirst({
-        where: { telegramUserId: user.telegramUserId, assetCode: 'USDT' },
-      });
+      // Use authoritative ledger-based balance instead of stale AssetBalance table
+      let balance = '0.00';
+      if (this.financialAccountService && this.balanceService) {
+        try {
+          const financialAccount = await this.financialAccountService.getOrCreateForReadyUser(user.id);
+          const balanceData = await this.balanceService.getBalances(user.telegramUserId, financialAccount.id);
+          const usdtAsset = balanceData.balances.find((b) => b.assetCode === 'USDT');
+          if (usdtAsset) {
+            balance = Number(usdtAsset.availableBalance).toFixed(2);
+          }
+        } catch (balanceErr: any) {
+          this.logger.error(`Error fetching ledger balance: ${balanceErr.message}`);
+          // Do NOT fallback to stale AssetBalance - return default instead
+          balance = '0.00';
+        }
+      } else {
+        // Financial services unavailable - return default balance
+        // Do NOT use stale AssetBalance data
+        balance = '0.00';
+      }
 
-      const balance = balanceRecord ? balanceRecord.availableBalance.toString() : '0.00';
       return (
         `⚡ *TITAN STREAM* — *Your Balance*\n\n` +
         `💰 *Account Wallet:*\n` +
@@ -281,16 +303,23 @@ export class ConversationalRouterService {
         provider,
         identifier: { contains: cleanId },
       },
-      include: {
-        identity: {
-          include: {
-            users: true,
-          },
-        },
-      },
     });
 
-    return channelIdentity?.identity?.users[0] || null;
+    if (!channelIdentity) return null;
+
+    // Resolve User via UniversalIdentity relationship
+    const universalIdentity = await this.prisma?.universalIdentity.findUnique({
+      where: { id: channelIdentity.identityId },
+    });
+
+    if (!universalIdentity) return null;
+
+    // Resolve User from identityId (Post-remediation: User.id === UniversalIdentity.id)
+    const user = await this.prisma?.user.findFirst({
+      where: { identityId: universalIdentity.id },
+    });
+
+    return user;
   }
 
   /**

@@ -63,7 +63,7 @@ export class WithdrawalService {
     const isMobileMoney = ['MOMO', 'MOBILE_MONEY', 'MTN', 'AIRTEL'].includes(netUpper);
 
     // 1. Recipient Binding Lock (Phase 3 & 4 Server-Side Recipient Lock)
-    let user = await this.prisma.user.findFirst({
+    const user = await this.prisma.user.findFirst({
       where: {
         OR: [
           ...(dto.telegramUserId && dto.telegramUserId > BigInt(0) ? [{ telegramUserId: dto.telegramUserId }] : []),
@@ -71,19 +71,7 @@ export class WithdrawalService {
         ],
       },
     });
-    if (!user && dto.telegramUserId && dto.telegramUserId > BigInt(0)) {
-      user = await this.prisma.user.create({
-        data: {
-          telegramUserId: dto.telegramUserId,
-          firstName: `User_${dto.telegramUserId}`,
-          phoneNumber: isMobileMoney ? (dto.destinationAddress ? dto.destinationAddress.trim() : null) : null,
-          phoneVerified: isMobileMoney && !!dto.destinationAddress,
-          verifiedUsdtAddress: !isMobileMoney ? (dto.destinationAddress ? dto.destinationAddress.trim() : null) : null,
-          usdtAddressVerified: !isMobileMoney && !!dto.destinationAddress,
-        },
-      });
-    }
-    if (!user) throw new NotFoundException('USER_NOT_FOUND');
+    if (!user) throw new NotFoundException('USER_NOT_FOUND: User must exist to perform a withdrawal');
     dto.telegramUserId = user.telegramUserId;
 
     // Check Recipient Security Cooling Period

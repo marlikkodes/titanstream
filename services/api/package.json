@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" npx prisma generate && nest build",
-    "dev": "nest start --watch",
+    "dev": "ts-node src/main.ts",
     "start": "nest start",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,test}/**/*.ts\"",

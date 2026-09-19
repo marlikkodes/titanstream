@@ -145,6 +145,16 @@ enum FinancialOperationType {
   WITHDRAWAL_RESERVE
   WITHDRAWAL_SETTLE
   WITHDRAWAL_REVERSAL
+  MACHINE_PURCHASE_RESERVE
+  MACHINE_PURCHASE_SETTLE
+  MACHINE_RENEWAL_RESERVE
+  MACHINE_RENEWAL_SETTLE
+  MACHINE_REACTIVATION_RESERVE
+  MACHINE_REACTIVATION_SETTLE
+  MACHINE_REPOWER_RESERVE
+  MACHINE_REPOWER_SETTLE
+  MACHINE_UPGRADE_RESERVE
+  MACHINE_UPGRADE_SETTLE
 }
 
 enum FinancialOperationStatus {
@@ -362,8 +372,8 @@ model User {
   channelVerificationEvents ChannelVerificationEvent[]
   miningState               UserMiningState?
   productSubscriptions      ProductSubscription[]
-  identityId                String?                        @map("identity_id")
-  identity                  UniversalIdentity?             @relation(fields: [identityId], references: [id], onDelete: SetNull)
+  identityId                String                         @unique @map("identity_id")
+  identity                  UniversalIdentity              @relation(fields: [identityId], references: [id], onDelete: Restrict)
   userPreferences           UserPreferences?
   userMachines              UserMachine[]
   achievements              Achievement[]
@@ -381,6 +391,7 @@ model User {
   userMachineFleet          UserMachineFleetItem[]
   contributions             GrowthContribution[]
   socialParticipations      SocialMissionParticipation[]
+  paymentIntents            PaymentIntent[]
 
   @@index([state])
   @@index([createdAt])
@@ -2173,7 +2184,7 @@ model UniversalIdentity {
   channels     ChannelIdentity[]
   adminNotes   UniversalAdminNote[]
   supportCases SupportTicket[]
-  users        User[]
+  user         User?
 
   @@map("universal_identities")
 }
@@ -2858,6 +2869,37 @@ model PlatformOperationalConfig {
   @@map("platform_operational_configs")
 }
 
+enum PaymentIntentStatus {
+  CREATED
+  AWAITING_PAYMENT
+  DETECTED
+  VERIFYING
+  VERIFIED
+  SETTLEMENT_PENDING
+  SETTLED
+  FAILED
+  EXPIRED
+  CANCELLED
+  MANUAL_REVIEW
+  REJECTED
+}
+
+enum PaymentMethod {
+  MOBILE_MONEY
+  CARD
+  USDT_TRC20
+  USDT_POLYGON
+  USDT_ARBITRUM
+}
+
+enum PaymentVerificationStatus {
+  PENDING
+  IN_PROGRESS
+  VERIFIED
+  FAILED
+  ESCALATED
+}
+
 enum UsdtTxProcessingStatus {
   DETECTED
   CONFIRMING
@@ -2875,6 +2917,93 @@ enum UsdtTxProcessingStatus {
   INVALID_RECIPIENT
   FAILED
   RECONCILIATION_REQUIRED
+}
+
+model PaymentIntent {
+  id                  String              @id @default(uuid()) @map("payment_intent_id")
+  telegramUserId      BigInt              @map("telegram_user_id")
+  userId              String?             @map("user_id")
+  reference           String              @unique @map("reference")
+  status              PaymentIntentStatus @default(CREATED) @map("status")
+  paymentMethod       PaymentMethod      @map("payment_method")
+  asset               String              @default("USDT") @map("asset")
+  requestedAmount     Decimal             @map("requested_amount") @db.Decimal(36, 18)
+  expectedCryptoAmount Decimal            @map("expected_crypto_amount") @db.Decimal(36, 18)
+  currency            String              @default("USDT") @map("currency")
+  country             String              @map("country")
+  network             String              @map("network")
+  exchangeRate        Decimal             @map("exchange_rate") @db.Decimal(36, 18)
+  merchantDestination  String?             @map("merchant_destination")
+  usdtAddress         String?             @map("usdt_address")
+  expiresAt           DateTime            @map("expires_at")
+  detectedAt          DateTime?           @map("detected_at")
+  verifiedAt          DateTime?           @map("verified_at")
+  settledAt           DateTime?           @map("settled_at")
+  settlementSessionId String?             @map("settlement_session_id")
+  orchestratorReference String?           @map("orchestrator_reference")
+  idempotencyKey      String              @unique @map("idempotency_key")
+  metadata            Json                @default("{}") @map("metadata")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  user              User?                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  attempts          PaymentAttempt[]
+  verification       PaymentVerification?
+
+  @@index([telegramUserId])
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([paymentMethod])
+  @@map("payment_intents")
+}
+
+model PaymentAttempt {
+  id                  String   @id @default(uuid()) @map("payment_attempt_id")
+  paymentIntentId     String   @map("payment_intent_id")
+  externalReference   String?  @map("external_reference")
+  providerTransaction String?  @map("provider_transaction")
+  amount              Decimal  @map("amount") @db.Decimal(36, 18)
+  currency            String   @map("currency")
+  status              String   @default("PENDING") @map("status")
+  failureReason       String?  @map("failure_reason")
+  metadata            Json     @default("{}") @map("metadata")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  paymentIntent PaymentIntent @relation(fields: [paymentIntentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentIntentId])
+  @@index([externalReference])
+  @@index([status])
+  @@map("payment_attempts")
+}
+
+model PaymentVerification {
+  id                  String                   @id @default(uuid()) @map("payment_verification_id")
+  paymentIntentId     String                   @unique @map("payment_intent_id")
+  verifiedByAdminId   String?                  @map("verified_by_admin_id")
+  verifiedByAdminEmail String?                 @map("verified_by_admin_email")
+  status              PaymentVerificationStatus @default(PENDING) @map("status")
+  verifiedAmount      Decimal                  @map("verified_amount") @db.Decimal(36, 18)
+  verifiedCurrency    String                   @map("verified_currency")
+  verifiedNetwork     String?                  @map("verified_network")
+  verifiedReference   String?                  @map("verified_reference")
+  blockchainTxHash    String?                  @map("blockchain_tx_hash")
+  blockchainConfirmations Int                  @default(0) @map("blockchain_confirmations")
+  rejectionReason     String?                  @map("rejection_reason")
+  reviewNotes         String?                  @map("review_notes")
+  metadata            Json                     @default("{}") @map("metadata")
+  verifiedAt          DateTime?                @map("verified_at")
+  createdAt           DateTime                 @default(now()) @map("created_at")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
+
+  paymentIntent PaymentIntent @relation(fields: [paymentIntentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentIntentId])
+  @@index([status])
+  @@index([verifiedByAdminId])
+  @@map("payment_verifications")
 }
 
 model UsdtConfig {

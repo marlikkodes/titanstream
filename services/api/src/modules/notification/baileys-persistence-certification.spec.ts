@@ -38,9 +38,6 @@ describe('Baileys Account Persistence & Conversational Certification Suite', () 
     channelIdentity: {
       findFirst: jest.fn().mockResolvedValue(null),
     },
-    assetBalance: {
-      findFirst: jest.fn().mockResolvedValue(null),
-    },
   };
 
   const mockIdentityMaster = {

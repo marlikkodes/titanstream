@@ -58,16 +58,11 @@ export class GameCrystalService {
       });
       if (existing) return existing;
 
-      // Ensure user record exists to satisfy foreign key constraint
-      await client.user.upsert({
-        where: { telegramUserId },
-        update: {},
-        create: {
-          telegramUserId,
-          firstName: 'Operator',
-          isReady: true,
-        },
-      });
+      // Ensure user record exists
+      const user = await client.user.findUnique({ where: { telegramUserId } });
+      if (!user) {
+        throw new BadRequestException('USER_NOT_FOUND: Cannot create crystal account for non-existent user');
+      }
 
       return await client.crystalAccount.create({
         data: {

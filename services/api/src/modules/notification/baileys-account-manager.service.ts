@@ -877,7 +877,10 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
    */
   async sendOtpMessage(phone: string, code: string): Promise<SendMessageResult> {
     const text = `Titan Stream 🔐 Security Verification Code:\n\n*${code}*\n\nThis code expires in 5 minutes. Do not share it with anyone.`;
-    return this.sendTextMessage(phone, text, 'CRITICAL');
+    this.logger.log(`[BAILEYS_OTP] Sending OTP ${code} to phone: ${phone}`);
+    const result = await this.sendTextMessage(phone, text, 'CRITICAL');
+    this.logger.log(`[BAILEYS_OTP] OTP send result: ${JSON.stringify(result)}`);
+    return result;
   }
 
   /**
@@ -934,6 +937,7 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
   }
 
   private async dispatchDirectSend(phoneOrJid: string, text: string): Promise<SendMessageResult> {
+    this.logger.log(`[BAILEYS_DISPATCH] Sending message to ${phoneOrJid}`);
     const account = this.getEligibleAccount();
     if (!account || !account.socket) {
       this.logger.warn(`[BAILEYS_SEND_FAILED] No eligible connected account available to dispatch message to ${phoneOrJid}`);
@@ -946,8 +950,9 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
         const cleanDigits = phoneOrJid.replace(/\D/g, '');
         jid = `${cleanDigits}@s.whatsapp.net`;
       }
-
+      this.logger.log(`[BAILEYS_DISPATCH] Sending to JID: ${jid} with text: ${text.substring(0, 50)}...`);
       const res = await account.socket.sendMessage(jid, { text });
+      this.logger.log(`[BAILEYS_DISPATCH] Message sent successfully to ${jid}`);
 
       account.metrics.messageSuccesses++;
       account.metrics.lastMessageAt = new Date();

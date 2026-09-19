@@ -1,0 +1,17 @@
+:80 {
+    root * /srv
+    encode gzip zstd
+
+    handle /api/* {
+        reverse_proxy api:3000
+    }
+
+    handle /docs* {
+        reverse_proxy api:3000
+    }
+
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+}

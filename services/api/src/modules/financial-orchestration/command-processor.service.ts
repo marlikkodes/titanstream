@@ -59,6 +59,14 @@ export class CommandProcessorService {
     }, client);
 
     try {
+      // CRITICAL: Prevent SYSTEM_ALLOCATION from being used for user-facing operations
+      if (command.operationType === FinancialOperationType.SYSTEM_ALLOCATION) {
+        const isAdmin = command.metadata?.isAdmin === true;
+        if (!isAdmin) {
+          throw new Error('SYSTEM_ALLOCATION is restricted to administrative operations only. User-facing operations must use dedicated operation types (MACHINE_PURCHASE, MACHINE_RENEWAL, etc.)');
+        }
+      }
+
       await this.rules.validate({
         telegramUserId: command.telegramUserId,
         financialAccountId: account.id,
@@ -142,6 +150,136 @@ export class CommandProcessorService {
         });
         lines.push({
           ledgerAccountCode: 'USER_ASSET_LIABILITY',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.MACHINE_PURCHASE_RESERVE) {
+        lines.push({
+          ledgerAccountCode: 'USER_ASSET_LIABILITY',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'MACHINE_PURCHASE_SUSPENSE',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.MACHINE_PURCHASE_SETTLE) {
+        lines.push({
+          ledgerAccountCode: 'MACHINE_PURCHASE_SUSPENSE',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'PLATFORM_RESERVE',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.MACHINE_RENEWAL_RESERVE) {
+        lines.push({
+          ledgerAccountCode: 'USER_ASSET_LIABILITY',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'RENEWAL_SUSPENSE',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.MACHINE_RENEWAL_SETTLE) {
+        lines.push({
+          ledgerAccountCode: 'RENEWAL_SUSPENSE',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'PLATFORM_RESERVE',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.MACHINE_REACTIVATION_RESERVE) {
+        lines.push({
+          ledgerAccountCode: 'USER_ASSET_LIABILITY',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'REACTIVATION_SUSPENSE',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.MACHINE_REACTIVATION_SETTLE) {
+        lines.push({
+          ledgerAccountCode: 'REACTIVATION_SUSPENSE',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'PLATFORM_RESERVE',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.MACHINE_REPOWER_RESERVE) {
+        lines.push({
+          ledgerAccountCode: 'USER_ASSET_LIABILITY',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'REPOWER_SUSPENSE',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.MACHINE_REPOWER_SETTLE) {
+        lines.push({
+          ledgerAccountCode: 'REPOWER_SUSPENSE',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'PLATFORM_RESERVE',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.MACHINE_UPGRADE_RESERVE) {
+        lines.push({
+          ledgerAccountCode: 'USER_ASSET_LIABILITY',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'UPGRADE_SUSPENSE',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.MACHINE_UPGRADE_SETTLE) {
+        lines.push({
+          ledgerAccountCode: 'UPGRADE_SUSPENSE',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'PLATFORM_RESERVE',
           entryType: LedgerEntryType.CREDIT,
           amount: command.amount,
           reference: `${command.reference}-cr`,

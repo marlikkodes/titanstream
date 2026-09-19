@@ -5,6 +5,7 @@ import { AuthModule } from '../auth/auth.module';
 import { NotificationModule } from '../notification/notification.module';
 import { BotModule } from '../bot/bot.module';
 import { GrowthModule } from '../growth/growth.module';
+import { FinancialModule } from '../financial/financial.module';
 import { ConversationalRouterService } from './conversational-router.service';
 
 @Global()
@@ -16,6 +17,7 @@ import { ConversationalRouterService } from './conversational-router.service';
     forwardRef(() => NotificationModule),
     forwardRef(() => BotModule),
     forwardRef(() => GrowthModule),
+    forwardRef(() => FinancialModule),
   ],
   providers: [ConversationalRouterService],
   exports: [ConversationalRouterService],

@@ -153,44 +153,28 @@ export class ProviderRegistryService implements OnModuleInit {
 
     if (typeof userKey === 'bigint') {
       telegramUserId = userKey;
+      if (this.prisma?.user) {
+        user = await this.prisma.user.findUnique({ where: { telegramUserId } });
+      }
     } else {
       const strKey = String(userKey || '').trim();
-      const digits = strKey.replace(/\D/g, '');
-      if (digits && digits.length > 0) {
-        try {
-          telegramUserId = BigInt(digits);
-        } catch {
-          telegramUserId = BigInt(0);
+      if (this.prisma?.user && strKey) {
+        // First try finding by canonical UUID id or identityId
+        user = (await this.prisma.user.findUnique({ where: { id: strKey } }).catch(() => null)) ||
+               (await this.prisma.user.findFirst({ where: { identityId: strKey } }).catch(() => null));
+        if (user) {
+          telegramUserId = user.telegramUserId;
+        } else {
+          const digits = strKey.replace(/\D/g, '');
+          if (digits && digits.length > 0) {
+            try {
+              telegramUserId = BigInt(digits);
+              user = await this.prisma.user.findUnique({ where: { telegramUserId } }).catch(() => null);
+            } catch {
+              telegramUserId = BigInt(0);
+            }
+          }
         }
-      }
-      if (telegramUserId === BigInt(0) && strKey) {
-        // Deterministic fallback ID from string key
-        let hash = 0;
-        for (let i = 0; i < strKey.length; i++) {
-          hash = (hash << 5) - hash + strKey.charCodeAt(i);
-          hash |= 0;
-        }
-      }
-    }
-
-    const MAX_SAFE_BIGINT = BigInt('9007199254740991');
-    if (telegramUserId > MAX_SAFE_BIGINT) {
-      telegramUserId = (telegramUserId % MAX_SAFE_BIGINT) + BigInt(100000);
-    }
-
-    if (this.prisma?.user && telegramUserId > BigInt(0)) {
-      try {
-        user = await this.prisma.user.upsert({
-          where: { telegramUserId },
-          update: { lastActiveAt: new Date() },
-          create: {
-            telegramUserId,
-            firstName: 'Titan User',
-            state: UserState.NEW,
-          },
-        });
-      } catch (upsertErr: any) {
-        this.logger.warn(`[USER_AUTO_PROVISION_WARN] ${upsertErr.message}`);
       }
     }
 

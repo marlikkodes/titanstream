@@ -1,6 +1,6 @@
 {
   "root": "/home/wendy/Desktop/tetherstream",
-  "total_files": 4892,
+  "total_files": 4970,
   "files": [
     {
       "path": "MISSION_CONTROL_FORENSIC_REPORT.md",
@@ -85,7 +85,7 @@
     {
       "path": ".gitignore",
       "extension": "",
-      "size_bytes": 69
+      "size_bytes": 183
     },
     {
       "path": "docs/document_3_navigation_map.md",
@@ -318,9 +318,34 @@
       "size_bytes": 23
     },
     {
+      "path": "AgentOS/docs/game-engine-audit.md",
+      "extension": ".md",
+      "size_bytes": 34093
+    },
+    {
+      "path": "AgentOS/docs/economic-invariants.md",
+      "extension": ".md",
+      "size_bytes": 1740
+    },
+    {
+      "path": "AgentOS/docs/game-economic-metrics.md",
+      "extension": ".md",
+      "size_bytes": 1358
+    },
+    {
       "path": "AgentOS/docs/PHASE-II-BASELINE.md",
       "extension": ".md",
       "size_bytes": 5537
+    },
+    {
+      "path": "AgentOS/docs/game-engine-audit.json",
+      "extension": ".json",
+      "size_bytes": 8889
+    },
+    {
+      "path": "AgentOS/docs/SUPERENGINEERING-IV-FINAL.md",
+      "extension": ".md",
+      "size_bytes": 10138
     },
     {
       "path": "AgentOS/docs/CAPABILITY-REGISTRY.md",
@@ -328,9 +353,34 @@
       "size_bytes": 4100
     },
     {
+      "path": "AgentOS/docs/game-economy-baseline.md",
+      "extension": ".md",
+      "size_bytes": 6274
+    },
+    {
+      "path": "AgentOS/docs/game-economy-baseline.json",
+      "extension": ".json",
+      "size_bytes": 6358
+    },
+    {
+      "path": "AgentOS/docs/economic-model.json",
+      "extension": ".json",
+      "size_bytes": 812
+    },
+    {
+      "path": "AgentOS/docs/economic-model.md",
+      "extension": ".md",
+      "size_bytes": 4196
+    },
+    {
       "path": "AgentOS/docs/capability-harvest.md",
       "extension": ".md",
       "size_bytes": 5510
+    },
+    {
+      "path": "AgentOS/docs/game-economy-hardening.md",
+      "extension": ".md",
+      "size_bytes": 6394
     },
     {
       "path": "AgentOS/docs/PHASE-II-FINAL.md",
@@ -346,6 +396,16 @@
       "path": "AgentOS/docs/SUPERENGINEERING-SYSTEM-FINAL.md",
       "extension": ".md",
       "size_bytes": 9503
+    },
+    {
+      "path": "AgentOS/docs/game-economy-hardening.json",
+      "extension": ".json",
+      "size_bytes": 2184
+    },
+    {
+      "path": "AgentOS/docs/economic-simulation.md",
+      "extension": ".md",
+      "size_bytes": 1439
     },
     {
       "path": "AgentOS/docs/TOKEN-ECONOMICS.md",
@@ -400,7 +460,12 @@
     {
       "path": "AgentOS/benchmarks/node_backend/.agents/knowledge/repo_map.json",
       "extension": ".json",
-      "size_bytes": 770
+      "size_bytes": 1841
+    },
+    {
+      "path": "AgentOS/benchmarks/node_backend/.agents/state/mission_1788175916_3854e4.json",
+      "extension": ".json",
+      "size_bytes": 6136
     },
     {
       "path": "AgentOS/benchmarks/node_backend/.agents/state/metrics.json",
@@ -423,6 +488,11 @@
       "size_bytes": 2
     },
     {
+      "path": "AgentOS/benchmarks/node_backend/.agents/memory/strategy_memory.json",
+      "extension": ".json",
+      "size_bytes": 2128
+    },
+    {
       "path": "AgentOS/benchmarks/node_backend/src/auth.js",
       "extension": ".js",
       "size_bytes": 202
@@ -436,6 +506,66 @@
       "path": "AgentOS/benchmarks/fullstack_app/frontend/api.ts",
       "extension": ".ts",
       "size_bytes": 77
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/knowledge/api_map.json",
+      "extension": ".json",
+      "size_bytes": 21
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/knowledge/dependency_map.json",
+      "extension": ".json",
+      "size_bytes": 2
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/knowledge/testing_map.json",
+      "extension": ".json",
+      "size_bytes": 23
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/knowledge/command_registry.json",
+      "extension": ".json",
+      "size_bytes": 224
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/knowledge/architecture_map.json",
+      "extension": ".json",
+      "size_bytes": 235
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/knowledge/database_map.json",
+      "extension": ".json",
+      "size_bytes": 19
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/knowledge/repo_map.json",
+      "extension": ".json",
+      "size_bytes": 896
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/state/metrics.json",
+      "extension": ".json",
+      "size_bytes": 150
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/state/current_mission.json",
+      "extension": ".json",
+      "size_bytes": 55
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/state/mission_1788175916_4f170e.json",
+      "extension": ".json",
+      "size_bytes": 7968
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/memory/failure_memory.json",
+      "extension": ".json",
+      "size_bytes": 2
+    },
+    {
+      "path": "AgentOS/benchmarks/fullstack_app/.agents/memory/strategy_memory.json",
+      "extension": ".json",
+      "size_bytes": 2128
     },
     {
       "path": "AgentOS/benchmarks/fullstack_app/backend/server.py",
@@ -485,7 +615,12 @@
     {
       "path": "AgentOS/benchmarks/python_flask/.agents/knowledge/repo_map.json",
       "extension": ".json",
-      "size_bytes": 778
+      "size_bytes": 2104
+    },
+    {
+      "path": "AgentOS/benchmarks/python_flask/.agents/state/mission_1788175910_64ce82.json",
+      "extension": ".json",
+      "size_bytes": 7911
     },
     {
       "path": "AgentOS/benchmarks/python_flask/.agents/state/metrics.json",
@@ -503,9 +638,24 @@
       "size_bytes": 55
     },
     {
+      "path": "AgentOS/benchmarks/python_flask/.agents/state/mission_1788175902_f1410c.json",
+      "extension": ".json",
+      "size_bytes": 7911
+    },
+    {
+      "path": "AgentOS/benchmarks/python_flask/.agents/state/mission_1788175916_bda020.json",
+      "extension": ".json",
+      "size_bytes": 7910
+    },
+    {
       "path": "AgentOS/benchmarks/python_flask/.agents/memory/failure_memory.json",
       "extension": ".json",
       "size_bytes": 2
+    },
+    {
+      "path": "AgentOS/benchmarks/python_flask/.agents/memory/strategy_memory.json",
+      "extension": ".json",
+      "size_bytes": 2142
     },
     {
       "path": "AgentOS/benchmarks/python_flask/src/app.py",
@@ -516,6 +666,66 @@
       "path": "AgentOS/benchmarks/postgres_sqlite_db/schema.sql",
       "extension": ".sql",
       "size_bytes": 142
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/knowledge/api_map.json",
+      "extension": ".json",
+      "size_bytes": 21
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/knowledge/dependency_map.json",
+      "extension": ".json",
+      "size_bytes": 2
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/knowledge/testing_map.json",
+      "extension": ".json",
+      "size_bytes": 23
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/knowledge/command_registry.json",
+      "extension": ".json",
+      "size_bytes": 224
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/knowledge/architecture_map.json",
+      "extension": ".json",
+      "size_bytes": 219
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/knowledge/database_map.json",
+      "extension": ".json",
+      "size_bytes": 19
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/knowledge/repo_map.json",
+      "extension": ".json",
+      "size_bytes": 801
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/state/mission_1788175916_a52f60.json",
+      "extension": ".json",
+      "size_bytes": 7994
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/state/metrics.json",
+      "extension": ".json",
+      "size_bytes": 150
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/state/current_mission.json",
+      "extension": ".json",
+      "size_bytes": 55
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/memory/failure_memory.json",
+      "extension": ".json",
+      "size_bytes": 2
+    },
+    {
+      "path": "AgentOS/benchmarks/postgres_sqlite_db/.agents/memory/strategy_memory.json",
+      "extension": ".json",
+      "size_bytes": 2128
     },
     {
       "path": "AgentOS/benchmarks/react_vite_app/package.json",
@@ -560,7 +770,7 @@
     {
       "path": "AgentOS/benchmarks/react_vite_app/.agents/knowledge/repo_map.json",
       "extension": ".json",
-      "size_bytes": 880
+      "size_bytes": 1951
     },
     {
       "path": "AgentOS/benchmarks/react_vite_app/.agents/state/mission_1788118520_a3a247.json",
@@ -578,9 +788,19 @@
       "size_bytes": 55
     },
     {
+      "path": "AgentOS/benchmarks/react_vite_app/.agents/state/mission_1788175916_c0734c.json",
+      "extension": ".json",
+      "size_bytes": 6207
+    },
+    {
       "path": "AgentOS/benchmarks/react_vite_app/.agents/memory/failure_memory.json",
       "extension": ".json",
       "size_bytes": 2
+    },
+    {
+      "path": "AgentOS/benchmarks/react_vite_app/.agents/memory/strategy_memory.json",
+      "extension": ".json",
+      "size_bytes": 2128
     },
     {
       "path": "AgentOS/benchmarks/react_vite_app/src/Counter.tsx",
@@ -1290,7 +1510,7 @@
     {
       "path": "apps/web/index.html",
       "extension": ".html",
-      "size_bytes": 1048
+      "size_bytes": 1097
     },
     {
       "path": "apps/web/tsconfig.json",
@@ -1325,7 +1545,7 @@
     {
       "path": "apps/web/vite.config.ts",
       "extension": ".ts",
-      "size_bytes": 110939
+      "size_bytes": 143216
     },
     {
       "path": "apps/web/package.json",
@@ -1338,6 +1558,11 @@
       "size_bytes": 385
     },
     {
+      "path": "apps/web/Dockerfile",
+      "extension": "",
+      "size_bytes": 978
+    },
+    {
       "path": "apps/web/.gitignore",
       "extension": "",
       "size_bytes": 253
@@ -1345,7 +1570,7 @@
     {
       "path": "apps/web/src/App.tsx",
       "extension": ".tsx",
-      "size_bytes": 15637
+      "size_bytes": 15874
     },
     {
       "path": "apps/web/src/vite-env.d.ts",
@@ -1370,7 +1595,7 @@
     {
       "path": "apps/web/src/layouts/Header.tsx",
       "extension": ".tsx",
-      "size_bytes": 7980
+      "size_bytes": 8158
     },
     {
       "path": "apps/web/src/layouts/admin/AdminSidebar.tsx",
@@ -1380,7 +1605,7 @@
     {
       "path": "apps/web/src/layouts/admin/AdminLayout.tsx",
       "extension": ".tsx",
-      "size_bytes": 5357
+      "size_bytes": 5539
     },
     {
       "path": "apps/web/src/layouts/admin/AdminHeader.tsx",
@@ -1395,7 +1620,7 @@
     {
       "path": "apps/web/src/styles/index.css",
       "extension": ".css",
-      "size_bytes": 11652
+      "size_bytes": 11958
     },
     {
       "path": "apps/web/src/components/ComputeNodeSvg.tsx",
@@ -1420,7 +1645,7 @@
     {
       "path": "apps/web/src/components/OnboardingOverlay.tsx",
       "extension": ".tsx",
-      "size_bytes": 7376
+      "size_bytes": 12807
     },
     {
       "path": "apps/web/src/components/DualCurrencyDisplay.tsx",
@@ -1490,7 +1715,7 @@
     {
       "path": "apps/web/src/components/HelpModal.tsx",
       "extension": ".tsx",
-      "size_bytes": 30570
+      "size_bytes": 30563
     },
     {
       "path": "apps/web/src/components/StepUpModal.tsx",
@@ -1500,7 +1725,7 @@
     {
       "path": "apps/web/src/components/AuthGate.tsx",
       "extension": ".tsx",
-      "size_bytes": 38660
+      "size_bytes": 40526
     },
     {
       "path": "apps/web/src/components/UserNotificationModal.tsx",
@@ -1513,9 +1738,19 @@
       "size_bytes": 2282
     },
     {
+      "path": "apps/web/src/components/legal/CookieConsentBanner.tsx",
+      "extension": ".tsx",
+      "size_bytes": 3875
+    },
+    {
+      "path": "apps/web/src/components/legal/LegalModal.tsx",
+      "extension": ".tsx",
+      "size_bytes": 20488
+    },
+    {
       "path": "apps/web/src/components/admin/AdminLoginScreen.tsx",
       "extension": ".tsx",
-      "size_bytes": 4314
+      "size_bytes": 3733
     },
     {
       "path": "apps/web/src/components/admin/WhatsAppAccountsManagement.tsx",
@@ -1740,12 +1975,12 @@
     {
       "path": "apps/web/src/components/growth/ValueBankCard.tsx",
       "extension": ".tsx",
-      "size_bytes": 4024
+      "size_bytes": 4018
     },
     {
       "path": "apps/web/src/components/growth/SocialMissionCard.tsx",
       "extension": ".tsx",
-      "size_bytes": 7960
+      "size_bytes": 8152
     },
     {
       "path": "apps/web/src/components/rewards/ClaimFlowModal.tsx",
@@ -1785,12 +2020,12 @@
     {
       "path": "apps/web/src/components/rewards/RewardQueue.tsx",
       "extension": ".tsx",
-      "size_bytes": 10780
+      "size_bytes": 10773
     },
     {
       "path": "apps/web/src/components/funding/TransactionHistoryView.tsx",
       "extension": ".tsx",
-      "size_bytes": 11107
+      "size_bytes": 17608
     },
     {
       "path": "apps/web/src/components/funding/UsdtFunding.tsx",
@@ -1815,7 +2050,7 @@
     {
       "path": "apps/web/src/components/funding/PesapalFunding.tsx",
       "extension": ".tsx",
-      "size_bytes": 34288
+      "size_bytes": 32163
     },
     {
       "path": "apps/web/src/components/funding/WithdrawModal.tsx",
@@ -1895,7 +2130,7 @@
     {
       "path": "apps/web/src/pages/ReferralLanding.tsx",
       "extension": ".tsx",
-      "size_bytes": 9025
+      "size_bytes": 10867
     },
     {
       "path": "apps/web/src/pages/admin/MiningSimulatorPage.tsx",
@@ -2035,7 +2270,7 @@
     {
       "path": "apps/web/src/pages/Wallet/WalletScreen.tsx",
       "extension": ".tsx",
-      "size_bytes": 14139
+      "size_bytes": 14345
     },
     {
       "path": "apps/web/src/pages/Wallet/index.tsx",
@@ -2045,7 +2280,7 @@
     {
       "path": "apps/web/src/pages/Grow/GrowScreen.tsx",
       "extension": ".tsx",
-      "size_bytes": 23163
+      "size_bytes": 23181
     },
     {
       "path": "apps/web/src/pages/Grow/index.tsx",
@@ -2055,7 +2290,7 @@
     {
       "path": "apps/web/src/pages/Profile/ProfileScreen.tsx",
       "extension": ".tsx",
-      "size_bytes": 41371
+      "size_bytes": 49646
     },
     {
       "path": "apps/web/src/pages/Profile/index.tsx",
@@ -2075,7 +2310,7 @@
     {
       "path": "apps/web/src/pages/TitanHub/TitanHubScreen.tsx",
       "extension": ".tsx",
-      "size_bytes": 27131
+      "size_bytes": 28020
     },
     {
       "path": "apps/web/src/pages/TitanHub/index.tsx",
@@ -2090,7 +2325,7 @@
     {
       "path": "apps/web/src/pages/TitanHub/components/MachineCertificateModal.tsx",
       "extension": ".tsx",
-      "size_bytes": 7091
+      "size_bytes": 7135
     },
     {
       "path": "apps/web/src/pages/TitanHub/components/MachineOwnersManualModal.tsx",
@@ -2120,12 +2355,12 @@
     {
       "path": "apps/web/src/pages/Boost/index.tsx",
       "extension": ".tsx",
-      "size_bytes": 33468
+      "size_bytes": 33431
     },
     {
       "path": "apps/web/src/pages/Games/index.tsx",
       "extension": ".tsx",
-      "size_bytes": 35790
+      "size_bytes": 35798
     },
     {
       "path": "apps/web/src/pages/Games/components/CountdownOverlay.tsx",
@@ -2210,7 +2445,7 @@
     {
       "path": "apps/web/src/services/api.ts",
       "extension": ".ts",
-      "size_bytes": 12348
+      "size_bytes": 12444
     },
     {
       "path": "apps/web/src/services/exchangeRateService.ts",
@@ -2235,7 +2470,7 @@
     {
       "path": "apps/web/src/services/treasuryService.ts",
       "extension": ".ts",
-      "size_bytes": 1709
+      "size_bytes": 1771
     },
     {
       "path": "apps/web/src/services/commandCenterService.ts",
@@ -2275,7 +2510,7 @@
     {
       "path": "apps/web/src/services/machineService.ts",
       "extension": ".ts",
-      "size_bytes": 2092
+      "size_bytes": 2292
     },
     {
       "path": "apps/web/src/services/treasuryOperatorService.ts",
@@ -2290,7 +2525,7 @@
     {
       "path": "apps/web/src/services/paymentOrderService.ts",
       "extension": ".ts",
-      "size_bytes": 2781
+      "size_bytes": 3194
     },
     {
       "path": "apps/web/src/services/operationsService.ts",
@@ -2300,7 +2535,7 @@
     {
       "path": "apps/web/src/services/mining.service.ts",
       "extension": ".ts",
-      "size_bytes": 1581
+      "size_bytes": 1624
     },
     {
       "path": "apps/web/src/hooks/useHaptics.ts",
@@ -2350,7 +2585,7 @@
     {
       "path": "apps/web/src/store/useAuthStore.ts",
       "extension": ".ts",
-      "size_bytes": 9069
+      "size_bytes": 8721
     },
     {
       "path": "apps/web/src/store/useMissionRunnerStore.ts",
@@ -2383,9 +2618,14 @@
       "size_bytes": 2044
     },
     {
+      "path": "apps/web/src/store/useLegalModalStore.ts",
+      "extension": ".ts",
+      "size_bytes": 594
+    },
+    {
       "path": "apps/web/src/store/useMiningStore.ts",
       "extension": ".ts",
-      "size_bytes": 21829
+      "size_bytes": 25363
     },
     {
       "path": "apps/web/src/store/useMerchantStore.ts",
@@ -2425,12 +2665,12 @@
     {
       "path": "apps/web/src/store/useMachineOwnershipStore.ts",
       "extension": ".ts",
-      "size_bytes": 11748
+      "size_bytes": 12552
     },
     {
       "path": "apps/web/src/store/useTitanStateEngine.ts",
       "extension": ".ts",
-      "size_bytes": 11919
+      "size_bytes": 12482
     },
     {
       "path": "apps/web/src/store/useReferralStore.ts",
@@ -2445,7 +2685,7 @@
     {
       "path": "apps/web/src/store/useGameStore.ts",
       "extension": ".ts",
-      "size_bytes": 3338
+      "size_bytes": 3350
     },
     {
       "path": "apps/web/src/data/machines.ts",
@@ -2500,7 +2740,7 @@
     {
       "path": ".agents/knowledge/testing_map.json",
       "extension": ".json",
-      "size_bytes": 4673
+      "size_bytes": 4906
     },
     {
       "path": ".agents/knowledge/command_registry.json",
@@ -2520,7 +2760,7 @@
     {
       "path": ".agents/knowledge/repo_map.json",
       "extension": ".json",
-      "size_bytes": 683978
+      "size_bytes": 694952
     },
     {
       "path": ".agents/bin/agent-commander",
@@ -2576,6 +2816,21 @@
       "path": ".agents/missions/2026-08-30-mission-1-c27ac1/events.jsonl",
       "extension": ".jsonl",
       "size_bytes": 228
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-1-dae136/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-1-dae136/mission.json",
+      "extension": ".json",
+      "size_bytes": 201
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-1-dae136/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
     },
     {
       "path": ".agents/missions/2026-08-30-mission-1-f4f726/checkpoint.json",
@@ -3118,6 +3373,36 @@
       "size_bytes": 601
     },
     {
+      "path": ".agents/missions/2026-08-31-mission-2-97dfc9/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 342
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-2-97dfc9/mission.json",
+      "extension": ".json",
+      "size_bytes": 200
+    },
+    {
+      "path": ".agents/missions/2026-08-31-mission-2-97dfc9/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 230
+    },
+    {
+      "path": ".agents/missions/2026-08-31-crash-mission-49a717/checkpoint.json",
+      "extension": ".json",
+      "size_bytes": 518
+    },
+    {
+      "path": ".agents/missions/2026-08-31-crash-mission-49a717/mission.json",
+      "extension": ".json",
+      "size_bytes": 209
+    },
+    {
+      "path": ".agents/missions/2026-08-31-crash-mission-49a717/events.jsonl",
+      "extension": ".jsonl",
+      "size_bytes": 601
+    },
+    {
       "path": ".agents/missions/2026-08-31-mission-1-15fe89/checkpoint.json",
       "extension": ".json",
       "size_bytes": 342
@@ -3548,6 +3833,11 @@
       "size_bytes": 6171
     },
     {
+      "path": ".agents/state/mission_1788956944_f81bdd.json",
+      "extension": ".json",
+      "size_bytes": 10457
+    },
+    {
       "path": ".agents/state/mission_1788119816_eef82d.json",
       "extension": ".json",
       "size_bytes": 1679
@@ -3580,7 +3870,7 @@
     {
       "path": ".agents/state/metrics.json",
       "extension": ".json",
-      "size_bytes": 10441
+      "size_bytes": 10970
     },
     {
       "path": ".agents/state/model_performance.json",
@@ -3605,7 +3895,7 @@
     {
       "path": ".agents/state/mission_1788175852_a90ac8.json",
       "extension": ".json",
-      "size_bytes": 580
+      "size_bytes": 6394
     },
     {
       "path": ".agents/state/mission_1788119677_b51d2c.json",
@@ -3731,6 +4021,11 @@
       "path": ".agents/state/mission_1788119713_5fa7d6.json",
       "extension": ".json",
       "size_bytes": 4282
+    },
+    {
+      "path": ".agents/state/mission_1788175855_4531e3.json",
+      "extension": ".json",
+      "size_bytes": 1678
     },
     {
       "path": ".agents/state/mission_1788119891_2c435d.json",
@@ -3945,7 +4240,7 @@
     {
       "path": ".agents/state/economic_telemetry.json",
       "extension": ".json",
-      "size_bytes": 3182
+      "size_bytes": 3411
     },
     {
       "path": ".agents/state/mission_1788119928_93525e.json",
@@ -3953,9 +4248,19 @@
       "size_bytes": 8412
     },
     {
+      "path": ".agents/state/mission_1788958628_12f10d.json",
+      "extension": ".json",
+      "size_bytes": 701
+    },
+    {
       "path": ".agents/state/mission_1788119942_548f23.json",
       "extension": ".json",
       "size_bytes": 10123
+    },
+    {
+      "path": ".agents/state/mission_1788957227_d95bd2.json",
+      "extension": ".json",
+      "size_bytes": 8011
     },
     {
       "path": ".agents/state/mission_1788118508_72463c.json",
@@ -4325,7 +4630,7 @@
     {
       "path": ".agents/memory/failure_memory.json",
       "extension": ".json",
-      "size_bytes": 9850
+      "size_bytes": 10078
     },
     {
       "path": ".agents/memory/strategy_memory_redteam.json",
@@ -4525,7 +4830,7 @@
     {
       "path": "services/api/.env.example",
       "extension": ".example",
-      "size_bytes": 269
+      "size_bytes": 316
     },
     {
       "path": "services/api/tsconfig.build.json",
@@ -5823,11 +6128,6 @@
       "size_bytes": 164
     },
     {
-      "path": "services/api/baileys_auth_info/session-75772400275685_1.15.json",
-      "extension": ".json",
-      "size_bytes": 1214
-    },
-    {
       "path": "services/api/baileys_auth_info/lid-mapping-253918466592945_reverse.json",
       "extension": ".json",
       "size_bytes": 14
@@ -7108,6 +7408,11 @@
       "size_bytes": 14
     },
     {
+      "path": "services/api/baileys_auth_info/lid-mapping-256791432391.json",
+      "extension": ".json",
+      "size_bytes": 17
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-732.json",
       "extension": ".json",
       "size_bytes": 164
@@ -7171,6 +7476,11 @@
       "path": "services/api/baileys_auth_info/pre-key-535.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-837.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/lid-mapping-256752692043.json",
@@ -7253,6 +7563,11 @@
       "size_bytes": 17
     },
     {
+      "path": "services/api/baileys_auth_info/lid-mapping-256751874687.json",
+      "extension": ".json",
+      "size_bytes": 17
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-604.json",
       "extension": ".json",
       "size_bytes": 164
@@ -7326,6 +7641,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-52265473847510_reverse.json",
       "extension": ".json",
       "size_bytes": 14
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-834.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-236.json",
@@ -7480,7 +7800,7 @@
     {
       "path": "services/api/baileys_auth_info/session-75772400275685_1.0.json",
       "extension": ".json",
-      "size_bytes": 6357
+      "size_bytes": 7886
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-212.json",
@@ -8080,7 +8400,7 @@
     {
       "path": "services/api/baileys_auth_info/app-state-sync-version-regular_low.json",
       "extension": ".json",
-      "size_bytes": 44194
+      "size_bytes": 59544
     },
     {
       "path": "services/api/baileys_auth_info/lid-mapping-601169499242.json",
@@ -8101,6 +8421,11 @@
       "path": "services/api/baileys_auth_info/pre-key-820.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/lid-mapping-25233687879864_reverse.json",
+      "extension": ".json",
+      "size_bytes": 14
     },
     {
       "path": "services/api/baileys_auth_info/lid-mapping-45977708814570_reverse.json",
@@ -8176,11 +8501,6 @@
       "path": "services/api/baileys_auth_info/lid-mapping-256755355750.json",
       "extension": ".json",
       "size_bytes": 15
-    },
-    {
-      "path": "services/api/baileys_auth_info/session-75772400275685_1.14.json",
-      "extension": ".json",
-      "size_bytes": 1213
     },
     {
       "path": "services/api/baileys_auth_info/lid-mapping-256742204458.json",
@@ -8438,6 +8758,11 @@
       "size_bytes": 14
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-836.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-830.json",
       "extension": ".json",
       "size_bytes": 164
@@ -8588,6 +8913,11 @@
       "size_bytes": 16
     },
     {
+      "path": "services/api/baileys_auth_info/lid-mapping-971522110350.json",
+      "extension": ".json",
+      "size_bytes": 17
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-209448509394965_reverse.json",
       "extension": ".json",
       "size_bytes": 14
@@ -8688,6 +9018,11 @@
       "size_bytes": 164
     },
     {
+      "path": "services/api/baileys_auth_info/lid-mapping-278147215950077_reverse.json",
+      "extension": ".json",
+      "size_bytes": 14
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-34673696945.json",
       "extension": ".json",
       "size_bytes": 17
@@ -8725,7 +9060,7 @@
     {
       "path": "services/api/baileys_auth_info/sender-key-status@broadcast::75772400275685_1::0.json",
       "extension": ".json",
-      "size_bytes": 2996
+      "size_bytes": 3144
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-274.json",
@@ -8906,6 +9241,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-46700318167.json",
       "extension": ".json",
       "size_bytes": 17
+    },
+    {
+      "path": "services/api/baileys_auth_info/lid-mapping-275445664735470_reverse.json",
+      "extension": ".json",
+      "size_bytes": 14
     },
     {
       "path": "services/api/baileys_auth_info/lid-mapping-256789085675.json",
@@ -9310,7 +9650,7 @@
     {
       "path": "services/api/baileys_auth_info/session-260181065740480_1.0.json",
       "extension": ".json",
-      "size_bytes": 21281
+      "size_bytes": 21372
     },
     {
       "path": "services/api/baileys_auth_info/lid-mapping-256705254458.json",
@@ -9566,6 +9906,11 @@
       "path": "services/api/baileys_auth_info/lid-mapping-37117258371175_reverse.json",
       "extension": ".json",
       "size_bytes": 15
+    },
+    {
+      "path": "services/api/baileys_auth_info/lid-mapping-241850396975261_reverse.json",
+      "extension": ".json",
+      "size_bytes": 14
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-520.json",
@@ -9920,7 +10265,7 @@
     {
       "path": "services/api/baileys_auth_info/app-state-sync-version-critical_unblock_low.json",
       "extension": ".json",
-      "size_bytes": 55679
+      "size_bytes": 75564
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-185.json",
@@ -11163,6 +11508,11 @@
       "size_bytes": 16
     },
     {
+      "path": "services/api/baileys_auth_info/pre-key-835.json",
+      "extension": ".json",
+      "size_bytes": 203
+    },
+    {
       "path": "services/api/baileys_auth_info/lid-mapping-4915737836220.json",
       "extension": ".json",
       "size_bytes": 17
@@ -11418,6 +11768,11 @@
       "size_bytes": 14
     },
     {
+      "path": "services/api/baileys_auth_info/lid-mapping-256705293226.json",
+      "extension": ".json",
+      "size_bytes": 16
+    },
+    {
       "path": "services/api/baileys_auth_info/pre-key-294.json",
       "extension": ".json",
       "size_bytes": 164
@@ -11646,11 +12001,6 @@
       "path": "services/api/baileys_auth_info/pre-key-202.json",
       "extension": ".json",
       "size_bytes": 164
-    },
-    {
-      "path": "services/api/baileys_auth_info/session-75772400275685_1.17.json",
-      "extension": ".json",
-      "size_bytes": 1214
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-330.json",
@@ -12261,6 +12611,11 @@
       "path": "services/api/baileys_auth_info/pre-key-765.json",
       "extension": ".json",
       "size_bytes": 164
+    },
+    {
+      "path": "services/api/baileys_auth_info/pre-key-833.json",
+      "extension": ".json",
+      "size_bytes": 203
     },
     {
       "path": "services/api/baileys_auth_info/pre-key-720.json",
@@ -13725,7 +14080,7 @@
     {
       "path": "services/api/src/common/guards/step-up.guard.ts",
       "extension": ".ts",
-      "size_bytes": 2200
+      "size_bytes": 2127
     },
     {
       "path": "services/api/src/common/guards/idempotency.guard.ts",
@@ -13735,7 +14090,7 @@
     {
       "path": "services/api/src/common/guards/jwt-auth.guard.ts",
       "extension": ".ts",
-      "size_bytes": 4302
+      "size_bytes": 3585
     },
     {
       "path": "services/api/src/common/guards/operational-control.guard.ts",
@@ -13800,7 +14155,7 @@
     {
       "path": "services/api/src/modules/admin/guards/admin-security-remediation.spec.ts",
       "extension": ".ts",
-      "size_bytes": 4125
+      "size_bytes": 4220
     },
     {
       "path": "services/api/src/modules/admin/guards/rbac.guard.ts",
@@ -13815,7 +14170,7 @@
     {
       "path": "services/api/src/modules/admin/guards/admin-auth.guard.ts",
       "extension": ".ts",
-      "size_bytes": 1415
+      "size_bytes": 1542
     },
     {
       "path": "services/api/src/modules/admin/guards/rbac.guard.spec.ts",
@@ -13880,7 +14235,7 @@
     {
       "path": "services/api/src/modules/admin/services/dual-authorization.service.ts",
       "extension": ".ts",
-      "size_bytes": 4502
+      "size_bytes": 5262
     },
     {
       "path": "services/api/src/modules/admin/services/settlement-observability.service.ts",
@@ -13935,7 +14290,7 @@
     {
       "path": "services/api/src/modules/admin/services/admin-auth.service.ts",
       "extension": ".ts",
-      "size_bytes": 7015
+      "size_bytes": 7403
     },
     {
       "path": "services/api/src/modules/admin/services/merchant-portal.service.spec.ts",
@@ -13950,7 +14305,7 @@
     {
       "path": "services/api/src/modules/admin/services/admin-auth.service.spec.ts",
       "extension": ".ts",
-      "size_bytes": 2218
+      "size_bytes": 2225
     },
     {
       "path": "services/api/src/modules/admin/services/production-readiness-engine.service.ts",
@@ -14070,7 +14425,7 @@
     {
       "path": "services/api/src/modules/admin/controllers/admin-auth.controller.ts",
       "extension": ".ts",
-      "size_bytes": 2722
+      "size_bytes": 2775
     },
     {
       "path": "services/api/src/modules/admin/controllers/admin-risk.controller.ts",
@@ -14095,7 +14450,7 @@
     {
       "path": "services/api/src/modules/admin/controllers/admin-withdrawal.controller.ts",
       "extension": ".ts",
-      "size_bytes": 4147
+      "size_bytes": 5020
     },
     {
       "path": "services/api/src/modules/admin/controllers/admin-merchant.controller.ts",
@@ -14133,6 +14488,11 @@
       "size_bytes": 2342
     },
     {
+      "path": "services/api/src/modules/financial-orchestration/financial-security-lockdown.spec.ts",
+      "extension": ".ts",
+      "size_bytes": 7830
+    },
+    {
       "path": "services/api/src/modules/financial-orchestration/financial-rules.service.ts",
       "extension": ".ts",
       "size_bytes": 5518
@@ -14140,7 +14500,7 @@
     {
       "path": "services/api/src/modules/financial-orchestration/financial-orchestration.controller.ts",
       "extension": ".ts",
-      "size_bytes": 2690
+      "size_bytes": 3586
     },
     {
       "path": "services/api/src/modules/financial-orchestration/reconciliation.service.spec.ts",
@@ -14160,7 +14520,7 @@
     {
       "path": "services/api/src/modules/financial-orchestration/financial-orchestration.module.ts",
       "extension": ".ts",
-      "size_bytes": 1993
+      "size_bytes": 2077
     },
     {
       "path": "services/api/src/modules/financial-orchestration/command-processor.service.ts",
@@ -14190,7 +14550,7 @@
     {
       "path": "services/api/src/modules/financial-orchestration/dto/create-financial-operation.dto.ts",
       "extension": ".ts",
-      "size_bytes": 569
+      "size_bytes": 677
     },
     {
       "path": "services/api/src/modules/machine/machine.module.ts",
@@ -14200,12 +14560,12 @@
     {
       "path": "services/api/src/modules/machine/machine.service.ts",
       "extension": ".ts",
-      "size_bytes": 23136
+      "size_bytes": 22451
     },
     {
       "path": "services/api/src/modules/machine/machine.controller.ts",
       "extension": ".ts",
-      "size_bytes": 3002
+      "size_bytes": 2947
     },
     {
       "path": "services/api/src/modules/machine/services/economy-engine.service.ts",
@@ -14685,7 +15045,7 @@
     {
       "path": "services/api/src/modules/growth/reward.service.ts",
       "extension": ".ts",
-      "size_bytes": 46055
+      "size_bytes": 46114
     },
     {
       "path": "services/api/src/modules/growth/social-growth.spec.ts",
@@ -14700,7 +15060,7 @@
     {
       "path": "services/api/src/modules/growth/growth-admin.controller.ts",
       "extension": ".ts",
-      "size_bytes": 14388
+      "size_bytes": 14484
     },
     {
       "path": "services/api/src/modules/growth/progress.service.ts",
@@ -14735,7 +15095,7 @@
     {
       "path": "services/api/src/modules/growth/social-mission.service.ts",
       "extension": ".ts",
-      "size_bytes": 13661
+      "size_bytes": 15053
     },
     {
       "path": "services/api/src/modules/payment-order/payment-order.service.ts",
@@ -14778,9 +15138,14 @@
       "size_bytes": 493
     },
     {
+      "path": "services/api/src/modules/games/economic-intelligence.service.ts",
+      "extension": ".ts",
+      "size_bytes": 15347
+    },
+    {
       "path": "services/api/src/modules/games/games.module.ts",
       "extension": ".ts",
-      "size_bytes": 2588
+      "size_bytes": 2733
     },
     {
       "path": "services/api/src/modules/games/game-anti-cheat.service.spec.ts",
@@ -14790,42 +15155,42 @@
     {
       "path": "services/api/src/modules/games/games.controller.ts",
       "extension": ".ts",
-      "size_bytes": 8417
+      "size_bytes": 8757
     },
     {
       "path": "services/api/src/modules/games/game-reward.service.ts",
       "extension": ".ts",
-      "size_bytes": 9863
+      "size_bytes": 9819
     },
     {
       "path": "services/api/src/modules/games/game-session.service.ts",
       "extension": ".ts",
-      "size_bytes": 17298
+      "size_bytes": 18537
     },
     {
       "path": "services/api/src/modules/games/game-catalog.service.ts",
       "extension": ".ts",
-      "size_bytes": 17163
+      "size_bytes": 18570
     },
     {
       "path": "services/api/src/modules/games/game-leaderboard.service.ts",
       "extension": ".ts",
-      "size_bytes": 5096
+      "size_bytes": 6050
     },
     {
       "path": "services/api/src/modules/games/game-profile.service.ts",
       "extension": ".ts",
-      "size_bytes": 11008
+      "size_bytes": 11596
     },
     {
       "path": "services/api/src/modules/games/games-admin.controller.ts",
       "extension": ".ts",
-      "size_bytes": 9429
+      "size_bytes": 10964
     },
     {
       "path": "services/api/src/modules/games/game-crystal.service.ts",
       "extension": ".ts",
-      "size_bytes": 6965
+      "size_bytes": 10268
     },
     {
       "path": "services/api/src/modules/games/game-event.service.ts",
@@ -14843,9 +15208,14 @@
       "size_bytes": 7627
     },
     {
+      "path": "services/api/src/modules/games/game-concurrency-hardening.spec.ts",
+      "extension": ".ts",
+      "size_bytes": 11678
+    },
+    {
       "path": "services/api/src/modules/games/game-daily-challenge.service.ts",
       "extension": ".ts",
-      "size_bytes": 13073
+      "size_bytes": 13851
     },
     {
       "path": "services/api/src/modules/games/game-types.ts",
@@ -15050,7 +15420,7 @@
     {
       "path": "services/api/src/modules/user/user.service.ts",
       "extension": ".ts",
-      "size_bytes": 19353
+      "size_bytes": 20084
     },
     {
       "path": "services/api/src/modules/user/user-state.service.ts",
@@ -15075,7 +15445,7 @@
     {
       "path": "services/api/src/modules/user/dto/update-user.dto.ts",
       "extension": ".ts",
-      "size_bytes": 454
+      "size_bytes": 785
     },
     {
       "path": "services/api/src/modules/readiness/readiness.controller.ts",
@@ -15118,9 +15488,14 @@
       "size_bytes": 7982
     },
     {
+      "path": "services/api/src/modules/mining/authoritative-mining.spec.ts",
+      "extension": ".ts",
+      "size_bytes": 15585
+    },
+    {
       "path": "services/api/src/modules/mining/mining.controller.ts",
       "extension": ".ts",
-      "size_bytes": 1384
+      "size_bytes": 1462
     },
     {
       "path": "services/api/src/modules/mining/mining.module.ts",
@@ -15130,7 +15505,7 @@
     {
       "path": "services/api/src/modules/mining/mining.service.ts",
       "extension": ".ts",
-      "size_bytes": 18623
+      "size_bytes": 22190
     },
     {
       "path": "services/api/src/modules/audit/audit.service.ts",
@@ -15230,7 +15605,7 @@
     {
       "path": "services/api/src/modules/conversational/conversational-router.service.ts",
       "extension": ".ts",
-      "size_bytes": 12641
+      "size_bytes": 11526
     },
     {
       "path": "services/api/src/modules/auth/session.service.ts",
@@ -15245,17 +15620,17 @@
     {
       "path": "services/api/src/modules/auth/auth.service.ts",
       "extension": ".ts",
-      "size_bytes": 31769
+      "size_bytes": 31694
     },
     {
       "path": "services/api/src/modules/auth/whatsapp-e2e-acceptance.spec.ts",
       "extension": ".ts",
-      "size_bytes": 5248
+      "size_bytes": 6084
     },
     {
       "path": "services/api/src/modules/auth/auth.controller.ts",
       "extension": ".ts",
-      "size_bytes": 6608
+      "size_bytes": 5475
     },
     {
       "path": "services/api/src/modules/auth/auth-verification.service.ts",
@@ -15265,7 +15640,7 @@
     {
       "path": "services/api/src/modules/auth/whatsapp-challenge.service.ts",
       "extension": ".ts",
-      "size_bytes": 25756
+      "size_bytes": 19472
     },
     {
       "path": "services/api/src/modules/auth/auth.module.ts",
@@ -15330,7 +15705,7 @@
     {
       "path": "services/api/src/modules/treasury/public-treasury.controller.ts",
       "extension": ".ts",
-      "size_bytes": 509
+      "size_bytes": 588
     },
     {
       "path": "services/api/src/modules/treasury/treasury.service.spec.ts",
@@ -15370,7 +15745,7 @@
     {
       "path": "services/api/src/modules/notification/baileys-account-manager.service.ts",
       "extension": ".ts",
-      "size_bytes": 32266
+      "size_bytes": 37118
     },
     {
       "path": "services/api/src/modules/notification/notification.controller.ts",
@@ -15380,12 +15755,12 @@
     {
       "path": "services/api/src/modules/notification/baileys-persistence-certification.spec.ts",
       "extension": ".ts",
-      "size_bytes": 9244
+      "size_bytes": 10538
     },
     {
       "path": "services/api/src/modules/notification/baileys-prisma-auth.ts",
       "extension": ".ts",
-      "size_bytes": 9407
+      "size_bytes": 9643
     },
     {
       "path": "services/api/src/modules/notification/notification.service.ts",
@@ -24333,9 +24708,24 @@
       "size_bytes": 83
     },
     {
+      "path": "infrastructure/docker/.env.example",
+      "extension": ".example",
+      "size_bytes": 1368
+    },
+    {
       "path": "infrastructure/docker/docker-compose.yml",
       "extension": ".yml",
-      "size_bytes": 106
+      "size_bytes": 2350
+    },
+    {
+      "path": "infrastructure/docker/deploy.sh",
+      "extension": ".sh",
+      "size_bytes": 2723
+    },
+    {
+      "path": "infrastructure/docker/Caddyfile",
+      "extension": "",
+      "size_bytes": 540
     },
     {
       "path": "packages/config/package.json",

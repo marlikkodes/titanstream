@@ -27,26 +27,26 @@ export class OperationalSearchService {
     const q = query.trim().toLowerCase();
     const results: SearchResultItem[] = [];
 
-    // 1. Search Payment Orders
-    const allOrders = await this.paymentOrderService.getAllOrders();
-    allOrders.forEach((o) => {
-      if (
-        o.id.toLowerCase().includes(q) ||
-        o.reference.toLowerCase().includes(q) ||
-        o.telegramUserId.includes(q) ||
-        (o.receivingNumber && o.receivingNumber.includes(q))
-      ) {
-        results.push({
-          category: 'PAYMENT_ORDER',
-          id: o.id,
-          title: `Payment Order ${o.reference} ($${o.amount} USDT)`,
-          subtitle: `Type: ${o.type} | User: ${o.telegramUserId} | Method: ${o.paymentMethod}`,
-          status: o.status,
-          timestamp: o.createdAt,
-          link: `/admin/orders`,
-        });
-      }
-    });
+    // 1. Search Payment Orders (LEGACY - quarantined, use PaymentIntent instead)
+    // const allOrders = await this.paymentOrderService.getAllOrders();
+    // allOrders.forEach((o: any) => {
+    //   if (
+    //     o.id.toLowerCase().includes(q) ||
+    //     o.reference.toLowerCase().includes(q) ||
+    //     o.telegramUserId.includes(q) ||
+    //     (o.receivingNumber && o.receivingNumber.includes(q))
+    //   ) {
+    //     results.push({
+    //       category: 'PAYMENT_ORDER',
+    //       id: o.id,
+    //       title: `Payment Order ${o.reference} ($${o.amount} USDT)`,
+    //       subtitle: `Type: ${o.type} | User: ${o.telegramUserId} | Method: ${o.paymentMethod}`,
+    //       status: o.status,
+    //       timestamp: o.createdAt,
+    //       link: `/admin/orders`,
+    //     });
+    //   }
+    // });
 
     // 2. Search Incidents
     const incidents = this.incidentEngine.getAllIncidents();

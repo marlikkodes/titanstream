@@ -194,11 +194,13 @@ export class BotAssistantService {
     let availableUSDT = '0.00';
     if (user?.financialAccount?.id) {
       try {
+        // Use authoritative ledger-based balance
         const balancesData = await this.balanceService.getBalances(userCtx.id, user.financialAccount.id);
         const usdtAsset = balancesData.balances.find((b) => b.assetCode === 'USDT');
         if (usdtAsset) availableUSDT = Number(usdtAsset.availableBalance).toFixed(2);
-      } catch {
-        // balance default
+      } catch (err) {
+        this.logger.error(`Error fetching ledger balance: ${err.message}`);
+        // balance default - do not fallback to stale AssetBalance
       }
     }
 
@@ -283,11 +285,13 @@ export class BotAssistantService {
       let availableUSDT = '0.00';
       if (user?.financialAccount?.id) {
         try {
+          // Use authoritative ledger-based balance
           const balancesData = await this.balanceService.getBalances(userCtx.id, user.financialAccount.id);
           const usdtAsset = balancesData.balances.find((b) => b.assetCode === 'USDT');
           if (usdtAsset) availableUSDT = Number(usdtAsset.availableBalance).toFixed(2);
-        } catch {
-          // default
+        } catch (err) {
+          this.logger.error(`Error fetching ledger balance: ${err.message}`);
+          // default - do not fallback to stale AssetBalance
         }
       }
 

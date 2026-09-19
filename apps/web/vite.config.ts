@@ -3373,8 +3373,8 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    strictPort: true,
-    host: true,
+    strictPort: false,
+    host: '0.0.0.0',
     allowedHosts: true,
     watch: {
       ignored: ['**/.admin_users_db.json', '**/.git/**'],

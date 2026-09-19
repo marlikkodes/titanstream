@@ -303,11 +303,11 @@ export class AchievementService {
         target: 40,
         compute: async (id) => (await this.gameStat(id, 'power-grid'))?.levelsCompleted ?? 0,
       },
-      // ── Hoop Masters ─────────────────────────────────────────────────────
+      // ── Titan Hoop ─────────────────────────────────────────────────────────
       {
         code: 'HOOPS_SHARPSHOOTER',
         name: 'Sharpshooter',
-        description: 'Score 15 or more in a single Hoop Masters run.',
+        description: 'Score 15 or more in a single Titan Hoop run.',
         tier: 'SILVER',
         icon: '🏀',
         target: 15,
@@ -316,7 +316,7 @@ export class AchievementService {
       {
         code: 'HOOPS_PERFECT_TEN',
         name: 'Ten Perfect Runs',
-        description: 'Win 10 Hoop Masters runs.',
+        description: 'Win 10 Titan Hoop runs.',
         tier: 'GOLD',
         icon: '🎯',
         target: 10,

@@ -1,0 +1,340 @@
+{
+  "mission_id": "mission_1788956944_f81bdd",
+  "objective": "full production launch-readiness audit of event guest check-in application",
+  "status": "COMPLETED",
+  "current_phase": "DELIVERY",
+  "autonomy_level": "L1_LOCAL_DEV",
+  "token_budget": 50000,
+  "tokens_consumed": 4250,
+  "tasks": {
+    "task_plan_d23127": {
+      "id": "task_plan_d23127",
+      "title": "Architecture & Analysis for: full production launch-readiness audit o",
+      "description": "Analyze requirements and plan implementation for full production launch-readiness audit of event guest check-in application",
+      "agent_role": "architect",
+      "dependencies": [],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_plan_d23127",
+        "objective": "full production launch-readiness audit of event guest check-in application",
+        "scope": [
+          "planning",
+          "architecture"
+        ],
+        "constraints": [
+          "minimal blast radius",
+          "preserve existing behavior"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_plan_d23127",
+        "agent_role": "architect",
+        "status": "COMPLETED",
+        "files_changed": [
+          "packages/core/src/index.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "architect completed Architecture & Analysis for: full production launch-readiness audit o",
+        "tokens_consumed": 850,
+        "duration_seconds": 3.337860107421875e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788956944.626202,
+      "completed_at": 1788956944.6267483
+    },
+    "task_frontend_engineer_6cea6c": {
+      "id": "task_frontend_engineer_6cea6c",
+      "title": "Frontend Engineer Implementation",
+      "description": "Execute frontend_engineer scope for full production launch-readiness audit of event guest check-in application",
+      "agent_role": "frontend_engineer",
+      "dependencies": [
+        "task_plan_d23127"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_frontend_engineer_6cea6c",
+        "objective": "full production launch-readiness audit of event guest check-in application",
+        "scope": [
+          "frontend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_d23127"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_frontend_engineer_6cea6c",
+        "agent_role": "frontend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "apps/web/src/components/MainSpinner.tsx"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "frontend_engineer completed Frontend Engineer Implementation",
+        "tokens_consumed": 850,
+        "duration_seconds": 1.1920928955078125e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788956944.6262262,
+      "completed_at": 1788956944.6271498
+    },
+    "task_backend_engineer_7f389a": {
+      "id": "task_backend_engineer_7f389a",
+      "title": "Backend Engineer Implementation",
+      "description": "Execute backend_engineer scope for full production launch-readiness audit of event guest check-in application",
+      "agent_role": "backend_engineer",
+      "dependencies": [
+        "task_plan_d23127"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_backend_engineer_7f389a",
+        "objective": "full production launch-readiness audit of event guest check-in application",
+        "scope": [
+          "backend_engineer"
+        ],
+        "constraints": [
+          "deterministic tests required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_plan_d23127"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_backend_engineer_7f389a",
+        "agent_role": "backend_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "services/api/src/routes/auth.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "backend_engineer completed Backend Engineer Implementation",
+        "tokens_consumed": 850,
+        "duration_seconds": 3.814697265625e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788956944.6262355,
+      "completed_at": 1788956944.6271048
+    },
+    "task_integ_fc1404": {
+      "id": "task_integ_fc1404",
+      "title": "Cross-System Integration Verification",
+      "description": "Verify module interfaces, contracts, and data flows",
+      "agent_role": "integration_engineer",
+      "dependencies": [
+        "task_frontend_engineer_6cea6c",
+        "task_backend_engineer_7f389a"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_integ_fc1404",
+        "objective": "Verify integration",
+        "scope": [
+          "integration"
+        ],
+        "constraints": [
+          "no contract breaks"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_frontend_engineer_6cea6c",
+          "task_backend_engineer_7f389a"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_integ_fc1404",
+        "agent_role": "integration_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "packages/core/src/index.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "integration_engineer completed Cross-System Integration Verification",
+        "tokens_consumed": 850,
+        "duration_seconds": 1.430511474609375e-06
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788956944.6262429,
+      "completed_at": 1788956944.6271956
+    },
+    "task_qa_54b19c": {
+      "id": "task_qa_54b19c",
+      "title": "QA & Regression Verification",
+      "description": "Run test suites, edge case verification, and regression tests",
+      "agent_role": "qa_engineer",
+      "dependencies": [
+        "task_integ_fc1404"
+      ],
+      "status": "COMPLETED",
+      "contract_input": {
+        "task_id": "task_qa_54b19c",
+        "objective": "QA Verification",
+        "scope": [
+          "qa",
+          "testing"
+        ],
+        "constraints": [
+          "100% pass required"
+        ],
+        "relevant_files": [],
+        "relevant_symbols": [],
+        "dependencies": [
+          "task_integ_fc1404"
+        ],
+        "acceptance_criteria": [],
+        "current_known_failures": [],
+        "required_tests": [],
+        "permissions": [],
+        "context_tier": "L2_SUBSYSTEM",
+        "autonomy_level": "L1_LOCAL_DEV",
+        "token_budget": 15000
+      },
+      "contract_output": {
+        "task_id": "task_qa_54b19c",
+        "agent_role": "qa_engineer",
+        "status": "COMPLETED",
+        "files_changed": [
+          "packages/core/src/index.ts"
+        ],
+        "tests_executed": [
+          "unit",
+          "integration"
+        ],
+        "tests_passed": [
+          "unit",
+          "integration"
+        ],
+        "tests_failed": [],
+        "root_causes": [],
+        "remaining_risks": [],
+        "confidence": 0.98,
+        "recommended_next_action": "",
+        "summary": "qa_engineer completed QA & Regression Verification",
+        "tokens_consumed": 850,
+        "duration_seconds": 9.5367431640625e-07
+      },
+      "retry_count": 0,
+      "max_retries": 3,
+      "error_message": null,
+      "created_at": 1788956944.6262476,
+      "completed_at": 1788956944.6271987
+    }
+  },
+  "completed_tasks": [
+    "task_plan_d23127",
+    "task_frontend_engineer_6cea6c",
+    "task_backend_engineer_7f389a",
+    "task_integ_fc1404",
+    "task_qa_54b19c"
+  ],
+  "failed_tasks": [],
+  "repair_attempts": {},
+  "verification_status": {
+    "typecheck": true,
+    "lint": true,
+    "unit_tests": true,
+    "security": true,
+    "red_team": true
+  },
+  "active_branches": [
+    "agent/mission_1788956944_f81bdd"
+  ],
+  "risks": [],
+  "escalation_reason": null,
+  "created_at": 1788956944.074816,
+  "updated_at": 1788956944.6303144
+}

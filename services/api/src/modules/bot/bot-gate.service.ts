@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, IdentityProvider } from '@prisma/client';
 import { TelegramClientService } from './telegram-client.service';
 import { AuditService } from '../audit/audit.service';
 import { UserState, AuditEventType } from '../../common/interfaces/user-state.enum';
+import { IdentityMasterEngineService } from '../identity/identity-master.service';
 
 export interface TelegramUserCtx {
   id: bigint;
@@ -23,6 +24,7 @@ export class BotGateService {
     private readonly prisma: PrismaService,
     private readonly telegramClient: TelegramClientService,
     private readonly auditService: AuditService,
+    private readonly identityMasterEngine: IdentityMasterEngineService,
   ) {}
 
   private get defaultChannel(): { id: string; username: string; label: string } {
@@ -75,112 +77,21 @@ export class BotGateService {
     user: any;
     isNew: boolean;
   }> {
-    let existingUser = await this.prisma.user.findUnique({
-      where: { telegramUserId: userCtx.id },
+    const identifierStr = String(userCtx.id);
+    let identityContext = await this.identityMasterEngine.authenticate({
+      provider: IdentityProvider.TELEGRAM,
+      identifier: identifierStr,
+      displayName: userCtx.firstName ? `${userCtx.firstName} ${userCtx.lastName || ''}`.trim() : `Telegram_${identifierStr}`,
+      avatarUrl: userCtx.photoUrl,
+      metadata: {
+        username: userCtx.username,
+        languageCode: userCtx.languageCode,
+        source: 'telegram_bot_gate',
+      },
     });
 
-    let isNew = false;
-    if (!existingUser) {
-      await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const newUser = await tx.user.create({
-          data: {
-            telegramUserId: userCtx.id,
-            firstName: userCtx.firstName,
-            lastName: userCtx.lastName,
-            telegramUsername: userCtx.username,
-            languageCode: userCtx.languageCode || 'en',
-            photoUrl: userCtx.photoUrl,
-            state: UserState.NEW,
-            lastActiveAt: new Date(),
-            lastLoginAt: new Date(),
-            loginCount: 1,
-            channelVerified: false,
-          },
-        });
-
-        await tx.onboardingProgress.create({
-          data: {
-            telegramUserId: userCtx.id,
-            currentStep: 'welcome',
-            stepsCompleted: [],
-          },
-        });
-
-        await tx.financialAccount.create({
-          data: {
-            telegramUserId: userCtx.id,
-            status: 'ACTIVE',
-            activatedAt: new Date(),
-          },
-        });
-
-        const referralCode = `TS${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-        await tx.referralCode.create({
-          data: {
-            telegramUserId: userCtx.id,
-            code: referralCode,
-            metadata: { generatedAt: new Date().toISOString() },
-          },
-        });
-
-        await tx.userTrustProfile.create({
-          data: {
-            telegramUserId: userCtx.id,
-            trustScore: 50,
-            completedSettlements: 0,
-            failedSettlements: 0,
-            successRate: 100.0,
-            accountAgeDays: 0,
-            verificationStatus: 'UNVERIFIED',
-          },
-        });
-
-        await tx.userLevelRecord.create({
-          data: {
-            telegramUserId: userCtx.id,
-            currentLevel: 'NEW',
-          },
-        });
-
-        await tx.notificationPreference.create({
-          data: {
-            telegramUserId: userCtx.id,
-            telegramEnabled: true,
-            inAppEnabled: true,
-            marketingEnabled: false
-          },
-        });
-
-        await this.auditService.createWithClient(tx, {
-          telegramUserId: userCtx.id,
-          eventType: AuditEventType.USER_CREATED,
-          description: 'User created via Telegram Host Bot',
-          metadata: { username: userCtx.username, firstName: userCtx.firstName },
-        });
-
-        return newUser;
-      });
-
-      isNew = true;
-    } else {
-      const updateData: any = {
-        lastActiveAt: new Date(),
-        loginCount: { increment: 1 },
-      };
-      if (userCtx.firstName) updateData.firstName = userCtx.firstName;
-      if (userCtx.lastName) updateData.lastName = userCtx.lastName;
-      if (userCtx.username) updateData.telegramUsername = userCtx.username;
-      if (userCtx.languageCode) updateData.languageCode = userCtx.languageCode;
-      if (userCtx.photoUrl) updateData.photoUrl = userCtx.photoUrl;
-
-      await this.prisma.user.update({
-        where: { telegramUserId: userCtx.id },
-        data: updateData,
-      });
-    }
-
     const user = await this.prisma.user.findUnique({
-      where: { telegramUserId: userCtx.id },
+      where: { id: identityContext.userId },
       include: {
         financialAccount: true,
         userLevel: true,
@@ -189,6 +100,7 @@ export class BotGateService {
       },
     });
 
+    const isNew = identityContext.assuranceLevel !== 'HIGH';
     return { user, isNew };
   }
 

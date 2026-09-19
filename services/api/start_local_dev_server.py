@@ -195,6 +195,160 @@ class TitanDevServer(BaseHTTPRequestHandler):
                     'referrals': session.get('referrals', [])
                 }
             })
+        elif '/api/v1/games/catalog' in self.path or '/games/catalog' in self.path:
+            return self._send_json({
+                'success': True,
+                'data': {
+                    'balance': session.get('crystalsBalance', 50),
+                    'events': [{
+                        'code': 'VAULT_FRENZY',
+                        'title': 'Vault Rush 2x',
+                        'description': '2x crystals in Titan Vault Wheel & Titan Hoop!',
+                        'gameId': 'crypto-roulette',
+                        'crystalMultiplier': 2,
+                        'usdtMultiplier': '1.0',
+                        'startsAt': time.strftime('%Y-%m-%dT00:00:00Z'),
+                        'endsAt': time.strftime('%Y-%m-%dT23:59:59Z'),
+                        'active': True
+                    }],
+                    'dailyChallenge': {
+                        'id': 'dc_1',
+                        'code': 'ROULETTE_SPIN_3',
+                        'gameId': 'crypto-roulette',
+                        'gameName': 'Titan Vault Wheel',
+                        'gameIcon': '🎡',
+                        'title': 'High Roller Spin',
+                        'description': 'Spin the Titan Vault Wheel to claim crystals & USDT!',
+                        'objectiveType': 'SPIN_WHEEL',
+                        'target': 1,
+                        'rewardCrystals': 20,
+                        'rewardXp': 50,
+                        'completedToday': False,
+                        'progress': 0
+                    },
+                    'games': [
+                        {
+                            'gameId': 'crypto-roulette',
+                            'code': 'ROULETTE',
+                            'name': 'Titan Vault Wheel',
+                            'description': 'Spin the high-torque titanium vault wheel for instant crystal multipliers and direct USDT prizes.',
+                            'category': 'chance',
+                            'icon': '🎡',
+                            'accentColor': '#00e676',
+                            'crystalCost': 5,
+                            'dailyLimit': 10,
+                            'estimatedDurationSec:': 30,
+                            'difficulty': 'EASY',
+                            'enabled': True,
+                            'rewardPreview': {'minCrystals': 10, 'maxCrystals': 100, 'maxUsdt': '1.00'},
+                            'playsUsedToday': 0,
+                            'currentCost': 5,
+                            'winScoreThreshold': 1,
+                            'rules': ['Entry costs 5 💎.', 'Server-authoritative RNG with instant reward crediting.'],
+                            'personalBest': None,
+                            'leaderboardRank': 1,
+                            'sectors': [
+                                {'label': '₮1.00 JACKPOT', 'type': 'USDT', 'value': 1.0, 'weight': 1, 'premium': True},
+                                {'label': '15 💎 LUCKY', 'type': 'CRYSTALS', 'value': 15, 'weight': 20, 'premium': False},
+                                {'label': '₮0.25 VAULT', 'type': 'USDT', 'value': 0.25, 'weight': 8, 'premium': True},
+                                {'label': '10 💎 WIN', 'type': 'CRYSTALS', 'value': 10, 'weight': 25, 'premium': False},
+                                {'label': '⚡×2.0 BOOST', 'type': 'BOOST', 'value': 2.0, 'weight': 5, 'premium': True},
+                                {'label': '₮0.10 CASH', 'type': 'USDT', 'value': 0.10, 'weight': 15, 'premium': False},
+                                {'label': '50 💎 BIG POT', 'type': 'CRYSTALS', 'value': 50, 'weight': 4, 'premium': True},
+                                {'label': '₮0.50 HIGH ROLLER', 'type': 'USDT', 'value': 0.50, 'weight': 3, 'premium': True},
+                                {'label': '100 💎 MEGA POT', 'type': 'CRYSTALS', 'value': 100, 'weight': 1, 'premium': True},
+                                {'label': '⚡×1.5 BOOST', 'type': 'BOOST', 'value': 1.5, 'weight': 18, 'premium': False},
+                            ]
+                        },
+                        {
+                            'gameId': 'hoop-masters',
+                            'code': 'HOOPS',
+                            'name': 'Titan Hoop',
+                            'description': 'Arcade basketball. Aim & flick to swish baskets and trigger Fire Mode combos.',
+                            'category': 'skill',
+                            'icon': '🏀',
+                            'accentColor': '#0088cc',
+                            'crystalCost': 3,
+                            'dailyLimit': 15,
+                            'estimatedDurationSec': 60,
+                            'difficulty': 'MEDIUM',
+                            'enabled': True,
+                            'rewardPreview': {'minCrystals': 5, 'maxCrystals': 25, 'maxUsdt': '0.50'},
+                            'playsUsedToday': 0,
+                            'currentCost': 3,
+                            'winScoreThreshold': 3,
+                            'rules': ['Entry costs 3 💎.', 'Chain swishes for 3x combo Fire Mode.'],
+                            'personalBest': {'highestScore': 14},
+                            'leaderboardRank': 3
+                        },
+                        {
+                            'gameId': 'titan-core-reactor',
+                            'code': 'REACTOR',
+                            'name': 'Titan Core: Meltdown',
+                            'description': 'Reflex challenge. Tap energy nodes before they decay to prevent core meltdown.',
+                            'category': 'skill',
+                            'icon': '⚛️',
+                            'accentColor': '#ff007f',
+                            'crystalCost': 5,
+                            'dailyLimit': 10,
+                            'estimatedDurationSec': 45,
+                            'difficulty': 'HARD',
+                            'enabled': True,
+                            'rewardPreview': {'minCrystals': 8, 'maxCrystals': 40, 'maxUsdt': '0.75'},
+                            'playsUsedToday': 0,
+                            'currentCost': 5,
+                            'winScoreThreshold': 10,
+                            'rules': ['Entry costs 5 💎.', 'Cool down overheating nodes to survive.'],
+                            'personalBest': None,
+                            'leaderboardRank': None
+                        }
+                    ]
+                }
+            })
+        elif '/api/v1/games/profile' in self.path or '/games/profile' in self.path:
+            return self._send_json({
+                'success': True,
+                'data': {
+                    'profile': {
+                        'telegramUserId': user_id,
+                        'highestScore': 18,
+                        'gamesPlayed': 5,
+                        'gamesWon': 4,
+                        'winStreak': 2,
+                        'bestWinStreak': 4,
+                        'dailyStreak': 3,
+                        'totalCrystalsEarned': 140,
+                        'totalCrystalsSpent': 45,
+                        'lastPlayedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                        'lastDailyClaimAt': None
+                    },
+                    'dailyLogin': {
+                        'claimedToday': False,
+                        'dailyStreak': 3,
+                        'streakContinues': True,
+                        'baseReward': 15,
+                        'streakBonus': 5,
+                        'machineBonus': 5,
+                        'activeMachines': 1,
+                        'totalReward': 25
+                    }
+                }
+            })
+        elif '/api/v1/games/leaderboard' in self.path or '/games/leaderboard' in self.path:
+            return self._send_json({
+                'success': True,
+                'data': {
+                    'period': 'all',
+                    'scope': 'global',
+                    'gameId': 'crypto-roulette',
+                    'myRank': 2,
+                    'entries': [
+                        {'rank': 1, 'telegramUserId': '109988', 'displayName': 'TitanWhale', 'username': 'whale', 'country': 'US', 'score': 150, 'crystalsEarned': 450, 'gamesPlayed': 24, 'achievedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ')},
+                        {'rank': 2, 'telegramUserId': user_id, 'displayName': f'Operator {user_id[-4:]}', 'username': None, 'country': 'KE', 'score': 120, 'crystalsEarned': 280, 'gamesPlayed': 12, 'achievedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ')},
+                        {'rank': 3, 'telegramUserId': '104422', 'displayName': 'CyberMiner', 'username': 'miner99', 'country': 'UG', 'score': 95, 'crystalsEarned': 180, 'gamesPlayed': 8, 'achievedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ')}
+                    ]
+                }
+            })
         elif '/api/v1/growth/' in self.path:
             return self._send_json({'success': True, 'data': []})
         else:
@@ -352,6 +506,96 @@ class TitanDevServer(BaseHTTPRequestHandler):
                     },
                     'onboarding': {'currentStep': 'welcome', 'isCompleted': True},
                     'isNewUser': True
+                }
+            })
+        elif '/games/daily-login/claim' in self.path or '/daily-login/claim' in self.path:
+            amount = 25
+            session['crystalsBalance'] = session.get('crystalsBalance', 50) + amount
+            save_dev_sessions(DEV_SESSIONS)
+            return self._send_json({
+                'success': True,
+                'data': {
+                    'balance': session['crystalsBalance'],
+                    'amount': amount,
+                    'dailyStreak': 4
+                }
+            })
+        elif '/session/start' in self.path:
+            cost = 5 if 'crypto-roulette' in self.path or 'titan-core-reactor' in self.path else 3
+            session['crystalsBalance'] = max(0, session.get('crystalsBalance', 50) - cost)
+            save_dev_sessions(DEV_SESSIONS)
+            
+            # Weighted random outcome for roulette
+            # Sectors: 0: ₮1.00, 1: 15 💎, 2: ₮0.25, 3: 10 💎, 4: ⚡×2.0, 5: ₮0.10, 6: 50 💎, 7: ₮0.50, 8: 100 💎, 9: ⚡×1.5
+            weights = [1, 20, 8, 25, 5, 15, 4, 3, 1, 18]
+            outcome = random.choices(range(10), weights=weights, k=1)[0]
+            
+            session_id = f'sess_{int(time.time())}_{random.randint(1000, 9999)}'
+            return self._send_json({
+                'success': True,
+                'data': {
+                    'sessionId': session_id,
+                    'gameId': 'crypto-roulette' if 'crypto-roulette' in self.path else 'hoop-masters',
+                    'gameName': 'Titan Vault Wheel' if 'crypto-roulette' in self.path else 'Titan Hoop',
+                    'crystalCost': cost,
+                    'serverStartedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                    'chanceGame': 'crypto-roulette' in self.path,
+                    'outcomeSectorIndex': outcome if 'crypto-roulette' in self.path else None,
+                    'message': 'Session initialized authoritatively.'
+                }
+            })
+        elif '/session/' in self.path and '/end' in self.path:
+            score = body.get('score', 1)
+            # Check if won USDT or Crystals
+            is_roulette = 'crypto-roulette' in self.path
+            usdt_earned = None
+            crystals_earned = 15
+            
+            if is_roulette:
+                # Based on score/outcome
+                if score == 100: # ₮1.00 jackpot
+                    usdt_earned = '1.00'
+                    crystals_earned = 0
+                elif score == 50: # ₮0.50
+                    usdt_earned = '0.50'
+                    crystals_earned = 0
+                elif score == 25: # ₮0.25
+                    usdt_earned = '0.25'
+                    crystals_earned = 0
+                elif score == 10: # ₮0.10
+                    usdt_earned = '0.10'
+                    crystals_earned = 0
+                else:
+                    crystals_earned = score if score > 1 else 25
+            else:
+                crystals_earned = max(5, min(score * 3, 50))
+            
+            if usdt_earned:
+                session['usdtBalance'] = round(session.get('usdtBalance', 0.0) + float(usdt_earned), 4)
+            if crystals_earned:
+                session['crystalsBalance'] = session.get('crystalsBalance', 50) + crystals_earned
+            save_dev_sessions(DEV_SESSIONS)
+            
+            return self._send_json({
+                'success': True,
+                'data': {
+                    'sessionId': f'sess_{int(time.time())}',
+                    'gameId': 'crypto-roulette' if is_roulette else 'hoop-masters',
+                    'gameName': 'Titan Vault Wheel' if is_roulette else 'Titan Hoop',
+                    'status': 'COMPLETED',
+                    'score': score,
+                    'crystalsEarned': crystals_earned,
+                    'usdtEarned': usdt_earned,
+                    'usdtRewardId': f'rwd_{random.randint(1000, 9999)}' if usdt_earned else None,
+                    'xpEarned': 30,
+                    'stats': {'combo': 3, 'accuracy': 92},
+                    'isNewPersonalBest': True,
+                    'levelUp': None,
+                    'grantCount': 1 if usdt_earned else 0,
+                    'challenge': {'completed': True, 'rewardCrystals': 20, 'rewardXp': 50},
+                    'unlockedAchievements': [{'code': 'LUCKY_SPIN', 'name': 'Lucky Vault Strike', 'tier': 'GOLD'}],
+                    'verdict': {'ok': True, 'status': 'VERIFIED', 'reasons': []},
+                    'message': 'Reward verified and credited to your platform ledger.'
                 }
             })
         else:

@@ -6,6 +6,7 @@ import { GrowthModule } from '../growth/growth.module';
 import { AdminModule } from '../admin/admin.module';
 import { FinancialOrchestrationModule } from '../financial-orchestration/financial-orchestration.module';
 import { AuthModule } from '../auth/auth.module';
+import { IdentityModule } from '../identity/identity.module';
 import { TelegramClientService } from './telegram-client.service';
 import { BotGateService } from './bot-gate.service';
 import { BotCommandService } from './bot-command.service';
@@ -29,6 +30,7 @@ import { BotController } from './bot.controller';
     AdminModule,
     FinancialOrchestrationModule,
     AuthModule,
+    IdentityModule,
   ],
   controllers: [BotController],
   providers: [

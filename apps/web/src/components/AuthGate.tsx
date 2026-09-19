@@ -53,7 +53,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // WhatsApp Conversational Approval & Device-Aware States
   const [deviceContext, setDeviceContext] = useState<LoginDeviceContext>('unknown');
-  const [waViewMode, setWaViewMode] = useState<'auto' | 'qr_pin' | 'deep_link' | 'otp'>('otp');
+  const [waViewMode, setWaViewMode] = useState<'auto' | 'qr_pin' | 'deep_link' | 'otp'>('auto');
   
   const [waChallengeId, setWaChallengeId] = useState<string | null>(null);
   const [waBrowserProof, setWaBrowserProof] = useState<string | null>(null);
@@ -89,12 +89,31 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
     let active = true;
     setSessionVerified(false);
-    api.get('/auth/profile')
-      .then(() => {
-        if (active) setSessionVerified(true);
+    
+    // Verify session with canonical identity check using dedicated endpoint
+    api.get('/auth/verify-identity')
+      .then((response) => {
+        if (!active) return;
+        
+        const verificationData = response.data;
+        const { verified, userId, identityId, telegramUserId, mappingConsistent, hasChannels, channels } = verificationData;
+        
+        // Log identity verification for audit trail
+        console.info(`[IDENTITY_VERIFICATION] Session verified: verified=${verified}, userId=${userId}, identityId=${identityId}, telegramUserId=${telegramUserId}, mappingConsistent=${mappingConsistent}, hasChannels=${hasChannels}`);
+        
+        // REJECT session if identity mapping is inconsistent - this prevents loading wrong user data
+        if (!mappingConsistent) {
+          console.error(`[IDENTITY_VERIFICATION] Identity mapping inconsistency detected: userId=${userId} != identityId=${identityId}. REJECTING SESSION.`);
+          clearSession();
+          return;
+        }
+        
+        setSessionVerified(true);
       })
-      .catch(() => {
-        if (active) clearSession();
+      .catch((error) => {
+        if (!active) return;
+        console.error(`[IDENTITY_VERIFICATION] Session verification failed:`, error);
+        clearSession();
       });
 
     return () => { active = false; };
