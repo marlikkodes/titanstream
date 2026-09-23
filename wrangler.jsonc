@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Cloudflare Worker for titanstream.cc (frontend SPA).
+  // Deploy with: pnpm --filter web build && npx wrangler deploy
+  // Requires: zone titanstream.cc active on Cloudflare + CLOUDFLARE_API_TOKEN.
+  "name": "titanstream",
+  "compatibility_date": "2026-09-23",
+  "assets": {
+    "directory": "./apps/web/dist",
+    "not_found_handling": "single-page-application"
+  },
+  // Custom Domains (Worker is the origin). Bare hostname, no /* path.
+  "routes": [
+    { "pattern": "titanstream.cc", "custom_domain": true },
+    { "pattern": "www.titanstream.cc", "custom_domain": true }
+  ]
+}
