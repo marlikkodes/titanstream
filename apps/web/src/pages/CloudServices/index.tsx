@@ -136,13 +136,16 @@ export const CloudServices: React.FC = () => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -50, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed top-2 sm:top-4 left-1/2 transform -translate-x-1/2 z-50 w-[90%] sm:w-auto"
+            className="fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[94vw] flex flex-col items-center gap-1"
           >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex bg-[#121620]/80 backdrop-blur-xl border border-white/10 rounded-full p-1 relative overflow-hidden shadow-2xl mx-auto"
-        >
+            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-text-tertiary select-none">
+              I am a:
+            </span>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex w-full sm:w-auto bg-[#121620]/80 backdrop-blur-xl border border-white/10 rounded-full p-1 relative overflow-hidden shadow-2xl"
+            >
           {/* Animated Background Glow */}
           <motion.div
             className="absolute inset-0"
@@ -154,23 +157,11 @@ export const CloudServices: React.FC = () => {
             transition={{ duration: 0.3 }}
           />
           
-          <motion.span 
-            animate={{ 
-              opacity: isScrolled ? 0 : 1,
-              width: isScrolled ? 0 : 'auto',
-              padding: isScrolled ? 0 : '0 6px sm:px-3'
-            }}
-            transition={{ duration: 0.3 }}
-            className="text-text-tertiary text-xs sm:text-sm font-medium flex items-center hidden sm:flex"
-          >
-            I am a:
-          </motion.span>
-          
           <motion.button
             onClick={() => setActiveTab('investor')}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`relative px-3 sm:px-4 py-2 sm:py-2 rounded-full font-semibold transition-all flex items-center gap-1 sm:gap-2 text-xs sm:text-sm ${
+            className={`relative flex-1 sm:flex-none px-4 py-2 rounded-full font-semibold transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm whitespace-nowrap ${
               activeTab === 'investor'
                 ? 'bg-gradient-to-r from-usdt-green to-emerald-400 text-white shadow-lg shadow-usdt-green/20'
                 : 'text-text-secondary hover:text-white'
@@ -193,7 +184,7 @@ export const CloudServices: React.FC = () => {
             onClick={() => setActiveTab('startup')}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`relative px-3 sm:px-4 py-2 sm:py-2 rounded-full font-semibold transition-all flex items-center gap-1 sm:gap-2 text-xs sm:text-sm ${
+            className={`relative flex-1 sm:flex-none px-4 py-2 rounded-full font-semibold transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm whitespace-nowrap ${
               activeTab === 'startup'
                 ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/20'
                 : 'text-text-secondary hover:text-white'
