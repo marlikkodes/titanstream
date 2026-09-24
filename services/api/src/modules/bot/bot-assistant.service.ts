@@ -20,7 +20,7 @@ export interface EducationLesson {
 @Injectable()
 export class BotAssistantService {
   private readonly logger = new Logger(BotAssistantService.name);
-  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app';
+  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.cc';
 
   constructor(
     private readonly prisma: PrismaService,

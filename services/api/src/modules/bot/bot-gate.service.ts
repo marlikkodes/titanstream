@@ -18,7 +18,7 @@ export interface TelegramUserCtx {
 @Injectable()
 export class BotGateService {
   private readonly logger = new Logger(BotGateService.name);
-  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app';
+  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.cc';
 
   constructor(
     private readonly prisma: PrismaService,

@@ -807,17 +807,17 @@ export class GrowthAnalyticsService {
     const isQualified = relationship.status === 'QUALIFIED' || relationship.status === 'PAYING' || relationship.status === 'REWARDED';
 
     let missingStep = 'Complete platform onboarding';
-    let helperMessage = `Hey ${relationship.referee?.firstName || 'there'}! Tap your Titan Stream profile to finish setup and get started: https://tetherstream.io`;
+    let helperMessage = `Hey ${relationship.referee?.firstName || 'there'}! Tap your Titan Stream profile to finish setup and get started: https://titanstream.cc`;
 
     if (!isReady) {
       missingStep = 'Link Mobile Money Rail';
-      helperMessage = `Hey ${relationship.referee?.firstName || 'there'}! Make sure to select your country & mobile money rail in Titan Stream to activate your account: https://tetherstream.io`;
+      helperMessage = `Hey ${relationship.referee?.firstName || 'there'}! Make sure to select your country & mobile money rail in Titan Stream to activate your account: https://titanstream.cc`;
     } else if (settlementsCount === 0) {
       missingStep = 'Execute 1st Mobile Money Settlement';
-      helperMessage = `Hey ${relationship.referee?.firstName || 'there'}! Execute your first instant settlement on Titan Stream to qualify for starter rewards and direct withdrawals: https://tetherstream.io`;
+      helperMessage = `Hey ${relationship.referee?.firstName || 'there'}! Execute your first instant settlement on Titan Stream to qualify for starter rewards and direct withdrawals: https://titanstream.cc`;
     } else if (!isQualified) {
       missingStep = 'Complete Qualification Settlement';
-      helperMessage = `Hey ${relationship.referee?.firstName || 'there'}! You're almost there! Complete your pending settlement to unlock your full operator rewards: https://tetherstream.io`;
+      helperMessage = `Hey ${relationship.referee?.firstName || 'there'}! You're almost there! Complete your pending settlement to unlock your full operator rewards: https://titanstream.cc`;
     } else {
       missingStep = 'Fully Qualified & Active';
       helperMessage = `Congratulations ${relationship.referee?.firstName || ''}! Your account is fully qualified and earning rewards.`;

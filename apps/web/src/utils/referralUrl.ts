@@ -11,7 +11,7 @@ export function getCanonicalAppOrigin(): string {
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin.replace(/\/$/, '');
   }
-  return 'https://titanstream.app';
+  return 'https://titanstream.cc';
 }
 
 export function generateReferralLink(rawCode: string, channel: 'web' | 'telegram' = 'web'): string {

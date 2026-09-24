@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Share2, CheckCircle, Copy, AlertCircle, Sparkles, Send } from 'lucide-react';
 import { growthService, type ReferralAssistance } from '../services/growthService';
+import { getCanonicalAppOrigin } from '../utils/referralUrl';
 import { showToast } from './Toast';
 
 interface ReferralAssistanceModalProps {
@@ -45,7 +46,7 @@ export const ReferralAssistanceModal: React.FC<ReferralAssistanceModalProps> = (
 
   const handleShareTelegram = () => {
     if (data?.helperMessage) {
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://tetherstream.io')}&text=${encodeURIComponent(data.helperMessage)}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(getCanonicalAppOrigin())}&text=${encodeURIComponent(data.helperMessage)}`;
       const tg = (window as any).Telegram?.WebApp;
       if (tg?.openTelegramLink) {
         tg.openTelegramLink(shareUrl);

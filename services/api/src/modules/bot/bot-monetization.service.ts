@@ -14,7 +14,7 @@ export interface CommercialProduct {
 @Injectable()
 export class BotMonetizationService {
   private readonly logger = new Logger(BotMonetizationService.name);
-  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app';
+  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.cc';
 
   private readonly products: Record<string, CommercialProduct> = {
     PRIORITY_SETTLEMENT: {

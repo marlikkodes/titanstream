@@ -44,7 +44,7 @@ export class BotController {
       botUsername: process.env.TELEGRAM_BOT_USERNAME || 'titanstream_bot',
       channelId: process.env.TELEGRAM_CHANNEL_ID || '@titanstream',
       channelUsername: process.env.TELEGRAM_CHANNEL_USERNAME || 'titanstream',
-      webAppUrl: process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app',
+      webAppUrl: process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.cc',
       status: 'ONLINE',
     };
   }

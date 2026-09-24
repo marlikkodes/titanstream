@@ -18,7 +18,7 @@ export const getPersistentMainKeyboard = (webAppUrl: string) => ({
 @Injectable()
 export class BotCommandService {
   private readonly logger = new Logger(BotCommandService.name);
-  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app';
+  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.cc';
 
   constructor(
     private readonly prisma: PrismaService,
@@ -275,15 +275,17 @@ export class BotCommandService {
     const progressBlocks = Math.min(Math.floor((count / goal) * 10), 10);
     const progressBar = '█'.repeat(progressBlocks) + '░'.repeat(10 - progressBlocks);
 
+    const inviteLink = summary.webReferralLink || summary.referralLink;
+
     const text = `━━━━━━━━━━━━━━━━━━━━━━\n` +
       `<b>👥 Referral Network Progress</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
       `<b>Progress:</b> [${progressBar}] ${count} / ${goal} Friends\n\n` +
       `<i>${goal - count > 0 ? `${goal - count} more friends unlock higher cashout limits & 2x Bonus Multiplier!` : '🏆 Maximum Milestone Reached!'}</i>\n\n` +
-      `<b>Your Unique Invite Link:</b>\n<code>${summary.referralLink}</code>\n\n` +
+      `<b>Your Unique Invite Link:</b>\n<code>${inviteLink}</code>\n\n` +
       `<b>Total Earned:</b> <b>${summary.totalEarnedUSDT.toFixed(2)} USDT</b>`;
 
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(summary.referralLink)}&text=${encodeURIComponent('Join TitanStream to participate in the cloud computing economy & earn daily rental revenue! 🚀')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent('Join TitanStream to participate in the cloud computing economy & earn daily rental revenue! 🚀')}`;
 
     return {
       text,

@@ -16,13 +16,13 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   size = 180,
   className = '',
 }) => {
-  const safeValue = value || 'https://tetherstream.io';
+  const safeValue = value || 'https://titanstream.cc';
 
   const matrix = useMemo(() => {
     try {
       return generateQR(safeValue);
     } catch {
-      return generateQR('https://tetherstream.io');
+      return generateQR('https://titanstream.cc');
     }
   }, [safeValue]);
 

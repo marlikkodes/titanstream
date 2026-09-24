@@ -72,7 +72,7 @@ export class BotBroadcastService {
         parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
-            [{ text: '🚀 Open TitanStream Mini App', web_app: { url: process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app' } }],
+            [{ text: '🚀 Open TitanStream Mini App', web_app: { url: process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.cc' } }],
           ],
         },
       });

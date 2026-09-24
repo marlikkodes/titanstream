@@ -16,7 +16,7 @@ export interface WithdrawalRequestDto {
 @Injectable()
 export class BotWithdrawalService {
   private readonly logger = new Logger(BotWithdrawalService.name);
-  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app';
+  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.cc';
 
   constructor(
     private readonly prisma: PrismaService,

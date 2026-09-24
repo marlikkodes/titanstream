@@ -7,6 +7,12 @@ import { ReferralStatus, GrowthEventType, Prisma } from '@prisma/client';
 export class ReferralService {
   private readonly logger = new Logger(ReferralService.name);
   private readonly BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'titanstream_bot';
+  private readonly WEB_ORIGIN = (
+    process.env.TELEGRAM_WEBAPP_URL ||
+    process.env.WEBAPP_URL ||
+    process.env.APP_URL ||
+    'https://titanstream.cc'
+  ).replace(/\/$/, '');
 
   constructor(
     private readonly prisma: PrismaService,
@@ -51,6 +57,14 @@ export class ReferralService {
   }
 
   /**
+   * Custom-domain web referral link (shareable outside Telegram).
+   * The t.me deep link (referralLink) is unchanged for in-Telegram flows.
+   */
+  buildWebReferralLink(code: string): string {
+    return `${this.WEB_ORIGIN}/ref/${code}`;
+  }
+
+  /**
    * Get or create a unique referral code for a user with collision protection.
    */
   async getOrCreateReferralCode(telegramUserId: bigint) {
@@ -62,6 +76,7 @@ export class ReferralService {
       return {
         ...existing,
         referralLink: `https://t.me/${this.BOT_USERNAME}?start=ref_${existing.code}`,
+        webReferralLink: this.buildWebReferralLink(existing.code),
       };
     }
 
@@ -84,6 +99,7 @@ export class ReferralService {
         return {
           ...created,
           referralLink: `https://t.me/${this.BOT_USERNAME}?start=ref_${created.code}`,
+          webReferralLink: this.buildWebReferralLink(created.code),
         };
       } catch (err: any) {
         if (err.code === 'P2002' && attempts < 10) {
@@ -109,6 +125,7 @@ export class ReferralService {
     return {
       ...created,
       referralLink: `https://t.me/${this.BOT_USERNAME}?start=ref_${created.code}`,
+      webReferralLink: this.buildWebReferralLink(created.code),
     };
   }
 
@@ -419,6 +436,7 @@ export class ReferralService {
     return {
       referralCode: codeInfo.code,
       referralLink: codeInfo.referralLink,
+      webReferralLink: codeInfo.webReferralLink,
       totalInvited,
       qualifiedCount,
       payingCount,
