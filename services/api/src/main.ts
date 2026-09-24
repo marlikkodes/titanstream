@@ -92,8 +92,19 @@ async function bootstrap() {
         callback(null, true);
         return;
       }
+      const extraOrigins = [
+        process.env.CORS_ORIGINS,
+        process.env.FRONTEND_URL,
+        process.env.WEBAPP_URL,
+        process.env.ADDITIONAL_ALLOWED_ORIGINS,
+      ]
+        .filter((o): o is string => !!o)
+        .flatMap((o) => o.split(','))
+        .map((o) => o.trim().replace(/\/$/, ''))
+        .filter((o) => o.length > 0);
       const allowedOrigins = [
         process.env.TELEGRAM_WEBAPP_URL,
+        ...extraOrigins,
         'https://titanstream.app',
         'https://tetherstream.app',
         'https://titanstream.cc',
@@ -109,8 +120,11 @@ async function bootstrap() {
         cleanOrigin.endsWith('.titanstream.app') ||
         cleanOrigin.endsWith('.tetherstream.cc') ||
         cleanOrigin.endsWith('.titanstream.cc') ||
+        cleanOrigin.endsWith('.pages.dev') ||
+        cleanOrigin.endsWith('.workers.dev') ||
         cleanOrigin.endsWith('.netlify.app') ||
         cleanOrigin.endsWith('.railway.app') ||
+        cleanOrigin.endsWith('.railway.internal') ||
         cleanOrigin.endsWith('.ngrok-free.dev') ||
         cleanOrigin.endsWith('.ngrok.io')
       ) {
