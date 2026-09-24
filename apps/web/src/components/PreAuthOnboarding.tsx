@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Check, ChevronLeft, Cpu, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, Cpu, LockKeyhole, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react';
 import { useLegalModalStore } from '../store/useLegalModalStore';
 import { completePreAuthOnboarding } from '../utils/preAuthOnboarding';
+import { MACHINE_CATALOG } from '../data/machines';
 
 type Slide = {
   eyebrow: string;
@@ -11,7 +12,20 @@ type Slide = {
   highlights: string[];
   icon: typeof Cpu;
   accent: string;
+  fleet?: boolean;
 };
+
+// Live GPU fleet preview, synced with the machine catalog (single source of truth).
+const FLEET_PREVIEW = (['TS_TRIAL', 'TS_P250', 'TS_X1000'] as const).map((tierCode, idx) => {
+  const machine = MACHINE_CATALOG.find((item) => item.tierCode === tierCode);
+  return {
+    name: machine?.name ?? tierCode,
+    price: machine?.priceUsdt ?? 0,
+    hashRate: machine?.capacityGhs ?? 0,
+    dailyUsdt: machine?.dailyYieldUsdt ?? 0,
+    tag: ['Starter', 'Popular', 'Pro'][idx] as string,
+  };
+});
 
 const slides: Slide[] = [
   {
@@ -21,6 +35,15 @@ const slides: Slide[] = [
     highlights: ['A clear view of your machines', 'Wallet and local payment options'],
     icon: Cpu,
     accent: 'from-emerald-400 to-cyan-300',
+  },
+  {
+    eyebrow: 'REAL GPU COMPUTE',
+    title: 'Real GPU Compute Power.',
+    description: 'TitanStream provisions high-density NVIDIA GPU clusters. Your capital fuels real AI workloads and earns daily yield.',
+    highlights: ['Free Titan Core starter rig', 'Real hardware, daily USDT yield'],
+    icon: TrendingUp,
+    accent: 'from-emerald-400 to-cyan-300',
+    fleet: true,
   },
   {
     eyebrow: 'WHAT TO EXPECT',
@@ -50,6 +73,7 @@ interface PreAuthOnboardingProps {
  */
 export function PreAuthOnboarding({ onComplete }: PreAuthOnboardingProps) {
   const [step, setStep] = useState(0);
+  const [selectedTierIndex, setSelectedTierIndex] = useState(0);
   const prefersReducedMotion = useReducedMotion();
   const openLegalModal = useLegalModalStore((state) => state.openLegalModal);
   const slide = slides[step];
@@ -116,6 +140,39 @@ export function PreAuthOnboarding({ onComplete }: PreAuthOnboardingProps) {
                   </li>
                 ))}
               </ul>
+              {slide.fleet && (
+                <div className="mt-6 space-y-2.5">
+                  <div className="grid grid-cols-3 gap-2">
+                    {FLEET_PREVIEW.map((tier, idx) => (
+                      <button
+                        key={tier.name}
+                        type="button"
+                        onClick={() => setSelectedTierIndex(idx)}
+                        className={`rounded-xl border p-2 text-left transition-all ${
+                          selectedTierIndex === idx
+                            ? 'border-usdt-green bg-usdt-green/15 text-white shadow-md'
+                            : 'border-white/5 bg-white/5 text-text-tertiary hover:border-white/20'
+                        }`}
+                      >
+                        <div className="truncate text-[10px] font-bold">{tier.name}</div>
+                        <div className="mt-1 text-xs font-black text-white">${tier.price}</div>
+                        <div className="mt-0.5 text-[9px] font-semibold text-usdt-green">{tier.hashRate} GH/s</div>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-usdt-green/20 bg-usdt-green/10 p-3">
+                    <div>
+                      <div className="text-[10px] font-medium text-text-tertiary">Estimated Daily Yield</div>
+                      <div className="text-base font-black text-usdt-green">
+                        +${FLEET_PREVIEW[selectedTierIndex].dailyUsdt.toFixed(2)} USDT / day
+                      </div>
+                    </div>
+                    <span className="rounded-full border border-usdt-green/20 bg-usdt-green/10 px-2 py-1 text-[10px] font-bold text-usdt-green">
+                      {FLEET_PREVIEW[selectedTierIndex].tag}
+                    </span>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
