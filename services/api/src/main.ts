@@ -96,6 +96,10 @@ async function bootstrap() {
         process.env.TELEGRAM_WEBAPP_URL,
         'https://titanstream.app',
         'https://tetherstream.app',
+        'https://titanstream.cc',
+        'https://www.titanstream.cc',
+        'https://tetherstream.cc',
+        'https://www.tetherstream.cc',
       ].filter((o): o is string => !!o).map(o => o.replace(/\/$/, ''));
 
       const cleanOrigin = origin.replace(/\/$/, '');
@@ -103,6 +107,8 @@ async function bootstrap() {
         allowedOrigins.includes(cleanOrigin) ||
         cleanOrigin.endsWith('.tetherstream.app') ||
         cleanOrigin.endsWith('.titanstream.app') ||
+        cleanOrigin.endsWith('.tetherstream.cc') ||
+        cleanOrigin.endsWith('.titanstream.cc') ||
         cleanOrigin.endsWith('.netlify.app') ||
         cleanOrigin.endsWith('.railway.app') ||
         cleanOrigin.endsWith('.ngrok-free.dev') ||
@@ -122,6 +128,9 @@ async function bootstrap() {
       'X-Admin-Token',
       'X-StepUp-Token',
       'x-stepup-token',
+      'X-Idempotency-Key',
+      'x-idempotency-key',
+      'Idempotency-Key',
       'ngrok-skip-browser-warning',
       'crypto-pay-api-signature',
     ],
