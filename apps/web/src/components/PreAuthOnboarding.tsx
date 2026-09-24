@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Check, ChevronLeft, Cpu, LockKeyhole, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, Cpu, LockKeyhole, MessageSquare, Send, ShieldCheck, Sparkles, TrendingUp, Users, Wallet } from 'lucide-react';
 import { useLegalModalStore } from '../store/useLegalModalStore';
 import { completePreAuthOnboarding } from '../utils/preAuthOnboarding';
 import { MACHINE_CATALOG } from '../data/machines';
@@ -13,6 +13,9 @@ type Slide = {
   icon: typeof Cpu;
   accent: string;
   fleet?: boolean;
+  ticker?: boolean;
+  auth?: boolean;
+  referral?: boolean;
 };
 
 // Live GPU fleet preview, synced with the machine catalog (single source of truth).
@@ -29,39 +32,41 @@ const FLEET_PREVIEW = (['TS_TRIAL', 'TS_P250', 'TS_X1000'] as const).map((tierCo
 
 const slides: Slide[] = [
   {
-    eyebrow: 'TITANSTREAM',
-    title: 'Cloud compute, made clear.',
-    description: 'Explore a single place to provision compute capacity, follow your fleet, and manage settlement preferences.',
-    highlights: ['A clear view of your machines', 'Wallet and local payment options'],
-    icon: Cpu,
-    accent: 'from-emerald-400 to-cyan-300',
-  },
-  {
     eyebrow: 'REAL GPU COMPUTE',
     title: 'Real GPU Compute Power.',
-    description: 'TitanStream provisions high-density NVIDIA GPU clusters. Your capital fuels real AI workloads and earns daily yield.',
-    highlights: ['Free Titan Core starter rig', 'Real hardware, daily USDT yield'],
+    description: 'TitanStream provisions high density NVIDIA GPU clusters. Your capital fuels real AI workloads and earns daily yield. Every new operator receives a free Titan Core starter rig on sign in.',
+    highlights: ['Free Titan Core starter rig', 'Tap a tier to preview daily yield'],
     icon: TrendingUp,
     accent: 'from-emerald-400 to-cyan-300',
     fleet: true,
+    referral: true,
   },
   {
-    eyebrow: 'WHAT TO EXPECT',
-    title: 'Know what happens next.',
-    description: 'Sign in with the messaging app you already use. We’ll then guide you through the few details needed to set up your workspace.',
-    highlights: ['Telegram or WhatsApp sign-in', 'No password to remember'],
+    eyebrow: 'EARN IN YOUR CURRENCY',
+    title: 'Payouts every second.',
+    description: 'Earnings accumulate every second. Watch your balance grow live in USDT or your local currency with one tap conversion.',
+    highlights: ['Live accumulation ticker', 'One tap currency switch'],
     icon: Sparkles,
     accent: 'from-sky-400 to-indigo-400',
+    ticker: true,
   },
   {
-    eyebrow: 'PRIVATE BY DESIGN',
-    title: 'Your account stays protected.',
-    description: 'Every sign-in is confirmed through your selected channel. Review terms and risk information before activating anything.',
-    highlights: ['Channel-confirmed access', 'Transparent terms before activation'],
+    eyebrow: 'SIGN IN SECURELY',
+    title: 'No passwords needed.',
+    description: 'Sign in with WhatsApp or Telegram. Cash out to Mobile Money, including M-Pesa, MTN and Airtel, or crypto. Every sign in is confirmed through your channel.',
+    highlights: ['Access confirmed through your channel', 'Terms shown before activation'],
     icon: ShieldCheck,
     accent: 'from-violet-400 to-fuchsia-400',
+    auth: true,
   },
 ];
+
+const currencyRates = {
+  USDT: { symbol: '₮', rate: 1, label: 'USDT' },
+  KES: { symbol: 'KSh', rate: 130, label: 'KES' },
+  UGX: { symbol: 'UGX', rate: 3700, label: 'UGX' },
+  NGN: { symbol: '₦', rate: 1480, label: 'NGN' },
+};
 
 interface PreAuthOnboardingProps {
   onComplete: () => void;
@@ -74,11 +79,22 @@ interface PreAuthOnboardingProps {
 export function PreAuthOnboarding({ onComplete }: PreAuthOnboardingProps) {
   const [step, setStep] = useState(0);
   const [selectedTierIndex, setSelectedTierIndex] = useState(0);
+  const [currency, setCurrency] = useState<'USDT' | 'KES' | 'UGX' | 'NGN'>('USDT');
+  const [liveCounter, setLiveCounter] = useState(19.026);
+  const [authChannel, setAuthChannel] = useState<'whatsapp' | 'telegram'>('whatsapp');
+  const [invitedFriends, setInvitedFriends] = useState(5);
   const prefersReducedMotion = useReducedMotion();
   const openLegalModal = useLegalModalStore((state) => state.openLegalModal);
   const slide = slides[step];
   const Icon = slide.icon;
   const isLastStep = step === slides.length - 1;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveCounter((prev) => prev + 0.003);
+    }, 200);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -93,6 +109,12 @@ export function PreAuthOnboarding({ onComplete }: PreAuthOnboardingProps) {
     completePreAuthOnboarding();
     onComplete();
   };
+
+  const currInfo = currencyRates[currency];
+  const convertedLive = (liveCounter * currInfo.rate).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   return (
     <div className="fixed inset-0 z-[60] flex min-h-[100dvh] items-center justify-center overflow-y-auto bg-[#06070b] p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="pre-auth-title">
@@ -170,6 +192,105 @@ export function PreAuthOnboarding({ onComplete }: PreAuthOnboardingProps) {
                     <span className="rounded-full border border-usdt-green/20 bg-usdt-green/10 px-2 py-1 text-[10px] font-bold text-usdt-green">
                       {FLEET_PREVIEW[selectedTierIndex].tag}
                     </span>
+                  </div>
+                </div>
+              )}
+              {slide.referral && (
+                <div className="mt-2.5 space-y-3 rounded-2xl border border-white/10 bg-[#161a26] p-4">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-text-tertiary">
+                    <span>REFERRAL BOOST SIMULATOR</span>
+                    <span className="font-mono text-gold">{invitedFriends} Friends</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="20"
+                    value={invitedFriends}
+                    onChange={(e) => setInvitedFriends(parseInt(e.target.value, 10))}
+                    className="h-2 w-full cursor-pointer rounded-lg bg-black/40 accent-gold"
+                    aria-label="Invited friends"
+                  />
+                  <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#0b0e17] p-3">
+                    <div className="flex items-center gap-2">
+                      <Users size={18} className="text-gold" />
+                      <div>
+                        <div className="text-[10px] font-medium text-text-tertiary">Est. Network Daily Bonus</div>
+                        <div className="text-sm font-black text-gold">
+                          +${(invitedFriends * 1.5).toFixed(2)} USDT / day
+                        </div>
+                      </div>
+                    </div>
+                    <span className="rounded-full border border-gold/20 bg-gold/10 px-2 py-1 text-[10px] font-bold text-gold">
+                      Network Bonus
+                    </span>
+                  </div>
+                </div>
+              )}
+              {slide.ticker && (
+                <div className="mt-6 space-y-3 rounded-2xl border border-white/10 bg-[#161a26] p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-text-tertiary">LIVE ACCUMULATION TICKER</span>
+                    <div className="flex gap-1 rounded-lg border border-white/10 bg-black/40 p-1">
+                      {(['USDT', 'KES', 'UGX', 'NGN'] as const).map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setCurrency(c)}
+                          className={`rounded px-2 py-0.5 text-[10px] font-black transition-colors ${
+                            currency === c ? 'bg-usdt-green text-black' : 'text-text-tertiary hover:text-white'
+                          }`}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="relative overflow-hidden rounded-xl border border-white/5 bg-[#0b0e17] p-4 text-center">
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-text-tertiary">Ready to Collect</div>
+                    <div className="mt-1 font-mono text-2xl font-black tracking-tight text-white sm:text-3xl">
+                      {currInfo.symbol} {convertedLive} <span className="text-xs font-bold text-usdt-green">{currInfo.label}</span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-center gap-1.5 text-[10px] font-semibold text-emerald-400">
+                      <span className="h-2 w-2 animate-ping rounded-full bg-emerald-400" />
+                      <span>Live yield active around the clock</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {slide.auth && (
+                <div className="mt-6 space-y-3 rounded-2xl border border-white/10 bg-[#161a26] p-3.5">
+                  <div className="text-[11px] font-bold text-text-tertiary">CHOOSE YOUR PREFERRED AUTH CHANNEL</div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setAuthChannel('whatsapp')}
+                      className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-all ${
+                        authChannel === 'whatsapp'
+                          ? 'border-emerald-500 bg-emerald-500/15 text-white shadow-lg'
+                          : 'border-white/5 bg-white/5 text-text-tertiary hover:border-white/20'
+                      }`}
+                    >
+                      <MessageSquare className="h-6 w-6 text-emerald-400" />
+                      <div className="text-xs font-black">WhatsApp Auth</div>
+                      <span className="text-[9px] font-semibold text-emerald-400">One Tap Verification</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAuthChannel('telegram')}
+                      className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-all ${
+                        authChannel === 'telegram'
+                          ? 'border-sky-500 bg-sky-500/15 text-white shadow-lg'
+                          : 'border-white/5 bg-white/5 text-text-tertiary hover:border-white/20'
+                      }`}
+                    >
+                      <Send className="h-6 w-6 text-sky-400" />
+                      <div className="text-xs font-black">Telegram Bot</div>
+                      <span className="text-[9px] font-semibold text-sky-400">Instant Mini App</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-[#0b0e17] p-2.5 text-[11px] text-text-secondary">
+                    <Wallet size={16} className="shrink-0 text-gold" />
+                    <span>Instant local settlement with M-Pesa, Airtel Money or USDT wallet.</span>
                   </div>
                 </div>
               )}
