@@ -4,7 +4,8 @@ import { AuditService } from '../audit/audit.service';
 import { NotificationService } from '../notification/notification.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
 import { MachineService } from '../machine/machine.service';
-import { FinancialOperationType, AuditEventType } from '@prisma/client';
+import { MerchantPaymentMatchingService } from '../settlement/merchant-payment-matching.service';
+import { FinancialOperationType, AuditEventType, SettlementStatus, SettlementEventType } from '@prisma/client';
 
 /**
  * DEPRECATED: PaymentOrderService is quarantined.
@@ -97,6 +98,7 @@ export class PaymentOrderService {
     private readonly orchestrator: FinancialOrchestratorService,
     @Inject(forwardRef(() => MachineService))
     private readonly machineService?: MachineService,
+    private readonly matching?: MerchantPaymentMatchingService,
   ) {
     this.logger.warn('[DEPRECATED] PaymentOrderService is quarantined. Use PaymentIntentService for all new payment flows.');
   }
@@ -157,6 +159,105 @@ export class PaymentOrderService {
       where: { OR: [{ id: orderId }, { referenceCode: orderId }] },
     });
     if (!session) throw new NotFoundException('PAYMENT_ORDER_NOT_FOUND');
+    return this.toRecord(session);
+  }
+
+  /**
+   * Resolve the numeric Telegram user id from an authenticated request user.
+   * request.user.telegramUserId is the canonical numeric identity; UUID-style
+   * ids cannot be coerced and are rejected instead of hashed.
+   */
+  resolveTelegramUserId(user: any): bigint {
+    const raw = user?.telegramUserId ?? user?.providerSubject;
+    const str = String(raw ?? '').trim();
+    if (!/^\d+$/.test(str)) {
+      throw new BadRequestException('PAYMENT_ORDER_IDENTITY_UNRESOLVED');
+    }
+    return BigInt(str);
+  }
+
+  async listMyOrders(telegramUserId: bigint) {
+    const sessions = await this.prisma.settlementSession.findMany({
+      where: { telegramUserId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    return sessions.map((s) => this.toRecord(s));
+  }
+
+  async getOrderForUser(orderId: string, telegramUserId: bigint) {
+    const session = await this.prisma.settlementSession.findFirst({
+      where: { OR: [{ id: orderId }, { referenceCode: orderId }], telegramUserId },
+    });
+    if (!session) throw new NotFoundException('PAYMENT_ORDER_NOT_FOUND');
+    return this.toRecord(session);
+  }
+
+  /**
+   * Customer submits their session for verification after paying.
+   * With a transaction reference the sanctioned claim+matching flow runs;
+   * without one the session is parked in AWAITING_VERIFICATION with a
+   * customer verification-started event for admin review.
+   */
+  async submitForVerification(orderId: string, telegramUserId: bigint, reference?: string) {
+    const session = await this.prisma.settlementSession.findFirst({
+      where: { OR: [{ id: orderId }, { referenceCode: orderId }], telegramUserId },
+    });
+    if (!session) throw new NotFoundException('PAYMENT_ORDER_NOT_FOUND');
+
+    const terminal: SettlementStatus[] = [
+      SettlementStatus.COMPLETED,
+      SettlementStatus.FAILED,
+      SettlementStatus.EXPIRED,
+      SettlementStatus.CANCELLED,
+      SettlementStatus.REJECTED,
+      SettlementStatus.REVERSED,
+    ];
+    if (terminal.includes(session.status)) {
+      throw new BadRequestException('PAYMENT_ORDER_TERMINAL_STATE');
+    }
+
+    const ref = (reference || '').trim();
+    if (ref.length >= 3) {
+      if (!this.matching) throw new BadRequestException('PAYMENT_ORDER_MATCHING_UNAVAILABLE');
+      await this.matching.submitCustomerReference(session.id, telegramUserId, ref);
+    } else {
+      const inReview: SettlementStatus[] = [
+        SettlementStatus.AWAITING_VERIFICATION,
+        SettlementStatus.VERIFYING,
+        SettlementStatus.PROOF_SUBMITTED,
+        SettlementStatus.PROOF_VERIFICATION_REQUIRED,
+      ];
+      if (!inReview.includes(session.status)) {
+        await this.prisma.settlementSession.update({
+          where: { id: session.id },
+          data: {
+            status: SettlementStatus.AWAITING_VERIFICATION,
+            events: {
+              create: {
+                eventType: SettlementEventType.SettlementVerificationStarted,
+                actorType: 'CUSTOMER',
+                actorId: telegramUserId.toString(),
+                payload: { source: 'payment-orders/verify' },
+              },
+            },
+          },
+        });
+      }
+    }
+    return this.getOrderForUser(session.id, telegramUserId);
+  }
+
+  async adminListOrders(limit = 100) {
+    const take = Math.min(Math.max(limit || 100, 1), 200);
+    const sessions = await this.prisma.settlementSession.findMany({
+      orderBy: { createdAt: 'desc' },
+      take,
+    });
+    return sessions.map((s) => this.toRecord(s));
+  }
+
+  private toRecord(session: any) {
     const meta = (session.providerMetadata as any) || {};
 
     return {
