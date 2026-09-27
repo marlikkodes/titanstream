@@ -97,6 +97,10 @@ enum AuditEventType {
   TRANSACTION_COMPLETED
   TRANSACTION_FAILED
   BALANCE_UPDATED
+  ACCOUNT_SETUP_COMPLETED
+  TRANSACTION_METHOD_CHANGED
+  WITHDRAWAL_PHONE_CHANGED
+  PROFILE_NAME_UPDATED
 }
 
 enum FinancialAccountStatus {
@@ -154,6 +158,10 @@ enum FinancialOperationType {
   MACHINE_REACTIVATION_SETTLE
   MACHINE_REPOWER_RESERVE
   MACHINE_REPOWER_SETTLE
+  STARTER_OUTPUT
+  REWARD_ALLOCATION
+  STARTER_FUNDING
+  STARTER_COMPLETION
   MACHINE_UPGRADE_RESERVE
   MACHINE_UPGRADE_SETTLE
 }
@@ -338,6 +346,7 @@ model User {
   withdrawalPhoneNumber  String?   @map("withdrawal_phone_number")
   withdrawalPhoneVerified Boolean  @default(false) @map("withdrawal_phone_verified")
   withdrawalPhoneVerifiedAt DateTime? @map("withdrawal_phone_verified_at")
+  preferredTransactionMethod TransactionMethod? @map("preferred_transaction_method")
   verifiedUsdtAddress    String?   @map("verified_usdt_address")
   usdtAddressVerified    Boolean   @default(false) @map("usdt_address_verified")
   usdtAddressVerifiedAt  DateTime? @map("usdt_address_verified_at")
@@ -377,6 +386,7 @@ model User {
   identity                  UniversalIdentity              @relation(fields: [identityId], references: [id], onDelete: Restrict)
   userPreferences           UserPreferences?
   userMachines              UserMachine[]
+  premiumEntitlement        UserPremiumEntitlement?
   achievements              Achievement[]
   crystalAccount            CrystalAccount?
   crystalTransactions       CrystalTransaction[]
@@ -2114,12 +2124,17 @@ model UserMachine {
   telegramUserId   BigInt   @map("telegram_user_id")
   tierCode         String   @map("tier_code")
   name             String   @map("name")
+  type             String   @default("TRIAL") @map("type")
   purchasePrice    Decimal  @map("purchase_price") @db.Decimal(36, 18)
   currency         String   @default("USDT") @map("currency")
   purchaseReference String? @unique @map("purchase_reference")
+  paymentReference  String?  @map("payment_reference")
   status           String   @default("ACTIVE") @map("status")
   capacityGhs      Decimal  @map("capacity_ghs") @db.Decimal(36, 18)
   lifetimeEarnings Decimal  @default(0.0) @map("lifetime_earnings") @db.Decimal(36, 18)
+  trialUsedAmount  Decimal  @default(0.0) @map("trial_used_amount") @db.Decimal(36, 18)
+  trialLimitAmount Decimal  @default(5.0) @map("trial_limit_amount") @db.Decimal(36, 18)
+  expiresAt        DateTime? @map("expires_at")
   purchasedAt      DateTime @default(now()) @map("purchased_at")
   activatedAt      DateTime @default(now()) @map("activated_at")
 
@@ -2128,7 +2143,29 @@ model UserMachine {
 
   @@index([telegramUserId])
   @@index([status])
+  @@index([type])
+  @@index([expiresAt])
   @@map("user_machines")
+}
+
+model UserPremiumEntitlement {
+  id               String   @id @default(uuid()) @map("entitlement_id")
+  telegramUserId   BigInt   @map("telegram_user_id")
+  tier             PremiumTier @default(STANDARD) @map("tier")
+  requiredAmount   Decimal  @default(1000.0) @map("required_amount") @db.Decimal(36, 18)
+  unlockedAt       DateTime? @map("unlocked_at")
+  unlockedByPaymentReference String? @map("unlocked_by_payment_reference")
+  lastPaymentAmount Decimal  @default(0.0) @map("last_payment_amount") @db.Decimal(36, 18)
+  totalLifetimePayment Decimal  @default(0.0) @map("total_lifetime_payment") @db.Decimal(36, 18)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
+
+  @@unique([telegramUserId])
+  @@index([tier])
+  @@index([unlockedAt])
+  @@map("user_premium_entitlements")
 }
 
 model MachineOutput {
@@ -2169,6 +2206,11 @@ enum IdentityProvider {
 enum AuthMethod {
   TELEGRAM
   WHATSAPP
+}
+
+enum TransactionMethod {
+  MOBILE_MONEY
+  CRYPTO
 }
 
 enum ShareChannel {
@@ -2689,6 +2731,18 @@ enum MachineStatus {
   DISABLED
   ARCHIVED
   MAINTENANCE
+}
+
+enum MachineType {
+  TRIAL
+  PAID
+  RENTED
+}
+
+enum PremiumTier {
+  STANDARD
+  PREMIUM
+  ELITE
 }
 
 enum MachineOutputStatus {

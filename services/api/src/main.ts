@@ -102,6 +102,7 @@ async function bootstrap() {
         .flatMap((o) => o.split(','))
         .map((o) => o.trim().replace(/\/$/, ''))
         .filter((o) => o.length > 0);
+
       const allowedOrigins = [
         process.env.TELEGRAM_WEBAPP_URL,
         ...extraOrigins,

@@ -14,6 +14,7 @@ import { FinancialModule } from '../financial/financial.module';
 import { NotificationModule } from '../notification/notification.module';
 import { AuditModule } from '../audit/audit.module';
 import { AutomationModule } from '../automation/automation.module';
+import { PremiumModule } from '../premium/premium.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { AutomationModule } from '../automation/automation.module';
     NotificationModule,
     AuditModule,
     AutomationModule,
+    PremiumModule,
   ],
   controllers: [PaymentIntentController], // PaymentApprovalQueueController temporarily disabled
   providers: [PaymentIntentService, MobileMoneyApprovalQueueService, UsdtAutomatedVerificationService, UsdtExceptionQueueService, PaymentIdempotencyService, AdminFourEyesService],

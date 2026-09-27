@@ -11,6 +11,14 @@ const REQUIRED_LEDGER_ACCOUNTS = [
   { code: 'ADJUSTMENTS', name: 'Adjustments', type: LedgerAccountType.EXPENSE },
   { code: 'SUSPENSE', name: 'Suspense', type: LedgerAccountType.LIABILITY },
   { code: 'SYSTEM', name: 'System', type: LedgerAccountType.SYSTEM },
+  { code: 'REFERRAL_FUNDING_RESERVE', name: 'Referral Funding Reserve', type: LedgerAccountType.LIABILITY },
+  { code: 'STARTER_FUNDING', name: 'Starter Funding', type: LedgerAccountType.LIABILITY },
+  { code: 'STARTER_OUTPUT', name: 'Starter Output', type: LedgerAccountType.EXPENSE },
+  { code: 'MACHINE_PURCHASE_SUSPENSE', name: 'Machine Purchase Suspense', type: LedgerAccountType.LIABILITY },
+  { code: 'RENEWAL_SUSPENSE', name: 'Renewal Suspense', type: LedgerAccountType.LIABILITY },
+  { code: 'REACTIVATION_SUSPENSE', name: 'Reactivation Suspense', type: LedgerAccountType.LIABILITY },
+  { code: 'REPOWER_SUSPENSE', name: 'Repower Suspense', type: LedgerAccountType.LIABILITY },
+  { code: 'UPGRADE_SUSPENSE', name: 'Upgrade Suspense', type: LedgerAccountType.LIABILITY },
 ];
 
 @Injectable()

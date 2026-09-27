@@ -7,6 +7,7 @@ import { RbacGuard } from '../guards/rbac.guard';
 import { AdminPermission } from '../interfaces/admin-permissions.enum';
 import { CreateMachineDto, GrantLicenseDto, MachineAdminService } from '../services/machine-admin.service';
 import { EconomyEngineService, EconomySimulationParams } from '../../machine/services/economy-engine.service';
+import { PremiumService } from '../../premium/premium.service';
 
 @Controller('admin/machines-hq')
 @UseGuards(AdminAuthGuard, RbacGuard)
@@ -14,6 +15,7 @@ export class AdminMachineController {
   constructor(
     private readonly machineAdminService: MachineAdminService,
     private readonly economyEngine: EconomyEngineService,
+    private readonly premiumService: PremiumService,
   ) {}
 
   @Get('catalog')
@@ -145,5 +147,37 @@ export class AdminMachineController {
     @Body() dto: { campaignCode: string; title: string; description: string; discountPct?: number; yieldBoostMult?: number; durationDays?: number },
   ) {
     return this.machineAdminService.createPromotion(admin, dto);
+  }
+
+  // Premium Management Endpoints
+  @Get('premium/:userId')
+  @Permissions(AdminPermission.USER_VIEW)
+  async getUserPremiumStatus(@Param('userId') userId: string) {
+    const telegramUserId = BigInt(userId);
+    return this.premiumService.getPremiumEntitlement(telegramUserId);
+  }
+
+  @Post('premium/:userId/grant')
+  @Permissions(AdminPermission.USER_EDIT)
+  async grantPremium(
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+    @Param('userId') userId: string,
+    @Body() body: { reason: string },
+  ) {
+    const telegramUserId = BigInt(userId);
+    await this.premiumService.grantPremium(telegramUserId, body?.reason || `Admin grant by ${admin.email}`);
+    return { success: true, message: 'Premium access granted' };
+  }
+
+  @Post('premium/:userId/revoke')
+  @Permissions(AdminPermission.USER_EDIT)
+  async revokePremium(
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+    @Param('userId') userId: string,
+    @Body() body: { reason: string },
+  ) {
+    const telegramUserId = BigInt(userId);
+    await this.premiumService.revokePremium(telegramUserId, body?.reason || `Admin revoke by ${admin.email}`);
+    return { success: true, message: 'Premium access revoked' };
   }
 }

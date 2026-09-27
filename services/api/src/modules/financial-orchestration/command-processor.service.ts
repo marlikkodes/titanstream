@@ -284,6 +284,58 @@ export class CommandProcessorService {
           amount: command.amount,
           reference: `${command.reference}-cr`,
         });
+      } else if (command.operationType === FinancialOperationType.REWARD_ALLOCATION) {
+        lines.push({
+          ledgerAccountCode: 'REFERRAL_FUNDING_RESERVE',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'USER_ASSET_LIABILITY',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.STARTER_FUNDING) {
+        lines.push({
+          ledgerAccountCode: 'REFERRAL_FUNDING_RESERVE',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'STARTER_FUNDING',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.STARTER_OUTPUT) {
+        lines.push({
+          ledgerAccountCode: 'STARTER_FUNDING',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'USER_ASSET_LIABILITY',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
+      } else if (command.operationType === FinancialOperationType.STARTER_COMPLETION) {
+        lines.push({
+          ledgerAccountCode: 'STARTER_FUNDING',
+          entryType: LedgerEntryType.DEBIT,
+          amount: command.amount,
+          reference: `${command.reference}-dr`,
+        });
+        lines.push({
+          ledgerAccountCode: 'REFERRAL_FUNDING_RESERVE',
+          entryType: LedgerEntryType.CREDIT,
+          amount: command.amount,
+          reference: `${command.reference}-cr`,
+        });
       } else {
         lines.push({
           ledgerAccountCode: 'ADJUSTMENTS',

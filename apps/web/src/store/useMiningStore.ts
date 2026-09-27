@@ -5,7 +5,7 @@ import { machineService, type UserMachineAsset } from '../services/machineServic
 import { useWalletStore } from './useWalletStore';
 import { MACHINE_CATALOG } from '../data/machines';
 
-type Currency = 'USDT' | 'TON';
+type Currency = 'USDT' | 'BTC';
 
 export interface MiningState {
   // ── Authoritative engine state (backend session + optimistic taps) ──
@@ -39,16 +39,16 @@ export interface MiningState {
   dailyTapLimit: number;
   weeklyTapLimit: number;
   monthlyTapLimit: number;
-  tonUnlocked: boolean;
-  tonPrice: number;
+  btcUnlocked: boolean;
+  btcPrice: number;
   usdtSpinnerIdx: number;
-  tonSpinnerIdx: number;
+  btcSpinnerIdx: number;
   hasPurchasedMachine: boolean;
 
   // ── Actions ──
   toggleCurrency: (currency: Currency) => Promise<void>;
   setUsdtSpinnerIdx: (idx: number) => void;
-  setTonSpinnerIdx: (idx: number) => void;
+  setBtcSpinnerIdx: (idx: number) => void;
   tap: () => number; // returns per-tap yield for particle feedback (-1 if tap failed)
   applyServerSession: (session: MiningStateResponse, opts?: { snapDisplay?: boolean; isClaim?: boolean }) => void;
   fetchMiningState: () => Promise<void>;
@@ -61,7 +61,7 @@ export interface MiningState {
   markMachinePurchased: () => void;
   upgradeLimits: () => void;
   resetTaps: (period: 'daily' | 'weekly' | 'monthly') => void;
-  unlockTON: () => void;
+  unlockBTC: () => void;
   isMiningLocked: () => boolean;
   getActiveHashSpeed: () => number;
   isPaused: boolean;
@@ -72,7 +72,7 @@ export interface MiningState {
 }
 
 const MIN_BOOST_USDT = [0, 5.0, 25.0, 130.0, 550.0, 1500.0];
-const MIN_BOOST_TON = [0, 5.0, 25.0, 130.0, 550.0, 1500.0];
+const MIN_BOOST_BTC = [0, 5.0, 25.0, 130.0, 550.0, 1500.0];
 
 const TICK_MS = 100;
 const EASE_UP = 0.3; // fast catch-up toward higher targets (taps)
@@ -173,10 +173,10 @@ export const useMiningStore = create<MiningState>()(
     dailyTapLimit: 200,
     weeklyTapLimit: 1000,
     monthlyTapLimit: 4000,
-    tonUnlocked: localStorage.getItem('ton_unlocked') !== 'false',
-    tonPrice: 110.00,
+    btcUnlocked: localStorage.getItem('btc_unlocked') !== 'false',
+    btcPrice: 65000.00,
     usdtSpinnerIdx: 0,
-    tonSpinnerIdx: 0,
+    btcSpinnerIdx: 0,
     hasPurchasedMachine: false,
 
     /**
@@ -349,7 +349,7 @@ export const useMiningStore = create<MiningState>()(
     },
 
     setUsdtSpinnerIdx: (idx) => set({ usdtSpinnerIdx: idx }),
-    setTonSpinnerIdx: (idx) => set({ tonSpinnerIdx: idx }),
+    setBtcSpinnerIdx: (idx) => set({ btcSpinnerIdx: idx }),
 
     /**
      * Tap flow: optimistic multiplier bump for instant progress feedback, then
@@ -472,18 +472,18 @@ export const useMiningStore = create<MiningState>()(
         tapsThisWeek: period === 'weekly' ? 0 : state.tapsThisWeek,
         tapsThisMonth: period === 'monthly' ? 0 : state.tapsThisMonth,
       })),
-    unlockTON: () => {
-      localStorage.setItem('ton_unlocked', 'true');
-      set({ tonUnlocked: true });
+    unlockBTC: () => {
+      localStorage.setItem('btc_unlocked', 'true');
+      set({ btcUnlocked: true });
     },
     isMiningLocked: (tierCode?: string) => {
       const s = get();
-      if (s.activeCurrency === 'TON' && !s.tonUnlocked) {
+      if (s.activeCurrency === 'BTC' && !s.btcUnlocked) {
         return true;
       }
 
       const isUsdt = s.activeCurrency === 'USDT';
-      const spinnerIdx = isUsdt ? s.usdtSpinnerIdx : s.tonSpinnerIdx;
+      const spinnerIdx = isUsdt ? s.usdtSpinnerIdx : s.btcSpinnerIdx;
       const targetTier = tierCode || MACHINE_CATALOG[spinnerIdx]?.tierCode;
 
       if (!targetTier || targetTier.toUpperCase() === 'TS_TRIAL') {
@@ -654,7 +654,7 @@ export const useMiningStore = create<MiningState>()(
         tapsThisWeek: state.tapsThisWeek,
         tapsThisMonth: state.tapsThisMonth,
         usdtSpinnerIdx: state.usdtSpinnerIdx,
-        tonSpinnerIdx: state.tonSpinnerIdx,
+        btcSpinnerIdx: state.btcSpinnerIdx,
       }),
     }
   )

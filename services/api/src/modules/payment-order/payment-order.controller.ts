@@ -9,27 +9,24 @@ import { CurrentAdmin, AuthenticatedAdmin } from '../admin/decorators/current-ad
 
 @ApiTags('Payment Orders - LEGACY')
 @Controller('payment-orders')
+// NOTE: handlers return raw payloads. The global TransformInterceptor
+// single-wraps them into { success: true, data }, which is the shape the
+// web paymentOrderService unwraps (res.data?.data). Do NOT pre-wrap here
+// or responses double-wrap and the UI reads empty lists.
 export class PaymentOrderController {
   constructor(private readonly service: PaymentOrderService) {}
 
   @Get('destinations')
   @ApiOperation({ summary: 'Get active Mobile Money receiving destinations & USSD templates' })
   getDestinations() {
-    return {
-      success: true,
-      data: this.service.getDestinationConfigs(),
-    };
+    return this.service.getDestinationConfigs();
   }
 
   @Get('my')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'List current user payment orders (newest first)' })
   async getMyOrders(@CurrentUser() user: any) {
-    const data = await this.service.listMyOrders(this.service.resolveTelegramUserId(user));
-    return {
-      success: true,
-      data,
-    };
+    return this.service.listMyOrders(this.service.resolveTelegramUserId(user));
   }
 
   @Get('admin/list')
@@ -37,11 +34,7 @@ export class PaymentOrderController {
   @ApiOperation({ summary: 'Admin list recent payment orders' })
   async adminListOrders(@Query('limit') limit?: string) {
     const parsed = limit ? parseInt(limit, 10) : 100;
-    const data = await this.service.adminListOrders(Number.isFinite(parsed) ? parsed : 100);
-    return {
-      success: true,
-      data,
-    };
+    return this.service.adminListOrders(Number.isFinite(parsed) ? parsed : 100);
   }
 
   @Post(':id/verify')
@@ -52,26 +45,18 @@ export class PaymentOrderController {
     @CurrentUser() user: any,
     @Body() body?: any,
   ) {
-    const data = await this.service.submitForVerification(
+    return this.service.submitForVerification(
       id,
       this.service.resolveTelegramUserId(user),
       body?.reference,
     );
-    return {
-      success: true,
-      data,
-    };
   }
 
   @Get(':id')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get own payment order by id or reference code' })
   async getOrder(@Param('id') id: string, @CurrentUser() user: any) {
-    const data = await this.service.getOrderForUser(id, this.service.resolveTelegramUserId(user));
-    return {
-      success: true,
-      data,
-    };
+    return this.service.getOrderForUser(id, this.service.resolveTelegramUserId(user));
   }
 
   @Post('admin/destinations/:id')
@@ -81,10 +66,6 @@ export class PaymentOrderController {
     @Param('id') id: string,
     @Body() body: any,
   ) {
-    const cfg = this.service.updateDestinationConfig(id, body);
-    return {
-      success: true,
-      data: cfg,
-    };
+    return this.service.updateDestinationConfig(id, body);
   }
 }

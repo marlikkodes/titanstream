@@ -166,7 +166,7 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
           onClick={() => setMinimized(false)}
-          className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-md bg-gradient-to-r from-usdt-green/20 to-gold/10 border border-usdt-green/40 rounded-2xl p-3 flex items-center gap-2.5 shadow-2xl shadow-usdt-green/20 press-feedback"
+          className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-md rewards-sheet-surface border border-usdt-green/40 rounded-2xl p-3 flex items-center gap-2.5 press-feedback"
         >
           <Loader2 size={14} className="animate-spin text-usdt-green flex-shrink-0" />
           <div className="flex-1 min-w-0 text-left">
@@ -188,7 +188,7 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 120, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 280, damping: 26 }}
-          className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-md web3-card rounded-3xl border border-usdt-green/40 p-4 shadow-2xl shadow-usdt-green/25"
+          className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-md rewards-sheet-surface rounded-3xl border border-usdt-green/40 p-4 max-h-[calc(100dvh-7rem)] overflow-y-auto no-scrollbar"
         >
           {/* Header */}
           <div className="flex items-center justify-between">

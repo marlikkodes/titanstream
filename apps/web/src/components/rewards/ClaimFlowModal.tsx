@@ -62,13 +62,13 @@ export const ClaimFlowModal: React.FC<ClaimFlowModalProps> = ({ reward, isOpen, 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <div role="dialog" aria-modal="true" aria-label="Claim reward" className="fixed inset-0 z-50 flex items-center justify-center rewards-modal-backdrop p-4 overflow-y-auto">
           <motion.div
             initial={{ scale: 0.92, opacity: 0, y: 12 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.94, opacity: 0, y: 8 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full max-w-sm bg-gradient-to-b from-card-bg via-app-bg to-control-bg border border-usdt-green/40 rounded-3xl p-6 shadow-2xl space-y-4 text-text-primary"
+            className="w-full max-w-sm rewards-modal-surface border border-usdt-green/40 rounded-3xl p-6 space-y-4 text-text-primary my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto no-scrollbar"
           >
             {/* Header */}
             <div className="flex items-center justify-between">

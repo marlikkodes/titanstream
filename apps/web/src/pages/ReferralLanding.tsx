@@ -52,7 +52,7 @@ export const ReferralLanding: React.FC = () => {
   }, [code, navigate, isExistingUser, session]);
 
   const handleContinue = () => {
-    window.location.href = '/';
+    window.location.href = '/?onboarding=true';
   };
 
   const handleGoToGrow = () => {

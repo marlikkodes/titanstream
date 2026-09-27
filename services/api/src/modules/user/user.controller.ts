@@ -4,6 +4,7 @@ import { UserService } from './user.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateAccountSetupDto } from './dto/account-setup.dto';
 
 @ApiTags('Users')
 @Controller()
@@ -58,6 +59,18 @@ export class UserController {
   ) {
     const raw = body.withdrawalPhoneNumber || body.phoneNumber || '';
     return this.userService.updateWithdrawalPhoneNumber(userId, raw);
+  }
+
+  @Get('users/me/account-setup')
+  @ApiOperation({ summary: 'Get canonical Account Setup state (backend-authoritative completion)' })
+  async getAccountSetup(@CanonicalUserId() userId: string) {
+    return this.userService.getAccountSetup(userId);
+  }
+
+  @Patch('users/me/account-setup')
+  @ApiOperation({ summary: 'Save Account Setup personalization (idempotent, canonical user only)' })
+  async updateAccountSetup(@CanonicalUserId() userId: string, @Body() dto: UpdateAccountSetupDto) {
+    return this.userService.updateAccountSetup(userId, dto);
   }
 
   @Delete(['users/me', 'user/delete'])

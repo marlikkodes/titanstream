@@ -6,7 +6,7 @@ import { showToast } from '../../../components/Toast';
 import { useCountryStore } from '../../../store/useCountryStore';
 
 export const MiningModeToggle: React.FC = () => {
-  const { activeCurrency, toggleCurrency, tonUnlocked, tonPrice, unlockTON } = useMiningStore();
+  const { activeCurrency, toggleCurrency, btcUnlocked, btcPrice, unlockBTC } = useMiningStore();
   const { usdtBalance, updateBalance } = useWalletStore();
   const { getLocalAmount } = useCountryStore();
 
@@ -29,41 +29,41 @@ export const MiningModeToggle: React.FC = () => {
 
         <button
           onClick={() => {
-            if (!tonUnlocked) {
-              if (usdtBalance >= tonPrice) {
-                updateBalance({ usdtBalance: usdtBalance - tonPrice });
-                unlockTON();
-                toggleCurrency('TON');
-                showToast('TON mode unlocked! You can now earn in TON.', 'success');
+            if (!btcUnlocked) {
+              if (usdtBalance >= btcPrice) {
+                updateBalance({ usdtBalance: usdtBalance - btcPrice });
+                unlockBTC();
+                toggleCurrency('BTC');
+                showToast('BTC mode unlocked! You can now earn in BTC.', 'success');
               } else {
-                showToast(`Not enough money in wallet. ${getLocalAmount(tonPrice)} needed to unlock TON mode.`, 'error');
+                showToast(`Not enough money in wallet. ${getLocalAmount(btcPrice)} needed to unlock BTC mode.`, 'error');
               }
             } else {
-              toggleCurrency('TON');
+              toggleCurrency('BTC');
             }
           }}
           className={`
             flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold press-feedback transition-all relative
-            ${activeCurrency === 'TON'
-              ? 'bg-ton-blue text-white shadow-sm'
-              : tonUnlocked
+            ${activeCurrency === 'BTC'
+              ? 'bg-gradient-to-r from-gold to-amber-500 text-white shadow-sm'
+              : btcUnlocked
               ? 'text-text-secondary hover:text-text-primary'
               : 'text-text-tertiary'
             }
           `}
         >
-          {!tonUnlocked && (
+          {!btcUnlocked && (
             <div className="absolute -top-1 -right-1">
               <Lock size={10} className="text-gold" />
             </div>
           )}
           <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center font-bold text-[10px]">
-            {tonUnlocked ? '💎' : <Lock size={10} />}
+            {btcUnlocked ? '₿' : <Lock size={10} />}
           </span>
-          {tonUnlocked ? 'TON' : (
+          {btcUnlocked ? 'BTC' : (
             <span className="flex flex-col items-center leading-none">
               <span>PREMIUM</span>
-              <span className="text-[8px] font-normal text-gold">{getLocalAmount(tonPrice)}</span>
+              <span className="text-[8px] font-normal text-gold">{getLocalAmount(btcPrice)}</span>
             </span>
           )}
         </button>

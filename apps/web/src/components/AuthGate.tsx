@@ -42,6 +42,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const setAuthError = useAuthStore((s) => s.setAuthError);
 
   const authAttempted = useRef(false);
+  const waChallengeInFlight = useRef(false);
 
   // Local UI states
   const [webDeepLink, setWebDeepLink] = useState<string | null>(null);
@@ -224,15 +225,26 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
       try {
         const raw = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         const userPayload = raw.result || raw.user || raw.data || (raw.event === 'auth_result' ? raw.result : null);
-        if (!userPayload) return;
+        if (!userPayload || typeof userPayload !== 'object') return;
 
         window.removeEventListener('message', handleMessage);
         try { popup?.close(); } catch {}
 
-        const userId = userPayload.id || userPayload.telegramUserId;
-        console.info(`[AUTH_GATE:${traceId}] web.login_callback_received id=${userId}`);
+        // Safe diagnostics only: never log bot token, hash, JWT, or refresh token.
+        const payloadKeys = Object.keys(userPayload);
+        const userId = (userPayload as any).id || (userPayload as any).telegramUserId;
+        console.info(
+          `[AUTH_GATE:${traceId}] web.login_callback_received id=${userId ?? 'missing'} ` +
+          `keys=${payloadKeys.join(',')} ` +
+          `id_present=${'id' in userPayload} auth_date_present=${'auth_date' in userPayload} ` +
+          `hash_present=${'hash' in userPayload} id_token_present=${'id_token' in userPayload} ` +
+          `first_name_present=${'first_name' in userPayload} username_present=${'username' in userPayload}`
+        );
         const pendingRef = localStorage.getItem('pending_referral_code') || sessionStorage.getItem('pending_referral_code');
-        
+
+        // Forward the Telegram payload unchanged. Control fields (nonce,
+        // referralCode) are sent alongside — never merged into the signed data.
+        // The backend excludes them from the HMAC base string by design.
         let sessionData: any = null;
         try {
           const res = await api.post('/auth/telegram-login', { ...userPayload, nonce, referralCode: pendingRef });
@@ -240,7 +252,11 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
             sessionData = res.data.data;
           }
         } catch (apiErr: any) {
-          console.warn(`[AUTH_GATE:${traceId}] API telegram-login notice:`, apiErr?.message);
+          // Propagate the structured backend reason instead of masking it.
+          const backendCode = apiErr?.response?.data?.error?.code;
+          const backendMsg = apiErr?.response?.data?.error?.message || apiErr?.message || 'Telegram verification failed';
+          console.warn(`[AUTH_GATE:${traceId}] API telegram-login notice:`, backendMsg, backendCode ? `code=${backendCode}` : '');
+          throw new Error(backendMsg);
         }
 
         if (!sessionData) {
@@ -314,6 +330,8 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // ── WhatsApp Login Challenge Handler ──────────────────────────────────────
   const createWhatsAppChallenge = useCallback(async () => {
+    if (waChallengeInFlight.current) return;
+    waChallengeInFlight.current = true;
     setWaLoading(true);
     setWaError(null);
     try {
@@ -336,6 +354,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     } catch (err: any) {
       setWaError(err.response?.data?.error?.message || err.message || 'Failed to initialize WhatsApp sign-in request.');
     } finally {
+      waChallengeInFlight.current = false;
       setWaLoading(false);
     }
   }, [deviceContext]);

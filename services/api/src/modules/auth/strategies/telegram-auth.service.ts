@@ -14,15 +14,33 @@ export interface TelegramInitDataUser {
 
 export interface TelegramWebLoginPayload {
   id: number | string;
-  first_name: string;
+  first_name?: string;
   last_name?: string;
   username?: string;
   photo_url?: string;
-  auth_date: number;
+  auth_date: number | string;
   hash: string;
   nonce?: string;
+  referralCode?: string;
+  referral_code?: string;
+  startParam?: string;
+  start_param?: string;
   id_token?: string;
+  // Allow future Telegram-signed fields without breaking verification.
+  [key: string]: unknown;
 }
+
+// Control fields added by TitanStream frontend / API layer. These are NEVER
+// part of Telegram's signed data-check-string and must be excluded from HMAC.
+const WEB_LOGIN_CONTROL_FIELDS = new Set([
+  'hash',
+  'nonce',
+  'referralCode',
+  'referral_code',
+  'startParam',
+  'start_param',
+  'id_token',
+]);
 
 @Injectable()
 export class TelegramAuthService {
@@ -92,29 +110,98 @@ export class TelegramAuthService {
       return this.verifyIdTokenSync(payload.id_token, payload.nonce);
     }
 
-    if (!payload || !payload.id || !payload.hash || !payload.auth_date) {
-      throw new BadRequestException('MALFORMED_WEB_LOGIN_PAYLOAD');
+    if (!payload || typeof payload !== 'object') {
+      throw new BadRequestException({
+        code: 'TELEGRAM_WEB_LOGIN_PAYLOAD_INVALID',
+        message: 'Invalid Telegram login payload.',
+      });
     }
 
-    // Verify freshness of auth_date (prevent stale payload replay)
-    const ageSeconds = Math.floor(Date.now() / 1000) - payload.auth_date;
+    const rawId = (payload as Record<string, unknown>).id;
+    const rawHash = (payload as Record<string, unknown>).hash;
+    const rawAuthDate = (payload as Record<string, unknown>).auth_date;
+
+    // Stage A — payload shape validation (malformed before crypto).
+    if (rawId === undefined || rawId === null || rawId === '') {
+      throw new BadRequestException({
+        code: 'TELEGRAM_WEB_LOGIN_PAYLOAD_INVALID',
+        message: 'Invalid Telegram login payload: missing id.',
+      });
+    }
+    if (typeof rawHash !== 'string' || rawHash.length === 0) {
+      throw new BadRequestException({
+        code: 'TELEGRAM_WEB_LOGIN_PAYLOAD_INVALID',
+        message: 'Invalid Telegram login payload: missing hash.',
+      });
+    }
+    if (rawAuthDate === undefined || rawAuthDate === null || rawAuthDate === '') {
+      throw new BadRequestException({
+        code: 'TELEGRAM_WEB_LOGIN_PAYLOAD_INVALID',
+        message: 'Invalid Telegram login payload: missing auth_date.',
+      });
+    }
+
+    const idStr = String(rawId);
+    if (!/^\d+$/.test(idStr)) {
+      throw new BadRequestException({
+        code: 'TELEGRAM_WEB_LOGIN_PAYLOAD_INVALID',
+        message: 'Invalid Telegram login payload: invalid id.',
+      });
+    }
+
+    const authDateNum = Number(rawAuthDate);
+    if (!Number.isFinite(authDateNum) || !Number.isInteger(Math.trunc(authDateNum)) || authDateNum <= 0) {
+      throw new BadRequestException({
+        code: 'TELEGRAM_WEB_LOGIN_PAYLOAD_INVALID',
+        message: 'Invalid Telegram login payload: invalid auth_date.',
+      });
+    }
+
+    if (!this.botToken) {
+      throw new UnauthorizedException({
+        code: 'TELEGRAM_WEB_LOGIN_BOT_CONFIGURATION_INVALID',
+        message: 'Telegram authentication is not configured.',
+      });
+    }
+
+    // Stage B — auth_date freshness (deliberate Login Widget tolerance: 24h,
+    // 5min future clock-skew allowance). Malformed/expired/future timestamps rejected.
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const ageSeconds = nowSeconds - Math.trunc(authDateNum);
     if (ageSeconds > this.webAuthMaxAgeSeconds || ageSeconds < -300) {
-      throw new UnauthorizedException('TELEGRAM_AUTH_DATE_EXPIRED');
+      throw new UnauthorizedException({
+        code: 'TELEGRAM_WEB_LOGIN_AUTH_DATE_EXPIRED',
+        message: 'Telegram authentication data is expired.',
+      });
     }
 
-    // Strict HMAC signature verification against Telegram bot token
+    // Stage C — cryptographic signature verification (Login Widget algorithm:
+    // secret = sha256(botToken), NOT the Mini App "WebAppData" HMAC).
     const isValid = this.verifyWebLoginSignature(payload);
     if (!isValid) {
-      throw new UnauthorizedException('INVALID_WEB_LOGIN_SIGNATURE');
+      throw new UnauthorizedException({
+        code: 'TELEGRAM_WEB_LOGIN_SIGNATURE_INVALID',
+        message: 'Telegram authentication failed.',
+      });
     }
 
+    const record = payload as Record<string, unknown>;
+    const strOrUndefined = (v: unknown): string | undefined =>
+      typeof v === 'string' && v.length > 0 ? v : undefined;
+
     return {
-      telegramUserId: String(payload.id),
-      firstName: payload.first_name || 'User',
-      lastName: payload.last_name,
-      username: payload.username,
+      telegramUserId: idStr,
+      firstName: strOrUndefined(record.first_name) || 'User',
+      lastName: strOrUndefined(record.last_name),
+      username: strOrUndefined(record.username),
       languageCode: 'en',
-      photoUrl: payload.photo_url,
+      photoUrl: strOrUndefined(record.photo_url),
+      startParam:
+        strOrUndefined(record.start_param) ||
+        strOrUndefined(record.startParam) ||
+        strOrUndefined(record.referralCode) ||
+        strOrUndefined(record.referral_code) ||
+        undefined,
     };
   }
 
@@ -394,11 +481,19 @@ export class TelegramAuthService {
   }
 
   private verifyWebLoginSignature(payload: TelegramWebLoginPayload): boolean {
-    const { hash, ...data } = payload;
-    const dataCheckString = Object.keys(data)
-      .filter((key) => data[key as keyof typeof data] !== undefined && data[key as keyof typeof data] !== null)
+    if (!this.botToken) return false;
+    const record = payload as Record<string, unknown>;
+    const hash = record.hash;
+    if (typeof hash !== 'string' || hash.length === 0) return false;
+    // Build the Telegram Login Widget data-check-string from Telegram-signed
+    // fields only. Control fields injected by TitanStream (nonce, referralCode,
+    // id_token, ...) are excluded — they were never signed by Telegram and
+    // including them breaks HMAC for every legitimate login (deterministic 401).
+    const dataCheckString = Object.keys(record)
+      .filter((key) => !WEB_LOGIN_CONTROL_FIELDS.has(key))
+      .filter((key) => record[key] !== undefined && record[key] !== null)
       .sort()
-      .map((key) => `${key}=${data[key as keyof typeof data]}`)
+      .map((key) => `${key}=${String(record[key])}`)
       .join('\n');
 
     const secretKey = createHash('sha256').update(this.botToken).digest();

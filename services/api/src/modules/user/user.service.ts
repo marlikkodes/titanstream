@@ -2,7 +2,55 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { Prisma } from '@prisma/client';
-import { UserState, AuditEventType } from '../../common/interfaces/user-state.enum';
+import { UserState, AuditEventType, TransactionMethod } from '../../common/interfaces/user-state.enum';
+import { UpdateAccountSetupDto } from './dto/account-setup.dto';
+
+// ─── Account Setup (personalized onboarding) validation ─────────────────────
+// Server-side authoritative validation. Frontend validation is UX only.
+
+const PERSON_NAME_RE = /^[\p{L}\p{M}][\p{L}\p{M} .'\-]*$/u;
+const TRANSACTION_NUMBER_RE = /^\+?[0-9]{8,15}$/;
+
+export function normalizePersonName(raw: unknown): string {
+  return typeof raw === 'string' ? raw.trim().replace(/\s+/g, ' ') : '';
+}
+
+export function isValidPersonName(raw: unknown): boolean {
+  const value = normalizePersonName(raw);
+  return value.length >= 1 && value.length <= 60 && PERSON_NAME_RE.test(value);
+}
+
+export function normalizeTransactionNumber(raw: unknown): string {
+  // Canonical normalization, identical to updateWithdrawalPhoneNumber:
+  // trim + strip all whitespace. No reformatting of legacy local formats.
+  return typeof raw === 'string' ? raw.trim().replace(/\s+/g, '') : '';
+}
+
+export function isValidTransactionNumber(raw: unknown): boolean {
+  return TRANSACTION_NUMBER_RE.test(normalizeTransactionNumber(raw));
+}
+
+export interface AccountSetupState {
+  firstName: string | null;
+  lastName: string | null;
+  withdrawalPhoneNumber: string | null;
+  preferredTransactionMethod: TransactionMethod | null;
+  completed: boolean;
+}
+
+export function isAccountSetupComplete(state: {
+  firstName: unknown;
+  lastName: unknown;
+  withdrawalPhoneNumber: unknown;
+  preferredTransactionMethod: unknown;
+}): boolean {
+  const method = state.preferredTransactionMethod;
+  const methodValid = method === TransactionMethod.MOBILE_MONEY || method === TransactionMethod.CRYPTO;
+  if (!methodValid) return false;
+  if (!isValidPersonName(state.firstName) || !isValidPersonName(state.lastName)) return false;
+  if (method === TransactionMethod.CRYPTO) return true;
+  return isValidTransactionNumber(state.withdrawalPhoneNumber);
+}
 
 export interface CreateUserData {
   telegramUserId: bigint;
@@ -532,6 +580,135 @@ export class UserService {
     }
 
     return this.serializeUser(user);
+  }
+
+  // ─── Account Setup (personalized onboarding) ──────────────────────────────
+  // Backend-authoritative personalization attached to the already authenticated
+  // canonical User. These paths NEVER create users, identities, or financial
+  // records: getProfile() throws USER_NOT_FOUND (fail safely, no fallbacks).
+
+  private toAccountSetupState(user: any): AccountSetupState {
+    // Minimal shape: only fields the setup UI consumes. Verified crypto
+    // destinations stay out of this response (privacy minimization).
+    const state = {
+      firstName: user.firstName ?? null,
+      lastName: user.lastName ?? null,
+      withdrawalPhoneNumber: user.withdrawalPhoneNumber ?? null,
+      preferredTransactionMethod: (user.preferredTransactionMethod ?? null) as TransactionMethod | null,
+      completed: false,
+    };
+    state.completed = isAccountSetupComplete(state);
+    return state;
+  }
+
+  async getAccountSetup(userKey: string | bigint): Promise<AccountSetupState> {
+    const user = await this.getProfile(userKey);
+    return this.toAccountSetupState(user);
+  }
+
+  async updateAccountSetup(userKey: string | bigint, dto: UpdateAccountSetupDto): Promise<AccountSetupState> {
+    const user = await this.getProfile(userKey);
+
+    const firstName = normalizePersonName(dto.firstName);
+    const lastName = normalizePersonName(dto.lastName);
+    if (!isValidPersonName(firstName)) {
+      throw new ConflictException('INVALID_FIRST_NAME');
+    }
+    if (!isValidPersonName(lastName)) {
+      throw new ConflictException('INVALID_LAST_NAME');
+    }
+
+    const method = dto.preferredTransactionMethod as TransactionMethod;
+    if (method !== TransactionMethod.MOBILE_MONEY && method !== TransactionMethod.CRYPTO) {
+      throw new ConflictException('INVALID_TRANSACTION_METHOD');
+    }
+
+    // Mobile Money requires an explicit withdrawal number (user declaration,
+    // not provider verification). Crypto ignores the field and preserves any
+    // existing destination — onboarding must not force wallet configuration.
+    let normalizedPhone: string | null = null;
+    if (method === TransactionMethod.MOBILE_MONEY) {
+      normalizedPhone = normalizeTransactionNumber(dto.withdrawalPhoneNumber);
+      if (!isValidTransactionNumber(normalizedPhone)) {
+        throw new ConflictException('INVALID_WITHDRAWAL_NUMBER');
+      }
+    }
+
+    const wasComplete = isAccountSetupComplete({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      withdrawalPhoneNumber: user.withdrawalPhoneNumber,
+      preferredTransactionMethod: user.preferredTransactionMethod,
+    });
+
+    const nameChanged = user.firstName !== firstName || (user.lastName ?? null) !== lastName;
+    const methodChanged = (user.preferredTransactionMethod ?? null) !== method;
+    const phoneChanged =
+      method === TransactionMethod.MOBILE_MONEY &&
+      (user.withdrawalPhoneNumber ?? null) !== normalizedPhone;
+
+    // Single idempotent update of the canonical user. Repeated identical
+    // submissions rewrite the same values; nothing else is created or reset.
+    const data: any = {
+      firstName,
+      lastName,
+      preferredTransactionMethod: method,
+    };
+    if (phoneChanged) {
+      data.withdrawalPhoneNumber = normalizedPhone;
+      data.withdrawalPhoneVerified = true;
+      data.withdrawalPhoneVerifiedAt = new Date();
+      data.recipientCoolingUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data,
+    });
+
+    // Audit field-level changes without logging PII values.
+    try {
+      if (nameChanged) {
+        await this.auditService.create({
+          telegramUserId: user.telegramUserId,
+          eventType: AuditEventType.PROFILE_NAME_UPDATED,
+          description: 'Account Setup: profile name updated',
+        });
+      }
+      if (methodChanged) {
+        await this.auditService.create({
+          telegramUserId: user.telegramUserId,
+          eventType: AuditEventType.TRANSACTION_METHOD_CHANGED,
+          description: 'Account Setup: transaction method changed',
+          metadata: { from: user.preferredTransactionMethod ?? null, to: method },
+        });
+      }
+      if (phoneChanged) {
+        await this.auditService.create({
+          telegramUserId: user.telegramUserId,
+          eventType: AuditEventType.WITHDRAWAL_PHONE_CHANGED,
+          description: 'Account Setup: Mobile Money withdrawal number updated (24h cooling period activated)',
+          metadata: { recipientCoolingUntil: data.recipientCoolingUntil.toISOString() },
+        });
+      }
+      const nowComplete = isAccountSetupComplete({
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        withdrawalPhoneNumber: updated.withdrawalPhoneNumber,
+        preferredTransactionMethod: updated.preferredTransactionMethod,
+      });
+      if (nowComplete && !wasComplete) {
+        await this.auditService.create({
+          telegramUserId: user.telegramUserId,
+          eventType: AuditEventType.ACCOUNT_SETUP_COMPLETED,
+          description: 'Account Setup completed with valid canonical profile',
+        });
+      }
+    } catch {
+      // Audit failures must never fail the setup save.
+    }
+
+    return this.toAccountSetupState(updated);
   }
 
   async updateWithdrawalPhoneNumber(userIdOrTelegramId: string | bigint, rawPhone: string) {

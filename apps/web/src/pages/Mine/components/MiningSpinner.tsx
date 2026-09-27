@@ -4,7 +4,7 @@ import { useMiningStore } from '../../../store/useMiningStore';
 import { useWalletStore } from '../../../store/useWalletStore';
 import { useTreasuryStore } from '../../../store/useTreasuryStore';
 import { useHaptics } from '../../../hooks/useHaptics';
-import { Flame, Thermometer, ChevronLeft, ChevronRight, Lock, Clock, Sparkles, CheckCircle, Zap } from 'lucide-react';
+import { Flame, Thermometer, ChevronLeft, ChevronRight, Lock, Clock, Sparkles, CheckCircle, Zap, Trophy } from 'lucide-react';
 import { showToast } from '../../../components/Toast';
 import { useNavigationStore } from '../../../store/useNavigationStore';
 import { useCountryStore } from '../../../store/useCountryStore';
@@ -84,19 +84,19 @@ const USDT_SPINNERS: SpinnerModel[] = MACHINE_CATALOG.map((m, idx) => {
   };
 });
 
-const TON_SPINNERS: SpinnerModel[] = MACHINE_CATALOG.map((m, idx) => {
+const BTC_SPINNERS: SpinnerModel[] = MACHINE_CATALOG.map((m, idx) => {
   const spinDurationSeconds = Math.max(0.6, 3.6 / (m.spinnerSpeedMultiplier * 1.25));
   return {
-    id: `ton-${m.id}`,
+    id: `btc-${m.id}`,
     tierCode: m.tierCode,
-    name: `TON ${m.name}`,
-    desc: `TON-optimized ${m.description.toLowerCase()}`,
+    name: `BTC ${m.name}`,
+    desc: `BTC-optimized ${m.description.toLowerCase()}`,
     technicalSummary: m.technicalSummary,
-    simpleExplanation: `TON Node: ${m.simpleExplanation}`,
-    icon: '💎',
-    color: m.tierCode === 'TS_C10' ? '#00b0ff'
-         : m.tierCode === 'TS_A50' ? '#00e5ff'
-         : m.tierCode === 'TS_P250' ? '#3f51b5'
+    simpleExplanation: `BTC Node: ${m.simpleExplanation}`,
+    icon: '₿',
+    color: m.tierCode === 'TS_C10' ? '#f7931a'
+         : m.tierCode === 'TS_A50' ? '#ff9100'
+         : m.tierCode === 'TS_P250' ? '#e040fb'
          : m.tierCode === 'TS_X1000' ? '#7c4dff'
          : '#00e676',
     minBoostGhs: idx === 0 ? 0 : m.capacityGhs * 1.2,
@@ -129,9 +129,9 @@ export const MiningSpinner = React.memo(() => {
   const weeklyTapLimit = useMiningStore((s) => s.weeklyTapLimit);
   const monthlyTapLimit = useMiningStore((s) => s.monthlyTapLimit);
   const usdtSpinnerIdx = useMiningStore((s) => s.usdtSpinnerIdx);
-  const tonSpinnerIdx = useMiningStore((s) => s.tonSpinnerIdx);
+  const btcSpinnerIdx = useMiningStore((s) => s.btcSpinnerIdx);
   const setUsdtSpinnerIdx = useMiningStore((s) => s.setUsdtSpinnerIdx);
-  const setTonSpinnerIdx = useMiningStore((s) => s.setTonSpinnerIdx);
+  const setBtcSpinnerIdx = useMiningStore((s) => s.setBtcSpinnerIdx);
   const hasPurchasedMachine = useMiningStore((s) => s.hasPurchasedMachine);
   const isMiningLocked = useMiningStore((s) => s.isMiningLocked);
   const isMachineOwned = useMiningStore((s) => s.isMachineOwned);
@@ -229,10 +229,28 @@ export const MiningSpinner = React.memo(() => {
   const { impactOccurred } = useHaptics();
   const [particles, setParticles] = useState<Particle[]>([]);
   const [smoke, setSmoke] = useState<SmokeParticle[]>([]);
+  const [isFirstActivation, setIsFirstActivation] = useState(false);
+  const [activationProgress, setActivationProgress] = useState(0);
+
+  // First-time activation sequence for trial spinner
+  useEffect(() => {
+    if (activeSpinner.id === 'free-trial' && !isFirstActivation && !isMachinePaused) {
+      setIsFirstActivation(true);
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 2;
+        setActivationProgress(progress);
+        if (progress >= 100) {
+          clearInterval(interval);
+        }
+      }, 30);
+      return () => clearInterval(interval);
+    }
+  }, [activeSpinner.id, isFirstActivation, isMachinePaused]);
   
   // Retrieve active spinner values from store
-  const activeSpinners = isUsdt ? USDT_SPINNERS : TON_SPINNERS;
-  const activeSpinnerIdx = isUsdt ? usdtSpinnerIdx : tonSpinnerIdx;
+  const activeSpinners = isUsdt ? USDT_SPINNERS : BTC_SPINNERS;
+  const activeSpinnerIdx = isUsdt ? usdtSpinnerIdx : btcSpinnerIdx;
   const activeSpinner = activeSpinners[activeSpinnerIdx];
 
   const currentTierCode = (activeSpinner?.tierCode || 'TS_TRIAL').toUpperCase();
@@ -442,8 +460,8 @@ export const MiningSpinner = React.memo(() => {
       const prevVal = usdtSpinnerIdx === 0 ? USDT_SPINNERS.length - 1 : usdtSpinnerIdx - 1;
       setUsdtSpinnerIdx(prevVal);
     } else {
-      const prevVal = tonSpinnerIdx === 0 ? TON_SPINNERS.length - 1 : tonSpinnerIdx - 1;
-      setTonSpinnerIdx(prevVal);
+      const prevVal = btcSpinnerIdx === 0 ? BTC_SPINNERS.length - 1 : btcSpinnerIdx - 1;
+      setBtcSpinnerIdx(prevVal);
     }
   };
 
@@ -453,8 +471,8 @@ export const MiningSpinner = React.memo(() => {
       const nextVal = usdtSpinnerIdx === USDT_SPINNERS.length - 1 ? 0 : usdtSpinnerIdx + 1;
       setUsdtSpinnerIdx(nextVal);
     } else {
-      const nextVal = tonSpinnerIdx === TON_SPINNERS.length - 1 ? 0 : tonSpinnerIdx + 1;
-      setTonSpinnerIdx(nextVal);
+      const nextVal = btcSpinnerIdx === BTC_SPINNERS.length - 1 ? 0 : btcSpinnerIdx + 1;
+      setBtcSpinnerIdx(nextVal);
     }
   };
 
@@ -476,18 +494,18 @@ export const MiningSpinner = React.memo(() => {
           <span>OVERHEATED — COOLING DOWN ({Math.ceil(cooldownRemaining)}s)</span>
         </div>
       ) : activeSpinner.id === 'free-trial' ? (
-        <div className="mb-3.5 z-20 text-[10px] font-black px-4 py-1.5 rounded-full flex items-center gap-1.5 uppercase tracking-wider shadow-lg backdrop-blur-md transition-all bg-usdt-green/15 border border-usdt-green/40 text-usdt-green shadow-[0_0_12px_rgba(38,161,123,0.25)]">
+        <div className="mb-3.5 z-20 text-[10px] font-black px-4 py-1.5 rounded-full flex items-center gap-1.5 uppercase tracking-wider shadow-lg backdrop-blur-md transition-all bg-gradient-to-r from-gold/20 via-amber-400/20 to-gold/20 border border-gold/50 text-gold shadow-[0_0_20px_rgba(255,215,0,0.4)] animate-pulse-slow">
           {machineMode === 'PROMOTIONAL' ? (
             <>
-              <Clock size={13} className="animate-pulse text-usdt-green shrink-0" />
-              <span>
-                TITAN CORE • PROMOTIONAL ({showLocal ? `${getLocalAmount(displayPromoOutput)} / ${getLocalAmount(5.0)}` : `$${(Number(displayPromoOutput) || 0).toFixed(2)} / $5.00`})
+              <Sparkles size={13} className="animate-spin-slow text-gold shrink-0" />
+              <span className="font-black">
+                TITAN CORE • PREMIUM TRIAL ({showLocal ? `${getLocalAmount(displayPromoOutput)} / ${getLocalAmount(5.0)}` : `$${(Number(displayPromoOutput) || 0).toFixed(2)} / $5.00`})
               </span>
             </>
           ) : (
             <>
-              <Sparkles size={13} className="text-usdt-green shrink-0" />
-              <span>TITAN CORE • STANDARD MODE</span>
+              <Zap size={13} className="text-gold shrink-0" />
+              <span className="font-black">TITAN CORE • STANDARD MODE</span>
             </>
           )}
         </div>
@@ -679,6 +697,30 @@ export const MiningSpinner = React.memo(() => {
               <span className="text-[9px] font-mono font-black text-cyan-300 uppercase tracking-widest">
                 {BOOT_STEPS[bootStep]}
               </span>
+            </div>
+          )}
+
+          {/* First-Time Premium Activation Sequence */}
+          {isFirstActivation && activeSpinner.id === 'free-trial' && (
+            <div className="absolute inset-0 rounded-full bg-black/95 backdrop-blur-xl z-40 flex flex-col items-center justify-center p-6 text-center border-2 border-gold/50 animate-fade-in pointer-events-none">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold via-amber-400 to-amber-600 border-4 border-gold-bright flex items-center justify-center text-app-bg shadow-2xl shadow-gold/50 mb-4 animate-pulse">
+                <Trophy size={32} />
+              </div>
+              <div className="text-[10px] font-black text-gold uppercase tracking-[0.25em] font-mono mb-2">
+                Premium Activation
+              </div>
+              <div className="text-xs font-bold text-white uppercase tracking-wider mb-4">
+                Titan Core Trial
+              </div>
+              <div className="w-full max-w-[140px] h-1.5 bg-white/10 rounded-full overflow-hidden mb-3">
+                <div 
+                  className="h-full bg-gradient-to-r from-gold to-amber-400 transition-all duration-300"
+                  style={{ width: `${activationProgress}%` }}
+                />
+              </div>
+              <div className="text-[8px] font-mono text-text-tertiary uppercase tracking-wider">
+                Initializing {activationProgress}%
+              </div>
             </div>
           )}
 

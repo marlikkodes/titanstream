@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef, Optional, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, Optional, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
 import { FinancialOperationType, Prisma } from '@prisma/client';
@@ -8,7 +8,7 @@ import { PlatformOperationsEngineService } from '../admin/services/platform-oper
 
 export interface UserMiningState {
   telegramUserId: string;
-  activeCurrency: 'USDT' | 'TON';
+  activeCurrency: 'USDT' | 'BTC';
   baseSpeedGhs: number;
   coolerMultiplier: number;
   unclaimedBalance: number;
@@ -29,6 +29,7 @@ const OVERHEAT_MS = 15 * 1000;
 
 @Injectable()
 export class MiningService {
+  private readonly logger = new Logger(MiningService.name);
   // In-memory store for user mining sessions (acts as a Redis fallback)
   private readonly sessions = new Map<string, UserMiningState>();
 
@@ -67,7 +68,7 @@ export class MiningService {
       const toNum = (val: any) => (val && typeof val.toNumber === 'function' ? val.toNumber() : Number(val || 0));
       return {
         telegramUserId: userIdOrTelegramId,
-        activeCurrency: record.activeCurrency as 'USDT' | 'TON',
+        activeCurrency: (record.activeCurrency === 'TON' ? 'BTC' : record.activeCurrency) as 'USDT' | 'BTC',
         baseSpeedGhs: toNum(record.baseSpeedGhs),
         coolerMultiplier: toNum(record.coolerMultiplier),
         unclaimedBalance: toNum(record.unclaimedBalance),
@@ -183,9 +184,32 @@ export class MiningService {
     const bestTier = await this.getBestActiveTier(session);
 
     const dailyYield = bestTier?.dailyYieldEstimateUsdt ?? 2.0;
-    const payout = session.activeCurrency === 'TON' ? dailyYield * 1.15 : dailyYield;
     const interactiveRate = bestTier?.interactiveBaseRate ?? 0.0005;
-    let yieldValue = interactiveRate * session.coolerMultiplier * payout;
+    let yieldValue = interactiveRate * session.coolerMultiplier * dailyYield;
+
+    // Enforce trial limits at database level for trial machines
+    if (bestTier?.tierCode === 'TS_TRIAL') {
+      const cleanId = session.telegramUserId.replace(/\D/g, '');
+      const trialMachine = await this.prisma.userMachine.findFirst({
+        where: {
+          telegramUserId: BigInt(cleanId),
+          tierCode: 'TS_TRIAL',
+          type: 'TRIAL',
+        },
+      });
+
+      if (trialMachine) {
+        const trialLimit = trialMachine.trialLimitAmount.toNumber();
+        const trialUsed = trialMachine.trialUsedAmount.toNumber();
+        const remainingCap = Math.max(0, trialLimit - trialUsed);
+        
+        if (remainingCap <= 0) {
+          return 0; // Trial limit exceeded, no more yield
+        }
+        
+        yieldValue = Math.min(yieldValue, remainingCap);
+      }
+    }
 
     if (bestTier?.promoOutputCap && session.machineMode === 'PROMOTIONAL') {
       const remainingPromoCap = Math.max(0, bestTier.promoOutputCap - session.lifetimePromotionalOutput);
@@ -361,53 +385,189 @@ export class MiningService {
     return session;
   }
 
-  async tap(telegramUserId: string): Promise<UserMiningState> {
-    const session = await this.getOrCreateSession(telegramUserId);
-    if (session.isOverheated) {
-      return session;
-    }
+  async tap(telegramUserId: string, idempotencyKey?: string): Promise<UserMiningState> {
+    const cleanDigits = telegramUserId.replace(/\D/g, '') || telegramUserId;
+    const tgBigInt = BigInt(cleanDigits);
 
-    // Yield is computed from machine configuration before the multiplier bump,
-    // so the credited amount matches the value the UI displayed.
-    const increment = await this.computeTapYield(session);
-
-    const bestTier = await this.getBestActiveTier(session);
-    session.coolerMultiplier = Math.min(bestTier?.maxMultiplier ?? MAX_MULTIPLIER, session.coolerMultiplier + 0.6);
-    session.lastTappedAt = new Date();
-
-    let credit = increment;
-    if (session.machineMode === 'PROMOTIONAL') {
-      const promoCap = bestTier?.promoOutputCap ?? 5.0;
-      const interactiveCap = bestTier?.interactiveBonusCap ?? Number.MAX_SAFE_INTEGER;
-
-      const remainingCap = promoCap - session.lifetimePromotionalOutput;
-      const remainingInteractive = interactiveCap - session.interactivePromotionalOutput;
-
-      if (remainingCap <= 0) {
-        credit = 0;
-        session.machineMode = 'STANDARD';
-      } else {
-        credit = Math.min(increment, remainingInteractive, remainingCap);
-        session.lifetimePromotionalOutput += credit;
-        session.interactivePromotionalOutput += credit;
-        if (session.lifetimePromotionalOutput >= promoCap) {
-          session.lifetimePromotionalOutput = promoCap;
-          session.machineMode = 'STANDARD';
+    // Check for replayed idempotent request first
+    if (idempotencyKey) {
+      const opKey = `mining_tap_${telegramUserId}_${idempotencyKey}`;
+      try {
+        const existingRecord = await this.prisma.financialIdempotencyRecord.findUnique({
+          where: {
+            telegramUserId_idempotencyKey: {
+              telegramUserId: tgBigInt,
+              idempotencyKey: opKey,
+            },
+          },
+        });
+        if (existingRecord && existingRecord.status === 'COMPLETED') {
+          const session = await this.getOrCreateSession(telegramUserId);
+          return session;
         }
+      } catch (idempErr) {
+        // Table may not exist in mock/test setups, proceed to transaction
       }
     }
 
-    session.unclaimedBalance += credit;
-    session.lastUpdatedAt = new Date();
+    // Atomic database transaction with pessimistic row lock for trial limit enforcement
+    await this.prisma.$transaction(
+      async (tx) => {
+        // 1. Pessimistic lock on the user's mining state record
+        const lockedRows = await tx.$queryRaw<any[]>`
+          SELECT "telegram_user_id", "active_currency", "unclaimed_balance", "cooler_multiplier", 
+                 "base_speed_ghs", "machine_mode", "lifetime_promotional_output", "interactive_promotional_output"
+          FROM "user_mining_states"
+          WHERE "telegram_user_id" = ${tgBigInt}
+          FOR UPDATE
+        `;
 
+        if (!lockedRows || lockedRows.length === 0) {
+          throw new BadRequestException({
+            code: 'SESSION_NOT_FOUND',
+            message: 'No active mining state found for user.',
+          });
+        }
+
+        const lockedRow = lockedRows[0];
+        const lockedLifetimePromo = Number(lockedRow.lifetime_promotional_output || 0);
+        const lockedInteractivePromo = Number(lockedRow.interactive_promotional_output || 0);
+        const lockedUnclaimed = Number(lockedRow.unclaimed_balance || 0);
+        const lockedCoolerMultiplier = Number(lockedRow.cooler_multiplier || 1.0);
+        const lockedMachineMode = lockedRow.machine_mode || 'STANDARD';
+
+        // 2. Get best tier for limit calculation
+        const machines = await this.machineService.getUserMachines(telegramUserId);
+        const activeMachines = machines.filter((m) => m.status === 'ACTIVE');
+        const catalog = this.machineService.getCatalog();
+        
+        let bestTier: MachineTier | undefined;
+        for (const um of activeMachines) {
+          const tier = catalog.find((t) => t.tierCode === um.tierCode);
+          if (!tier) continue;
+          if (!bestTier || tier.capacityGhs > bestTier.capacityGhs) bestTier = tier;
+        }
+
+        const promoCap = bestTier?.promoOutputCap ?? 5.0;
+        const interactiveCap = bestTier?.interactiveBonusCap ?? Number.MAX_SAFE_INTEGER;
+        const maxMultiplier = bestTier?.maxMultiplier ?? MAX_MULTIPLIER;
+
+        // 3. Enforce trial limit atomically at database level for trial machines
+        if (bestTier?.tierCode === 'TS_TRIAL') {
+          const trialMachine = await tx.userMachine.findFirst({
+            where: {
+              telegramUserId: tgBigInt,
+              tierCode: 'TS_TRIAL',
+              type: 'TRIAL',
+            },
+          });
+
+          if (trialMachine) {
+            const trialLimit = trialMachine.trialLimitAmount.toNumber();
+            const trialUsed = trialMachine.trialUsedAmount.toNumber();
+            const remainingTrialCap = Math.max(0, trialLimit - trialUsed);
+
+            if (remainingTrialCap <= 0) {
+              this.logger.warn(`[TRIAL_LIMIT] User ${telegramUserId} exceeded trial limit. Limit: $${trialLimit.toFixed(2)}, Used: $${trialUsed.toFixed(2)}`);
+              throw new BadRequestException({
+                code: 'TRIAL_LIMIT_EXCEEDED',
+                message: `Trial limit exceeded. Maximum trial output of $${trialLimit.toFixed(2)} has been reached.`,
+              });
+            }
+          }
+        }
+
+        const remainingPromoCap = Math.max(0, promoCap - lockedLifetimePromo);
+        const remainingInteractiveCap = Math.max(0, interactiveCap - lockedInteractivePromo);
+
+        if (remainingPromoCap <= 0 && remainingInteractiveCap <= 0) {
+          this.logger.warn(`[TRIAL_LIMIT] User ${telegramUserId} exceeded promotional cap. Cap: $${promoCap.toFixed(2)}, Used: $${lockedLifetimePromo.toFixed(2)}`);
+          throw new BadRequestException({
+            code: 'TRIAL_LIMIT_EXCEEDED',
+            message: `Trial limit exceeded. Maximum promotional output of $${promoCap.toFixed(2)} has been reached.`,
+          });
+        }
+
+        // 4. Compute yield with limit enforcement
+        const dailyYield = bestTier?.dailyYieldEstimateUsdt ?? 2.0;
+        const activeCurrency = lockedRow.active_currency || 'USDT';
+        const payout = activeCurrency === 'BTC' ? dailyYield * 1.15 : dailyYield;
+        const interactiveRate = bestTier?.interactiveBaseRate ?? 0.0005;
+        const newCoolerMultiplier = Math.min(maxMultiplier, lockedCoolerMultiplier + 0.6);
+        let yieldValue = interactiveRate * newCoolerMultiplier * payout;
+
+        // Apply limits atomically
+        yieldValue = Math.min(yieldValue, remainingPromoCap, remainingInteractiveCap);
+
+        // 5. Update state atomically
+        const newLifetimePromo = lockedLifetimePromo + yieldValue;
+        const newInteractivePromo = lockedInteractivePromo + yieldValue;
+        const newUnclaimed = lockedUnclaimed + yieldValue;
+        const newMachineMode = (newLifetimePromo >= promoCap) ? 'STANDARD' : lockedMachineMode;
+
+        // Atomically increment trial usage for trial machines
+        if (bestTier?.tierCode === 'TS_TRIAL') {
+          const trialMachine = await tx.userMachine.findFirst({
+            where: {
+              telegramUserId: tgBigInt,
+              tierCode: 'TS_TRIAL',
+              type: 'TRIAL',
+            },
+          });
+
+          if (trialMachine) {
+            const currentTrialUsed = trialMachine.trialUsedAmount.toNumber();
+            await tx.userMachine.update({
+              where: { id: trialMachine.id },
+              data: {
+                trialUsedAmount: currentTrialUsed + yieldValue,
+              },
+            });
+          }
+        }
+
+        await tx.userMiningState.update({
+          where: { telegramUserId: tgBigInt },
+          data: {
+            unclaimedBalance: newUnclaimed,
+            lifetimePromotionalOutput: newLifetimePromo,
+            interactivePromotionalOutput: newInteractivePromo,
+            machineMode: newMachineMode,
+            coolerMultiplier: newCoolerMultiplier,
+            lastTappedAt: new Date(),
+            lastUpdatedAt: new Date(),
+          },
+        });
+
+        // 6. Record idempotency if key provided
+        if (idempotencyKey) {
+          const opKey = `mining_tap_${telegramUserId}_${idempotencyKey}`;
+          try {
+            await tx.financialIdempotencyRecord.create({
+              data: {
+                telegramUserId: tgBigInt,
+                idempotencyKey: opKey,
+                requestHash: opKey,
+                status: 'COMPLETED',
+                responsePayload: { yield: yieldValue },
+              },
+            });
+          } catch (idempErr) {
+            // Table may not exist, ignore
+          }
+        }
+      },
+      { timeout: 15000, maxWait: 10000 },
+    );
+
+    // Refresh session after atomic update
+    const session = await this.getOrCreateSession(telegramUserId);
     await this.applyCoolingState(session, new Date());
     session.tapYieldPerTap = await this.computeTapYield(session);
-
-    await this.saveToDb(session);
     return session;
   }
 
-  async toggleCurrency(telegramUserId: string, currency: 'USDT' | 'TON'): Promise<UserMiningState> {
+  async toggleCurrency(telegramUserId: string, currency: 'USDT' | 'BTC'): Promise<UserMiningState> {
     const session = await this.getOrCreateSession(telegramUserId);
     session.activeCurrency = currency;
     session.tapYieldPerTap = await this.computeTapYield(session);
@@ -490,13 +650,13 @@ export class MiningService {
         const reference = idempotencyKey 
           ? `mining_claim_${telegramUserId}_${idempotencyKey}` 
           : `mining_claim_${telegramUserId}_${Date.now()}`;
-        const currency = lockedRow.active_currency || 'USDT';
+        const currency = (lockedRow.active_currency === 'TON' ? 'BTC' : lockedRow.active_currency) || 'USDT';
 
         // 3. Double-entry ledger allocation inside the SAME transaction
         await (this.orchestrator as any).requestOperation(
           {
             telegramUserId: tgBigInt,
-            operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+            operationType: FinancialOperationType.STARTER_OUTPUT,
             assetCode: currency,
             amount: finalClaimAmountStr,
             idempotencyKey: reference,

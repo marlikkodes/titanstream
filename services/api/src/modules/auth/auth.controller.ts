@@ -2,6 +2,7 @@ import { Controller, Post, Get, Body, Req, UseGuards, HttpCode, HttpStatus, Forb
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { AuthTelegramDto } from './dto/auth-telegram.dto';
+import { TelegramLoginDto } from './dto/telegram-login.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { CanonicalUserId } from '../../common/decorators/canonical-user-id.decorator';
@@ -62,13 +63,14 @@ export class AuthController {
   @Public()
   @Post('telegram-login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Authenticate via Telegram Login Library / Token' })
+  @ApiOperation({ summary: 'Authenticate via Telegram Login Widget payload (standalone web)' })
   @ApiResponse({ status: 200, description: 'Authentication successful' })
-  @ApiResponse({ status: 401, description: 'Invalid Telegram authentication payload or nonce' })
-  async authenticateWebLogin(@Body() payload: any, @Req() req: any) {
+  @ApiResponse({ status: 400, description: 'Malformed Telegram login payload' })
+  @ApiResponse({ status: 401, description: 'Invalid Telegram authentication payload, signature, auth_date, or nonce' })
+  async authenticateWebLogin(@Body() dto: TelegramLoginDto, @Req() req: any) {
     const ipAddress = req.ip;
     const userAgent = req.headers['user-agent'];
-    return this.authService.authenticateWebLogin(payload, ipAddress, userAgent);
+    return this.authService.authenticateWebLogin(dto as any, ipAddress, userAgent);
   }
 
   @Public()

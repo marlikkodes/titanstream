@@ -157,14 +157,28 @@ export class AuthService {
     const traceId = this.createTraceId();
     this.logAuth(traceId, 'web_login.request_received', `telegramPayloadId=${payload?.id ?? 'missing'} nonce=${payload?.nonce || 'none'}`);
     try {
-      if (!payload?.nonce) {
+      if (!payload?.nonce && !payload?.id_token) {
         throw new UnauthorizedException({ code: 'MISSING_NONCE', message: 'Authentication nonce is required.' });
       }
-      this.validateAndConsumeNonce(payload.nonce);
+      // Nonce is required for replay protection on the hash flow. The id_token
+      // flow binds the nonce inside the JWT itself (verified cryptographically).
+      if (payload?.nonce) {
+        this.validateAndConsumeNonce(payload.nonce);
+      }
 
       const parsed = await this.telegramAuth.parseWebLoginPayloadAsync(payload);
+      // referralCode / referral_code are TitanStream control fields, never
+      // Telegram-signed. Attach them as startParam without affecting verification.
+      const referralCode: string | undefined =
+        (typeof payload?.referralCode === 'string' && payload.referralCode) ||
+        (typeof payload?.referral_code === 'string' && payload.referral_code) ||
+        undefined;
+      const parsedWithReferral = {
+        ...parsed,
+        startParam: parsed.startParam || referralCode || undefined,
+      };
       this.logAuth(traceId, 'web_login.signature_verified', `telegramUserId=${parsed.telegramUserId}`);
-      return this.authenticateTelegramIdentity(parsed, 'telegram_login_library', traceId, ipAddress, userAgent);
+      return this.authenticateTelegramIdentity(parsedWithReferral, 'telegram_login_library', traceId, ipAddress, userAgent);
     } catch (error: any) {
       this.logAuthFailure(traceId, 'web_login.failed', error);
       throw error;
@@ -188,13 +202,51 @@ export class AuthService {
         userAgent,
         metadata: { traceId, username, startParam },
       });
-      
+
       this.logAuth(traceId, 'telegram_identity_resolution.success', `userId=${identityContext.userId}, universalIdentityId=${identityContext.universalIdentityId}, telegramUserId=${identityContext.telegramUserId?.toString()}`);
     } catch (engineErr: any) {
       this.logger.error(`[AUTH_ENGINE] IdentityMasterEngine failed for user ${identifierStr}: ${engineErr.message}`);
       this.logAuthFailure(traceId, 'telegram_identity_resolution.failed', engineErr);
-      // CRITICAL: Never create fallback identity - fail authentication instead
-      throw new UnauthorizedException(`Identity resolution failed for ${identifierStr}. Authentication failed to prevent account duplication.`);
+      // CRITICAL: Never create fallback identity - fail authentication instead.
+      // A database/identity failure must NOT become an authenticated session.
+      if (engineErr instanceof UnauthorizedException) throw engineErr;
+      throw new UnauthorizedException({
+        code: 'TELEGRAM_IDENTITY_RESOLUTION_FAILED',
+        message: 'Identity resolution failed. Authentication rejected to prevent account duplication.',
+      });
+    }
+
+    // Best-effort referral attach for new web logins. Never fails authentication.
+    if (startParam) {
+      try {
+        await this.attachWebLoginReferral(BigInt(identifierStr), String(startParam), traceId);
+      } catch (refErr: any) {
+        this.logger.warn(`[AUTH_REFERRAL] referral attach skipped: ${refErr?.message || refErr}`);
+      }
+    }
+
+    // Resolve the canonical user + onboarding BEFORE issuing any JWT.
+    // DB failure or missing user here is a controlled rejection — never a
+    // synthetic user and never a signed token for an unverified identity.
+    let canonicalUser: any = null;
+    try {
+      canonicalUser = await this.prisma.user.findUnique({
+        where: { id: identityContext.userId },
+        include: { onboardingProgress: true },
+      });
+    } catch (dbErr: any) {
+      this.logger.error(`[AUTH_ENGINE] canonical user lookup failed for ${identityContext.userId}: ${dbErr?.message || dbErr}`);
+      throw new UnauthorizedException({
+        code: 'TELEGRAM_IDENTITY_RESOLUTION_FAILED',
+        message: 'Identity resolution failed. Authentication rejected to prevent account duplication.',
+      });
+    }
+    if (!canonicalUser) {
+      this.logger.error(`[AUTH_ENGINE] canonical user missing after identity resolution: userId=${identityContext.userId}`);
+      throw new UnauthorizedException({
+        code: 'TELEGRAM_IDENTITY_RESOLUTION_FAILED',
+        message: 'Identity resolution failed. Authentication rejected to prevent account duplication.',
+      });
     }
 
     const payload = {
@@ -218,35 +270,75 @@ export class AuthService {
 
     this.logAuth(traceId, 'jwt.issued', `userId=${identityContext.userId} telegramUserId=${identifierStr}`);
     this.logAuth(traceId, 'auth.completed', `provider=TELEGRAM`);
-    
-    // Log authentication to audit trail
-    if (this.auditService) {
-      await this.auditService.create({
-        telegramUserId: BigInt(identifierStr),
-        eventType: AuditEventType.USER_STATE_CHANGED,
-        description: `Authentication completed via ${provider}: userId=${identityContext.userId}, universalIdentityId=${identityContext.universalIdentityId}`,
-        metadata: {
-          provider,
-          userId: identityContext.userId,
-          universalIdentityId: identityContext.universalIdentityId,
-          telegramUserId: identifierStr,
-          assuranceLevel: identityContext.assuranceLevel,
-          ipAddress,
-          userAgent,
-        },
-      });
+
+    const isNewUser = (canonicalUser.loginCount ?? 0) <= 1;
+    const onboarding = {
+      currentStep: canonicalUser.onboardingProgress?.currentStep || 'welcome',
+      isCompleted:
+        canonicalUser.onboardingProgress?.isCompleted ??
+        [UserState.ELIGIBLE_USER, UserState.ACTIVE_USER, UserState.READY].includes(canonicalUser.state as UserState),
+    };
+
+    // Log authentication to audit trail (best-effort; never fails auth)
+    try {
+      if (this.auditService) {
+        await this.auditService.create({
+          telegramUserId: BigInt(identifierStr),
+          eventType: AuditEventType.USER_STATE_CHANGED,
+          description: `Authentication completed via ${provider}: userId=${identityContext.userId}, universalIdentityId=${identityContext.universalIdentityId}`,
+          metadata: {
+            provider,
+            userId: identityContext.userId,
+            universalIdentityId: identityContext.universalIdentityId,
+            telegramUserId: identifierStr,
+            assuranceLevel: identityContext.assuranceLevel,
+            ipAddress,
+            userAgent,
+          },
+        });
+      }
+    } catch (auditErr: any) {
+      this.logger.warn(`[AUTH_AUDIT] audit log skipped: ${auditErr?.message || auditErr}`);
     }
 
     return {
       accessToken,
       refreshToken,
-      user: {
-        id: identityContext.userId,
-        identityId: identityContext.universalIdentityId,
-        state: identityContext.userState,
-      },
+      user: this.sanitizeUser(canonicalUser),
+      onboarding,
+      isNewUser,
       traceId,
     };
+  }
+
+  /**
+   * Best-effort referral attach for standalone web logins.
+   * Runs after canonical identity resolution; failures are swallowed by the caller.
+   */
+  private async attachWebLoginReferral(telegramUserId: bigint, startParam: string, traceId: string) {
+    const referralCode = startParam.startsWith('ref_') ? startParam.replace('ref_', '') : startParam;
+    if (!referralCode) return;
+    const codeRecord = await this.prisma.referralCode.findUnique({ where: { code: referralCode } });
+    if (!codeRecord) {
+      this.logAuth(traceId, 'referral.skipped', `reason=code_not_found code=${referralCode}`);
+      return;
+    }
+    if (codeRecord.telegramUserId === telegramUserId) {
+      this.logAuth(traceId, 'referral.skipped', 'reason=self_referral');
+      return;
+    }
+    await this.prisma.referralRelationship.upsert({
+      where: { refereeId: telegramUserId },
+      update: {},
+      create: {
+        referrerId: codeRecord.telegramUserId,
+        refereeId: telegramUserId,
+        referralCodeId: codeRecord.id,
+        status: 'CREATED',
+        metadata: { source: 'auth_web_login', referralCode, traceId },
+      },
+    });
+    this.logAuth(traceId, 'referral.attached', `refereeId=${telegramUserId.toString()} code=${referralCode}`);
   }
 
   private async ensureIdentityResources(telegramUserId: bigint, traceId: string) {
@@ -926,9 +1018,16 @@ export class AuthService {
       data: { verified: true },
     });
 
+    // Get canonical identity ID for consistent JWT subject
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { identityId: true },
+    });
+    const canonicalId = user?.identityId || userId;
+
     // Issue 5-minute step-up authorization token
     const stepUpToken = this.jwtService.sign(
-      { sub: userId, type: 'step_up', purpose: 'financial_authorization' },
+      { sub: canonicalId, type: 'step_up', purpose: 'financial_authorization' },
       { expiresIn: '5m' },
     );
 

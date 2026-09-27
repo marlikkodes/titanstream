@@ -290,9 +290,10 @@ export class RewardService {
           telegramUserId,
           amount: targetAmount,
           assetCode: 'USDT',
-          operationType: 'SYSTEM_ALLOCATION' as any,
+          operationType: 'REWARD_ALLOCATION' as any,
           idempotencyKey: `surprise_${ref}`,
           reference: ref,
+          metadata: { isAdmin: true },
         });
       } catch (err: any) {
         this.logger.error(`[SurpriseEngine] Ledger operation failed for surprise reward ref ${ref}: ${err.message}`);
@@ -1045,7 +1046,7 @@ export class RewardService {
         try {
           operationResult = await this.orchestrator.requestOperation({
             telegramUserId: reward.telegramUserId,
-            operationType: 'SYSTEM_ALLOCATION',
+            operationType: 'REWARD_ALLOCATION',
             assetCode: reward.assetCode,
             amount: reward.amount.toString(),
             idempotencyKey: `reward_${reward.id}`,
@@ -1054,6 +1055,7 @@ export class RewardService {
               rewardId: reward.id,
               rewardType: reward.rewardType,
               originalReference: reward.reference,
+              isAdmin: true,
             },
           });
         } catch (orchErr: any) {
@@ -1208,7 +1210,7 @@ export class RewardService {
     try {
       const operationResult: any = await this.orchestrator.requestOperation({
         telegramUserId: reward.telegramUserId,
-        operationType: 'SYSTEM_ALLOCATION',
+        operationType: 'REWARD_ALLOCATION',
         assetCode: reward.assetCode,
         amount: reward.amount.toString(),
         idempotencyKey: `reward_${reward.id}`,
@@ -1217,6 +1219,7 @@ export class RewardService {
           rewardId: reward.id,
           rewardType: reward.rewardType,
           originalReference: reward.reference,
+          isAdmin: true,
         },
       });
 

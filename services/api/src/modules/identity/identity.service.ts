@@ -15,6 +15,7 @@ export class IdentityService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * @deprecated Use IdentityMasterEngineService.authenticate() instead.
    * Resolves or creates a Universal Identity bound to a channel identifier (Telegram ID, WhatsApp #, etc.).
    */
   async resolveOrCreateIdentity(dto: ResolveIdentityDto) {

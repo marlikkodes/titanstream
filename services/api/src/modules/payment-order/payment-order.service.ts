@@ -78,7 +78,7 @@ export class PaymentOrderService {
       network: 'AIRTEL',
       country: 'UG',
       currency: 'UGX',
-      receivingNumber: '7183443',
+      receivingNumber: '7228267',
       receivingName: 'TitanStream Escrow UG',
       ussdTemplate: '*185*9*{phone}*{amount}#',
       exchangeRateUsdt: 3700,

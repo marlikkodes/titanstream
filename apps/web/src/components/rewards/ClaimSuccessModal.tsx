@@ -98,13 +98,13 @@ export const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ reward, is
       {isOpen && (
         <>
           {isOpen && <Confetti />}
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+          <div role="dialog" aria-modal="true" aria-label="Reward claimed" className="fixed inset-0 z-50 flex items-center justify-center rewards-modal-backdrop p-4 overflow-y-auto">
             <motion.div
               initial={{ scale: 0.85, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 10 }}
               transition={{ type: 'spring', stiffness: 320, damping: 24 }}
-              className="w-full max-w-sm bg-gradient-to-b from-card-bg via-app-bg to-control-bg border border-usdt-green/50 rounded-3xl p-6 shadow-2xl space-y-4 text-text-primary"
+              className="w-full max-w-sm rewards-modal-surface border border-usdt-green/50 rounded-3xl p-6 space-y-4 text-text-primary my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto no-scrollbar"
             >
               {/* Header */}
               <div className="flex items-center justify-between">

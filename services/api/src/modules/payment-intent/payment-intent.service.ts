@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException, ConflictException, ForbiddenException, Inject, Optional } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { FinancialOperationType, PaymentIntentStatus, PaymentMethod, Prisma } from '@prisma/client';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
@@ -9,6 +9,7 @@ import { AuditEventType } from '@prisma/client';
 import { CreatePaymentIntentDto, PaymentIntentView } from './interfaces/payment-intent.interface';
 import { PaymentIdempotencyService } from './payment-idempotency.service';
 import { AdminFourEyesService } from './admin-four-eyes.service';
+import { PremiumService } from '../premium/premium.service';
 
 @Injectable()
 export class PaymentIntentService {
@@ -39,6 +40,7 @@ export class PaymentIntentService {
     private readonly audit: AuditService,
     private readonly idempotency: PaymentIdempotencyService,
     private readonly fourEyes: AdminFourEyesService,
+    @Optional() private readonly premiumService?: PremiumService,
   ) {}
 
   /**
@@ -440,6 +442,24 @@ export class PaymentIntentService {
 
     // Transition to SETTLED after successful orchestration
     const settled = await this.transitionStatus(id, PaymentIntentStatus.SETTLED, PaymentIntentStatus.SETTLEMENT_PENDING);
+
+    // Process premium entitlement if service is available
+    if (this.premiumService) {
+      try {
+        const amount = Number(intent.expectedCryptoAmount);
+        const result = await this.premiumService.processPaymentForPremium(
+          intent.telegramUserId,
+          amount,
+          intent.reference,
+        );
+        if (result.unlocked) {
+          this.logger.log(`[PREMIUM_UNLOCK] User ${intent.telegramUserId} unlocked premium via payment ${intent.reference}. Total paid: $${amount.toFixed(2)}`);
+        }
+      } catch (premiumErr) {
+        this.logger.warn(`[PaymentIntent] Failed to process premium entitlement: ${premiumErr.message}`);
+        // Don't fail the settlement if premium processing fails
+      }
+    }
     await this.prisma.paymentIntent.update({
       where: { id },
       data: {

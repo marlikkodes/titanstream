@@ -18,15 +18,18 @@ export class MiningController {
 
   @Post('tap')
   @ApiOperation({ summary: 'Tap the mining cooler to increase speed multiplier' })
-  async tapCooler(@CanonicalUserId() userId: string) {
-    return this.service.tap(userId);
+  async tapCooler(
+    @CanonicalUserId() userId: string,
+    @Body('idempotencyKey') idempotencyKey?: string,
+  ) {
+    return this.service.tap(userId, idempotencyKey);
   }
 
   @Post('toggle')
-  @ApiOperation({ summary: 'Toggle active mining asset between USDT and TON' })
+  @ApiOperation({ summary: 'Toggle active mining asset between USDT and BTC' })
   async toggleCurrency(
     @CanonicalUserId() userId: string,
-    @Body('currency') currency: 'USDT' | 'TON',
+    @Body('currency') currency: 'USDT' | 'BTC',
   ) {
     return this.service.toggleCurrency(userId, currency);
   }

@@ -6,6 +6,7 @@ import { FinancialModule } from '../financial/financial.module';
 import { FinancialOrchestrationModule } from '../financial-orchestration/financial-orchestration.module';
 import { PaymentOrderModule } from '../payment-order/payment-order.module';
 import { MiningModule } from '../mining/mining.module';
+import { PremiumModule } from '../premium/premium.module';
 import { MachineController } from './machine.controller';
 import { MachineService } from './machine.service';
 import { EconomyEngineService } from './services/economy-engine.service';
@@ -19,6 +20,7 @@ import { EconomyEngineService } from './services/economy-engine.service';
     forwardRef(() => FinancialOrchestrationModule),
     forwardRef(() => PaymentOrderModule),
     forwardRef(() => MiningModule),
+    PremiumModule,
   ],
   controllers: [MachineController],
   providers: [MachineService, EconomyEngineService],

@@ -98,6 +98,8 @@ import { LegalModal } from './components/legal/LegalModal';
 import { CookieConsentBanner } from './components/legal/CookieConsentBanner';
 import { PreAuthOnboarding } from './components/PreAuthOnboarding';
 import { hasSeenPreAuthOnboarding } from './utils/preAuthOnboarding';
+import { getAccountSetup } from './services/accountSetupService';
+import type { AccountSetupState } from './services/accountSetupService';
 
 // ─── Admin Routes (accessible without user auth) ─────────────────────────────
 
@@ -272,6 +274,36 @@ export function App() {
 
   const isCountrySet = countrySelected || hasSelectedCountry || localStorage.getItem('has_chosen_currency') === 'true';
 
+  // Backend-authoritative Account Setup state. When the server reports setup
+  // incomplete, the onboarding overlay resumes at Personalization — even for
+  // users whose local onboarding flag is already true (existing users).
+  // Fail-open (null): a transient fetch failure never blocks the product.
+  // The snapshot is passed to the overlay so login costs a single GET.
+  const [setupCompleted, setSetupCompleted] = useState<boolean | null>(null);
+  const [setupSnapshot, setSetupSnapshot] = useState<AccountSetupState | null>(null);
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSetupCompleted(null);
+      setSetupSnapshot(null);
+      return;
+    }
+    let cancelled = false;
+    getAccountSetup()
+      .then((state) => {
+        if (cancelled) return;
+        setSetupCompleted(state.completed);
+        setSetupSnapshot(state);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSetupCompleted(null);
+        setSetupSnapshot(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
   // Fetch backend preferences & apply root styles
   useEffect(() => {
     useSettingsStore.getState().applyStyles();
@@ -354,9 +386,13 @@ export function App() {
         <PreAuthOnboarding onComplete={() => setShowPreAuthOnboarding(false)} />
       )}
       <AuthGate>
-        {/* 4. Onboarding overlay (new users) */}
-        {!onboardingComplete ? (
-          <OnboardingOverlay />
+        {/* 4. Onboarding overlay (new users) + Personalization resume (incomplete setup) */}
+        {!onboardingComplete || setupCompleted === false ? (
+          <OnboardingOverlay
+            startAtPersonalization={onboardingComplete === true}
+            initialSetup={setupSnapshot}
+            onComplete={() => setSetupCompleted(true)}
+          />
         ) : !isCountrySet ? (
           /* 5. Country selection (once after onboarding) */
           <CountrySelector

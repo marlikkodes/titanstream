@@ -25,10 +25,10 @@ const ACTIVE_STATUS_SET = new Set([
 
 interface WalletState {
   usdtBalance: number;
-  tonBalance: number;
+  btcBalance: number;
   crystalsBalance: number;
   referralEarnedUsdt: number;
-  referralEarnedTon: number;
+  referralEarnedBtc: number;
   pendingUsdt: number;
   lifetimeDeposits: number;
   lifetimeWithdrawals: number;
@@ -64,10 +64,10 @@ export const useWalletStore = create<WalletState>()(
     (set, get) => ({
   // PRODUCTION: All balances start at zero. Populated from Balance Engine on mount.
   usdtBalance: 0,
-  tonBalance: 0,
+  btcBalance: 0,
   crystalsBalance: 0,
   referralEarnedUsdt: 0,
-  referralEarnedTon: 0,
+  referralEarnedBtc: 0,
   pendingUsdt: 0,
   lifetimeDeposits: 0,
   lifetimeWithdrawals: 0,

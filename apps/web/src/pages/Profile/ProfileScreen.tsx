@@ -47,6 +47,12 @@ import { showToast } from '../../components/Toast';
 import { MachineOwnersManualModal } from '../TitanHub/components/MachineOwnersManualModal';
 import { MachineCertificateModal } from '../TitanHub/components/MachineCertificateModal';
 import { api } from '../../services/api';
+import {
+  getAccountSetup,
+  updateAccountSetup,
+  type AccountSetupState,
+  type TransactionMethod,
+} from '../../services/accountSetupService';
 
 interface ProfileScreenProps {
   isDrawer?: boolean;
@@ -75,10 +81,33 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
   const [withdrawalPhone, setWithdrawalPhone] = useState(settings.withdrawalPhoneNumber || '');
   const [isSavingPhone, setIsSavingPhone] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  // Canonical transaction preference (backend-authoritative, shared with onboarding).
+  const [setup, setSetup] = useState<AccountSetupState | null>(null);
+  const [isSavingMethod, setIsSavingMethod] = useState(false);
 
   useEffect(() => {
     fetchGrowthProfile();
   }, [fetchGrowthProfile]);
+
+  useEffect(() => {
+    // Load canonical transaction configuration; Profile renders the same
+    // backend values that onboarding saves (single source of truth).
+    let cancelled = false;
+    getAccountSetup()
+      .then((state) => {
+        if (cancelled) return;
+        setSetup(state);
+        if (state.withdrawalPhoneNumber) {
+          setWithdrawalPhone(state.withdrawalPhoneNumber);
+          settings.updateSetting('withdrawalPhoneNumber', state.withdrawalPhoneNumber);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     // Keep setting display name locally in sync with store or auth user
@@ -122,12 +151,50 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
     try {
       await api.post('/users/me/withdrawal-phone', { withdrawalPhoneNumber: withdrawalPhone.trim() });
       settings.updateSetting('withdrawalPhoneNumber', withdrawalPhone.trim());
+      // Re-read canonical state so Profile stays consistent with onboarding/withdrawal.
+      getAccountSetup()
+        .then((state) => setSetup(state))
+        .catch(() => {});
       hapticFeedback.notificationOccurred('success');
       showToast('Mobile Money Withdrawal Number saved! 24h cooling period activated.', 'success');
     } catch (err: any) {
       showToast(err?.message || 'Failed to save withdrawal number', 'error');
     } finally {
       setIsSavingPhone(false);
+    }
+  };
+
+  // Update the SAME canonical preferredTransactionMethod that onboarding saves.
+  const handleChangeTransactionMethod = async (method: TransactionMethod) => {
+    if (!setup?.firstName || !setup?.lastName) {
+      showToast('Please complete your account name first', 'error');
+      return;
+    }
+    if (method === 'MOBILE_MONEY' && !setup.withdrawalPhoneNumber) {
+      showToast('Add a mobile-money withdrawal number first', 'error');
+      return;
+    }
+    if (setup.preferredTransactionMethod === method || isSavingMethod) return;
+    setIsSavingMethod(true);
+    try {
+      const updated = await updateAccountSetup({
+        firstName: setup.firstName,
+        lastName: setup.lastName,
+        preferredTransactionMethod: method,
+        ...(method === 'MOBILE_MONEY' && setup.withdrawalPhoneNumber
+          ? { withdrawalPhoneNumber: setup.withdrawalPhoneNumber }
+          : {}),
+      });
+      setSetup(updated);
+      hapticFeedback.notificationOccurred('success');
+      showToast(
+        method === 'MOBILE_MONEY' ? 'Transaction method set to Mobile Money' : 'Transaction method set to Crypto',
+        'success',
+      );
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Failed to update transaction method', 'error');
+    } finally {
+      setIsSavingMethod(false);
     }
   };
 
@@ -565,6 +632,47 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
             <h3 className="text-xs font-black uppercase text-usdt-green font-mono flex items-center gap-1.5 border-b border-white/10 pb-2">
               <Smartphone size={14} /> Mobile Money Withdrawal Settings
             </h3>
+
+            {/* Canonical transaction preference — same field onboarding saves. */}
+            <div>
+              <label className="font-extrabold text-text-primary block mb-1">
+                How will you transact?
+              </label>
+              <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Transaction method">
+                {(
+                  [
+                    { value: 'MOBILE_MONEY', label: 'Mobile Money' },
+                    { value: 'CRYPTO', label: 'Crypto' },
+                  ] as const
+                ).map((opt) => {
+                  const selected = setup?.preferredTransactionMethod === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      disabled={isSavingMethod}
+                      onClick={() => handleChangeTransactionMethod(opt.value)}
+                      className={`py-2 rounded-xl text-[11px] font-black uppercase font-mono transition-all press-feedback disabled:opacity-50 ${
+                        selected
+                          ? 'bg-usdt-green text-app-bg'
+                          : 'bg-black/40 text-text-secondary border border-white/10 hover:text-text-primary'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-text-secondary mt-1">
+                <em>
+                  {setup?.preferredTransactionMethod === 'CRYPTO'
+                    ? 'Crypto selected — no mobile-money number required.'
+                    : 'Mobile Money selected — withdrawals are sent to your number below.'}
+                </em>
+              </p>
+            </div>
 
             <div className="space-y-2.5 text-xs">
               <div>

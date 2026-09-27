@@ -89,4 +89,151 @@ describe('TelegramAuthService', () => {
 
     expect(() => service.parseWebLoginPayload({ ...payload, first_name: 'Mallory' } as any)).toThrow();
   });
+
+  describe('standalone web Login Widget regression (POST /auth/telegram-login)', () => {
+    const nowSec = () => Math.floor(Date.now() / 1000);
+
+    it('accepts a valid payload even when nonce/referralCode control fields are present', () => {
+      // Regression: frontend always sends { ...telegramPayload, nonce, referralCode }.
+      // Control fields must be excluded from the HMAC base string or every
+      // legitimate login 401s with INVALID_WEB_LOGIN_SIGNATURE.
+      const signed = signWebLoginPayload({
+        id: 123456789,
+        first_name: 'Wendy',
+        auth_date: nowSec(),
+      });
+      const withControls = {
+        ...signed,
+        nonce: 'tgn_regression_nonce',
+        referralCode: 'TITAN_ABC123',
+      };
+      const parsed = service.parseWebLoginPayload(withControls as any);
+      expect(parsed.telegramUserId).toBe('123456789');
+      expect(parsed.firstName).toBe('Wendy');
+    });
+
+    it('rejects a tampered user id without a new hash (401 SIGNATURE_INVALID)', () => {
+      const signed = signWebLoginPayload({
+        id: 123456789,
+        first_name: 'Wendy',
+        auth_date: nowSec(),
+      });
+      try {
+        service.parseWebLoginPayload({ ...signed, id: 987654321 } as any);
+        fail('expected tampered id to throw');
+      } catch (err: any) {
+        expect(err.status).toBe(401);
+        expect(JSON.stringify(err.response)).toContain('TELEGRAM_WEB_LOGIN_SIGNATURE_INVALID');
+      }
+    });
+
+    it('rejects a tampered username without a new hash (401 SIGNATURE_INVALID)', () => {
+      const signed = signWebLoginPayload({
+        id: 123456789,
+        first_name: 'Wendy',
+        username: 'wendy',
+        auth_date: nowSec(),
+      });
+      try {
+        service.parseWebLoginPayload({ ...signed, username: 'mallory' } as any);
+        fail('expected tampered username to throw');
+      } catch (err: any) {
+        expect(err.status).toBe(401);
+        expect(JSON.stringify(err.response)).toContain('TELEGRAM_WEB_LOGIN_SIGNATURE_INVALID');
+      }
+    });
+
+    it('rejects a payload signed with the wrong bot token (401 SIGNATURE_INVALID)', () => {
+      const signed = signWebLoginPayload(
+        { id: 123456789, first_name: 'Wendy', auth_date: nowSec() },
+        'different_bot_token',
+      );
+      try {
+        service.parseWebLoginPayload(signed as any);
+        fail('expected wrong-token payload to throw');
+      } catch (err: any) {
+        expect(err.status).toBe(401);
+        expect(JSON.stringify(err.response)).toContain('TELEGRAM_WEB_LOGIN_SIGNATURE_INVALID');
+      }
+    });
+
+    it('rejects missing hash / id / auth_date before crypto (400 PAYLOAD_INVALID)', () => {
+      const base = signWebLoginPayload({ id: 1, first_name: 'A', auth_date: nowSec() });
+      const { hash: _h, ...noHash } = base;
+      const { id: _i, ...noId } = base as any;
+      const { auth_date: _a, ...noAuthDate } = base as any;
+      for (const bad of [noHash, noId, noAuthDate]) {
+        try {
+          service.parseWebLoginPayload(bad as any);
+          fail('expected malformed payload to throw');
+        } catch (err: any) {
+          expect(err.status).toBe(400);
+          expect(JSON.stringify(err.response)).toContain('TELEGRAM_WEB_LOGIN_PAYLOAD_INVALID');
+        }
+      }
+    });
+
+    it('rejects expired and future auth_date (401 AUTH_DATE_EXPIRED)', () => {
+      const expired = signWebLoginPayload({
+        id: 123456789,
+        first_name: 'Wendy',
+        auth_date: nowSec() - 25 * 3600, // 25h > 24h tolerance
+      });
+      try {
+        service.parseWebLoginPayload(expired as any);
+        fail('expected expired auth_date to throw');
+      } catch (err: any) {
+        expect(err.status).toBe(401);
+        expect(JSON.stringify(err.response)).toContain('TELEGRAM_WEB_LOGIN_AUTH_DATE_EXPIRED');
+      }
+
+      const future = signWebLoginPayload({
+        id: 123456789,
+        first_name: 'Wendy',
+        auth_date: nowSec() + 3600, // beyond 5min skew allowance
+      });
+      try {
+        service.parseWebLoginPayload(future as any);
+        fail('expected future auth_date to throw');
+      } catch (err: any) {
+        expect(err.status).toBe(401);
+        expect(JSON.stringify(err.response)).toContain('TELEGRAM_WEB_LOGIN_AUTH_DATE_EXPIRED');
+      }
+    });
+
+    it('accepts valid payloads without optional Telegram fields', () => {
+      for (const optional of [{}, { last_name: 'Doe' }, { username: 'wendy' }, { photo_url: 'https://example.test/a.jpg' }]) {
+        const signed = signWebLoginPayload({ id: 555, first_name: 'No', auth_date: nowSec(), ...(optional as Record<string, string | number>) });
+        const parsed = service.parseWebLoginPayload(signed as any);
+        expect(parsed.telegramUserId).toBe('555');
+      }
+      // first_name itself is optional at the verifier layer (defaults to User).
+      const noFirst = signWebLoginPayload({ id: 556, auth_date: nowSec() });
+      expect(service.parseWebLoginPayload(noFirst as any).firstName).toBe('User');
+    });
+
+    it('accepts auth_date as a numeric string (Telegram serialization variance)', () => {
+      const signed = signWebLoginPayload({ id: 777, first_name: 'Str', auth_date: nowSec() });
+      const asString = { ...signed, auth_date: String((signed as any).auth_date) };
+      // Re-sign with the string form to mirror what Telegram would have signed.
+      const resigned = signWebLoginPayload({ id: 777, first_name: 'Str', auth_date: String((signed as any).auth_date) });
+      expect(service.parseWebLoginPayload(resigned as any).telegramUserId).toBe('777');
+      expect(asString.auth_date).toEqual(String((signed as any).auth_date));
+    });
+
+    it('does not conflate Mini App (WebAppData) and Login Widget (sha256 token) algorithms', () => {
+      // Same fields signed with the Mini App algorithm must FAIL widget verification.
+      const fields = { id: '999', first_name: 'Algo', auth_date: String(nowSec()) };
+      const webAppSecret = createHmac('sha256', 'WebAppData').update('test_bot_token').digest();
+      const webAppHash = createHmac('sha256', webAppSecret)
+        .update(Object.keys(fields).sort().map((k) => `${k}=${(fields as any)[k]}`).join('\n'))
+        .digest('hex');
+      try {
+        service.parseWebLoginPayload({ ...fields, id: 999, auth_date: Number((fields as any).auth_date), hash: webAppHash } as any);
+        fail('expected WebAppData-signed payload to fail widget verification');
+      } catch (err: any) {
+        expect(err.status).toBe(401);
+      }
+    });
+  });
 });

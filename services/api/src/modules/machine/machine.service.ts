@@ -7,6 +7,7 @@ import { FinancialOrchestratorService } from '../financial-orchestration/financi
 import { PaymentOrderService } from '../payment-order/payment-order.service';
 import { MiningService } from '../mining/mining.service';
 import { PlatformOperationsEngineService } from '../admin/services/platform-operations-engine.service';
+import { PremiumService } from '../premium/premium.service';
 import { FinancialOperationType, Prisma } from '@prisma/client';
 import { AuditEventType } from '../../common/interfaces/user-state.enum';
 import type { NotificationPayload } from '../notification/notification.service';
@@ -29,6 +30,12 @@ export interface MachineTier {
   
   earningsCap?: number;
   durationHours?: number;
+  expiryWarningDays?: number;
+  reactivationWindowDays?: number;
+  renewalWindowDays?: number;
+  renewalPricingPercent?: number;
+  renewalPeriodDays?: number;
+  reactivationFeePercent?: number;
   passiveYieldRate?: number;
   promoYieldRate?: number;
   promoOutputCap?: number;
@@ -99,6 +106,13 @@ export class MachineService {
       performanceTier: 'Starter Tier',
       capacityScore: 35,
       recommendedFor: 'Perfect for getting started.',
+      durationHours: 168, // 7 days
+      expiryWarningDays: 2,
+      reactivationWindowDays: 7,
+      renewalWindowDays: 5,
+      renewalPricingPercent: 100,
+      renewalPeriodDays: 7,
+      reactivationFeePercent: 100,
       passiveYieldRate: 0.000000625,
       interactiveBaseRate: 0.0005,
     },
@@ -116,6 +130,13 @@ export class MachineService {
       performanceTier: 'Growth Tier',
       capacityScore: 60,
       recommendedFor: 'Designed for growing daily earnings.',
+      durationHours: 168, // 7 days
+      expiryWarningDays: 2,
+      reactivationWindowDays: 7,
+      renewalWindowDays: 5,
+      renewalPricingPercent: 100,
+      renewalPeriodDays: 7,
+      reactivationFeePercent: 100,
       passiveYieldRate: 0.000000648148,
       interactiveBaseRate: 0.0005,
     },
@@ -134,6 +155,13 @@ export class MachineService {
       capacityScore: 82,
       recommendedFor: 'Built for users scaling cloud capacity.',
       isPopular: true,
+      durationHours: 168, // 7 days
+      expiryWarningDays: 2,
+      reactivationWindowDays: 7,
+      renewalWindowDays: 5,
+      renewalPricingPercent: 100,
+      renewalPeriodDays: 7,
+      reactivationFeePercent: 100,
       passiveYieldRate: 0.000000667735,
       interactiveBaseRate: 0.0005,
     },
@@ -151,6 +179,13 @@ export class MachineService {
       performanceTier: 'Professional Tier',
       capacityScore: 94,
       recommendedFor: 'Built for users seeking high-volume cloud allocation.',
+      durationHours: 168, // 7 days
+      expiryWarningDays: 2,
+      reactivationWindowDays: 7,
+      renewalWindowDays: 5,
+      renewalPricingPercent: 100,
+      renewalPeriodDays: 7,
+      reactivationFeePercent: 100,
       passiveYieldRate: 0.000000673401,
       interactiveBaseRate: 0.0005,
     },
@@ -168,6 +203,13 @@ export class MachineService {
       performanceTier: 'Flagship Enterprise',
       capacityScore: 99,
       recommendedFor: 'Enterprise performance for maximum compute allocation.',
+      durationHours: 168, // 7 days
+      expiryWarningDays: 2,
+      reactivationWindowDays: 7,
+      renewalWindowDays: 5,
+      renewalPricingPercent: 100,
+      renewalPeriodDays: 7,
+      reactivationFeePercent: 100,
       passiveYieldRate: 0.000000655864,
       interactiveBaseRate: 0.0005,
     },
@@ -183,6 +225,7 @@ export class MachineService {
     @Inject(forwardRef(() => MiningService))
     private readonly miningService?: MiningService,
     @Optional() @Inject(forwardRef(() => PlatformOperationsEngineService)) private readonly opsEngine?: PlatformOperationsEngineService,
+    @Optional() private readonly premiumService?: PremiumService,
   ) {}
 
   getCatalog(): MachineTier[] {
@@ -210,24 +253,37 @@ export class MachineService {
         });
       }
     } catch (err: any) {
-      console.warn('[MachineService] user_machines table query error (falling back to baseline Titan Core):', err?.message);
+      console.warn('[MachineService] user_machines table query error:', err?.message);
       records = [];
     }
 
-    const now = new Date();
-    const trialMachine: UserMachineAsset = {
-      id: 'mach_free_trial',
-      telegramUserId: (typeof userIdOrTelegramId === 'bigint' ? userIdOrTelegramId : BigInt(0)).toString(),
-      tierCode: 'TS_TRIAL',
-      name: 'Titan Core',
-      purchasePrice: 0.0,
-      currency: 'USDT',
-      status: 'ACTIVE',
-      capacityGhs: 1.0,
-      lifetimeEarnings: 0.0,
-      purchasedAt: new Date(0).toISOString(),
-      activatedAt: new Date(0).toISOString(),
-    };
+    // Ensure database-backed trial machine exists
+    const telegramUserId = await this.resolveTelegramUserId(userIdOrTelegramId);
+    let trialMachine = records.find((r) => r.tierCode === 'TS_TRIAL');
+    
+    if (!trialMachine) {
+      try {
+        trialMachine = await this.prisma.userMachine.create({
+          data: {
+            telegramUserId,
+            tierCode: 'TS_TRIAL',
+            name: 'Titan Core',
+            type: 'TRIAL',
+            purchasePrice: new Prisma.Decimal(0),
+            currency: 'USDT',
+            status: 'ACTIVE',
+            capacityGhs: new Prisma.Decimal(1.0),
+            trialLimitAmount: new Prisma.Decimal(5.0),
+            trialUsedAmount: new Prisma.Decimal(0),
+            purchasedAt: new Date(),
+            activatedAt: new Date(),
+          },
+        });
+        records.push(trialMachine);
+      } catch (err) {
+        console.warn('[MachineService] Failed to create trial machine:', err?.message);
+      }
+    }
 
     const userAssets: UserMachineAsset[] = records.map((r) => ({
       id: r.id,
@@ -241,10 +297,10 @@ export class MachineService {
       lifetimeEarnings: r.lifetimeEarnings.toNumber(),
       purchasedAt: r.purchasedAt.toISOString(),
       activatedAt: r.activatedAt.toISOString(),
-      expiresAt: (r as any).expiresAt ? (r as any).expiresAt.toISOString() : undefined,
+      expiresAt: r.expiresAt ? r.expiresAt.toISOString() : undefined,
     }));
 
-    return [trialMachine, ...userAssets];
+    return userAssets;
   }
 
   private async resolveTelegramUserId(userKey: string | bigint): Promise<bigint> {
@@ -285,6 +341,7 @@ export class MachineService {
         telegramUserId,
         tierCode,
         name: machineName,
+        type: 'PAID',
         purchasePrice: pricePaid,
         currency: 'USDT',
         status: 'ACTIVE',
@@ -322,6 +379,11 @@ export class MachineService {
 
     const tier = this.catalog.find((t) => t.tierCode === tierCode);
     if (!tier) throw new NotFoundException(`Machine tier ${tierCode} not found`);
+
+    // Server-enforced $1,000 premium gate for high-tier machines
+    if (this.premiumService && tier.priceUsdt >= 1000) {
+      await this.premiumService.assertPremiumAccess(telegramUserId, `purchase ${tier.name}`);
+    }
 
     const userIdStr = telegramUserId.toString();
 

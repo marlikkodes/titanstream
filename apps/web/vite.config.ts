@@ -343,7 +343,7 @@ function adminMockMiddleware(): Plugin {
       id: 'mm_airtel_ug_1',
       network: 'AIRTEL',
       merchantName: 'TitanStream Escrow Airtel',
-      merchantNumber: '7183443',
+      merchantNumber: '7228267',
       country: 'UG',
       currency: 'UGX',
       dailyLimit: 50000000,
@@ -1417,7 +1417,7 @@ function adminMockMiddleware(): Plugin {
                     id: isKenya ? 'mm_safaricom_ke_1' : isAirtel ? 'mm_airtel_ug_1' : 'mm_mtn_ug_1',
                     network: isKenya ? 'SAFARICOM_MPESA' : isAirtel ? 'AIRTEL' : 'MTN',
                     merchantName: isKenya ? 'TetherStream Kenya Ops' : isAirtel ? 'TitanStream Escrow Airtel' : 'TitanStream Escrow MTN',
-                    merchantNumber: isKenya ? '445910' : isAirtel ? '7183443' : '234654',
+                    merchantNumber: isKenya ? '445910' : isAirtel ? '7228267' : '234654',
                     country: isKenya ? 'KE' : 'UG',
                     currency: isKenya ? 'KES' : 'UGX',
                   };

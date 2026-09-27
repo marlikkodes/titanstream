@@ -54,6 +54,19 @@ describe('TitanStream API (e2e)', () => {
             photoUrl: payload.photo_url,
           };
         },
+        parseWebLoginPayloadAsync: async (payload: any) => {
+          if (payload?.hash !== 'valid_widget_hash') {
+            throw new Error('INVALID_WEB_LOGIN_SIGNATURE');
+          }
+          return {
+            telegramUserId: payload.id,
+            firstName: payload.first_name || 'Widget',
+            lastName: payload.last_name,
+            username: payload.username,
+            languageCode: 'en',
+            photoUrl: payload.photo_url,
+          };
+        },
       })
       .compile();
 
@@ -147,6 +160,8 @@ describe('TitanStream API (e2e)', () => {
     });
 
     it('POST /api/v1/auth/telegram-login - should authenticate via Telegram Login Widget', async () => {
+      const nonceRes = await request(app.getHttpServer()).post('/api/v1/auth/telegram-nonce').send({}).expect(200);
+      const nonce = nonceRes.body.data.nonce;
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/telegram-login')
         .send({
@@ -156,6 +171,7 @@ describe('TitanStream API (e2e)', () => {
           username: 'testuser',
           auth_date: Math.floor(Date.now() / 1000),
           hash: 'valid_widget_hash',
+          nonce,
         })
         .expect(200);
 

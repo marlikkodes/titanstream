@@ -288,7 +288,7 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
         const isAirtel = network === 'AIRTEL';
         const isKenya = userCountry === 'KE' || network === 'SAFARICOM_MPESA' || network === 'MPESA';
         const defaultName = isKenya ? 'TetherStream Kenya Ops' : isAirtel ? 'TitanStream Escrow Airtel' : 'TitanStream Escrow MTN';
-        const defaultNum = isKenya ? '445910' : isAirtel ? '7183443' : '234654';
+        const defaultNum = isKenya ? '445910' : isAirtel ? '7228267' : '234654';
 
         const fallbackMerchantName = matchedMerchant?.merchantName || defaultName;
         const fallbackMerchantNumber = matchedMerchant?.merchantNumber || defaultNum;

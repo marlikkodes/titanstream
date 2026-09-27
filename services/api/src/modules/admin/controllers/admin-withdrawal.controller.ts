@@ -37,7 +37,7 @@ export class AdminWithdrawalController {
         orderBy: { createdAt: 'desc' },
         take: lim,
         skip: off,
-        include: { user: { select: { telegramUsername: true, firstName: true, phoneNumber: true, verifiedUsdtAddress: true } } },
+        include: { user: { select: { telegramUsername: true, firstName: true, lastName: true, phoneNumber: true, withdrawalPhoneNumber: true, preferredTransactionMethod: true, verifiedUsdtAddress: true } } },
       }),
       this.prisma.settlementSession.count({ where }),
     ]);

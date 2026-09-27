@@ -118,6 +118,60 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   box-shadow: 0 8px 32px 0 rgba(255, 179, 0, 0.1), inset 0 1px 0 0 rgba(255, 179, 0, 0.15);
 }
 
+/* ============================================================
+   Rewards popup visibility remediation — centralized tokens.
+   Surfaces target ~94-97% effective opacity: solid and
+   intentional, while keeping the TitanStream gradient depth.
+   Backdrop targets ~60% dim + blur for foreground separation.
+   Scope: Rewards modals/sheets only. Global tokens untouched.
+   ============================================================ */
+:root {
+  --rewards-modal-bg: linear-gradient(
+    180deg,
+    rgba(24, 26, 40, 0.97) 0%,
+    rgba(11, 12, 19, 0.97) 55%,
+    rgba(15, 17, 27, 0.96) 100%
+  );
+  --rewards-modal-bg-solid: #10121c;
+  --rewards-modal-backdrop: rgba(3, 4, 8, 0.6);
+  --rewards-modal-border: rgba(38, 161, 123, 0.45);
+  --rewards-modal-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+/* Solid foreground surface for Rewards popups/sheets.
+   Replaces translucent `from-card-bg via-app-bg to-control-bg`
+   (card-bg 70% / control-bg 60% alpha) and bare `.web3-card`
+   glass (5% white wash, no solid backing). Keeps border,
+   radius, and shadow utilities applied alongside it. */
+.rewards-modal-surface {
+  background: var(--rewards-modal-bg);
+  background-color: var(--rewards-modal-bg-solid);
+  box-shadow: var(--rewards-modal-shadow);
+}
+
+/* Dim + blur backdrop behind Rewards centered modals.
+   60% sits inside the 45-65% separation band. */
+.rewards-modal-backdrop {
+  background-color: var(--rewards-modal-backdrop);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Bottom-sheet variant (MissionRunner): no page-blocking
+   backdrop by design (escort pattern), so separation comes
+   from the solid surface + lifted shadow + stronger border. */
+.rewards-sheet-surface {
+  background: var(--rewards-modal-bg);
+  background-color: var(--rewards-modal-bg-solid);
+  box-shadow:
+    0 -8px 48px rgba(0, 0, 0, 0.65),
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
 /* Glass headers and nav bars */
 .glass-header {
   background: rgba(9, 10, 15, 0.7);

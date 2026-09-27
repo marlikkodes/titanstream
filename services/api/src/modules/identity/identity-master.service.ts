@@ -551,13 +551,25 @@ export class IdentityMasterEngineService {
               
               const ledgerEntries = await tx.ledgerEntry.findMany({
                 where: { financialAccountId: fa.id },
+                include: {
+                  ledgerAccount: true, // Include to get account type for correct accounting
+                },
               });
               
               const ledgerBalance = ledgerEntries.reduce((sum, entry) => {
                 const amount = Number(entry.amount);
-                // Debit entries (negative amounts from debit accounts)
-                // Credit entries (positive amounts from credit accounts)
-                return sum + amount;
+                const accountType = entry.ledgerAccount?.type;
+                
+                // Correct double-entry accounting:
+                // DEBIT accounts (ASSET, EXPENSE): DEBIT increases (+), CREDIT decreases (-)
+                // CREDIT accounts (LIABILITY, EQUITY, REVENUE): CREDIT increases (+), DEBIT decreases (-)
+                if (accountType === 'ASSET' || accountType === 'EXPENSE') {
+                  // Debit accounts: DEBIT adds, CREDIT subtracts
+                  return entry.entryType === 'DEBIT' ? sum + amount : sum - amount;
+                } else {
+                  // Credit accounts (LIABILITY, EQUITY, REVENUE, SYSTEM): CREDIT adds, DEBIT subtracts
+                  return entry.entryType === 'CREDIT' ? sum + amount : sum - amount;
+                }
               }, 0);
               
               return { account: fa, ledgerBalance, ledgerEntryCount: ledgerEntries.length };

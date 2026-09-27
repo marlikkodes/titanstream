@@ -5,12 +5,17 @@ export type AuthProvider = 'telegram' | 'web';
 
 export interface TelegramLoginWidgetPayload {
   id: number | string;
-  first_name: string;
+  first_name?: string;
   last_name?: string;
   username?: string;
   photo_url?: string;
-  auth_date: number;
-  hash: string;
+  auth_date: number | string;
+  hash?: string;
+  // TitanStream control fields (never Telegram-signed):
+  nonce?: string;
+  referralCode?: string | null;
+  // New oauth.telegram.org flow:
+  id_token?: string;
 }
 
 const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000;
@@ -73,7 +78,14 @@ export const authService = {
 
   async authenticateWebLogin(payload: TelegramLoginWidgetPayload): Promise<SessionData> {
     const traceId = createTraceId();
-    trace(traceId, 'web.payload_received', `telegramUserId=${payload?.id ?? 'missing'}`);
+    // Safe diagnostics only: presence flags, never hash/JWT/token values.
+    trace(
+      traceId,
+      'web.payload_received',
+      `telegramUserId=${payload?.id ?? 'missing'} keys=${payload ? Object.keys(payload).join(',') : 'none'} ` +
+        `id_present=${payload != null && 'id' in payload} auth_date_present=${payload != null && 'auth_date' in payload} ` +
+        `hash_present=${payload != null && 'hash' in payload} id_token_present=${payload != null && 'id_token' in payload}`
+    );
     trace(traceId, 'web.request_sent', 'POST /auth/telegram-login');
 
     const response = await api.post<ApiResponse<AuthResponse>>('/auth/telegram-login', payload);

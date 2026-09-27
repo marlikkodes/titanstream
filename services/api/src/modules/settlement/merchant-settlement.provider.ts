@@ -149,7 +149,7 @@ export class MerchantSettlementProvider implements SettlementProvider {
     if (!session) throw new NotFoundException('SETTLEMENT_NOT_FOUND');
 
     const network = session.mobileMoneyNetwork || 'MTN';
-    const mNum = session.merchant?.merchantNumber || (network === 'AIRTEL' ? '7183443' : '234654');
+    const mNum = session.merchant?.merchantNumber || (network === 'AIRTEL' ? '7228267' : '234654');
     const mName = session.merchant?.merchantName || (network === 'AIRTEL' ? 'TitanStream Escrow Airtel' : 'TitanStream Escrow MTN');
 
     return {

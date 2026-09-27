@@ -1,22 +1,27 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/useAuthStore';
 import { useTelegram } from '../context/TelegramContext';
 import { useLegalModalStore } from '../store/useLegalModalStore';
-import { 
-  Server, 
-  TrendingUp, 
-  Cpu, 
+import {
+  Server,
+  TrendingUp,
+  Cpu,
   ShieldCheck,
-  CheckCircle2, 
+  CheckCircle2,
   ArrowRight,
-  Sparkles,
   Lock,
   ExternalLink
 } from 'lucide-react';
+import { AccountPersonalizationStep } from './AccountPersonalizationStep';
+import { getAccountSetup, type AccountSetupState } from '../services/accountSetupService';
 
 interface OnboardingOverlayProps {
   onComplete?: () => void;
+  /** Start directly at the Personalization step (returning user with incomplete setup). */
+  startAtPersonalization?: boolean;
+  /** Authoritative setup snapshot from the app shell — avoids a duplicate GET on login. */
+  initialSetup?: AccountSetupState | null;
 }
 
 interface Slide {
@@ -28,11 +33,20 @@ interface Slide {
   bgGlow: string;
 }
 
-export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete }) => {
-  const [currentStep, setCurrentStep] = useState(0);
+// Step indices: 0-3 product intro, 4 account personalization, 5 compliance consent.
+const PERSONALIZATION_STEP = 4;
+const CONSENT_STEP = 5;
+const TOTAL_STEPS = 6;
+
+export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete, startAtPersonalization, initialSetup }) => {
+  const [currentStep, setCurrentStep] = useState(() => (startAtPersonalization ? PERSONALIZATION_STEP : 0));
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [agreedRisk, setAgreedRisk] = useState(false);
   const [agreedEligibility, setAgreedEligibility] = useState(false);
+
+  const [setup, setSetup] = useState<AccountSetupState | null>(initialSetup ?? null);
+  const [setupLoading, setSetupLoading] = useState(!initialSetup);
+  const [setupError, setSetupError] = useState<string | null>(null);
 
   const { markOnboardingComplete } = useAuthStore();
   const { hapticFeedback } = useTelegram();
@@ -71,23 +85,61 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
       gradient: "from-amber-400 to-orange-400",
       bgGlow: "bg-amber-500/15",
     },
-    {
-      id: 4,
-      title: "Compliance & Consent",
-      copy: "Please review and confirm our regulatory terms before accessing your compute terminal:",
-      icon: <CheckCircle2 size={28} />,
-      gradient: "from-usdt-green to-emerald-400",
-      bgGlow: "bg-usdt-green/15",
-    }
   ];
 
-  const isConsentStep = currentStep === slides.length - 1;
+  const consentMeta = {
+    title: "Compliance & Consent",
+    gradient: "from-usdt-green to-emerald-400",
+    bgGlow: "bg-usdt-green/15",
+  };
+
+  const isPersonalizationStep = currentStep === PERSONALIZATION_STEP;
+  const isConsentStep = currentStep === CONSENT_STEP;
   const isConsentValid = agreedTerms && agreedRisk && agreedEligibility;
+
+  const loadSetup = useCallback(async () => {
+    setSetupLoading(true);
+    setSetupError(null);
+    try {
+      const state = await getAccountSetup();
+      setSetup(state);
+    } catch {
+      // Fail-open: personalization still renders with empty defaults so
+      // onboarding is never hard-blocked by a transient fetch failure.
+      // The backend remains authoritative on save.
+      setSetupError('LOAD_FAILED');
+    } finally {
+      setSetupLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // The app shell already fetched the authoritative snapshot on login;
+    // only fetch here when it is absent (fresh mount race) or on retry.
+    if (initialSetup) return;
+    loadSetup();
+  }, [loadSetup, initialSetup]);
+
+  // Users whose canonical setup is already complete never see the step again.
+  useEffect(() => {
+    if (setup?.completed && currentStep === PERSONALIZATION_STEP) {
+      setCurrentStep(CONSENT_STEP);
+    }
+  }, [setup, currentStep]);
+
+  const goToStep = (step: number) => {
+    // Never land on Personalization when the backend already reports completion.
+    if (step === PERSONALIZATION_STEP && setup?.completed) {
+      setCurrentStep(CONSENT_STEP);
+      return;
+    }
+    setCurrentStep(step);
+  };
 
   const handleNext = () => {
     hapticFeedback.impactOccurred('medium');
     if (!isConsentStep) {
-      setCurrentStep((prev) => prev + 1);
+      goToStep(currentStep + 1);
     } else {
       if (!isConsentValid) return;
       markOnboardingComplete();
@@ -95,13 +147,32 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
     }
   };
 
-  const handleSkipToConsent = () => {
+  const handleSkipIntro = () => {
     hapticFeedback.impactOccurred('light');
-    // Direct users to the mandatory compliance consent step rather than silently bypassing legal terms
-    setCurrentStep(slides.length - 1);
+    // Skip the product intro, but never the required personalization or consent.
+    goToStep(setup?.completed ? CONSENT_STEP : PERSONALIZATION_STEP);
   };
 
-  const slide = slides[currentStep];
+  const handlePersonalizationSaved = (state: AccountSetupState) => {
+    hapticFeedback.notificationOccurred('success');
+    setSetup(state);
+    // Advance only after the backend confirms the save. If the backend still
+    // reports incomplete (e.g. edge validation), stay on this step.
+    if (state.completed) {
+      goToStep(CONSENT_STEP);
+    }
+  };
+
+  const activeGradient = isConsentStep
+    ? consentMeta.gradient
+    : isPersonalizationStep
+      ? 'from-gold to-amber-400'
+      : slides[currentStep].gradient;
+  const activeGlow = isConsentStep
+    ? consentMeta.bgGlow
+    : isPersonalizationStep
+      ? 'bg-gold/15'
+      : slides[currentStep].bgGlow;
 
   return (
     <div className="fixed inset-0 z-50 bg-[#06070b] flex flex-col select-none overflow-hidden">
@@ -113,7 +184,7 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8 }}
-          className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] ${slide.bgGlow} rounded-full blur-[120px]`}
+          className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] ${activeGlow} rounded-full blur-[120px]`}
         />
       </div>
 
@@ -123,12 +194,12 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
           <span className="w-6 h-6 rounded-full bg-usdt-green/20 text-usdt-green flex items-center justify-center font-black text-xs">₮</span>
           <span className="text-sm font-extrabold text-text-primary tracking-tight font-sans">TitanStream</span>
         </div>
-        
-        {!isConsentStep && (
-          <button 
-            onClick={handleSkipToConsent}
+
+        {!isConsentStep && !isPersonalizationStep && (
+          <button
+            onClick={handleSkipIntro}
             className="text-[11px] font-semibold text-text-tertiary hover:text-text-secondary px-3 py-1.5 rounded-full bg-white/5 border border-white/8 transition-colors focus-visible:ring-2 focus-visible:ring-gold"
-            aria-label="Skip to compliance consent step"
+            aria-label="Skip to account setup"
           >
             Review & Accept
           </button>
@@ -146,108 +217,120 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col items-center text-center w-full"
           >
-            {/* Icon */}
-            <div className="relative mb-6">
-              <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${slide.gradient} blur-2xl opacity-30 scale-125`} />
-              <div className={`relative w-[64px] h-[64px] rounded-3xl bg-gradient-to-br ${slide.gradient} text-white flex items-center justify-center shadow-2xl border border-white/20`}>
-                {slide.icon}
-              </div>
-            </div>
-
-            {/* Title */}
-            <h2 className="text-[20px] font-black text-text-primary tracking-tight font-sans leading-tight mb-3">
-              {slide.title}
-            </h2>
-
-            {/* Copy */}
-            {!isConsentStep ? (
-              <div className="space-y-2">
-                {slide.copy.split('\n\n').map((paragraph, i) => (
-                  <p key={i} className="text-[13px] text-text-secondary leading-relaxed font-medium font-sans">
-                    {paragraph.startsWith('•') ? (
-                      <span className="text-left block">{paragraph}</span>
-                    ) : paragraph}
-                  </p>
-                ))}
-              </div>
+            {isPersonalizationStep ? (
+              <AccountPersonalizationStep
+                initial={setup}
+                loading={setupLoading}
+                loadError={setupError}
+                onRetry={loadSetup}
+                onSaved={handlePersonalizationSaved}
+              />
             ) : (
-              /* Mandatory Consent & Compliance Checklist */
-              <div className="w-full space-y-3 text-left">
-                <p className="text-[11px] text-text-tertiary text-center mb-1">
-                  Please acknowledge each statement to activate your node terminal:
-                </p>
-
-                <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-white/20 cursor-pointer transition-colors select-none">
-                  <input
-                    type="checkbox"
-                    checked={agreedTerms}
-                    onChange={(e) => setAgreedTerms(e.target.checked)}
-                    className="accent-gold w-4 h-4 mt-0.5 shrink-0 rounded"
-                  />
-                  <span className="text-[11px] text-text-secondary leading-snug">
-                    I accept the{' '}
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); openLegalModal('terms'); }}
-                      className="text-gold font-bold underline hover:text-gold-bright"
-                    >
-                      Terms of Service
-                    </button>
-                    {', '}
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); openLegalModal('privacy'); }}
-                      className="text-gold font-bold underline hover:text-gold-bright"
-                    >
-                      Privacy Policy
-                    </button>
-                    {', and '}
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); openLegalModal('refund'); }}
-                      className="text-gold font-bold underline hover:text-gold-bright"
-                    >
-                      Refund Policy
-                    </button>
-                    .
-                  </span>
-                </label>
-
-                <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-white/20 cursor-pointer transition-colors select-none">
-                  <input
-                    type="checkbox"
-                    checked={agreedRisk}
-                    onChange={(e) => setAgreedRisk(e.target.checked)}
-                    className="accent-gold w-4 h-4 mt-0.5 shrink-0 rounded"
-                  />
-                  <span className="text-[11px] text-text-secondary leading-snug">
-                    I understand that TitanStream is a distributed compute provider and <strong className="text-white">not a bank or investment fund</strong>. Compute yields are dynamic and not guaranteed.
-                  </span>
-                </label>
-
-                <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-white/20 cursor-pointer transition-colors select-none">
-                  <input
-                    type="checkbox"
-                    checked={agreedEligibility}
-                    onChange={(e) => setAgreedEligibility(e.target.checked)}
-                    className="accent-gold w-4 h-4 mt-0.5 shrink-0 rounded"
-                  />
-                  <span className="text-[11px] text-text-secondary leading-snug">
-                    I confirm I am <strong className="text-white">at least 18 years of age</strong> and not a resident of an OFAC-sanctioned or legally prohibited jurisdiction.
-                  </span>
-                </label>
-
-                <div className="text-center pt-1">
-                  <button
-                    type="button"
-                    onClick={() => openLegalModal('business')}
-                    className="text-[10px] text-text-tertiary hover:text-text-secondary inline-flex items-center gap-1"
-                  >
-                    <span>View Corporate Details & Licenses</span>
-                    <ExternalLink size={10} />
-                  </button>
+              <>
+                {/* Icon */}
+                <div className="relative mb-6">
+                  <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${activeGradient} blur-2xl opacity-30 scale-125`} />
+                  <div className={`relative w-[64px] h-[64px] rounded-3xl bg-gradient-to-br ${activeGradient} text-white flex items-center justify-center shadow-2xl border border-white/20`}>
+                    {isConsentStep ? <CheckCircle2 size={28} /> : slides[currentStep].icon}
+                  </div>
                 </div>
-              </div>
+
+                {/* Title */}
+                <h2 className="text-[20px] font-black text-text-primary tracking-tight font-sans leading-tight mb-3">
+                  {isConsentStep ? consentMeta.title : slides[currentStep].title}
+                </h2>
+
+                {/* Copy */}
+                {!isConsentStep ? (
+                  <div className="space-y-2">
+                    {slides[currentStep].copy.split('\n\n').map((paragraph, i) => (
+                      <p key={i} className="text-[13px] text-text-secondary leading-relaxed font-medium font-sans">
+                        {paragraph.startsWith('•') ? (
+                          <span className="text-left block">{paragraph}</span>
+                        ) : paragraph}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  /* Mandatory Consent & Compliance Checklist */
+                  <div className="w-full space-y-3 text-left">
+                    <p className="text-[11px] text-text-tertiary text-center mb-1">
+                      Please acknowledge each statement to activate your node terminal:
+                    </p>
+
+                    <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-white/20 cursor-pointer transition-colors select-none">
+                      <input
+                        type="checkbox"
+                        checked={agreedTerms}
+                        onChange={(e) => setAgreedTerms(e.target.checked)}
+                        className="accent-gold w-4 h-4 mt-0.5 shrink-0 rounded"
+                      />
+                      <span className="text-[11px] text-text-secondary leading-snug">
+                        I accept the{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); openLegalModal('terms'); }}
+                          className="text-gold font-bold underline hover:text-gold-bright"
+                        >
+                          Terms of Service
+                        </button>
+                        {', '}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); openLegalModal('privacy'); }}
+                          className="text-gold font-bold underline hover:text-gold-bright"
+                        >
+                          Privacy Policy
+                        </button>
+                        {', and '}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); openLegalModal('refund'); }}
+                          className="text-gold font-bold underline hover:text-gold-bright"
+                        >
+                          Refund Policy
+                        </button>
+                        .
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-white/20 cursor-pointer transition-colors select-none">
+                      <input
+                        type="checkbox"
+                        checked={agreedRisk}
+                        onChange={(e) => setAgreedRisk(e.target.checked)}
+                        className="accent-gold w-4 h-4 mt-0.5 shrink-0 rounded"
+                      />
+                      <span className="text-[11px] text-text-secondary leading-snug">
+                        I understand that TitanStream is a distributed compute provider and <strong className="text-white">not a bank or investment fund</strong>. Compute yields are dynamic and not guaranteed.
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-white/20 cursor-pointer transition-colors select-none">
+                      <input
+                        type="checkbox"
+                        checked={agreedEligibility}
+                        onChange={(e) => setAgreedEligibility(e.target.checked)}
+                        className="accent-gold w-4 h-4 mt-0.5 shrink-0 rounded"
+                      />
+                      <span className="text-[11px] text-text-secondary leading-snug">
+                        I confirm I am <strong className="text-white">at least 18 years of age</strong> and not a resident of an OFAC-sanctioned or legally prohibited jurisdiction.
+                      </span>
+                    </label>
+
+                    <div className="text-center pt-1">
+                      <button
+                        type="button"
+                        onClick={() => openLegalModal('business')}
+                        className="text-[10px] text-text-tertiary hover:text-text-secondary inline-flex items-center gap-1"
+                      >
+                        <span>View Corporate Details & Licenses</span>
+                        <ExternalLink size={10} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </motion.div>
         </AnimatePresence>
@@ -257,7 +340,7 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
       <div className="relative z-10 max-w-sm mx-auto w-full px-6 sm:px-8 pb-8 space-y-4">
         {/* Progress dots */}
         <div className="flex justify-center gap-2">
-          {slides.map((_, idx) => (
+          {Array.from({ length: TOTAL_STEPS }).map((_, idx) => (
             <motion.div
               key={idx}
               animate={{
@@ -266,39 +349,41 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
               }}
               transition={{ duration: 0.3 }}
               className={`h-[6px] rounded-full ${
-                idx === currentStep 
-                  ? `bg-gradient-to-r ${slide.gradient}` 
+                idx === currentStep
+                  ? `bg-gradient-to-r ${activeGradient}`
                   : 'bg-white/20'
               }`}
             />
           ))}
         </div>
 
-        {/* CTA Button */}
-        <button
-          onClick={handleNext}
-          disabled={isConsentStep && !isConsentValid}
-          className={`w-full py-3.5 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg press-feedback transition-all focus-visible:ring-2 focus-visible:ring-gold ${
-            isConsentStep
-              ? isConsentValid
-                ? 'bg-gold text-app-bg shadow-gold/25 hover:brightness-110'
-                : 'bg-white/5 text-text-tertiary border border-white/5 cursor-not-allowed'
-              : 'bg-white/10 text-text-primary border border-white/10 hover:bg-white/15'
-          }`}
-          aria-label={isConsentStep ? 'Confirm compliance consent and start' : 'Proceed to next onboarding step'}
-        >
-          {isConsentStep ? (
-            <>
-              <Lock size={15} />
-              <span>Confirm & Activate Terminal</span>
-            </>
-          ) : (
-            <>
-              <span>Next</span>
-              <ArrowRight size={16} />
-            </>
-          )}
-        </button>
+        {/* CTA Button (personalization owns its own Continue CTA) */}
+        {!isPersonalizationStep && (
+          <button
+            onClick={handleNext}
+            disabled={isConsentStep && !isConsentValid}
+            className={`w-full py-3.5 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg press-feedback transition-all focus-visible:ring-2 focus-visible:ring-gold ${
+              isConsentStep
+                ? isConsentValid
+                  ? 'bg-gold text-app-bg shadow-gold/25 hover:brightness-110'
+                  : 'bg-white/5 text-text-tertiary border border-white/5 cursor-not-allowed'
+                : 'bg-white/10 text-text-primary border border-white/10 hover:bg-white/15'
+            }`}
+            aria-label={isConsentStep ? 'Confirm compliance consent and start' : 'Proceed to next onboarding step'}
+          >
+            {isConsentStep ? (
+              <>
+                <Lock size={15} />
+                <span>Confirm & Activate Terminal</span>
+              </>
+            ) : (
+              <>
+                <span>Next</span>
+                <ArrowRight size={16} />
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

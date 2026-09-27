@@ -3,6 +3,7 @@ import { PrismaModule } from '../../database/prisma.module';
 import { FinancialModule } from '../financial/financial.module';
 import { TreasuryModule } from '../treasury/treasury.module';
 import { PaymentOrderModule } from '../payment-order/payment-order.module';
+import { PremiumModule } from '../premium/premium.module';
 
 import { AdminAuthController } from './controllers/admin-auth.controller';
 import { AdminDashboardController } from './controllers/admin-dashboard.controller';
@@ -72,6 +73,7 @@ import { SettlementModule } from '../settlement/settlement.module';
     forwardRef(() => TreasuryModule),
     forwardRef(() => PaymentOrderModule),
     forwardRef(() => MachineModule),
+    PremiumModule,
   ],
   controllers: [
     AdminAuthController,

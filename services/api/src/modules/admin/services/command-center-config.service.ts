@@ -106,7 +106,7 @@ export class CommandCenterConfigService {
       provider: 'AIRTEL',
       country: 'UG',
       currency: 'UGX',
-      phoneNumber: '7183443',
+      phoneNumber: '7228267',
       displayName: 'TitanStream UG Escrow Pool 2',
       ussdTemplate: '*185*9*{phone}*{amount}#',
       priority: 2,

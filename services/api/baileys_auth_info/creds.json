@@ -28,8 +28,8 @@
     "data": "CAkIAwgL"
   },
   "advSecretKey": "JtVg9IyWQNnxzs+LysCjXfgJjBFl9F/10daNp+a36lE=",
-  "lastPropHash": "1LoDef",
-  "nextPreKeyId": 3101,
+  "lastPropHash": "1fU2Ix",
+  "nextPreKeyId": 7111,
   "signedPreKey": {
     "keyId": 1,
     "keyPair": {
@@ -75,7 +75,7 @@
     }
   },
   "accountSyncCounter": 1,
-  "firstUnuploadedPreKeyId": 3101,
+  "firstUnuploadedPreKeyId": 7111,
   "pairingEphemeralKeyPair": {
     "public": {
       "type": "Buffer",

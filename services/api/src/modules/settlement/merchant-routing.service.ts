@@ -24,7 +24,7 @@ export class MerchantRoutingService {
     const currency = (params.currency || 'UGX').toUpperCase();
     const amount = new Prisma.Decimal(params.requestedLocalAmount);
 
-    const defaultNumber = network === 'AIRTEL' ? '7183443' : '234654';
+    const defaultNumber = network === 'AIRTEL' ? '7228267' : '234654';
     const defaultName = network === 'AIRTEL' ? 'TitanStream Escrow Airtel' : 'TitanStream Escrow MTN';
 
     // 1. Fetch active merchants matching network, country, currency ordered by priority ascending
@@ -142,7 +142,7 @@ export class MerchantRoutingService {
       id: merchantId,
       network: isAirtel ? 'AIRTEL' : 'MTN',
       merchantName: isAirtel ? 'TitanStream Escrow Airtel' : 'TitanStream Escrow MTN',
-      merchantNumber: isAirtel ? '7183443' : '234654',
+      merchantNumber: isAirtel ? '7228267' : '234654',
       country: 'UG',
       currency: 'UGX',
       status: 'ACTIVE',
