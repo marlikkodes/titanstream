@@ -613,6 +613,7 @@ export class WhatsappChallengeService {
       deviceInfo: challenge.deviceInfo,
       createdAt: challenge.createdAt ? challenge.createdAt.toISOString() : new Date().toISOString(),
       expiresAt: challenge.expiresAt ? challenge.expiresAt.toISOString() : new Date(Date.now() + 600000).toISOString(),
+      sessionTokens: challenge.sessionTokens,
     });
 
     const primaryTarget = `${cleanDigits}@s.whatsapp.net`;
@@ -651,9 +652,13 @@ export class WhatsappChallengeService {
           `• *HELP* ➔ View command directory`
         );
 
-    await this.baileysService.sendTextMessage(primaryTarget, confirmation, 'CRITICAL').catch((err: any) => {
-      this.logger.warn(`[WA_CONFIRMATION_FAILED] Failed to send approval confirmation: ${err.message}`);
-    });
+    const sendResult = await this.baileysService.sendTextMessage(primaryTarget, confirmation, 'CRITICAL');
+    if (!sendResult.success) {
+      this.logger.error(`[WA_CONFIRMATION_FAILED] Failed to send approval confirmation to ${primaryTarget}: ${sendResult.error}`);
+      // Don't fail the entire approval process if confirmation fails, but log for debugging
+    } else {
+      this.logger.log(`[WA_CONFIRMATION_SUCCESS] Approval confirmation sent to ${primaryTarget}, messageId: ${sendResult.messageId}`);
+    }
 
     this.logger.log(`[WA_CHALLENGE_APPROVED] challengeId=${challenge.challengeId} phone=${canonicalPhone} titanId=${canonicalTitanId} userId=${identityContext.userId}`);
   }
