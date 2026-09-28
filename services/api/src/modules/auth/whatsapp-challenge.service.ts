@@ -337,8 +337,12 @@ export class WhatsappChallengeService {
    * Checks current challenge status.
    */
   getChallengeStatus(challengeId: string, browserProof?: string) {
+    const correlationId = `AUTH-${challengeId}-${Date.now()}`;
+    this.logger.log(`[${correlationId}] AUTH_BROWSER_POLL_START challengeId=${challengeId}`);
+
     let challenge = this.challenges.get(challengeId);
     if (!challenge) {
+      this.logger.log(`[${correlationId}] AUTH_BROWSER_POLL_NOT_IN_MEMORY loadingFromSharedFile=true`);
       const shared = loadSharedChallenges();
       const raw = shared[challengeId];
       if (raw) {
@@ -352,34 +356,40 @@ export class WhatsappChallengeService {
         if (restored.approvalTokenHash) {
           this.approvalTokenHashToChallengeId.set(restored.approvalTokenHash, challengeId);
         }
+        this.logger.log(`[${correlationId}] AUTH_BROWSER_POLL_RESTORED status=${restored.status} hasSessionTokens=${!!restored.sessionTokens}`);
       }
     }
 
     if (!challenge) {
+      this.logger.warn(`[${correlationId}] AUTH_BROWSER_POLL_FAILED challengeNotFound=true`);
       return { status: 'EXPIRED' as ChallengeStatus };
     }
 
     if (!secretsMatch(challenge.browserProofHash, browserProof)) {
-      this.logger.warn(`[WA_CHALLENGE_REJECTED] Invalid browser proof for challengeId=${challengeId}`);
+      this.logger.warn(`[${correlationId}] AUTH_BROWSER_POLL_FAILED browserProofInvalid=true`);
       throw new UnauthorizedException('WHATSAPP_CHALLENGE_BROWSER_PROOF_INVALID');
     }
 
     if (new Date() > challenge.expiresAt) {
+      this.logger.warn(`[${correlationId}] AUTH_BROWSER_POLL_FAILED challengeExpired=true`);
       this.cleanupChallenge(challengeId);
       return { status: 'EXPIRED' as ChallengeStatus };
     }
 
     if (challenge.status === 'APPROVED') {
       if (!challenge.sessionTokens) {
+        this.logger.error(`[${correlationId}] AUTH_BROWSER_POLL_FAILED approvedWithoutTokens=true`);
         this.cleanupChallenge(challengeId);
         return { status: 'EXPIRED' as ChallengeStatus };
       }
 
       const sessionTokens = challenge.sessionTokens;
+      this.logger.log(`[${correlationId}] AUTH_BROWSER_POLL_SUCCESS returningTokens=true status=APPROVED`);
       this.cleanupChallenge(challengeId);
       return { status: challenge.status, ...sessionTokens };
     }
 
+    this.logger.log(`[${correlationId}] AUTH_BROWSER_POLL_PENDING status=${challenge.status}`);
     return {
       status: challenge.status,
       expiresAt: challenge.expiresAt,
@@ -555,10 +565,15 @@ export class WhatsappChallengeService {
     rawPhone: string,
     metadata?: { rawJid?: string; pushName?: string }
   ) {
+    const correlationId = `AUTH-${challenge.challengeId}-${Date.now()}`;
+    this.logger.log(`[${correlationId}] AUTH_CHALLENGE_APPROVAL_START challengeId=${challenge.challengeId} phone=${rawPhone} currentStatus=${challenge.status}`);
+
     if (new Date() > challenge.expiresAt) {
+      this.logger.error(`[${correlationId}] AUTH_CHALLENGE_APPROVAL_FAILED challengeExpired=true`);
       throw new UnauthorizedException('WHATSAPP_CHALLENGE_EXPIRED');
     }
     if (challenge.status !== 'PENDING' && challenge.status !== 'AWAITING_APPROVAL') {
+      this.logger.error(`[${correlationId}] AUTH_CHALLENGE_APPROVAL_FAILED challengeAlreadyConsumed=true status=${challenge.status}`);
       throw new UnauthorizedException('WHATSAPP_CHALLENGE_ALREADY_CONSUMED');
     }
 
@@ -569,6 +584,8 @@ export class WhatsappChallengeService {
       canonicalPhone = `+${cleanDigits}`;
     }
 
+    this.logger.log(`[${correlationId}] AUTH_PHONE_NORMALIZED rawPhone=${rawPhone} canonicalPhone=${canonicalPhone} cleanDigits=${cleanDigits}`);
+
     // Canonical Titanstream ID deterministically bound to the phone
     const canonicalTitanId = `titan_wa_${cleanDigits}`;
 
@@ -578,12 +595,16 @@ export class WhatsappChallengeService {
     const firstName = nameParts[0] || resolvedDisplayName;
     const lastName = nameParts.slice(1).join(' ') || '';
 
+    this.logger.log(`[${correlationId}] AUTH_IDENTITY_RESOLVE_START provider=WHATSAPP identifier=${canonicalPhone}`);
+
     const identityContext = await this.identityMasterEngine.authenticate({
       provider: IdentityProvider.WHATSAPP,
       identifier: canonicalPhone,
       displayName: resolvedDisplayName,
       metadata: { phone: canonicalPhone, approvedAt: new Date().toISOString(), deviceInfo: challenge.deviceInfo },
     });
+
+    this.logger.log(`[${correlationId}] AUTH_IDENTITY_RESOLVED userId=${identityContext.userId} universalIdentityId=${identityContext.universalIdentityId} assuranceLevel=${identityContext.assuranceLevel}`);
 
     const userPayload = {
       id: identityContext.userId,
@@ -596,13 +617,22 @@ export class WhatsappChallengeService {
       createdAt: new Date().toISOString(),
     };
 
+    this.logger.log(`[${correlationId}] AUTH_TOKEN_GENERATION_START userId=${userPayload.id}`);
+
     const tokens = await this.authService.createTokensForUser(userPayload);
+
+    this.logger.log(`[${correlationId}] AUTH_TOKEN_GENERATED hasAccessToken=true hasRefreshToken=true`);
+
     challenge.sessionTokens = {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       user: tokens.user || userPayload,
     };
     challenge.status = 'APPROVED';
+
+    this.logger.log(`[${correlationId}] AUTH_CHALLENGE_STATUS_UPDATED status=APPROVED hasSessionTokens=true`);
+
+    this.logger.log(`[${correlationId}] AUTH_CHALLENGE_PERSISTENCE_START challengeId=${challenge.challengeId}`);
 
     saveSharedChallenge({
       challengeId: challenge.challengeId,
@@ -616,7 +646,11 @@ export class WhatsappChallengeService {
       sessionTokens: challenge.sessionTokens,
     });
 
+    this.logger.log(`[${correlationId}] AUTH_CHALLENGE_PERSISTED hasSessionTokens=true status=APPROVED`);
+
     const primaryTarget = `${cleanDigits}@s.whatsapp.net`;
+    this.logger.log(`[${correlationId}] AUTH_USER_RESPONSE_TARGET targetJid=${primaryTarget} canonicalPhone=${canonicalPhone}`);
+
     const isNewUser = identityContext.assuranceLevel !== 'HIGH';
     const roleText = identityContext.role && identityContext.role !== 'USER' ? `\n• Role: *${identityContext.role}*` : '';
 
@@ -652,15 +686,18 @@ export class WhatsappChallengeService {
           `• *HELP* ➔ View command directory`
         );
 
+    this.logger.log(`[${correlationId}] AUTH_USER_RESPONSE_SEND_START targetJid=${primaryTarget} messageLength=${confirmation.length}`);
+
     const sendResult = await this.baileysService.sendTextMessage(primaryTarget, confirmation, 'CRITICAL');
+
     if (!sendResult.success) {
-      this.logger.error(`[WA_CONFIRMATION_FAILED] Failed to send approval confirmation to ${primaryTarget}: ${sendResult.error}`);
+      this.logger.error(`[${correlationId}] AUTH_USER_RESPONSE_SEND_FAILED targetJid=${primaryTarget} error=${sendResult.error} accountId=${sendResult.accountId}`);
       // Don't fail the entire approval process if confirmation fails, but log for debugging
     } else {
-      this.logger.log(`[WA_CONFIRMATION_SUCCESS] Approval confirmation sent to ${primaryTarget}, messageId: ${sendResult.messageId}`);
+      this.logger.log(`[${correlationId}] AUTH_USER_RESPONSE_SENT targetJid=${primaryTarget} messageId=${sendResult.messageId} accountId=${sendResult.accountId}`);
     }
 
-    this.logger.log(`[WA_CHALLENGE_APPROVED] challengeId=${challenge.challengeId} phone=${canonicalPhone} titanId=${canonicalTitanId} userId=${identityContext.userId}`);
+    this.logger.log(`[${correlationId}] AUTH_CHALLENGE_APPROVAL_COMPLETE challengeId=${challenge.challengeId} phone=${canonicalPhone} titanId=${canonicalTitanId} userId=${identityContext.userId} sendSuccess=${sendResult.success}`);
   }
 
   /**
