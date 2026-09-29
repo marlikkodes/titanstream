@@ -7,7 +7,6 @@ import { useTreasuryStore } from './useTreasuryStore';
 import { useGrowthStore } from './useGrowthStore';
 import { useReferralStore } from './useReferralStore';
 import { useUserNotificationStore } from './useUserNotificationStore';
-import { useMiningStore } from './useMiningStore';
 import { useGameStore } from './useGameStore';
 const ACTIVE_STATUS_SET = new Set([
   'CREATED',
@@ -200,7 +199,6 @@ export const useWalletStore = create<WalletState>()(
         lifetimeDeposits: depTotal,
         lifetimeWithdrawals: wthTotal,
         totalRewards: rwdTotal,
-        activeMachines: (useMiningStore.getState().activeMachinesCount || 1),
         hasFetchedBalanceOnce: true,
         isLoadingBalance: false,
       });
