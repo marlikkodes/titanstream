@@ -8,8 +8,7 @@ import { useGrowthStore } from './useGrowthStore';
 import { useReferralStore } from './useReferralStore';
 import { useUserNotificationStore } from './useUserNotificationStore';
 import { useGameStore } from './useGameStore';
-
-console.log('[INIT] useWalletStore.ts module loading...');
+import { registerWalletAccessors } from './machineSyncBridge';
 const ACTIVE_STATUS_SET = new Set([
   'CREATED',
   'INITIALIZED',
@@ -63,30 +62,30 @@ interface WalletState {
 export const useWalletStore = create<WalletState>()(
   persist(
     (set, get) => ({
-  // PRODUCTION: All balances start at zero. Populated from Balance Engine on mount.
-  usdtBalance: 0,
-  btcBalance: 0,
-  crystalsBalance: 0,
-  referralEarnedUsdt: 0,
-  referralEarnedBtc: 0,
-  pendingUsdt: 0,
-  lifetimeDeposits: 0,
-  lifetimeWithdrawals: 0,
-  totalRewards: 0,
-  activeMachines: 0,
+      // PRODUCTION: All balances start at zero. Populated from Balance Engine on mount.
+      usdtBalance: 0,
+      btcBalance: 0,
+      crystalsBalance: 0,
+      referralEarnedUsdt: 0,
+      referralEarnedBtc: 0,
+      pendingUsdt: 0,
+      lifetimeDeposits: 0,
+      lifetimeWithdrawals: 0,
+      totalRewards: 0,
+      activeMachines: 0,
 
-  activeSession: null,
-  pendingSettlements: [],
-  settlementHistory: [],
-  transactions: [],
+      activeSession: null,
+      pendingSettlements: [],
+      settlementHistory: [],
+      transactions: [],
 
-  hasFetchedBalanceOnce: false,
-  isLoadingBalance: false,
-  isLoadingSettlements: false,
-  isLoadingTransactions: false,
-  error: null,
+      hasFetchedBalanceOnce: false,
+      isLoadingBalance: false,
+      isLoadingSettlements: false,
+      isLoadingTransactions: false,
+      error: null,
 
-  updateBalance: (updates) => {
+      updateBalance: (updates) => {
     set((state) => {
       let changed = false;
       for (const key in updates) {
@@ -306,6 +305,18 @@ export const useWalletStore = create<WalletState>()(
         lifetimeWithdrawals: state.lifetimeWithdrawals,
         activeMachines: state.activeMachines,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Register wallet accessors for other stores to use without circular imports
+        // Do this during rehydration to ensure the store is fully initialized
+        try {
+          registerWalletAccessors(
+            useWalletStore.getState().fetchBalanceFromEngine,
+            useWalletStore.getState().updateBalance
+          );
+        } catch (e) {
+          console.warn('Failed to register wallet accessors:', e);
+        }
+      },
     }
   )
 );

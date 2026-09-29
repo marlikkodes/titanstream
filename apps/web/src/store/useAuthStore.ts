@@ -3,8 +3,6 @@ import { persist } from 'zustand/middleware';
 import { registerAuthFunctions } from '../services/api';
 import type { PrimaryCurrency, AuthUser, AuthResponse, SessionData } from '../types/auth';
 
-console.log('[INIT] useAuthStore.ts module loading...');
-
 interface AuthState {
   _hasHydrated: boolean;
   isAuthenticated: boolean;

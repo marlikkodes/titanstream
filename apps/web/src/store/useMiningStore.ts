@@ -2,14 +2,13 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { miningService, type MiningStateResponse } from '../services/mining.service';
 import { machineService, type UserMachineAsset } from '../services/machineService';
-import { useWalletStore } from './useWalletStore';
 import { MACHINE_CATALOG } from '../data/machines';
 import {
   getOwnershipStoreSafe,
   registerMiningSync,
+  fetchWalletBalanceSafe,
+  updateWalletBalanceSafe,
 } from './machineSyncBridge';
-
-console.log('[INIT] useMiningStore.ts module loading...');
 
 type Currency = 'USDT' | 'BTC';
 
@@ -233,7 +232,7 @@ export const useMiningStore = create<MiningState>()(
             baseSpeedGhs,
           });
           _hashSpeedDirty = true; // invalidate cached hash speed
-          useWalletStore.getState().updateBalance({ activeMachines: activeCount });
+          updateWalletBalanceSafe({ activeMachines: activeCount });
 
           // Synchronize machine ownership store so only owned machines and certificates exist
           const { useMachineOwnershipStore } = await import('./useMachineOwnershipStore');
@@ -307,7 +306,7 @@ export const useMiningStore = create<MiningState>()(
         if (isSuccess) {
           const session = res.data?.session || (res.data as any) || (res as any).session;
           const claimedAmountStr = formatCurrencyWithLocalFallback(currentBal);
-          await useWalletStore.getState().fetchBalanceFromEngine();
+          await fetchWalletBalanceSafe();
           if (session && typeof session === 'object' && 'unclaimedBalance' in session) {
             get().applyServerSession(session, { snapDisplay: true, isClaim: true });
           } else {
