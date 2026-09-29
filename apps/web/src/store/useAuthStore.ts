@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { registerAuthFunctions } from '../services/api';
 
 export type PrimaryCurrency = 'USDT' | 'UGX';
 
@@ -100,6 +101,7 @@ export const useAuthStore = create<AuthState>()(
 
       setSession: (session) => {
         localStorage.setItem('auth_token', session.accessToken);
+        localStorage.setItem('refresh_token', session.refreshToken);
         const hasChosenCurrency = localStorage.getItem('has_chosen_currency') === 'true';
         const expiresAt = session.expiresAt || (Date.now() + 30 * 24 * 60 * 60 * 1000);
         set({
@@ -137,6 +139,7 @@ export const useAuthStore = create<AuthState>()(
 
       clearSession: () => {
         localStorage.removeItem('auth_token');
+        localStorage.removeItem('refresh_token');
         localStorage.removeItem('auth-storage');
         localStorage.removeItem('wallet-storage');
         if (typeof sessionStorage !== 'undefined') {
@@ -176,6 +179,7 @@ export const useAuthStore = create<AuthState>()(
       updateTokens: (accessToken, refreshToken, expiresAt) => {
         const { session } = get();
         localStorage.setItem('auth_token', accessToken);
+        localStorage.setItem('refresh_token', refreshToken);
         if (session) {
           set({
             isAuthenticated: true,
@@ -252,6 +256,7 @@ export const useAuthStore = create<AuthState>()(
             state.isAuthenticated = false;
             state.session = null;
             localStorage.removeItem('auth_token');
+            localStorage.removeItem('refresh_token');
           }
           useAuthStore.setState({ _hasHydrated: true });
         }
@@ -259,6 +264,16 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
+
+// Register auth functions with the API client to break circular dependency
+registerAuthFunctions({
+  getAccessToken: () => localStorage.getItem('auth_token'),
+  getAdminToken: () => localStorage.getItem('admin_auth_token'),
+  getStepUpToken: () => useAuthStore.getState().stepUpToken,
+  openStepUpModal: () => useAuthStore.getState().openStepUpModal(),
+  updateTokens: (accessToken, refreshToken, expiresAt) => useAuthStore.getState().updateTokens(accessToken, refreshToken, expiresAt),
+  clearSession: () => useAuthStore.getState().clearSession(),
+});
 
 export const handleSessionExpiry = () => {
   const authStore = useAuthStore.getState();

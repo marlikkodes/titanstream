@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { useAuthStore } from '../store/useAuthStore';
 
 const PRODUCTION_API_BASE_URL = 'https://outstanding-fascination-production-eb14.up.railway.app';
 
@@ -26,23 +25,47 @@ export const api = axios.create({
   },
 });
 
+// Store references to auth functions that will be set by the store later
+let getAccessToken: () => string | null = () => localStorage.getItem('auth_token');
+let getAdminToken: () => string | null = () => localStorage.getItem('admin_auth_token');
+let getStepUpToken: () => string | null = () => null;
+let openStepUpModal: () => void = () => {};
+let updateTokens: (accessToken: string, refreshToken: string, expiresAt: number) => void = () => {};
+let clearSession: () => void = () => {};
+
+// Allow the auth store to register its functions
+export const registerAuthFunctions = (functions: {
+  getAccessToken: () => string | null;
+  getAdminToken: () => string | null;
+  getStepUpToken: () => string | null;
+  openStepUpModal: () => void;
+  updateTokens: (accessToken: string, refreshToken: string, expiresAt: number) => void;
+  clearSession: () => void;
+}) => {
+  getAccessToken = functions.getAccessToken;
+  getAdminToken = functions.getAdminToken;
+  getStepUpToken = functions.getStepUpToken;
+  openStepUpModal = functions.openStepUpModal;
+  updateTokens = functions.updateTokens;
+  clearSession = functions.clearSession;
+};
+
 api.interceptors.request.use((config) => {
   config.headers['ngrok-skip-browser-warning'] = 'true';
   const initData = window.Telegram?.WebApp?.initData;
   if (initData) {
     config.headers['X-Telegram-Init-Data'] = initData;
   }
-  const session = useAuthStore.getState().session;
-  const token = localStorage.getItem('auth_token') || session?.accessToken;
+  const token = getAccessToken();
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
-  const adminToken = localStorage.getItem('admin_auth_token');
+  const adminToken = getAdminToken();
   if (adminToken && String(config.url || '').includes('/admin/')) {
     config.headers['X-Admin-Token'] = adminToken;
     config.headers['Authorization'] = `Bearer ${adminToken}`;
   }
-  const stepUpToken = useAuthStore.getState().stepUpToken;
+  const stepUpToken = getStepUpToken();
   if (stepUpToken) {
     config.headers['X-StepUp-Token'] = stepUpToken;
   }
@@ -322,15 +345,15 @@ api.interceptors.response.use(
     // Catch Step-Up required (403 STEP_UP_REQUIRED)
     if (status === 403 && (errorCode === 'STEP_UP_REQUIRED' || errorCode === 'STEP_UP_EXPIRED')) {
       console.warn('[API] Step-up authentication required for action:', url);
-      useAuthStore.getState().openStepUpModal();
+      openStepUpModal();
     }
 
     if (status !== 401 || originalRequest?._retry || url.includes('/auth/refresh') || url.includes('/auth/telegram')) {
       return Promise.reject(error);
     }
 
-    const session = useAuthStore.getState().session;
-    if (!session?.refreshToken) {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) {
       return Promise.reject(error);
     }
 
@@ -339,7 +362,7 @@ api.interceptors.response.use(
     try {
       const refreshResponse = await axios.post(
         `${api.defaults.baseURL}/auth/refresh`,
-        { refreshToken: session.refreshToken },
+        { refreshToken },
         { headers: { 'Content-Type': 'application/json' } },
       );
       const body = refreshResponse.data;
@@ -348,7 +371,7 @@ api.interceptors.response.use(
       }
 
       const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
-      useAuthStore.getState().updateTokens(body.data.accessToken, body.data.refreshToken, expiresAt);
+      updateTokens(body.data.accessToken, body.data.refreshToken, expiresAt);
       originalRequest.headers.Authorization = `Bearer ${body.data.accessToken}`;
       return api(originalRequest);
     } catch (refreshError: any) {
@@ -356,7 +379,7 @@ api.interceptors.response.use(
       const refreshStatus = refreshError.response?.status;
       if (refreshStatus === 401 || refreshStatus === 403 || String(refreshError?.message).includes('Session refresh failed')) {
         console.warn('[API] Refresh token expired or revoked, clearing session.');
-        useAuthStore.getState().clearSession();
+        clearSession();
       }
       return Promise.reject(refreshError);
     }
