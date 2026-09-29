@@ -3,12 +3,7 @@ import { persist } from 'zustand/middleware';
 import { financialService, type TransactionRecord } from '../services/financialService';
 import { settlementService, type SettlementSessionView } from '../services/settlementService';
 import { gamesService } from '../services/gamesService';
-import { useTreasuryStore } from './useTreasuryStore';
-import { useGrowthStore } from './useGrowthStore';
-import { useReferralStore } from './useReferralStore';
-import { useUserNotificationStore } from './useUserNotificationStore';
-import { useGameStore } from './useGameStore';
-import { registerWalletAccessors } from './machineSyncBridge';
+import { registerWalletAccessors, registerStoreAccessor, callStoreMethodSafe } from './machineSyncBridge';
 const ACTIVE_STATUS_SET = new Set([
   'CREATED',
   'INITIALIZED',
@@ -103,7 +98,7 @@ export const useWalletStore = create<WalletState>()(
 
   accreditUserBalance: (amount, reason = 'Admin Wallet Accreditation') => {
     // Trigger notification and refetch authoritative balance from Balance Engine
-    useUserNotificationStore.getState().addNotification({
+    callStoreMethodSafe('useUserNotificationStore', 'addNotification', {
       title: 'USDT Balance Accredited',
       message: `+$${(Number(amount) || 0).toFixed(2)} USDT has been accredited to your wallet balance (${reason}).`,
       category: 'Deposit',
@@ -111,10 +106,10 @@ export const useWalletStore = create<WalletState>()(
     });
     get().fetchBalanceFromEngine().catch(() => undefined);
     get().fetchTransactions().catch(() => undefined);
-    useTreasuryStore.getState().fetchTreasuryState().catch(() => undefined);
-    useGrowthStore.getState().fetchGrowthProfile().catch(() => undefined);
-    useGrowthStore.getState().fetchQualification().catch(() => undefined);
-    useReferralStore.getState().fetchReferrals().catch(() => undefined);
+    callStoreMethodSafe('useTreasuryStore', 'fetchTreasuryState').catch(() => undefined);
+    callStoreMethodSafe('useGrowthStore', 'fetchGrowthProfile').catch(() => undefined);
+    callStoreMethodSafe('useGrowthStore', 'fetchQualification').catch(() => undefined);
+    callStoreMethodSafe('useReferralStore', 'fetchReferrals').catch(() => undefined);
   },
 
   /**
@@ -268,10 +263,10 @@ export const useWalletStore = create<WalletState>()(
         get().fetchBalanceFromEngine();
         get().fetchSettlementHistory();
         get().fetchTransactions();
-        useTreasuryStore.getState().fetchTreasuryState();
-        useGrowthStore.getState().fetchGrowthProfile();
-        useGrowthStore.getState().fetchQualification();
-        useReferralStore.getState().fetchReferrals();
+        callStoreMethodSafe('useTreasuryStore', 'fetchTreasuryState');
+        callStoreMethodSafe('useGrowthStore', 'fetchGrowthProfile');
+        callStoreMethodSafe('useGrowthStore', 'fetchQualification');
+        callStoreMethodSafe('useReferralStore', 'fetchReferrals');
       }
       return session;
     } catch (err: any) {
@@ -313,6 +308,8 @@ export const useWalletStore = create<WalletState>()(
             useWalletStore.getState().fetchBalanceFromEngine,
             useWalletStore.getState().updateBalance
           );
+          // Register wallet store in generic registry
+          registerStoreAccessor('useWalletStore', () => useWalletStore);
         } catch (e) {
           console.warn('Failed to register wallet accessors:', e);
         }

@@ -10,6 +10,7 @@ import {
   type DailyChallengeItem,
   type LeaderboardResponse,
 } from '../services/gamesService';
+import { registerStoreAccessor } from './machineSyncBridge';
 
 interface GameStoreState {
   balance: number;
@@ -105,3 +106,12 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   setLastResult: (result) => set({ lastResult: result }),
   clearError: () => set({ error: null }),
 }));
+
+// Register game store in bridge after initialization
+setTimeout(() => {
+  try {
+    registerStoreAccessor('useGameStore', () => useGameStore);
+  } catch (e) {
+    console.warn('Failed to register game store:', e);
+  }
+}, 0);

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { treasuryService } from '../services/treasuryService';
+import { registerStoreAccessor } from './machineSyncBridge';
 
 export type CycleStatus =
   | 'NEW_DAY'
@@ -106,3 +107,12 @@ export const useTreasuryStore = create<TreasuryState>((set) => ({
     }
   },
 }));
+
+// Register treasury store in bridge after initialization
+setTimeout(() => {
+  try {
+    registerStoreAccessor('useTreasuryStore', () => useTreasuryStore);
+  } catch (e) {
+    console.warn('Failed to register treasury store:', e);
+  }
+}, 0);

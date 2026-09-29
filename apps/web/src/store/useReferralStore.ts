@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { growthService, type ReferralSummary } from '../services/growthService';
 import { generateReferralLink, extractReferralCode } from '../utils/referralUrl';
+import { registerStoreAccessor } from './machineSyncBridge';
 
 interface ReferralItem {
   id: string;
@@ -187,3 +188,12 @@ export const useReferralStore = create<ReferralState>((set, get) => {
     },
   };
 });
+
+// Register referral store in bridge after initialization
+setTimeout(() => {
+  try {
+    registerStoreAccessor('useReferralStore', () => useReferralStore);
+  } catch (e) {
+    console.warn('Failed to register referral store:', e);
+  }
+}, 0);

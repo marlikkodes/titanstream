@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { api } from '../services/api';
+import { registerStoreAccessor } from './machineSyncBridge';
 
 export type UserNotificationCategory =
   | 'Deposit'
@@ -206,3 +207,12 @@ export const useUserNotificationStore = create<UserNotificationState>((set, get)
     });
   },
 }));
+
+// Register notification store in bridge after initialization
+setTimeout(() => {
+  try {
+    registerStoreAccessor('useUserNotificationStore', () => useUserNotificationStore);
+  } catch (e) {
+    console.warn('Failed to register notification store:', e);
+  }
+}, 0);

@@ -9,6 +9,7 @@ import {
   type SocialMission,
   type UserValueBank,
 } from '../services/growthService';
+import { registerStoreAccessor } from './machineSyncBridge';
 
 interface GrowthState {
   profile: GrowthProfile | null;
@@ -155,4 +156,13 @@ export const useGrowthStore = create<GrowthState>((set, get) => ({
     }
   },
 }));
+
+// Register growth store in bridge after initialization
+setTimeout(() => {
+  try {
+    registerStoreAccessor('useGrowthStore', () => useGrowthStore);
+  } catch (e) {
+    console.warn('Failed to register growth store:', e);
+  }
+}, 0);
 

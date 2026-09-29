@@ -1,7 +1,4 @@
 import { create } from 'zustand';
-import { useWalletStore } from './useWalletStore';
-import { useTreasuryStore } from './useTreasuryStore';
-import { useGrowthStore } from './useGrowthStore';
 import {
   growthService,
   type MissionItem,
@@ -10,6 +7,7 @@ import {
   type ProgressOverview,
   type AchievementItem,
 } from '../services/growthService';
+import { getStoreSafe, callStoreMethodSafe } from './machineSyncBridge';
 
 export const REWARD_ERROR_MESSAGES: Record<string, string> = {
   REWARD_NOT_FOUND: 'This reward no longer exists.',
@@ -129,8 +127,9 @@ export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
       let achievements = Array.isArray(rawList) && rawList.length > 0 ? rawList : get().achievements;
 
       // Dynamic catch up against live wallet & history state
-      const totalRewards = useWalletStore.getState().totalRewards || 0;
-      const transactions = useWalletStore.getState().transactions || [];
+      const walletStore = getStoreSafe('useWalletStore');
+      const totalRewards = walletStore?.getState().totalRewards || 0;
+      const transactions = walletStore?.getState().transactions || [];
       const history = get().history || [];
       const hasClaimedReward = totalRewards > 0 || history.length > 0 || transactions.some((t) => t.type === 'REWARD');
 
@@ -187,31 +186,34 @@ export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
       }));
 
       // 2. Accredit wallet store balance & prepend transaction record immediately
-      useWalletStore.setState((s) => {
-        const txId = 'tx_rwd_' + Date.now();
-        const txRecord = {
-          id: txId,
-          type: 'REWARD',
-          amount: rewardAmt,
-          assetCode: asset,
-          reference: reward?.reference || `ref_reward_${id}`,
-          status: 'COMPLETED',
-          createdAt: new Date().toISOString(),
-          description: id.includes('security') ? 'Security Configuration Reward' : 'Hardware Core Starter Reward',
-        } as any;
-        return {
-          usdtBalance: (Number(s.usdtBalance) || 0) + rewardAmt,
-          totalRewards: (Number(s.totalRewards) || 0) + rewardAmt,
-          transactions: [txRecord, ...(s.transactions || [])],
-        };
-      });
+      const walletStore = getStoreSafe('useWalletStore');
+      if (walletStore) {
+        walletStore.setState((s) => {
+          const txId = 'tx_rwd_' + Date.now();
+          const txRecord = {
+            id: txId,
+            type: 'REWARD',
+            amount: rewardAmt,
+            assetCode: asset,
+            reference: reward?.reference || `ref_reward_${id}`,
+            status: 'COMPLETED',
+            createdAt: new Date().toISOString(),
+            description: id.includes('security') ? 'Security Configuration Reward' : 'Hardware Core Starter Reward',
+          } as any;
+          return {
+            usdtBalance: (Number(s.usdtBalance) || 0) + rewardAmt,
+            totalRewards: (Number(s.totalRewards) || 0) + rewardAmt,
+            transactions: [txRecord, ...(s.transactions || [])],
+          };
+        });
+      }
 
       // 3. Authoritative double-entry ledger balance sync from Balance Engine
-      await useWalletStore.getState().fetchBalanceFromEngine();
-      useWalletStore.getState().fetchTransactions().catch(() => undefined);
-      useTreasuryStore.getState().fetchTreasuryState().catch(() => undefined);
-      useGrowthStore.getState().fetchGrowthProfile().catch(() => undefined);
-      useGrowthStore.getState().fetchRewards().catch(() => undefined);
+      await callStoreMethodSafe('useWalletStore', 'fetchBalanceFromEngine');
+      callStoreMethodSafe('useWalletStore', 'fetchTransactions').catch(() => undefined);
+      callStoreMethodSafe('useTreasuryStore', 'fetchTreasuryState').catch(() => undefined);
+      callStoreMethodSafe('useGrowthStore', 'fetchGrowthProfile').catch(() => undefined);
+      callStoreMethodSafe('useGrowthStore', 'fetchRewards').catch(() => undefined);
 
       // 4. Refresh local mission list and claim history
       await Promise.allSettled([
