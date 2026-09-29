@@ -13,7 +13,6 @@ import { ProfileScreen } from './pages/Profile/ProfileScreen';
 import { MachineOwnersManualModal } from './pages/TitanHub/components/MachineOwnersManualModal';
 import { MachineCertificateModal } from './pages/TitanHub/components/MachineCertificateModal';
 import { DestinationLoader } from './components/DestinationLoader';
-import { StepUpModal } from './components/StepUpModal';
 
 // Resilient lazy loader with auto-retry and chunk recovery
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -217,11 +216,7 @@ function MainApp() {
       {/* Global Hardware & Security Modals */}
       <MachineOwnersManualModal />
       <MachineCertificateModal />
-      <StepUpModal
-        isOpen={isStepUpModalOpen}
-        onClose={closeStepUpModal}
-        onTokenReceived={setStepUpToken}
-      />
+      <StepUpModal />
 
       {/* Profile Slide-Over Drawer */}
       <AnimatePresence>
@@ -267,18 +262,12 @@ function MainApp() {
 export function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [showPreAuthOnboarding, setShowPreAuthOnboarding] = useState(() => !hasSeenPreAuthOnboarding());
-  const [isStepUpModalOpen, setIsStepUpModalOpen] = useState(false);
-  const [stepUpToken, setStepUpToken] = useState<string | null>(null);
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const onboardingComplete = useAuthStore((s) => s.onboardingComplete);
   const countrySelected = useAuthStore((s) => s.countrySelected);
   const setDetectedCountry = useAuthStore((s) => s.setDetectedCountry);
   const markCountrySelected = useAuthStore((s) => s.markCountrySelected);
-  const markOnboardingComplete = useAuthStore((s) => s.markOnboardingComplete);
-  const setStepUpToken = useAuthStore((s) => s.setStepUpToken);
-  const openStepUpModal = useAuthStore((s) => s.openStepUpModal);
-  const closeStepUpModal = useAuthStore((s) => s.closeStepUpModal);
 
   const { hasSelectedCountry, selectCountry } = useCountryStore();
   const { setCurrencyPreference } = useSettingsStore();
@@ -403,7 +392,6 @@ export function App() {
             startAtPersonalization={onboardingComplete === true}
             initialSetup={setupSnapshot}
             onComplete={() => setSetupCompleted(true)}
-            markOnboardingComplete={markOnboardingComplete}
           />
         ) : !isCountrySet ? (
           /* 5. Country selection (once after onboarding) */

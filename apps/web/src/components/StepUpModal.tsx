@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, KeyRound, Loader2, CheckCircle2, X } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 import { authService } from '../services/auth.service';
 
-interface StepUpModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onTokenReceived: (token: string) => void;
-}
+export const StepUpModal: React.FC = () => {
+  const isOpen = useAuthStore((s) => s.isStepUpModalOpen);
+  const closeModal = useAuthStore((s) => s.closeStepUpModal);
+  const setStepUpToken = useAuthStore((s) => s.setStepUpToken);
 
-export const StepUpModal: React.FC<StepUpModalProps> = ({ isOpen, onClose, onTokenReceived }) => {
   const [otpCode, setOtpCode] = useState('');
   const [channelInfo, setChannelInfo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,8 +52,8 @@ export const StepUpModal: React.FC<StepUpModalProps> = ({ isOpen, onClose, onTok
 
     try {
       const res = await authService.verifyStepUpChallenge(otpCode);
-      onTokenReceived(res.stepUpToken);
-      onClose();
+      setStepUpToken(res.stepUpToken);
+      closeModal();
     } catch (err: any) {
       setError(err.response?.data?.error?.message || err.message || 'Verification failed. Please check code.');
     } finally {
