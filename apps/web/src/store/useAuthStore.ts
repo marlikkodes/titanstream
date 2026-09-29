@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { registerAuthFunctions } from '../services/api';
 import type { PrimaryCurrency, AuthUser, AuthResponse, SessionData } from '../types/auth';
 
 interface AuthState {
@@ -218,21 +217,30 @@ export const useAuthStore = create<AuthState>()(
             localStorage.removeItem('refresh_token');
           }
           useAuthStore.setState({ _hasHydrated: true });
+          
+          // Register auth functions AFTER hydration to avoid race conditions
+          // Dynamic import to break circular dependency
+          import('../services/api').then(({ registerAuthFunctions }) => {
+            registerAuthFunctions({
+              getAccessToken: () => localStorage.getItem('auth_token'),
+              getAdminToken: () => localStorage.getItem('admin_auth_token'),
+              getStepUpToken: () => useAuthStore.getState().stepUpToken,
+              openStepUpModal: () => useAuthStore.getState().openStepUpModal(),
+              updateTokens: (accessToken, refreshToken, expiresAt) => {
+                const store = useAuthStore.getState();
+                store.updateTokens(accessToken, refreshToken, expiresAt);
+              },
+              clearSession: () => {
+                const store = useAuthStore.getState();
+                store.clearSession();
+              },
+            });
+          });
         }
       },
     },
   ),
 );
-
-// Register auth functions with the API client to break circular dependency
-registerAuthFunctions({
-  getAccessToken: () => localStorage.getItem('auth_token'),
-  getAdminToken: () => localStorage.getItem('admin_auth_token'),
-  getStepUpToken: () => useAuthStore.getState().stepUpToken,
-  openStepUpModal: () => useAuthStore.getState().openStepUpModal(),
-  updateTokens: (accessToken, refreshToken, expiresAt) => useAuthStore.getState().updateTokens(accessToken, refreshToken, expiresAt),
-  clearSession: () => useAuthStore.getState().clearSession(),
-});
 
 export const handleSessionExpiry = () => {
   const authStore = useAuthStore.getState();

@@ -306,7 +306,8 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     const authState = useAuthStore.getState();
     if (authState.isAuthenticated && authState.session?.accessToken) {
       const telegramUserId = authState.session.user?.telegramUserId || authState.session.user?.id || 'unknown';
-      console.info(`[AUTH_GATE] session.active userId=${telegramUserId}`);
+      const canonicalUserId = authState.session.user?.id || 'unknown';
+      console.info(`[AUTH_GATE] session.active telegramUserId=${telegramUserId} canonicalUserId=${canonicalUserId}`);
       return;
     }
 
