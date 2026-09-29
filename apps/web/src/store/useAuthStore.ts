@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { registerAuthFunctions } from '../services/api';
 import type { PrimaryCurrency, AuthUser, AuthResponse, SessionData } from '../types/auth';
 
 interface AuthState {
@@ -218,23 +219,19 @@ export const useAuthStore = create<AuthState>()(
           }
           useAuthStore.setState({ _hasHydrated: true });
           
-          // Register auth functions AFTER hydration to avoid race conditions
-          // Dynamic import to break circular dependency
-          import('../services/api').then(({ registerAuthFunctions }) => {
-            registerAuthFunctions({
-              getAccessToken: () => localStorage.getItem('auth_token'),
-              getAdminToken: () => localStorage.getItem('admin_auth_token'),
-              getStepUpToken: () => useAuthStore.getState().stepUpToken,
-              openStepUpModal: () => useAuthStore.getState().openStepUpModal(),
-              updateTokens: (accessToken, refreshToken, expiresAt) => {
-                const store = useAuthStore.getState();
-                store.updateTokens(accessToken, refreshToken, expiresAt);
-              },
-              clearSession: () => {
-                const store = useAuthStore.getState();
-                store.clearSession();
-              },
-            });
+          // Register step-up and session management functions
+          // Token access is handled directly by API client from localStorage
+          registerAuthFunctions({
+            getStepUpToken: () => useAuthStore.getState().stepUpToken,
+            openStepUpModal: () => useAuthStore.getState().openStepUpModal(),
+            updateTokens: (accessToken, refreshToken, expiresAt) => {
+              const store = useAuthStore.getState();
+              store.updateTokens(accessToken, refreshToken, expiresAt);
+            },
+            clearSession: () => {
+              const store = useAuthStore.getState();
+              store.clearSession();
+            },
           });
         }
       },

@@ -25,25 +25,24 @@ export const api = axios.create({
   },
 });
 
-// Store references to auth functions that will be set by the store later
-let getAccessToken: () => string | null = () => localStorage.getItem('auth_token');
-let getAdminToken: () => string | null = () => localStorage.getItem('admin_auth_token');
+// Direct localStorage access for tokens - no store dependency
+// This prevents race conditions during initialization
+const getAccessToken = () => localStorage.getItem('auth_token');
+const getAdminToken = () => localStorage.getItem('admin_auth_token');
+
+// Store references for step-up token and modal functions
 let getStepUpToken: () => string | null = () => null;
 let openStepUpModal: () => void = () => {};
 let updateTokens: (accessToken: string, refreshToken: string, expiresAt: number) => void = () => {};
 let clearSession: () => void = () => {};
 
-// Allow the auth store to register its functions
+// Allow the auth store to register advanced functions
 export const registerAuthFunctions = (functions: {
-  getAccessToken: () => string | null;
-  getAdminToken: () => string | null;
   getStepUpToken: () => string | null;
   openStepUpModal: () => void;
   updateTokens: (accessToken: string, refreshToken: string, expiresAt: number) => void;
   clearSession: () => void;
 }) => {
-  getAccessToken = functions.getAccessToken;
-  getAdminToken = functions.getAdminToken;
   getStepUpToken = functions.getStepUpToken;
   openStepUpModal = functions.openStepUpModal;
   updateTokens = functions.updateTokens;
