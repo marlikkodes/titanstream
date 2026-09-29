@@ -6,6 +6,7 @@
   "format": "pnpm format",
   "dev": "pnpm dev",
   "git_commit": "python3 scripts/git_plumbing_commit.py",
+  "start": "pnpm start",
   "dev:web": "pnpm dev:web",
   "build:web": "pnpm build:web",
   "build:api": "pnpm build:api",

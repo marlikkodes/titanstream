@@ -17,6 +17,11 @@
     },
     {
       "call": "app.get",
+      "line": "const nonceRes = await request(app.getHttpServer()).post('/api/v1/auth/telegram-nonce').send({}).exp",
+      "file": "services/api/test/app.e2e-spec.ts"
+    },
+    {
+      "call": "app.get",
       "line": "const res = await request(app.getHttpServer())",
       "file": "services/api/test/app.e2e-spec.ts"
     },

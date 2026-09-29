@@ -309,5 +309,34 @@
     "root_cause": "Clock drift in token verifier",
     "fix_applied": "Add 60s leeway",
     "regression_test": "test_jwt_leeway"
+  },
+  {
+    "id": "fail_tdz_mining_ownership_require",
+    "symptom": "ReferenceError: Cannot access 'we' before initialization (TDZ) during React render / store init",
+    "reproduction_steps": [
+      "Load production web bundle",
+      "Mount app paths that initialize mining + machine ownership stores",
+      "Observe TDZ during module initialization when require()-linked stores cross-init"
+    ],
+    "root_cause": "Hidden circular dependency via CommonJS require() between useMiningStore and useMachineOwnershipStore. Vite/esbuild rewrote require into live ESM init bindings (init_useMiningStore <-> useMachineOwnershipStore), so accessing a store export during the other store's init hit TDZ. Separate from the already-fixed useWalletStore <-> useMiningStore static import cycle; also distinct from useAuthStore onRehydrateStorage self-reference TDZ.",
+    "affected_subsystem": "apps/web/src/store",
+    "fix_description": "Introduce machineSyncBridge.ts callback registry; remove require() from both stores; register accessors after each store finishes creating",
+    "files_touched": [
+      "apps/web/src/store/machineSyncBridge.ts",
+      "apps/web/src/store/useMiningStore.ts",
+      "apps/web/src/store/useMachineOwnershipStore.ts"
+    ],
+    "regression_test": "npx dpdm --circular src/main.tsx && npm run build (apps/web)",
+    "relevant_dependencies": [
+      "useMiningStore",
+      "useMachineOwnershipStore",
+      "useWalletStore"
+    ],
+    "lessons_learned": [
+      "madge misses require()-based cycles that dpdm and the production bundle still wire as live init cycles",
+      "TDZ can come from (1) static import cycles, (2) require rewritten to init_*, (3) store self-reference inside onRehydrateStorage during create",
+      "Prefer a dependency-free bridge module over require()/cross-store imports"
+    ],
+    "timestamp": 1790683051.5944698
   }
 ]

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MACHINE_CATALOG, type FrontendMachineModel } from '../data/machines';
 import { machineService } from '../services/machineService';
+import { notifyMiningSync, registerOwnershipAccessor } from './machineSyncBridge';
 
 export type LifecycleStage =
   | 'AVAILABLE'
@@ -241,12 +242,7 @@ export const useMachineOwnershipStore = create<MachineOwnershipState>()(
           },
         }));
 
-        try {
-          const { useMiningStore } = require('./useMiningStore');
-          useMiningStore.getState().syncMachineStatus();
-        } catch (e) {
-          // ignore fallback
-        }
+        notifyMiningSync();
 
         machineService.toggleMachineControl(existing.machineId, status.toLowerCase() as any).catch(() => {});
       },
@@ -373,3 +369,7 @@ export const useMachineOwnershipStore = create<MachineOwnershipState>()(
     }
   )
 );
+
+// Register after the store binding exists so mining can read ownership
+// without a static/require import cycle.
+registerOwnershipAccessor(() => useMachineOwnershipStore);

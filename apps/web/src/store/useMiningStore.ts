@@ -4,6 +4,10 @@ import { miningService, type MiningStateResponse } from '../services/mining.serv
 import { machineService, type UserMachineAsset } from '../services/machineService';
 import { useWalletStore } from './useWalletStore';
 import { MACHINE_CATALOG } from '../data/machines';
+import {
+  getOwnershipStoreSafe,
+  registerMiningSync,
+} from './machineSyncBridge';
 
 console.log('[INIT] useMiningStore.ts module loading...');
 
@@ -90,15 +94,8 @@ let _cachedHashSpeed = 1.0;
 let _cachedIsPaused = false;
 let _hashSpeedDirty = true; // recompute on next read after ownership changes
 
-// Lazy ref to avoid synchronous require() on every tick
-let _ownershipStoreRef: any = null;
 function getOwnershipStore() {
-  if (!_ownershipStoreRef) {
-    try {
-      _ownershipStoreRef = require('./useMachineOwnershipStore').useMachineOwnershipStore;
-    } catch { /* not yet loaded */ }
-  }
-  return _ownershipStoreRef;
+  return getOwnershipStoreSafe();
 }
 
 // ── Performance: debounced localStorage to prevent 10×/sec writes from the ticker ──
@@ -661,3 +658,9 @@ export const useMiningStore = create<MiningState>()(
     }
   )
 );
+
+// Register after the store binding exists so ownership can notify mining
+// without a static/require import cycle.
+registerMiningSync(() => {
+  useMiningStore.getState().syncMachineStatus();
+});
