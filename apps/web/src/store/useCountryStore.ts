@@ -249,14 +249,24 @@ export interface DualCurrencyYield {
 }
 
 export const getDualCurrencyYield = (usdtAmount: number): DualCurrencyYield => {
-  const store = useCountryStore.getState();
-  const localStr = store.getLocalAmount(usdtAmount);
-  const usdtStr = `≈ ${formatUsdt(usdtAmount)}`;
-  return {
-    local: localStr,
-    usdt: usdtStr,
-    formattedDisplay: `${localStr} (${usdtStr})`,
-  };
+  try {
+    const store = useCountryStore.getState();
+    const localStr = store.getLocalAmount(usdtAmount);
+    const usdtStr = `≈ ${formatUsdt(usdtAmount)}`;
+    return {
+      local: localStr,
+      usdt: usdtStr,
+      formattedDisplay: `${localStr} (${usdtStr})`,
+    };
+  } catch {
+    // Store may not be initialized yet
+    const usdtStr = `≈ ${formatUsdt(usdtAmount)}`;
+    return {
+      local: usdtStr,
+      usdt: usdtStr,
+      formattedDisplay: usdtStr,
+    };
+  }
 };
 
 export interface MultiCurrencyYield {

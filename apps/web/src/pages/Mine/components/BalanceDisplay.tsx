@@ -6,6 +6,7 @@ import { formatAdaptiveCounter } from '../../../utils/format';
 
 import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
 import { MACHINE_CATALOG } from '../../../data/machines';
+import { getStoreSafe } from '../../../store/machineSyncBridge';
 
 export const BalanceDisplay: React.FC = () => {
   const activeCurrency = useMiningStore((s) => s.activeCurrency);
@@ -19,9 +20,10 @@ export const BalanceDisplay: React.FC = () => {
 
   const safeOwned = Array.isArray(ownedTierCodes) ? ownedTierCodes : ['TS_TRIAL'];
   let activeSpeed = 0;
+  const ownershipStore = getStoreSafe('useMachineOwnershipStore');
   for (const code of safeOwned) {
     const norm = (code || '').toUpperCase();
-    const rec = ownerships[norm] || (norm === 'TS_TRIAL' ? useMachineOwnershipStore.getState().getRecordByTier('TS_TRIAL') : null);
+    const rec = ownerships[norm] || (norm === 'TS_TRIAL' ? ownershipStore?.getState().getRecordByTier('TS_TRIAL') : null);
     if (rec?.status === 'RUNNING' || (!rec && norm === 'TS_TRIAL')) {
       const item = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === norm);
       activeSpeed += item?.capacityGhs || (norm === 'TS_TRIAL' ? 1.0 : 0);

@@ -235,23 +235,43 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
 import { useCountryStore } from '../store/useCountryStore';
 
 export function getMachineYieldDetails(machine: FrontendMachineModel) {
-  const getLocalAmount = useCountryStore.getState().getLocalAmount;
-  const dailyUsdt = Number(machine?.dailyYieldUsdt) || 0;
-  const monthlyUsdt = dailyUsdt * 30;
-  const priceUsdt = Number(machine?.priceUsdt) || 0;
+  try {
+    const getLocalAmount = useCountryStore.getState().getLocalAmount;
+    const dailyUsdt = Number(machine?.dailyYieldUsdt) || 0;
+    const monthlyUsdt = dailyUsdt * 30;
+    const priceUsdt = Number(machine?.priceUsdt) || 0;
 
-  return {
-    daily: {
-      usdt: `$${dailyUsdt.toFixed(2)} USDT`,
-      local: getLocalAmount(dailyUsdt),
-    },
-    monthly: {
-      usdt: `$${monthlyUsdt.toFixed(2)} USDT`,
-      local: getLocalAmount(monthlyUsdt),
-    },
-    price: {
-      usdt: `$${priceUsdt.toFixed(2)} USDT`,
-      local: getLocalAmount(priceUsdt),
-    },
-  };
+    return {
+      daily: {
+        usdt: `$${dailyUsdt.toFixed(2)} USDT`,
+        local: getLocalAmount(dailyUsdt),
+      },
+      monthly: {
+        usdt: `$${monthlyUsdt.toFixed(2)} USDT`,
+        local: getLocalAmount(monthlyUsdt),
+      },
+      roi: {
+        usdt: priceUsdt > 0 ? ((monthlyUsdt * 12) / priceUsdt * 100).toFixed(1) : '0',
+      },
+    };
+  } catch {
+    // Store may not be initialized yet
+    const dailyUsdt = Number(machine?.dailyYieldUsdt) || 0;
+    const monthlyUsdt = dailyUsdt * 30;
+    const priceUsdt = Number(machine?.priceUsdt) || 0;
+
+    return {
+      daily: {
+        usdt: `$${dailyUsdt.toFixed(2)} USDT`,
+        local: `$${dailyUsdt.toFixed(2)} USDT`,
+      },
+      monthly: {
+        usdt: `$${monthlyUsdt.toFixed(2)} USDT`,
+        local: `$${monthlyUsdt.toFixed(2)} USDT`,
+      },
+      roi: {
+        usdt: priceUsdt > 0 ? ((monthlyUsdt * 12) / priceUsdt * 100).toFixed(1) : '0',
+      },
+    };
+  }
 }

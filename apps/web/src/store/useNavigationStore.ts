@@ -1,5 +1,4 @@
  import { create } from 'zustand';
-import { useSettingsStore } from './useSettingsStore';
 
 type TabId = 'wallet' | 'grow' | 'hub' | 'shop' | 'rewards';
 type DeprecatedTabId = 'friends' | 'boost' | 'growth' | 'mine' | 'treasury' | 'profile';
@@ -16,8 +15,12 @@ const TAB_REDIRECTS: Record<DeprecatedTabId, TabId> = {
 
 const getInitialTab = (): TabId => {
   if (typeof window !== 'undefined') {
-    const autoOpen = useSettingsStore.getState().autoOpenHub;
-    return autoOpen === false ? 'wallet' : 'hub';
+    try {
+      const autoOpen = localStorage.getItem('auto_open_hub');
+      return autoOpen === 'false' ? 'wallet' : 'hub';
+    } catch {
+      return 'hub';
+    }
   }
   return 'hub';
 };

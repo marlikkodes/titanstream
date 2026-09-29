@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MACHINE_CATALOG, type FrontendMachineModel } from '../data/machines';
 import { machineService } from '../services/machineService';
-import { notifyMiningSync, registerOwnershipAccessor } from './machineSyncBridge';
+import { notifyMiningSync, registerOwnershipAccessor, registerStoreAccessor } from './machineSyncBridge';
 
 export type LifecycleStage =
   | 'AVAILABLE'
@@ -366,10 +366,17 @@ export const useMachineOwnershipStore = create<MachineOwnershipState>()(
     }),
     {
       name: 'titan_machine_ownership_v3',
+      onRehydrateStorage: () => (state) => {
+        // Register after the store binding exists so mining can read ownership
+        // without a static/require import cycle. Do this during rehydration to ensure
+        // the store is fully initialized before registration.
+        try {
+          registerOwnershipAccessor(() => useMachineOwnershipStore);
+          registerStoreAccessor('useMachineOwnershipStore', () => useMachineOwnershipStore);
+        } catch (e) {
+          console.warn('Failed to register ownership accessor:', e);
+        }
+      },
     }
   )
 );
-
-// Register after the store binding exists so mining can read ownership
-// without a static/require import cycle.
-registerOwnershipAccessor(() => useMachineOwnershipStore);

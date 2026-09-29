@@ -5,6 +5,7 @@ import { Play, Pause, RotateCw, Edit3, BookOpen, Award, Activity, Check, X, Refr
 import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
 import { MACHINE_CATALOG } from '../../../data/machines';
 import { showToast } from '../../../components/Toast';
+import { getStoreSafe } from '../../../store/machineSyncBridge';
 
 interface MachineControlCenterProps {
   activeTierCode: string;
@@ -25,7 +26,8 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
   const addTimelineEvent = useMachineOwnershipStore((s) => s.addTimelineEvent);
 
   const normTier = (activeTierCode || 'TS_TRIAL').trim().toUpperCase();
-  const record = ownerships[normTier] || useMachineOwnershipStore.getState().getRecordByTier(normTier);
+  const ownershipStore = getStoreSafe('useMachineOwnershipStore');
+  const record = ownerships[normTier] || ownershipStore?.getState().getRecordByTier(normTier);
   const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === normTier) || MACHINE_CATALOG[0];
 
   const [isEditingName, setIsEditingName] = useState(false);

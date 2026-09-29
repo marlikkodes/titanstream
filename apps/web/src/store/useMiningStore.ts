@@ -654,12 +654,18 @@ export const useMiningStore = create<MiningState>()(
         usdtSpinnerIdx: state.usdtSpinnerIdx,
         btcSpinnerIdx: state.btcSpinnerIdx,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Register mining sync after the store binding exists so ownership can notify mining
+        // without a static/require import cycle. Do this during rehydration to ensure
+        // the store is fully initialized before registration.
+        try {
+          registerMiningSync(() => {
+            useMiningStore.getState().syncMachineStatus();
+          });
+        } catch (e) {
+          console.warn('Failed to register mining sync:', e);
+        }
+      },
     }
   )
 );
-
-// Register after the store binding exists so ownership can notify mining
-// without a static/require import cycle.
-registerMiningSync(() => {
-  useMiningStore.getState().syncMachineStatus();
-});

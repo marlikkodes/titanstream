@@ -10,7 +10,7 @@ import { useNavigationStore } from '../../../store/useNavigationStore';
 import { useCountryStore } from '../../../store/useCountryStore';
 import { useSettingsStore } from '../../../store/useSettingsStore';
 import { QuantumLoopReactor, type QuantumLoopReactorRef } from './QuantumLoopReactor';
-import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
+import { getStoreSafe } from '../../../store/machineSyncBridge';
 
 interface Particle {
   id: number;
@@ -232,6 +232,17 @@ export const MiningSpinner = React.memo(() => {
   const [isFirstActivation, setIsFirstActivation] = useState(false);
   const [activationProgress, setActivationProgress] = useState(0);
 
+  // Spinner/machine bindings MUST be declared before any effect that reads them
+  // (const is TDZ until initialized — accessing earlier crashes the render).
+  const activeSpinners = isUsdt ? USDT_SPINNERS : BTC_SPINNERS;
+  const activeSpinnerIdx = isUsdt ? usdtSpinnerIdx : btcSpinnerIdx;
+  const activeSpinner = activeSpinners[activeSpinnerIdx] ?? activeSpinners[0];
+
+  const currentTierCode = (activeSpinner?.tierCode || 'TS_TRIAL').toUpperCase();
+  const ownershipStore = getStoreSafe('useMachineOwnershipStore');
+  const currentMachineRecord = ownerships[currentTierCode] || ownershipStore?.getState().getRecordByTier(currentTierCode);
+  const isMachinePaused = currentMachineRecord?.status === 'PAUSED';
+
   // First-time activation sequence for trial spinner
   useEffect(() => {
     if (activeSpinner.id === 'free-trial' && !isFirstActivation && !isMachinePaused) {
@@ -247,15 +258,6 @@ export const MiningSpinner = React.memo(() => {
       return () => clearInterval(interval);
     }
   }, [activeSpinner.id, isFirstActivation, isMachinePaused]);
-  
-  // Retrieve active spinner values from store
-  const activeSpinners = isUsdt ? USDT_SPINNERS : BTC_SPINNERS;
-  const activeSpinnerIdx = isUsdt ? usdtSpinnerIdx : btcSpinnerIdx;
-  const activeSpinner = activeSpinners[activeSpinnerIdx];
-
-  const currentTierCode = (activeSpinner?.tierCode || 'TS_TRIAL').toUpperCase();
-  const currentMachineRecord = ownerships[currentTierCode] || useMachineOwnershipStore.getState().getRecordByTier(currentTierCode);
-  const isMachinePaused = currentMachineRecord?.status === 'PAUSED';
 
   // DOM Refs for direct GPU-accelerated rotation updates (Phase 3 & Phase 5)
   const rotorPrimaryRef = React.useRef<HTMLDivElement>(null);

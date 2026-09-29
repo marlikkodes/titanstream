@@ -259,12 +259,17 @@ export const useAuthStore = create<AuthState>()(
 );
 
 export const handleSessionExpiry = () => {
-  const authStore = useAuthStore.getState();
-  if (authStore.isSessionExpired()) {
-    authStore.clearSession();
-    return true;
+  try {
+    const authStore = useAuthStore.getState();
+    if (authStore.isSessionExpired()) {
+      authStore.clearSession();
+      return true;
+    }
+    return false;
+  } catch {
+    // Store may not be initialized yet
+    return false;
   }
-  return false;
 };
 
 export const detectUserCountry = async (): Promise<string | null> => {
