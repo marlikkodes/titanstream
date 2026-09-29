@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../../database/prisma.service';
 import { WhatsappChallengeService } from '../auth/whatsapp-challenge.service';
-import { usePrismaAuthState } from './baileys-prisma-auth';
+import { usePrismaAuthState, resolveBaileysAuthFolder } from './baileys-prisma-auth';
 
 export interface ManagedBaileysAccount {
   id?: string;
@@ -140,6 +140,8 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
         const cleanDigits = primaryPhone.replace(/\D/g, '');
         const primaryAccountId = `baileys_acc_${cleanDigits}`;
 
+        this.logger.log(`[SAFETY_NET_TICK] Checking primary account ${primaryAccountId}...`);
+
         let primaryAccount = this.accounts.get(primaryAccountId);
 
         // If primary account is missing from memory map, re-sync/register it
@@ -147,16 +149,33 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
           this.logger.warn(`[SAFETY_NET] Primary account ${primaryAccountId} missing from memory map. Re-syncing...`);
           await this.syncAccountsFromDatabase().catch(() => null);
           primaryAccount = this.accounts.get(primaryAccountId);
+          this.logger.log(`[SAFETY_NET] After re-sync, account exists: ${!!primaryAccount}`);
         }
 
-        if (primaryAccount && primaryAccount.isEnabled && !primaryAccount.isQuarantined && !primaryAccount.manualDisconnect && !primaryAccount.requiresReauthentication) {
-          // Auto-reconnect if socket dropped or disconnected
-          if (primaryAccount.state !== 'CONNECTED' || !primaryAccount.socket) {
-            if (primaryAccount.state !== 'CONNECTING') {
-              this.logger.log(`[SAFETY_NET_RECOVER] Primary account [${primaryAccount.accountId}] is ${primaryAccount.state}. Triggering non-destructive socket reconnect...`);
-              this.scheduleReconnect(primaryAccount.accountId);
+        if (primaryAccount) {
+          this.logger.log(`[SAFETY_NET] Account state: state=${primaryAccount.state}, healthState=${primaryAccount.healthState}, isEnabled=${primaryAccount.isEnabled}, isQuarantined=${primaryAccount.isQuarantined}, manualDisconnect=${primaryAccount.manualDisconnect}, requiresReauthentication=${primaryAccount.requiresReauthentication}, hasSocket=${!!primaryAccount.socket}`);
+
+          if (primaryAccount.isEnabled && !primaryAccount.isQuarantined && !primaryAccount.manualDisconnect) {
+            // Auto-reconnect if socket dropped or disconnected
+            // Allow reconnect even with requiresReauthentication to handle transient 401 errors
+            if (primaryAccount.state !== 'CONNECTED' || !primaryAccount.socket) {
+              if (primaryAccount.state !== 'CONNECTING') {
+                this.logger.log(`[SAFETY_NET_RECOVER] Primary account [${primaryAccount.accountId}] is ${primaryAccount.state} with socket=${!!primaryAccount.socket}. Triggering non-destructive socket reconnect...`);
+                if (this.reconnectTimers.has(primaryAccount.accountId) && !primaryAccount.socket) {
+                  this.clearReconnectTimer(primaryAccount.accountId);
+                }
+                this.scheduleReconnect(primaryAccount.accountId);
+              } else {
+                this.logger.log(`[SAFETY_NET] Account already CONNECTING, skipping reconnect`);
+              }
+            } else {
+              this.logger.log(`[SAFETY_NET] Account CONNECTED with socket, no action needed`);
             }
+          } else {
+            this.logger.log(`[SAFETY_NET] Account not eligible for reconnect: enabled=${primaryAccount.isEnabled}, quarantined=${primaryAccount.isQuarantined}, manualDisconnect=${primaryAccount.manualDisconnect}`);
           }
+        } else {
+          this.logger.error(`[SAFETY_NET] Primary account ${primaryAccountId} still missing after re-sync attempt`);
         }
       } catch (watchdogErr: any) {
         this.logger.error(`[SAFETY_NET_WATCHDOG_ERROR] ${watchdogErr.message}`);
@@ -169,9 +188,12 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
    */
   private async syncAccountsFromDatabase() {
     try {
+      this.logger.log(`[BAILEYS_SYNC] Starting database sync...`);
       let dbAccounts = await this.prisma.baileysAccount.findMany({
         where: { isEnabled: true },
       });
+
+      this.logger.log(`[BAILEYS_SYNC] Found ${dbAccounts.length} enabled accounts in database`);
 
       // If database has no account records yet, create primary account
       if (dbAccounts.length === 0) {
@@ -181,6 +203,8 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
       }
 
       for (const dbAcc of dbAccounts) {
+        this.logger.log(`[BAILEYS_SYNC] Loading account ${dbAcc.accountId} from DB: state=${dbAcc.state}, healthState=${dbAcc.healthState}, authFolder=${dbAcc.authFolder}`);
+
         const managed: ManagedBaileysAccount = {
           id: dbAcc.id,
           accountId: dbAcc.accountId,
@@ -202,7 +226,9 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
         };
 
         this.accounts.set(managed.accountId, managed);
+        this.logger.log(`[BAILEYS_SYNC] Account ${dbAcc.accountId} loaded into memory, state=${managed.state}, will init socket...`);
         await this.initAccountSocket(managed.accountId);
+        this.logger.log(`[BAILEYS_SYNC] Socket initialization triggered for ${dbAcc.accountId}`);
       }
     } catch (err: any) {
       this.logger.error(`[BAILEYS_DB_SYNC_ERROR] Failed to sync accounts from database: ${err.message}`);
@@ -210,9 +236,7 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
       const primaryPhone = process.env.WHATSAPP_BOT_PHONE || '+18257320524';
       const cleanDigits = primaryPhone.replace(/\D/g, '');
       const accountId = `baileys_acc_${cleanDigits}`;
-      const defaultAuthFolder = fs.existsSync(path.resolve(process.cwd(), 'baileys_auth_info', 'creds.json'))
-        ? 'baileys_auth_info'
-        : `baileys_auth_${cleanDigits}`;
+      const defaultAuthFolder = resolveBaileysAuthFolder('baileys_auth_info');
       this.registerAccountMemory(accountId, 'Primary WhatsApp Gateway', '+' + cleanDigits, defaultAuthFolder);
       await this.initAccountSocket(accountId);
     }
@@ -226,9 +250,7 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
     const cleanPhone = '+' + cleanDigits;
     const accountId = `baileys_acc_${cleanDigits}`;
     const name = displayName || `Gateway (${cleanPhone})`;
-    const authFolder = fs.existsSync(path.resolve(process.cwd(), 'baileys_auth_info', 'creds.json'))
-      ? 'baileys_auth_info'
-      : `baileys_auth_${cleanDigits}`;
+    const authFolder = resolveBaileysAuthFolder('baileys_auth_info');
 
     // Lookup existing account by phone or accountId
     const existing = await this.prisma.baileysAccount.findFirst({
@@ -433,14 +455,8 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
       return { status: 'ACCOUNT_NOT_CONFIGURED', hasCreds: false };
     }
 
-    const possiblePaths = [
-      path.resolve(process.cwd(), primary.authFolder, 'creds.json'),
-      path.resolve(process.cwd(), 'baileys_auth_info', 'creds.json'),
-      path.resolve(process.cwd(), 'baileys_auth_18257320524', 'creds.json'),
-      path.resolve(process.cwd(), '..', '..', 'baileys_auth_18257320524', 'creds.json'),
-    ];
-
-    const hasCreds = possiblePaths.some((p) => fs.existsSync(p));
+    const resolvedFolder = resolveBaileysAuthFolder(primary.authFolder);
+    const hasCreds = fs.existsSync(path.join(resolvedFolder, 'creds.json'));
 
     if (primary.state === 'CONNECTED' && primary.socket) {
       return { status: 'ACCOUNT_READY', accountId: primary.accountId, phone: primary.phone, hasCreds: true };
@@ -462,43 +478,75 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
    * Initializes or reconnects a Baileys socket for a given account.
    */
   private initAccountSocket(accountId: string): Promise<void> {
+    this.logger.log(`[BAILEYS_INIT] initAccountSocket called for ${accountId}`);
     const existingInitialization = this.socketInitializations.get(accountId);
-    if (existingInitialization) return existingInitialization;
+    if (existingInitialization) {
+      this.logger.log(`[BAILEYS_INIT] Socket initialization already in progress for ${accountId}, returning existing promise`);
+      return existingInitialization;
+    }
 
     let initialization: Promise<void>;
     initialization = this.createAccountSocket(accountId).finally(() => {
+      this.logger.log(`[BAILEYS_INIT] Socket initialization promise resolved for ${accountId}`);
       if (this.socketInitializations.get(accountId) === initialization) {
         this.socketInitializations.delete(accountId);
       }
       const account = this.accounts.get(accountId);
+      this.logger.log(`[BAILEYS_INIT] Post-init state for ${accountId}: state=${account?.state}, hasSocket=${!!account?.socket}`);
       if (account?.state === 'DISCONNECTED' && !account.socket) {
+        this.logger.log(`[BAILEYS_INIT] Account ${accountId} ended DISCONNECTED without socket, scheduling reconnect`);
         this.scheduleReconnect(accountId);
       }
     });
     this.socketInitializations.set(accountId, initialization);
+    this.logger.log(`[BAILEYS_INIT] Socket initialization scheduled for ${accountId}`);
     return initialization;
   }
 
   private async createAccountSocket(accountId: string) {
+    this.logger.log(`[BAILEYS_CREATE] createAccountSocket called for ${accountId}`);
     const account = this.accounts.get(accountId);
-    if (
-      !account ||
-      this.isShuttingDown ||
-      !account.isEnabled ||
-      account.isQuarantined ||
-      account.manualDisconnect ||
-      account.requiresReauthentication ||
-      account.socket
-    ) return;
+    if (!account) {
+      this.logger.error(`[BAILEYS_CREATE] Account ${accountId} not found in memory map`);
+      return;
+    }
+    if (this.isShuttingDown) {
+      this.logger.log(`[BAILEYS_CREATE] System shutting down, skipping socket creation for ${accountId}`);
+      return;
+    }
+    if (!account.isEnabled) {
+      this.logger.log(`[BAILEYS_CREATE] Account ${accountId} is disabled, skipping socket creation`);
+      return;
+    }
+    if (account.isQuarantined) {
+      this.logger.log(`[BAILEYS_CREATE] Account ${accountId} is quarantined, skipping socket creation`);
+      return;
+    }
+    if (account.manualDisconnect) {
+      this.logger.log(`[BAILEYS_CREATE] Account ${accountId} has manual disconnect, skipping socket creation`);
+      return;
+    }
+    // Allow socket creation even with requiresReauthentication to handle transient 401 errors
+    if (account.requiresReauthentication) {
+      this.logger.log(`[BAILEYS_CREATE] Account ${accountId} requires reauthentication, but attempting socket creation for transient 401 recovery`);
+    }
+    if (account.socket) {
+      this.logger.log(`[BAILEYS_CREATE] Account ${accountId} already has socket, skipping socket creation`);
+      return;
+    }
 
     this.clearReconnectTimer(accountId);
     // Set this before the first await. Concurrent callers now join the promise
     // above instead of creating another auth state or WebSocket.
     account.state = 'CONNECTING';
+    this.logger.log(`[BAILEYS_CREATE] Account ${accountId} state set to CONNECTING`);
     await this.updateDbAccountState(accountId, 'CONNECTING', account.healthState);
 
     try {
+      this.logger.log(`[BAILEYS_CREATE] Waiting for credential writes for ${accountId}`);
       await this.waitForCredentialWrites(accountId);
+      this.logger.log(`[BAILEYS_CREATE] Credential writes complete for ${accountId}`);
+
       const baileys = await import('@whiskeysockets/baileys').catch(() => null);
       if (!baileys) {
         this.logger.warn(`[BAILEYS] @whiskeysockets/baileys package not available for account ${accountId}.`);
@@ -506,11 +554,18 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
         return;
       }
 
+      this.logger.log(`[BAILEYS_CREATE] Baileys package loaded for ${accountId}`);
       const bAny = baileys as any;
       const makeWASocket = bAny.makeWASocket || bAny.default?.makeWASocket || bAny.default;
       const DisconnectReason = bAny.DisconnectReason || bAny.default?.DisconnectReason;
+      this.logger.log(`[BAILEYS_CREATE] Loading auth state for ${accountId} from authFolder=${account.authFolder}`);
+      // Force local filesystem usage to avoid incomplete PostgreSQL credentials
       const { state, saveCreds } = await usePrismaAuthState(this.prisma, account.accountId, account.authFolder);
-      if (!this.canOpenSocket(account)) return;
+      this.logger.log(`[BAILEYS_CREATE] Auth state loaded for ${accountId}, creds.registered=${state.creds?.registered}, usingPrisma=${state.creds !== null}`);
+      if (!this.canOpenSocket(account)) {
+        this.logger.log(`[BAILEYS_CREATE] Cannot open socket for ${accountId} after auth state load`);
+        return;
+      }
 
       const generation = (account.socketGeneration || 0) + 1;
       account.socketGeneration = generation;
@@ -537,12 +592,14 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
       });
 
       if (!this.canOpenSocket(account) || account.socketGeneration !== generation) {
+        this.logger.log(`[BAILEYS_CREATE] Socket superseded for ${accountId}, closing`);
         try {
           await socket.end(new Error('Superseded Baileys initialization'));
         } catch {}
         return;
       }
       account.socket = socket;
+      this.logger.log(`[BAILEYS_CREATE] Socket created and assigned to account ${accountId}`);
       socket.ev.on('creds.update', () => {
         if (this.isCurrentSocket(account, socket, generation)) {
           this.queueCredentialSave(accountId, saveCreds);
@@ -600,6 +657,7 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
       socket.ev.on('connection.update', async (update: any) => {
         if (!this.isCurrentSocket(account, socket, generation)) return;
         const { connection, lastDisconnect, qr } = update;
+        this.logger.log(`[BAILEYS_CONNECTION_UPDATE] Account ${accountId}: connection=${connection}, hasQR=${!!qr}`);
 
         // When Baileys emits a QR, request a pairing code instead
         if (qr && !state.creds.registered && !pairingCodeRequested) {
@@ -633,11 +691,18 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
           account.state = 'DISCONNECTED';
           account.socket = undefined;
 
+          if (statusCode === DisconnectReason?.connectionReplaced || statusCode === 440) {
+            this.logger.error(`[BAILEYS_CONFLICT] WhatsApp connection replaced by another client instance (reason 440). Backing off reconnect to avoid session ping-pong.`);
+            account.reconnectAttempts = Math.max(account.reconnectAttempts || 0, 3);
+          }
+
           if (requiresReauthentication) {
             account.requiresReauthentication = true;
             account.healthState = 'DEGRADED';
-            this.clearReconnectTimer(accountId);
+            this.logger.warn(`[BAILEYS_DISCONNECT] Account ${accountId} requires reauthentication, but will attempt reconnect to handle transient 401 errors`);
+            // Still attempt reconnect to handle transient 401 errors - will be cleared on successful connection
             await this.updateDbAccountState(accountId, 'DISCONNECTED', 'DEGRADED');
+            this.scheduleReconnect(accountId);
             return;
           }
 
@@ -663,7 +728,9 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
   }
 
   private canOpenSocket(account: ManagedBaileysAccount): boolean {
-    return !this.isShuttingDown && account.isEnabled && !account.isQuarantined && !account.manualDisconnect && !account.requiresReauthentication && !account.socket;
+    // Allow socket creation even with requiresReauthentication flag to handle transient 401 errors
+    // The flag will be cleared on successful connection
+    return !this.isShuttingDown && account.isEnabled && !account.isQuarantined && !account.manualDisconnect && !account.socket;
   }
 
   private isCurrentSocket(account: ManagedBaileysAccount, socket: any, generation: number): boolean {
@@ -696,16 +763,39 @@ export class BaileysAccountManagerService implements OnModuleInit, OnModuleDestr
 
   private scheduleReconnect(accountId: string) {
     const account = this.accounts.get(accountId);
-    if (
-      !account ||
-      this.isShuttingDown ||
-      !account.isEnabled ||
-      account.isQuarantined ||
-      account.manualDisconnect ||
-      account.requiresReauthentication ||
-      this.reconnectTimers.has(accountId) ||
-      this.socketInitializations.has(accountId)
-    ) return;
+    if (!account) {
+      this.logger.warn(`[BAILEYS_RECONNECT_SKIP] Account ${accountId} not found in memory map`);
+      return;
+    }
+    if (this.isShuttingDown) {
+      this.logger.log(`[BAILEYS_RECONNECT_SKIP] System is shutting down`);
+      return;
+    }
+    if (!account.isEnabled) {
+      this.logger.log(`[BAILEYS_RECONNECT_SKIP] Account ${accountId} is not enabled`);
+      return;
+    }
+    if (account.isQuarantined) {
+      this.logger.warn(`[BAILEYS_RECONNECT_SKIP] Account ${accountId} is quarantined`);
+      return;
+    }
+    if (account.manualDisconnect) {
+      this.logger.log(`[BAILEYS_RECONNECT_SKIP] Account ${accountId} has manual disconnect`);
+      return;
+    }
+    if (this.reconnectTimers.has(accountId)) {
+      this.logger.log(`[BAILEYS_RECONNECT_SKIP] Reconnect timer already pending for ${accountId}`);
+      return;
+    }
+    if (this.socketInitializations.has(accountId)) {
+      this.logger.log(`[BAILEYS_RECONNECT_SKIP] Socket initialization already active for ${accountId}`);
+      return;
+    }
+
+    // Allow reconnect even with requiresReauthentication to handle transient 401 errors
+    if (account.requiresReauthentication) {
+      this.logger.log(`[BAILEYS_RECONNECT] Account ${accountId} has requiresReauthentication flag, but attempting reconnect for transient 401 recovery`);
+    }
 
     const attempt = account.reconnectAttempts || 0;
     const delayMs = Math.min(5000 * 2 ** attempt, 60000);

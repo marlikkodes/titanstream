@@ -80,7 +80,7 @@ describe('WhatsappChallengeService - Token Persistence Fix', () => {
       const { challengeId, browserProof } = service.createChallenge('Test Device');
 
       // Simulate admin approval
-      const challenge = service['findChallengeByApprovalToken'](challengeId);
+      const challenge = service['challenges'].get(challengeId);
       expect(challenge).toBeDefined();
       expect(challenge?.status).toBe('PENDING');
 
@@ -88,7 +88,7 @@ describe('WhatsappChallengeService - Token Persistence Fix', () => {
       await service['approveChallengeDirect'](challenge!, '+1234567890');
 
       // Verify the challenge status changed to APPROVED
-      const approvedChallenge = service['findChallengeByApprovalToken'](challengeId);
+      const approvedChallenge = service['challenges'].get(challengeId);
       expect(approvedChallenge?.status).toBe('APPROVED');
       expect(approvedChallenge?.sessionTokens).toBeDefined();
       expect(approvedChallenge?.sessionTokens?.accessToken).toBe('test-access-token');
@@ -108,7 +108,7 @@ describe('WhatsappChallengeService - Token Persistence Fix', () => {
       const { challengeId, browserProof } = service.createChallenge('Test Device');
 
       // Manually set status to APPROVED without tokens (simulating the bug)
-      const challenge = service['findChallengeByApprovalToken'](challengeId);
+      const challenge = service['challenges'].get(challengeId);
       if (challenge) {
         challenge.status = 'APPROVED';
         // Intentionally don't set sessionTokens
@@ -129,13 +129,13 @@ describe('WhatsappChallengeService - Token Persistence Fix', () => {
 
       // Create and approve a challenge
       const { challengeId } = service.createChallenge('Test Device');
-      const challenge = service['findChallengeByApprovalToken'](challengeId);
+      const challenge = service['challenges'].get(challengeId);
       
       // This should not throw even if message send fails
       await expect(service['approveChallengeDirect'](challenge!, '+1234567890')).resolves.not.toThrow();
 
       // Challenge should still be approved
-      const approvedChallenge = service['findChallengeByApprovalToken'](challengeId);
+      const approvedChallenge = service['challenges'].get(challengeId);
       expect(approvedChallenge?.status).toBe('APPROVED');
       expect(approvedChallenge?.sessionTokens).toBeDefined();
     });
@@ -147,7 +147,7 @@ describe('WhatsappChallengeService - Token Persistence Fix', () => {
       const { challengeId, browserProof } = service.createChallenge('Test Device');
 
       // Approve the challenge
-      const challenge = service['findChallengeByApprovalToken'](challengeId);
+      const challenge = service['challenges'].get(challengeId);
       await service['approveChallengeDirect'](challenge!, '+1234567890');
 
       // Clear in-memory cache to simulate process restart

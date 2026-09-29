@@ -16,6 +16,41 @@ export interface PrismaAuthStateResult {
 }
 
 /**
+ * Deterministically resolves the valid local Baileys credentials directory.
+ * Prioritizes directories containing a valid, registered `creds.json` file.
+ */
+export function resolveBaileysAuthFolder(fallbackFolder?: string): string {
+  const target = fallbackFolder || 'baileys_auth_info';
+  if (path.isAbsolute(target)) return target;
+
+  const candidates = [
+    path.resolve(process.cwd(), target),
+    path.resolve(process.cwd(), 'services', 'api', target),
+    path.resolve(__dirname, '..', '..', '..', target),
+    path.resolve(__dirname, '..', '..', '..', '..', target),
+    path.resolve(__dirname, '..', '..', '..', 'services', 'api', target),
+  ];
+
+  // Pick candidate with valid registered creds.json first
+  for (const c of candidates) {
+    const credsPath = path.join(c, 'creds.json');
+    if (fs.existsSync(credsPath)) {
+      try {
+        const parsed = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
+        if (parsed.registered) return c;
+      } catch {}
+    }
+  }
+
+  // Fallback to first existing candidate
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+
+  return candidates[0];
+}
+
+/**
  * Creates a database-backed authentication state adapter for Baileys.
  * Persists WhatsApp credentials (`creds`) and key stores (`pre-key`, `session`, `sender-key`, etc.)
  * directly into PostgreSQL via Prisma (`BaileysAuthKey` model).
@@ -51,9 +86,7 @@ export async function usePrismaAuthState(
 
   let localCacheDir: string | null = null;
   if (fallbackFolder) {
-    localCacheDir = path.isAbsolute(fallbackFolder)
-      ? fallbackFolder
-      : path.resolve(process.cwd(), fallbackFolder);
+    localCacheDir = resolveBaileysAuthFolder(fallbackFolder);
     if (!fs.existsSync(localCacheDir)) {
       try {
         fs.mkdirSync(localCacheDir, { recursive: true });
@@ -103,48 +136,51 @@ export async function usePrismaAuthState(
 
   let isDbAvailable = true;
 
-  // 1. Load or initialize `creds`
+  // 1. Load or initialize `creds` - prefer local filesystem if available as it may be more complete
   let creds: any = null;
-  try {
-    const credsRecord = await prisma.baileysAuthKey.findUnique({
-      where: {
-        accountId_keyId: {
-          accountId,
-          keyId: 'creds',
-        },
-      },
-    });
-
-    if (credsRecord && credsRecord.data) {
-      const serialized = JSON.stringify(credsRecord.data);
-      creds = JSON.parse(serialized, BufferJSON?.reviver);
-      logger.log(`[PRISMA_AUTH] Loaded existing WhatsApp credentials from PostgreSQL for [${accountId}] (registered: ${creds.registered})`);
+  
+  // First try local filesystem cache (more likely to be complete and recent)
+  creds = readLocalCache('creds');
+  if (creds) {
+    logger.log(`[PRISMA_AUTH] Loaded credentials from local filesystem cache for [${accountId}] (registered: ${creds.registered})`);
+    // Sync to PostgreSQL if available
+    try {
+      const dataJson = JSON.parse(JSON.stringify(creds, BufferJSON?.replacer));
+      await prisma.baileysAuthKey.upsert({
+        where: { accountId_keyId: { accountId, keyId: 'creds' } },
+        create: { accountId, keyId: 'creds', data: dataJson },
+        update: { data: dataJson },
+      });
+      logger.log(`[PRISMA_AUTH] Synced local credentials to PostgreSQL for [${accountId}]`);
+    } catch (err: any) {
+      logger.warn(`[PRISMA_AUTH] Failed to sync credentials to PostgreSQL: ${err.message}`);
     }
-  } catch (err: any) {
-    isDbAvailable = false;
-    logger.warn(`[PRISMA_AUTH] PostgreSQL offline/unreachable: ${err.message}. Running in fast local disk cache mode.`);
+  } else {
+    // Fallback to PostgreSQL if local cache not available
+    try {
+      const credsRecord = await prisma.baileysAuthKey.findUnique({
+        where: {
+          accountId_keyId: {
+            accountId,
+            keyId: 'creds',
+          },
+        },
+      });
+
+      if (credsRecord && credsRecord.data) {
+        const serialized = JSON.stringify(credsRecord.data);
+        creds = JSON.parse(serialized, BufferJSON?.reviver);
+        logger.log(`[PRISMA_AUTH] Loaded existing WhatsApp credentials from PostgreSQL for [${accountId}] (registered: ${creds.registered})`);
+      }
+    } catch (err: any) {
+      isDbAvailable = false;
+      logger.warn(`[PRISMA_AUTH] PostgreSQL offline/unreachable: ${err.message}. Running in fast local disk cache mode.`);
+    }
   }
 
   if (!creds) {
-    creds = readLocalCache('creds');
-    if (creds) {
-      logger.log(`[PRISMA_AUTH] Loaded credentials from local fallback cache for [${accountId}]`);
-      if (isDbAvailable) {
-        try {
-          const dataJson = JSON.parse(JSON.stringify(creds, BufferJSON?.replacer));
-          await prisma.baileysAuthKey.upsert({
-            where: { accountId_keyId: { accountId, keyId: 'creds' } },
-            create: { accountId, keyId: 'creds', data: dataJson },
-            update: { data: dataJson },
-          });
-        } catch {
-          isDbAvailable = false;
-        }
-      }
-    } else {
-      logger.log(`[PRISMA_AUTH] Initializing fresh WhatsApp auth credentials for [${accountId}]`);
-      creds = initAuthCreds();
-    }
+    logger.log(`[PRISMA_AUTH] Initializing fresh WhatsApp auth credentials for [${accountId}]`);
+    creds = initAuthCreds();
   }
 
   // 2. Define `saveCreds`

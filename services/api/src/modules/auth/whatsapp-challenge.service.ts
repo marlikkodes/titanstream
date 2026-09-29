@@ -251,9 +251,12 @@ export class WhatsappChallengeService {
     loadSharedChallenges();
     
     // Set up periodic cleanup of in-memory challenges (every 5 minutes)
-    setInterval(() => {
+    const cleanupInterval = setInterval(() => {
       this.cleanupExpiredChallenges();
     }, 5 * 60 * 1000);
+    if (typeof cleanupInterval.unref === 'function') {
+      cleanupInterval.unref();
+    }
   }
 
   /** Clean up expired in-memory challenges */
@@ -690,14 +693,14 @@ export class WhatsappChallengeService {
 
     const sendResult = await this.baileysService.sendTextMessage(primaryTarget, confirmation, 'CRITICAL');
 
-    if (!sendResult.success) {
-      this.logger.error(`[${correlationId}] AUTH_USER_RESPONSE_SEND_FAILED targetJid=${primaryTarget} error=${sendResult.error} accountId=${sendResult.accountId}`);
+    if (!sendResult || !sendResult.success) {
+      this.logger.error(`[${correlationId}] AUTH_USER_RESPONSE_SEND_FAILED targetJid=${primaryTarget} error=${sendResult?.error} accountId=${sendResult?.accountId}`);
       // Don't fail the entire approval process if confirmation fails, but log for debugging
     } else {
       this.logger.log(`[${correlationId}] AUTH_USER_RESPONSE_SENT targetJid=${primaryTarget} messageId=${sendResult.messageId} accountId=${sendResult.accountId}`);
     }
 
-    this.logger.log(`[${correlationId}] AUTH_CHALLENGE_APPROVAL_COMPLETE challengeId=${challenge.challengeId} phone=${canonicalPhone} titanId=${canonicalTitanId} userId=${identityContext.userId} sendSuccess=${sendResult.success}`);
+    this.logger.log(`[${correlationId}] AUTH_CHALLENGE_APPROVAL_COMPLETE challengeId=${challenge.challengeId} phone=${canonicalPhone} titanId=${canonicalTitanId} userId=${identityContext.userId} sendSuccess=${sendResult?.success ?? false}`);
   }
 
   /**

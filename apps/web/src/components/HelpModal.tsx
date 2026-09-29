@@ -365,7 +365,7 @@ const LEARNING_CENTER_FAQS: FAQItem[] = [
 ];
 
 export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
-  const { hapticFeedback } = useTelegram();
+  const { hapticFeedback, user } = useTelegram();
   const [activeCategory, setActiveCategory] = useState<FAQCategory>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>('gs_what_is');
@@ -610,7 +610,6 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                 const details = prompt('Details for support:');
                 if (!details) return;
 
-                const user = useTelegram().user;
                 useSupportStore.getState().createTicket(
                   {
                     userTelegramId: user?.id?.toString() || '74829103',
