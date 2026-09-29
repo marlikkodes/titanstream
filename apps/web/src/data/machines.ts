@@ -29,6 +29,8 @@ export interface FrontendMachineModel {
   promoYieldRate?: number;
   promoOutputCap?: number;
   promoSpinnerSpeedMultiplier?: number;
+  trialPeriodDays?: number;
+  trialThreshold?: number;
 }
 
 export const MACHINE_CATALOG: FrontendMachineModel[] = [
@@ -41,7 +43,7 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     priceUsdt: 0.0,
     capacityGhs: 1.0,
     powerRatingW: 10,
-    description: 'Free starter machine that earns daily money automatically as soon as you open the app.',
+    description: 'Free starter machine that earns daily money automatically as soon as you open the app. Trial period: 7 days.',
     technicalSummary: 'Free starter machine with basic power to generate initial earnings.',
     simpleExplanation: 'Your free starter machine that earns daily money automatically.',
     personality: 'Free starter machine.',
@@ -61,6 +63,8 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     promoYieldRate: 0.0000289,
     promoOutputCap: 5.0,
     promoSpinnerSpeedMultiplier: 0.5,
+    trialPeriodDays: 7,
+    trialThreshold: 10.0,
   },
   {
     id: 'ripple-x14',

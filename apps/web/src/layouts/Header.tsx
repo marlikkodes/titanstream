@@ -42,7 +42,7 @@ export const Header: React.FC = () => {
 
   const handleToggleCrypto = () => {
     hapticFeedback.impactOccurred('light');
-    setCryptoCurrency(selectedCryptoCurrency === 'USDT' ? 'TON' : 'USDT');
+    setCryptoCurrency(selectedCryptoCurrency === 'USDT' ? 'BTC' : 'USDT');
   };
 
   // Format balance based on preference safely
@@ -62,13 +62,13 @@ export const Header: React.FC = () => {
       console.warn('[HEADER] displayBalance formatting error:', err);
     }
     
-    // Convert to TON if selected
-    if (selectedCryptoCurrency === 'TON') {
-      const tonValue = safeUsdt / 5.5; // TON exchange rate
+    // Convert to BTC if selected
+    if (selectedCryptoCurrency === 'BTC') {
+      const btcValue = safeUsdt / 50000; // BTC exchange rate (approximate)
       return {
-        value: formatAdaptiveCounter(tonValue),
-        symbol: 'TON',
-        flag: '💎',
+        value: formatAdaptiveCounter(btcValue),
+        symbol: 'BTC',
+        flag: '₿',
       };
     }
     

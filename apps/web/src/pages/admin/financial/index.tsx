@@ -150,10 +150,10 @@ export const FinancialControlCenterPage: React.FC = () => {
       treasuryBalance: 3220.0,
     },
     {
-      assetCode: 'TON',
-      name: 'Toncoin',
-      symbol: 'TON',
-      decimals: 9,
+      assetCode: 'BTC',
+      name: 'Bitcoin',
+      symbol: 'BTC',
+      decimals: 8,
       enabled: true,
       totalLedgerVolume: 0.0,
       pendingDepositVolume: 0.0,
@@ -530,7 +530,7 @@ export const FinancialControlCenterPage: React.FC = () => {
             >
               <option value="">All Assets</option>
               <option value="USDT">USDT</option>
-              <option value="TON">TON</option>
+              <option value="BTC">BTC</option>
               <option value="XRP">XRP</option>
             </select>
             <button
@@ -715,9 +715,8 @@ export const FinancialControlCenterPage: React.FC = () => {
                     className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10"
                   >
                     <option value="USDT">USDT</option>
-                    <option value="TON">TON</option>
-                    <option value="XRP">XRP</option>
                     <option value="BTC">BTC</option>
+                    <option value="XRP">XRP</option>
                     <option value="ETH">ETH</option>
                     <option value="SOL">SOL</option>
                   </select>

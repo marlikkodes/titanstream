@@ -1,7 +1,7 @@
 import { api, type ApiResponse } from './api';
 
 export interface MiningStateResponse {
-  activeCurrency: 'USDT' | 'BTC' | 'TON';
+  activeCurrency: 'USDT' | 'BTC';
   baseSpeedGhs: number;
   coolerMultiplier: number;
   unclaimedBalance: number;
@@ -36,7 +36,7 @@ export const miningService = {
    * Toggle active mining asset.
    * Backend endpoint: POST /mining/toggle
    */
-  async toggleCurrency(currency: 'USDT' | 'BTC' | 'TON'): Promise<ApiResponse<MiningStateResponse>> {
+  async toggleCurrency(currency: 'USDT' | 'BTC'): Promise<ApiResponse<MiningStateResponse>> {
     const response = await api.post('/mining/toggle', { currency });
     return response.data;
   },

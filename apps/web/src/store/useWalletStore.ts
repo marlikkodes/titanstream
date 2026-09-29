@@ -123,23 +123,23 @@ export const useWalletStore = create<WalletState>()(
       const data = await financialService.getBalance();
       
       let usdtVal = 0;
-      let tonVal = 0;
+      let btcVal = 0;
       let pendingUsdtVal = 0;
 
       // Handle the new production array response or legacy fallback object response
       if (data && Array.isArray((data as any).balances)) {
         const usdtObj = (data as any).balances.find((b: any) => b.assetCode === 'USDT');
-        const tonObj = (data as any).balances.find((b: any) => b.assetCode === 'TON');
+        const btcObj = (data as any).balances.find((b: any) => b.assetCode === 'BTC');
         if (usdtObj) {
           usdtVal = parseFloat(usdtObj.availableBalance || '0');
           pendingUsdtVal = parseFloat(usdtObj.pendingBalance || '0');
         }
-        if (tonObj) {
-          tonVal = parseFloat(tonObj.availableBalance || '0');
+        if (btcObj) {
+          btcVal = parseFloat(btcObj.availableBalance || '0');
         }
       } else if (data) {
         usdtVal = typeof data.usdtBalance === 'number' ? data.usdtBalance : parseFloat(String(data.usdtBalance || 0));
-        tonVal = typeof data.tonBalance === 'number' ? data.tonBalance : parseFloat(String(data.tonBalance || 0));
+        btcVal = typeof data.btcBalance === 'number' ? data.btcBalance : parseFloat(String(data.btcBalance || 0));
         pendingUsdtVal = data.pendingUsdt ? parseFloat(String(data.pendingUsdt)) : 0;
       }
 
@@ -188,7 +188,7 @@ export const useWalletStore = create<WalletState>()(
 
       set({
         usdtBalance: usdtVal,
-        tonBalance: tonVal,
+        btcBalance: btcVal,
         crystalsBalance: crystalsVal,
         pendingUsdt: pendingUsdtVal,
         transactions: txs,
@@ -292,10 +292,10 @@ export const useWalletStore = create<WalletState>()(
       name: 'wallet-storage',
       partialize: (state) => ({
         usdtBalance: state.usdtBalance,
-        tonBalance: state.tonBalance,
+        btcBalance: state.btcBalance,
         crystalsBalance: state.crystalsBalance,
         referralEarnedUsdt: state.referralEarnedUsdt,
-        referralEarnedTon: state.referralEarnedTon,
+        referralEarnedBtc: state.referralEarnedBtc,
         lifetimeDeposits: state.lifetimeDeposits,
         lifetimeWithdrawals: state.lifetimeWithdrawals,
         activeMachines: state.activeMachines,

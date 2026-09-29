@@ -125,7 +125,7 @@ export function getAdminFallbackData(url: string): any {
   if (url.includes('/admin/financial/assets')) {
     return [
       { assetCode: 'USDT', totalBalance: '95420.00', lockedBalance: '12400.00', availableBalance: '83020.00', totalUsers: 142 },
-      { assetCode: 'TON', totalBalance: '14820.50', lockedBalance: '1200.00', availableBalance: '13620.50', totalUsers: 88 },
+      { assetCode: 'BTC', totalBalance: '14820.50', lockedBalance: '1200.00', availableBalance: '13620.50', totalUsers: 88 },
     ];
   }
   if (url.includes('/admin/financial/overview')) {
@@ -240,10 +240,10 @@ export function getAdminFallbackData(url: string): any {
       },
       {
         id: 'cw_2',
-        asset: 'TON',
-        network: 'TON',
-        address: 'EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N',
-        label: 'Primary TON Validator Pool',
+        asset: 'BTC',
+        network: 'BTC',
+        address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+        label: 'Primary Bitcoin Pool',
         status: 'ACTIVE',
         priority: 2,
         dailyCapacityUsdt: 25000,

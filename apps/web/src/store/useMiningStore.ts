@@ -10,7 +10,7 @@ import {
   updateWalletBalanceSafe,
 } from './machineSyncBridge';
 
-type Currency = 'USDT' | 'BTC' | 'TON';
+type Currency = 'USDT' | 'BTC';
 
 export interface MiningState {
   // ── Authoritative engine state (backend session + optimistic taps) ──

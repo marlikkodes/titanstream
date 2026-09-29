@@ -217,7 +217,7 @@ export const MiningSimulatorPage: React.FC = () => {
           </div>
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Wallet Balance</div>
           <div className="text-2xl font-bold mt-2 font-mono text-white">
-            {activeCurrency === 'USDT' ? `${usdtBalance.toFixed(4)} USDT` : `${tonBalance.toFixed(4)} TON`}
+            {activeCurrency === 'USDT' ? `${usdtBalance.toFixed(4)} USDT` : `${btcBalance.toFixed(4)} BTC`}
           </div>
           <div className="text-xs text-slate-500 mt-1">Real-time ledger value</div>
         </div>

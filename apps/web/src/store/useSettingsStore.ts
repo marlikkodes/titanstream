@@ -13,7 +13,7 @@ export interface SettingsState {
   userCurrency: string;
   currencySymbol: string;
   currencyRate: number;
-  selectedCryptoCurrency: 'USDT' | 'TON';
+  selectedCryptoCurrency: 'USDT' | 'BTC';
   setCurrencyPreference: (
     preferLocal: boolean,
     country: string,
@@ -21,7 +21,7 @@ export interface SettingsState {
     symbol: string,
     rate: number
   ) => void;
-  setCryptoCurrency: (crypto: 'USDT' | 'TON') => void;
+  setCryptoCurrency: (crypto: 'USDT' | 'BTC') => void;
 
   // Admin Payment Receiving Phone Numbers
   adminPhoneNumbers: string[];

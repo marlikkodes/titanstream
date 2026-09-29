@@ -87,7 +87,7 @@ const DEFAULT_MACHINES: MachineCatalogItemRecord[] = MACHINE_CATALOG.map((m, idx
   outputs: [
     { id: `out_${m.id}_usdt`, assetCode: 'USDT', baseYieldRate: '1.0', multiplier: '1.0', status: 'ACTIVE' },
     ...(m.tierCode === 'TS_Q2500' || m.tierCode === 'TS_X1000'
-      ? [{ id: `out_${m.id}_ton`, assetCode: 'TON', baseYieldRate: '0.05', multiplier: '1.2', status: 'ACTIVE' }]
+      ? [{ id: `out_${m.id}_btc`, assetCode: 'BTC', baseYieldRate: '0.05', multiplier: '1.2', status: 'ACTIVE' }]
       : []),
   ],
   _count: { userFleet: 0 },
@@ -172,7 +172,7 @@ export const MachineControlCenterPage: React.FC = () => {
   // Grant License Modal State
   const [showGrantLicenseModal, setShowGrantLicenseModal] = useState(false);
   const [grantUserId, setGrantUserId] = useState('');
-  const [grantAsset, setGrantAsset] = useState('TON');
+  const [grantAsset, setGrantAsset] = useState('BTC');
   const [grantDuration, setGrantDuration] = useState('30');
   const [grantReason, setGrantReason] = useState('');
   const [submittingGrant, setSubmittingGrant] = useState(false);
@@ -926,9 +926,8 @@ export const MachineControlCenterPage: React.FC = () => {
                     onChange={(e) => setGrantAsset(e.target.value)}
                     className="w-full bg-control-bg text-text-primary text-xs rounded-xl p-3 border border-white/10"
                   >
-                    <option value="TON">TON</option>
-                    <option value="XRP">XRP</option>
                     <option value="BTC">BTC</option>
+                    <option value="XRP">XRP</option>
                     <option value="ETH">ETH</option>
                     <option value="SOL">SOL</option>
                   </select>

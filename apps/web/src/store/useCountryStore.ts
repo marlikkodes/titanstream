@@ -214,10 +214,10 @@ export const SUPPORTED_COUNTRIES: CountryConfig[] = [
   },
 ];
 
-// Dual & Triple currency formatting utilities (UGX, RWF, USDT, TON)
+// Dual & Triple currency formatting utilities (UGX, RWF, USDT, BTC)
 export const UGX_EXCHANGE_RATE = 3700;
 export const RWF_EXCHANGE_RATE = 1350;
-export const TON_EXCHANGE_RATE = 5.5; // USDT to TON exchange rate
+export const BTC_EXCHANGE_RATE = 50000; // USDT to BTC exchange rate (approximate)
 
 export const formatUgx = (usdtAmount: number): string => {
   const safeUsdt = Number(usdtAmount) || 0;
@@ -236,10 +236,10 @@ export const formatUsdt = (usdtAmount: number): string => {
   return `${safeUsdt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
 };
 
-export const formatTon = (usdtAmount: number): string => {
+export const formatBtc = (usdtAmount: number): string => {
   const safeUsdt = Number(usdtAmount) || 0;
-  const ton = safeUsdt / TON_EXCHANGE_RATE;
-  return `${ton.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TON`;
+  const btc = safeUsdt / BTC_EXCHANGE_RATE;
+  return `${btc.toLocaleString(undefined, { minimumFractionDigits: 8, maximumFractionDigits: 8 })} BTC`;
 };
 
 export interface DualCurrencyYield {
@@ -273,7 +273,7 @@ export interface MultiCurrencyYield {
   ugx: string;
   rwf: string;
   usdt: string;
-  ton: string;
+  btc: string;
   formattedDisplay: string;
 }
 
@@ -281,13 +281,13 @@ export const getMultiCurrencyYield = (usdtAmount: number): MultiCurrencyYield =>
   const ugxStr = formatUgx(usdtAmount);
   const rwfStr = formatRwf(usdtAmount);
   const usdtStr = formatUsdt(usdtAmount);
-  const tonStr = formatTon(usdtAmount);
+  const btcStr = formatBtc(usdtAmount);
   return {
     ugx: ugxStr,
     rwf: rwfStr,
     usdt: usdtStr,
-    ton: tonStr,
-    formattedDisplay: `${ugxStr} • ${rwfStr} • ${tonStr} (${usdtStr})`,
+    btc: btcStr,
+    formattedDisplay: `${ugxStr} • ${rwfStr} • ${btcStr} (${usdtStr})`,
   };
 };
 
