@@ -112,6 +112,8 @@ async function bootstrap() {
         'https://www.titanstream.cc',
         'https://tetherstream.cc',
         'https://www.tetherstream.cc',
+        'https://titanstream.netlify.app',
+        'https://tetherstream.netlify.app',
       ].filter((o): o is string => !!o).map(o => o.replace(/\/$/, ''));
 
       const cleanOrigin = origin.replace(/\/$/, '');
@@ -129,8 +131,10 @@ async function bootstrap() {
         cleanOrigin.endsWith('.ngrok-free.dev') ||
         cleanOrigin.endsWith('.ngrok.io')
       ) {
+        console.log(`[CORS] Allowed origin: ${cleanOrigin}`);
         callback(null, true);
       } else {
+        console.log(`[CORS] Blocked origin: ${cleanOrigin} (not in allowed list)`);
         callback(new Error('Not allowed by CORS'));
       }
     },

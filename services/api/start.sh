@@ -24,17 +24,15 @@ validate_env "USDT_RECEIVING_ADDRESS"
 
 echo "All required environment variables are present."
 
-# Schema changes are a release operation, never an application-start side
-# effect. Run `prisma migrate deploy` once from a reviewed release job after a
-# tested backup; this process only verifies that the database is reachable.
-echo "Checking database connectivity..."
-node -e "
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-prisma.\$queryRawUnsafe('SELECT 1')
-  .finally(() => prisma.\$disconnect());
-"
-echo "Database connectivity verified. No schema mutation was performed."
+# Generate Prisma client
+echo "Generating Prisma client..."
+npx prisma generate
+
+# Run database migrations to ensure schema is up to date
+echo "Running database migrations..."
+npx prisma migrate deploy
+
+echo "Database migrations completed successfully."
 
 # Run main application
 exec node dist/main
