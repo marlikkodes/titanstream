@@ -6,7 +6,8 @@ import { DetailDrawer } from '@/components/admin/DetailDrawer';
 import { MetricCard, MetricCardGrid } from '@/components/admin/MetricCard';
 import { api } from '@/services/api';
 import { showToast } from '@/components/Toast';
-import { useAuthStore, type AuthUser } from '@/store/useAuthStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import type { AuthUser } from '@/types/auth';
 import { useWalletStore } from '@/store/useWalletStore';
 import { useMiningStore } from '@/store/useMiningStore';
 import {

@@ -1,5 +1,5 @@
 import { api, type ApiResponse } from './api';
-import type { AuthResponse, SessionData } from '../store/useAuthStore';
+import type { AuthResponse, SessionData } from '../types/auth';
 
 export type AuthProvider = 'telegram' | 'web';
 
@@ -135,5 +135,6 @@ export const authService = {
 
   logout() {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
   },
 };

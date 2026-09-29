@@ -2,7 +2,8 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, DollarSign, Coins, MapPin } from 'lucide-react';
 import { useTelegram } from '../context/TelegramContext';
-import { useAuthStore, type PrimaryCurrency } from '../store/useAuthStore';
+import { useAuthStore } from '../store/useAuthStore';
+import type { PrimaryCurrency } from '../types/auth';
 
 interface CurrencyPreferenceModalProps {
   isOpen: boolean;
