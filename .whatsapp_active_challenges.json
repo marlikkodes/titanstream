@@ -22,5 +22,14 @@
     "expiresAt": "2026-09-19T15:27:47.416Z"
   },
   "approval_a8fd90f07d8a127b571e46daf4bdf65a743728fb91bffa5c6a5d95c1a8bf77a0": "wa_ch_VPKjqn7jQaJ4Z48R6f34g0vpmVqv3U-c_tyAwd06aX8",
-  "pin_140736": "wa_ch_VPKjqn7jQaJ4Z48R6f34g0vpmVqv3U-c_tyAwd06aX8"
+  "pin_140736": "wa_ch_VPKjqn7jQaJ4Z48R6f34g0vpmVqv3U-c_tyAwd06aX8",
+  "wa_chal_1790670247724": {
+    "challengeId": "wa_chal_1790670247724",
+    "shortPin": "281371",
+    "status": "PENDING",
+    "deviceInfo": "Browser Session",
+    "createdAt": "2026-09-29T08:24:07.724Z",
+    "expiresAt": "2026-09-29T08:34:07.724Z"
+  },
+  "pin_281371": "wa_chal_1790670247724"
 }
