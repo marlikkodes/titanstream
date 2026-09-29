@@ -240,35 +240,48 @@ export function getMachineYieldDetails(machine: FrontendMachineModel) {
   const priceUsdt = Number(machine?.priceUsdt) || 0;
 
   try {
-    const getLocalAmount = useCountryStore.getState().getLocalAmount;
+    const store = useCountryStore.getState();
+    const getLocalAmount = store?.getLocalAmount;
 
-    return {
-      daily: {
-        usdt: `$${dailyUsdt.toFixed(2)} USDT`,
-        local: getLocalAmount(dailyUsdt),
-      },
-      monthly: {
-        usdt: `$${monthlyUsdt.toFixed(2)} USDT`,
-        local: getLocalAmount(monthlyUsdt),
-      },
-      roi: {
-        usdt: priceUsdt > 0 ? ((monthlyUsdt * 12) / priceUsdt * 100).toFixed(1) : '0',
-      },
-    };
+    if (typeof getLocalAmount === 'function') {
+      return {
+        daily: {
+          usdt: `$${dailyUsdt.toFixed(2)} USDT`,
+          local: getLocalAmount(dailyUsdt),
+        },
+        monthly: {
+          usdt: `$${monthlyUsdt.toFixed(2)} USDT`,
+          local: getLocalAmount(monthlyUsdt),
+        },
+        price: {
+          usdt: `$${priceUsdt.toFixed(2)} USDT`,
+          local: getLocalAmount(priceUsdt),
+        },
+        roi: {
+          usdt: priceUsdt > 0 ? ((monthlyUsdt * 12) / priceUsdt * 100).toFixed(1) : '0',
+        },
+      };
+    }
   } catch {
     // Store may not be initialized yet
-    return {
-      daily: {
-        usdt: `$${dailyUsdt.toFixed(2)} USDT`,
-        local: `$${dailyUsdt.toFixed(2)} USDT`,
-      },
-      monthly: {
-        usdt: `$${monthlyUsdt.toFixed(2)} USDT`,
-        local: `$${monthlyUsdt.toFixed(2)} USDT`,
-      },
-      roi: {
-        usdt: priceUsdt > 0 ? ((monthlyUsdt * 12) / priceUsdt * 100).toFixed(1) : '0',
-      },
-    };
   }
+
+  // Fallback if store not available or getLocalAmount not a function
+  return {
+    daily: {
+      usdt: `$${dailyUsdt.toFixed(2)} USDT`,
+      local: `$${dailyUsdt.toFixed(2)} USDT`,
+    },
+    monthly: {
+      usdt: `$${monthlyUsdt.toFixed(2)} USDT`,
+      local: `$${monthlyUsdt.toFixed(2)} USDT`,
+    },
+    price: {
+      usdt: `$${priceUsdt.toFixed(2)} USDT`,
+      local: `$${priceUsdt.toFixed(2)} USDT`,
+    },
+    roi: {
+      usdt: priceUsdt > 0 ? ((monthlyUsdt * 12) / priceUsdt * 100).toFixed(1) : '0',
+    },
+  };
 }
