@@ -369,7 +369,10 @@ export class WhatsappChallengeService {
 
     if (!challenge) {
       this.logger.warn(`[${correlationId}] [7] BROWSER_POLL_FAILED reason=challengeNotFound`);
-      return { status: 'EXPIRED' as ChallengeStatus };
+      return { 
+        status: 'EXPIRED' as ChallengeStatus,
+        error: 'Challenge not found or expired. Please start a new authentication session.'
+      };
     }
 
     this.logger.log(`[${correlationId}] [7] BROWSER_POLL_CHALLENGE_FOUND status=${challenge.status} source=${source} hasSessionTokens=${!!challenge.sessionTokens}`);
@@ -382,14 +385,20 @@ export class WhatsappChallengeService {
     if (new Date() > challenge.expiresAt) {
       this.logger.warn(`[${correlationId}] [7] BROWSER_POLL_FAILED reason=expired`);
       this.cleanupChallenge(challengeId);
-      return { status: 'EXPIRED' as ChallengeStatus };
+      return { 
+        status: 'EXPIRED' as ChallengeStatus,
+        error: 'Challenge expired. Please request a new authentication code.'
+      };
     }
 
     if (challenge.status === 'APPROVED') {
       if (!challenge.sessionTokens) {
         this.logger.error(`[${correlationId}] [7] BROWSER_POLL_FAILED reason=approvedWithoutTokens`);
         this.cleanupChallenge(challengeId);
-        return { status: 'EXPIRED' as ChallengeStatus };
+        return { 
+          status: 'EXPIRED' as ChallengeStatus,
+          error: 'Authentication approved but session creation failed. Please try again.'
+        };
       }
 
       const sessionTokens = challenge.sessionTokens;
@@ -591,10 +600,12 @@ export class WhatsappChallengeService {
 
     if (new Date() > challenge.expiresAt) {
       this.logger.error(`[${correlationId}] [5] APPROVE_CHALLENGE_FAILED reason=expired`);
+      await this.sendAuthFailureNotification(rawPhone, 'Challenge expired. Please try again with a new code.');
       throw new UnauthorizedException('WHATSAPP_CHALLENGE_EXPIRED');
     }
     if (challenge.status !== 'PENDING' && challenge.status !== 'AWAITING_APPROVAL') {
       this.logger.error(`[${correlationId}] [5] APPROVE_CHALLENGE_FAILED reason=alreadyConsumed status=${challenge.status}`);
+      await this.sendAuthFailureNotification(rawPhone, 'This approval code has already been used. Please try again with a new code.');
       throw new UnauthorizedException('WHATSAPP_CHALLENGE_ALREADY_CONSUMED');
     }
 
@@ -618,12 +629,19 @@ export class WhatsappChallengeService {
 
     this.logger.log(`[${correlationId}] [5] APPROVE_CHALLENGE_IDENTITY_RESOLVE_START provider=WHATSAPP identifier=${canonicalPhone}`);
 
-    const identityContext = await this.identityMasterEngine.authenticate({
-      provider: IdentityProvider.WHATSAPP,
-      identifier: canonicalPhone,
-      displayName: resolvedDisplayName,
-      metadata: { phone: canonicalPhone, approvedAt: new Date().toISOString(), deviceInfo: challenge.deviceInfo },
-    });
+    let identityContext;
+    try {
+      identityContext = await this.identityMasterEngine.authenticate({
+        provider: IdentityProvider.WHATSAPP,
+        identifier: canonicalPhone,
+        displayName: resolvedDisplayName,
+        metadata: { phone: canonicalPhone, approvedAt: new Date().toISOString(), deviceInfo: challenge.deviceInfo },
+      });
+    } catch (error: any) {
+      this.logger.error(`[${correlationId}] [5] APPROVE_CHALLENGE_FAILED reason=identityError error=${error.message}`);
+      await this.sendAuthFailureNotification(rawPhone, `Authentication failed: ${error.message}. Please try again.`);
+      throw new UnauthorizedException('WHATSAPP_CHALLENGE_IDENTITY_FAILED');
+    }
 
     this.logger.log(`[${correlationId}] [5] APPROVE_CHALLENGE_IDENTITY_RESOLVED userId=${identityContext.userId} universalIdentityId=${identityContext.universalIdentityId} assuranceLevel=${identityContext.assuranceLevel}`);
 
@@ -640,7 +658,14 @@ export class WhatsappChallengeService {
 
     this.logger.log(`[${correlationId}] [5] APPROVE_CHALLENGE_TOKEN_GENERATION_START userId=${userPayload.id}`);
 
-    const tokens = await this.authService.createTokensForUser(userPayload);
+    let tokens;
+    try {
+      tokens = await this.authService.createTokensForUser(userPayload);
+    } catch (error: any) {
+      this.logger.error(`[${correlationId}] [5] APPROVE_CHALLENGE_FAILED reason=tokenGenerationError error=${error.message}`);
+      await this.sendAuthFailureNotification(rawPhone, `Session creation failed: ${error.message}. Please try again.`);
+      throw new UnauthorizedException('WHATSAPP_CHALLENGE_TOKEN_FAILED');
+    }
 
     this.logger.log(`[${correlationId}] [5] APPROVE_CHALLENGE_TOKEN_GENERATED hasAccessToken=true hasRefreshToken=true`);
 
@@ -655,17 +680,23 @@ export class WhatsappChallengeService {
 
     this.logger.log(`[${correlationId}] [6] APPROVE_CHALLENGE_PERSISTENCE_START challengeId=${challenge.challengeId}`);
 
-    saveSharedChallenge({
-      challengeId: challenge.challengeId,
-      approvalTokenHash: challenge.approvalTokenHash,
-      browserProofHash: challenge.browserProofHash,
-      status: 'APPROVED',
-      phone: canonicalPhone,
-      deviceInfo: challenge.deviceInfo,
-      createdAt: challenge.createdAt ? challenge.createdAt.toISOString() : new Date().toISOString(),
-      expiresAt: challenge.expiresAt ? challenge.expiresAt.toISOString() : new Date(Date.now() + 600000).toISOString(),
-      sessionTokens: challenge.sessionTokens,
-    });
+    try {
+      saveSharedChallenge({
+        challengeId: challenge.challengeId,
+        approvalTokenHash: challenge.approvalTokenHash,
+        browserProofHash: challenge.browserProofHash,
+        status: 'APPROVED',
+        phone: canonicalPhone,
+        deviceInfo: challenge.deviceInfo,
+        createdAt: challenge.createdAt ? challenge.createdAt.toISOString() : new Date().toISOString(),
+        expiresAt: challenge.expiresAt ? challenge.expiresAt.toISOString() : new Date(Date.now() + 600000).toISOString(),
+        sessionTokens: challenge.sessionTokens,
+      });
+    } catch (error: any) {
+      this.logger.error(`[${correlationId}] [6] APPROVE_CHALLENGE_PERSISTENCE_FAILED error=${error.message}`);
+      await this.sendAuthFailureNotification(rawPhone, `Failed to save session. Please try again.`);
+      throw new UnauthorizedException('WHATSAPP_CHALLENGE_PERSISTENCE_FAILED');
+    }
 
     this.logger.log(`[${correlationId}] [6] APPROVE_CHALLENGE_PERSISTED status=APPROVED hasSessionTokens=true userId=${identityContext.userId}`);
 
@@ -719,6 +750,22 @@ export class WhatsappChallengeService {
     }
 
     this.logger.log(`[${correlationId}] [5] APPROVE_CHALLENGE_COMPLETE challengeId=${challenge.challengeId} phone=${canonicalPhone} titanId=${canonicalTitanId} userId=${identityContext.userId} sendSuccess=${sendResult?.success ?? false}`);
+  }
+
+  /**
+   * Sends authentication failure notification to user via WhatsApp
+   */
+  private async sendAuthFailureNotification(phone: string, errorMessage: string) {
+    try {
+      const cleanDigits = phone.replace(/\D/g, '');
+      const targetJid = `${cleanDigits}@s.whatsapp.net`;
+      const failureMessage = `⚡ *TITAN STREAM* — *Authentication Failed*\n\n❌ ${errorMessage}\n\nPlease try again or contact support if the issue persists.`;
+      
+      await this.baileysService.sendTextMessage(targetJid, failureMessage, 'CRITICAL');
+      this.logger.log(`[AUTH_FAILURE_NOTIFICATION] Sent to ${phone}: ${errorMessage}`);
+    } catch (error: any) {
+      this.logger.error(`[AUTH_FAILURE_NOTIFICATION] Failed to send to ${phone}: ${error.message}`);
+    }
   }
 
   /**
