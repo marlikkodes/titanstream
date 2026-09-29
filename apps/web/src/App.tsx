@@ -268,6 +268,7 @@ export function App() {
   const countrySelected = useAuthStore((s) => s.countrySelected);
   const setDetectedCountry = useAuthStore((s) => s.setDetectedCountry);
   const markCountrySelected = useAuthStore((s) => s.markCountrySelected);
+  const markOnboardingComplete = useAuthStore((s) => s.markOnboardingComplete);
 
   const { hasSelectedCountry, selectCountry } = useCountryStore();
   const { setCurrencyPreference } = useSettingsStore();
@@ -392,6 +393,7 @@ export function App() {
             startAtPersonalization={onboardingComplete === true}
             initialSetup={setupSnapshot}
             onComplete={() => setSetupCompleted(true)}
+            markOnboardingComplete={markOnboardingComplete}
           />
         ) : !isCountrySet ? (
           /* 5. Country selection (once after onboarding) */

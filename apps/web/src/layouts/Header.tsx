@@ -7,7 +7,6 @@ import { HelpModal } from '../components/HelpModal';
 import { useUserNotificationStore } from '../store/useUserNotificationStore';
 import { useTelegram } from '../context/TelegramContext';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { useAuthStore } from '../store/useAuthStore';
 import { useCountryStore } from '../store/useCountryStore';
 import { formatAdaptiveCounter } from '../utils/format';
 
@@ -15,13 +14,12 @@ export const Header: React.FC = () => {
   const { usdtBalance, crystalsBalance } = useWalletStore();
   const { openGames, setActiveTab, openProfileDrawer } = useNavigationStore();
   const { hapticFeedback, logout, user } = useTelegram();
-  const authUser = useAuthStore((s) => s.user);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const { unreadCount, setModalOpen } = useUserNotificationStore();
   const { preferLocalCurrency, setCurrencyPreference, selectedCryptoCurrency, setCryptoCurrency, displayName } = useSettingsStore();
   const { selectedCountry } = useCountryStore();
 
-  const avatarInitial = (displayName || authUser?.firstName || user?.first_name || 'T')[0].toUpperCase();
+  const avatarInitial = (displayName || user?.first_name || 'T')[0].toUpperCase();
 
   const handleToggleCurrency = () => {
     hapticFeedback.impactOccurred('light');

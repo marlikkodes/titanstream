@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuthStore } from '../store/useAuthStore';
 import { useTelegram } from '../context/TelegramContext';
 import { useLegalModalStore } from '../store/useLegalModalStore';
 import {
@@ -22,6 +21,8 @@ interface OnboardingOverlayProps {
   startAtPersonalization?: boolean;
   /** Authoritative setup snapshot from the app shell — avoids a duplicate GET on login. */
   initialSetup?: AccountSetupState | null;
+  /** Callback to mark onboarding complete */
+  markOnboardingComplete?: () => void;
 }
 
 interface Slide {
@@ -48,7 +49,6 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
   const [setupLoading, setSetupLoading] = useState(!initialSetup);
   const [setupError, setSetupError] = useState<string | null>(null);
 
-  const { markOnboardingComplete } = useAuthStore();
   const { hapticFeedback } = useTelegram();
   const openLegalModal = useLegalModalStore((s) => s.openLegalModal);
 
@@ -142,7 +142,7 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
       goToStep(currentStep + 1);
     } else {
       if (!isConsentValid) return;
-      markOnboardingComplete();
+      markOnboardingComplete?.();
       if (onComplete) onComplete();
     }
   };

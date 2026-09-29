@@ -6,7 +6,6 @@ import { useNavigationStore } from '../store/useNavigationStore';
 import { ToastContainer } from '../components/Toast';
 import { UserNotificationModal } from '../components/UserNotificationModal';
 import { useUserNotificationStore } from '../store/useUserNotificationStore';
-import { useAuthStore } from '../store/useAuthStore';
 import { ArrowLeft } from 'lucide-react';
 
 interface MainLayoutProps {
@@ -16,9 +15,14 @@ interface MainLayoutProps {
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { showGames } = useNavigationStore();
   const { isModalOpen, setModalOpen } = useUserNotificationStore();
-  const isMirrorMode = useAuthStore((s) => s.isMirrorMode) || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('mirror_mode') === 'true');
-  const session = useAuthStore((s) => s.session);
-  const exitMirrorSession = useAuthStore((s) => s.exitMirrorSession);
+  // Direct sessionStorage access instead of useAuthStore to avoid circular dependency
+  const isMirrorMode = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('mirror_mode') === 'true');
+  const exitMirrorSession = () => {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('mirror_mode');
+      sessionStorage.removeItem('mirror_user');
+    }
+  };
 
   return (
     <div className="w-full max-w-[480px] lg:max-w-[768px] xl:max-w-[1024px] min-h-screen mx-auto flex flex-col bg-[#090a0f] text-text-primary relative overflow-hidden shadow-2xl border-x border-border/40">

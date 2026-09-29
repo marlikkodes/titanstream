@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,12 +53,19 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [user, setUser] = useState<TelegramUser | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [platform, setPlatform] = useState<'telegram' | 'web'>('web');
-  const clearSession = useAuthStore((s) => s.clearSession);
 
   const logout = useCallback(() => {
-    clearSession();
+    // Direct localStorage cleanup instead of useAuthStore dependency
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('auth-storage');
+    localStorage.removeItem('wallet-storage');
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('mirror_mode');
+      sessionStorage.removeItem('mirror_user');
+    }
     setUser(null);
-  }, [clearSession]);
+  }, []);
 
   useEffect(() => {
     // Give the Telegram SDK a tick to mount on window
