@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { useAuthStore } from './useAuthStore';
 import { treasuryService } from '../services/treasuryService';
 
 export type CycleStatus =

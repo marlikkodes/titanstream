@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { growthService, type ReferralSummary } from '../services/growthService';
-import { useAuthStore } from './useAuthStore';
 import { generateReferralLink, extractReferralCode } from '../utils/referralUrl';
 
 interface ReferralItem {
@@ -50,8 +49,8 @@ interface ReferralState {
 }
 
 const getFallbackReferralData = () => {
-  const session = useAuthStore.getState().session;
-  const rawId = session?.user?.telegramUserId || (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id || '1001';
+  // Direct Telegram access instead of useAuthStore to avoid circular dependency
+  const rawId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id || '1001';
   const code = extractReferralCode(String(rawId));
   const isTgApp = Boolean((window as any).Telegram?.WebApp?.initData);
 
