@@ -235,11 +235,12 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
 import { useCountryStore } from '../store/useCountryStore';
 
 export function getMachineYieldDetails(machine: FrontendMachineModel) {
+  const dailyUsdt = Number(machine?.dailyYieldUsdt) || 0;
+  const monthlyUsdt = dailyUsdt * 30;
+  const priceUsdt = Number(machine?.priceUsdt) || 0;
+
   try {
     const getLocalAmount = useCountryStore.getState().getLocalAmount;
-    const dailyUsdt = Number(machine?.dailyYieldUsdt) || 0;
-    const monthlyUsdt = dailyUsdt * 30;
-    const priceUsdt = Number(machine?.priceUsdt) || 0;
 
     return {
       daily: {
@@ -256,10 +257,6 @@ export function getMachineYieldDetails(machine: FrontendMachineModel) {
     };
   } catch {
     // Store may not be initialized yet
-    const dailyUsdt = Number(machine?.dailyYieldUsdt) || 0;
-    const monthlyUsdt = dailyUsdt * 30;
-    const priceUsdt = Number(machine?.priceUsdt) || 0;
-
     return {
       daily: {
         usdt: `$${dailyUsdt.toFixed(2)} USDT`,
