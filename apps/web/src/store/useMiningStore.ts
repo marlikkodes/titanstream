@@ -5,6 +5,8 @@ import { machineService, type UserMachineAsset } from '../services/machineServic
 import { useWalletStore } from './useWalletStore';
 import { MACHINE_CATALOG } from '../data/machines';
 
+console.log('[INIT] useMiningStore.ts module loading...');
+
 type Currency = 'USDT' | 'BTC';
 
 export interface MiningState {

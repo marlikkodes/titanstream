@@ -8,6 +8,8 @@ import { useGrowthStore } from './useGrowthStore';
 import { useReferralStore } from './useReferralStore';
 import { useUserNotificationStore } from './useUserNotificationStore';
 import { useGameStore } from './useGameStore';
+
+console.log('[INIT] useWalletStore.ts module loading...');
 const ACTIVE_STATUS_SET = new Set([
   'CREATED',
   'INITIALIZED',
