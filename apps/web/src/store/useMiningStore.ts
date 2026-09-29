@@ -10,7 +10,7 @@ import {
   updateWalletBalanceSafe,
 } from './machineSyncBridge';
 
-type Currency = 'USDT' | 'BTC';
+type Currency = 'USDT' | 'BTC' | 'TON';
 
 export interface MiningState {
   // ── Authoritative engine state (backend session + optimistic taps) ──
@@ -394,7 +394,8 @@ export const useMiningStore = create<MiningState>()(
         }, 5000);
       }
 
-      miningService.tapCooler().then((res) => {
+      const idempotencyKey = `tap_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      miningService.tapCooler(idempotencyKey).then((res) => {
         if (res.success && res.data) {
           get().applyServerSession(res.data);
         }

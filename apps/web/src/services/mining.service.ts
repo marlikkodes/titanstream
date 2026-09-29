@@ -1,7 +1,7 @@
 import { api, type ApiResponse } from './api';
 
 export interface MiningStateResponse {
-  activeCurrency: 'USDT' | 'TON';
+  activeCurrency: 'USDT' | 'BTC' | 'TON';
   baseSpeedGhs: number;
   coolerMultiplier: number;
   unclaimedBalance: number;
@@ -27,8 +27,8 @@ export const miningService = {
    * Tap the cooling multiplier. The backend computes the credited yield.
    * Backend endpoint: POST /mining/tap
    */
-  async tapCooler(): Promise<ApiResponse<MiningStateResponse>> {
-    const response = await api.post('/mining/tap');
+  async tapCooler(idempotencyKey?: string): Promise<ApiResponse<MiningStateResponse>> {
+    const response = await api.post('/mining/tap', { idempotencyKey });
     return response.data;
   },
 
@@ -36,7 +36,7 @@ export const miningService = {
    * Toggle active mining asset.
    * Backend endpoint: POST /mining/toggle
    */
-  async toggleCurrency(currency: 'USDT' | 'TON'): Promise<ApiResponse<MiningStateResponse>> {
+  async toggleCurrency(currency: 'USDT' | 'BTC' | 'TON'): Promise<ApiResponse<MiningStateResponse>> {
     const response = await api.post('/mining/toggle', { currency });
     return response.data;
   },
