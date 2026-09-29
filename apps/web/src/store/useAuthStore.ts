@@ -217,20 +217,39 @@ export const useAuthStore = create<AuthState>()(
             localStorage.removeItem('auth_token');
             localStorage.removeItem('refresh_token');
           }
-          useAuthStore.setState({ _hasHydrated: true });
           
           // Register step-up and session management functions
           // Token access is handled directly by API client from localStorage
           registerAuthFunctions({
-            getStepUpToken: () => useAuthStore.getState().stepUpToken,
-            openStepUpModal: () => useAuthStore.getState().openStepUpModal(),
+            getStepUpToken: () => state.stepUpToken,
+            openStepUpModal: () => {
+              state.isStepUpModalOpen = true;
+            },
             updateTokens: (accessToken, refreshToken, expiresAt) => {
-              const store = useAuthStore.getState();
-              store.updateTokens(accessToken, refreshToken, expiresAt);
+              if (state.session) {
+                state.session.accessToken = accessToken;
+                state.session.refreshToken = refreshToken;
+                state.session.expiresAt = expiresAt;
+                state.isAuthenticated = true;
+                localStorage.setItem('auth_token', accessToken);
+                localStorage.setItem('refresh_token', refreshToken);
+              }
             },
             clearSession: () => {
-              const store = useAuthStore.getState();
-              store.clearSession();
+              state.isAuthenticated = false;
+              state.session = null;
+              state.stepUpToken = null;
+              state.isStepUpModalOpen = false;
+              state.isMirrorMode = false;
+              state.mirrorTargetUser = null;
+              localStorage.removeItem('auth_token');
+              localStorage.removeItem('refresh_token');
+              localStorage.removeItem('auth-storage');
+              localStorage.removeItem('wallet-storage');
+              if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.removeItem('mirror_mode');
+                sessionStorage.removeItem('mirror_user');
+              }
             },
           });
         }
