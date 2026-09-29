@@ -10,6 +10,7 @@ import { useNavigationStore } from '../../../store/useNavigationStore';
 import { useCountryStore } from '../../../store/useCountryStore';
 import { useSettingsStore } from '../../../store/useSettingsStore';
 import { QuantumLoopReactor, type QuantumLoopReactorRef } from './QuantumLoopReactor';
+import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
 import { getStoreSafe } from '../../../store/machineSyncBridge';
 
 interface Particle {
